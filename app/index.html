@@ -1360,8 +1360,11 @@ body.exploring .slot-empty{display:none}
     <div class="row"><div class="grow"><div class="lbl">Spelling crates</div>
       <div class="meta">How often a crate asks him to build the word from its sounds.</div></div>
       <select id="optSpell"><option value="0.35">Some</option><option value="0.6">Lots</option><option value="0.9">Almost all</option></select></div>
+    <div class="row"><div class="grow"><div class="lbl">Fast track</div>
+      <div class="meta">Quick, right-first-time reads climb a word's ladder twice as fast, and a level he reads fluently opens the next one early.</div></div>
+      <label class="switch"><input type="checkbox" id="optFast" checked></label></div>
     <div class="row"><div class="grow"><div class="lbl">Reading tier</div>
-      <div class="meta">Moves up on its own at 85% first-try accuracy.</div></div>
+      <div class="meta">Moves up on its own at 85% first-try accuracy (sooner with Fast track).</div></div>
       <select id="optTier"><option value="0">Auto</option><option value="1">1 · short a, o</option>
         <option value="2">2 · short i, e, u</option><option value="3">3 · digraphs</option>
         <option value="4">4 · blends</option><option value="5">5 · magic e</option>
@@ -2670,15 +2673,28 @@ const WORDS=[
   // A tile written "e:uh" shows "e" but says "uh"; "e:" is silent.
   {w:"the",p:["th:dh","e:uh"],t:1,tricky:1},{w:"a",p:["a:uh"],t:1,tricky:1},{w:"I",p:["I:eye"],t:1,tricky:1},
   {w:"is",p:["i","s:z"],t:1,tricky:1},{w:"to",p:["t","o:oo"],t:1,tricky:1},
-  {w:"was",p:["w","a:o","s:z"],t:2,tricky:1},{w:"he",p:["h","e:ee"],t:2,tricky:1},{w:"she",p:["sh","e:ee"],t:2,tricky:1},
-  {w:"we",p:["w","e:ee"],t:2,tricky:1},{w:"me",p:["m","e:ee"],t:2,tricky:1},{w:"my",p:["m","y:eye"],t:2,tricky:1},
-  {w:"go",p:["g","o:oh"],t:2,tricky:1},{w:"no",p:["n","o:oh"],t:2,tricky:1},{w:"so",p:["s","o:oh"],t:2,tricky:1},
+  // Kindergarten tricky word checklist (from his class): all at the base level,
+  // the part that doesn't sound out is a heart tile (learn it by heart)
+  {w:"one",p:["o:wu","n","e:"],t:1,tricky:1},{w:"once",p:["o:wu","n","ce:s"],t:1,tricky:1},
+  {w:"from",p:["f","r","o:u","m"],t:1,tricky:1},{w:"here",p:["h","e:ee","re:r"],t:1,tricky:1},
+  {w:"three",p:["th","r","ee"],t:1,tricky:1},{w:"when",p:["wh","e","n"],t:1,tricky:1},
+  {w:"word",p:["w","or:er","d"],t:1,tricky:1},{w:"blue",p:["b","l","ue:oo"],t:1,tricky:1},
+  {w:"why",p:["wh","y:eye"],t:1,tricky:1},{w:"yellow",p:["y","e","ll","ow:oh"],t:1,tricky:1},
+  {w:"be",p:["b","e:ee"],t:1,tricky:1},{w:"look",p:["l","oo","k"],t:1,tricky:1},
+  {w:"their",p:["th:dh","ei:e","r"],t:1,tricky:1},{w:"little",p:["l","i","tt:t","le"],t:1,tricky:1},
+  {w:"down",p:["d","ow:ou","n"],t:1,tricky:1},{w:"which",p:["wh","i","ch"],t:1,tricky:1},
+  {w:"by",p:["b","y:eye"],t:1,tricky:1},{w:"out",p:["ou","t"],t:1,tricky:1},
+  {w:"your",p:["y","our:or"],t:1,tricky:1},{w:"funny",p:["f","u","nn:n","y:ee"],t:1,tricky:1},
+  {w:"says",p:["s","ay:e","s:z"],t:1,tricky:1},
+  {w:"was",p:["w","a:o","s:z"],t:1,tricky:1},{w:"he",p:["h","e:ee"],t:1,tricky:1},{w:"she",p:["sh","e:ee"],t:1,tricky:1},
+  {w:"we",p:["w","e:ee"],t:1,tricky:1},{w:"me",p:["m","e:ee"],t:1,tricky:1},{w:"my",p:["m","y:eye"],t:1,tricky:1},
+  {w:"go",p:["g","o:oh"],t:2,tricky:1},{w:"no",p:["n","o:oh"],t:1,tricky:1},{w:"so",p:["s","o:oh"],t:1,tricky:1},
   {w:"his",p:["h","i","s:z"],t:2,tricky:1},
-  {w:"said",p:["s","ai:e","d"],t:3,tricky:1},{w:"you",p:["y","ou:oo"],t:3,tricky:1},{w:"of",p:["o:u","f:v"],t:3,tricky:1},
-  {w:"do",p:["d","o:oo"],t:3,tricky:1},{w:"are",p:["are:ar"],t:3,tricky:1},{w:"they",p:["th:dh","ey:ay"],t:3,tricky:1},
-  {w:"have",p:["h","a","ve:v"],t:3,tricky:1},{w:"all",p:["a:aw","ll"],t:3,tricky:1},
+  {w:"said",p:["s","ai:e","d"],t:1,tricky:1},{w:"you",p:["y","ou:oo"],t:1,tricky:1},{w:"of",p:["o:u","f:v"],t:1,tricky:1},
+  {w:"do",p:["d","o:oo"],t:3,tricky:1},{w:"are",p:["are:ar"],t:1,tricky:1},{w:"they",p:["th:dh","ey:ay"],t:1,tricky:1},
+  {w:"have",p:["h","a","ve:v"],t:3,tricky:1},{w:"all",p:["a:aw","ll"],t:1,tricky:1},
   {w:"come",p:["c","o:u","m","e:"],t:4,tricky:1},{w:"some",p:["s","o:u","m","e:"],t:4,tricky:1},
-  {w:"what",p:["wh","a:u","t"],t:4,tricky:1},{w:"put",p:["p","u:oo","t"],t:4,tricky:1},
+  {w:"what",p:["wh","a:u","t"],t:1,tricky:1},{w:"put",p:["p","u:oo","t"],t:4,tricky:1},
   // Tier 6 — bossy r: ar, or, er / ir / ur
   {w:"star",p:["s","t","ar"],t:6},{w:"jar",p:["j","ar"],t:6},{w:"barn",p:["b","ar","n"],t:6},{w:"shark",p:["sh","ar","k"],t:6},
   {w:"fork",p:["f","or","k"],t:6},{w:"corn",p:["c","or","n"],t:6},{w:"horse",p:["h","or","s","e:"],t:6},{w:"shorts",p:["sh","or","t","s"],t:6},
@@ -2717,9 +2733,9 @@ const WORDS=[
   {w:"rested",p:["r", "e", "s", "t", "e:i", "d"],t:9,syl:[4]},
   {w:"wished",p:["w", "i", "sh", "ed:t"],t:9,syl:[3]},
   {w:"yelled",p:["y", "e", "ll", "ed:d"],t:9,syl:[3]},
-  {w:"there",p:["th:dh", "e", "re:r"],t:9,tricky:1},
-  {w:"where",p:["wh", "e", "re:r"],t:9,tricky:1},
-  {w:"were",p:["w", "ere:er"],t:9,tricky:1},
+  {w:"there",p:["th:dh", "e", "re:r"],t:1,tricky:1},
+  {w:"where",p:["wh", "e", "re:r"],t:1,tricky:1},
+  {w:"were",p:["w", "ere:er"],t:1,tricky:1},
   {w:"city",p:["c:s", "i", "t", "y:ee"],t:10,syl:[2]},
   {w:"mice",p:["m", "i_e", "c:s"],t:10},
   {w:"ice",p:["i_e", "c:s"],t:10},
@@ -2735,7 +2751,7 @@ const WORDS=[
   {w:"fly",p:["f", "l", "y:eye"],t:10},
   {w:"sky",p:["s", "k", "y:eye"],t:10},
   {w:"cry",p:["c", "r", "y:eye"],t:10},
-  {w:"two",p:["t", "wo:oo"],t:10,tricky:1},
+  {w:"two",p:["t", "wo:oo"],t:1,tricky:1},
   {w:"want",p:["w", "a:o", "n", "t"],t:10,tricky:1},
   {w:"rainbow",p:["r", "ai", "n", "b", "ow"],t:11,syl:[3],comp:1},
   {w:"popcorn",p:["p", "o", "p", "c", "or", "n"],t:11,syl:[3],comp:1},
@@ -3162,6 +3178,7 @@ function makePhonics(){
     j:{k:"affr",voiced:true,dur:.22},
     ch:{k:"affr",voiced:false,dur:.22},
     x:{k:"seq",parts:["k","s"]},
+    wu:{k:"seq",parts:["w","u"]},       // the "wu" in one, once
     q:{k:"seq",parts:["k","w"]},
     wh:V([[320,720,2250],[540,1150,2450]],.28,{glide:1,breath:1})
   };
@@ -3347,6 +3364,13 @@ const Phonics=makePhonics();
 // tile notation: "sh" plain; "e:uh" shows e, says uh; "e:" shows e, silent
 const soundOf=ph=>{ph=String(ph);const i=ph.indexOf(":");return i<0?ph:ph.slice(i+1);};
 const tileText=ph=>{ph=String(ph);const i=ph.indexOf(":");return (i<0?ph:ph.slice(0,i)).replace("_e","-e");};
+// extra tiles for "build the word": never one that sounds like a tile in the word
+// (c / k / ck, ee / ea, ai / a-e...) or looks like one, so listening is always enough
+const distractors=(ps,also)=>{
+  const key=p=>Phonics.resolve(soundOf(p))||soundOf(p),all=ps.concat(also||[]);
+  const snd=new Set(all.map(key)),txt=new Set(all.map(tileText));
+  return allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&Phonics.known(p)&&!snd.has(key(p))&&!txt.has(tileText(p)));
+};
 
 const Sound=(()=>{
   const cache=new Map();let ctx=null;
@@ -3494,6 +3518,7 @@ const Sound=(()=>{
   }
   function ttsSpeak(t,rate=.95,pitch=1.0){
     if(!state.settings.tts||!window.speechSynthesis)return Promise.resolve();
+    try{VoicePack.stop();}catch(e){}
     return new Promise(res=>{
       speechSynthesis.cancel();
       const u=new SpeechSynthesisUtterance(t);
@@ -3605,27 +3630,36 @@ const def=()=>({v:5,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phas
   guardians:[],books:{},badges:[],swaps:0,daily:{},sawNight:false,
   seasonSeen:null,hats:[],hat:null,scrambles:0,
   vehicles:[],launched:false,vehStarter:false,
-  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6},customWords:[]});
+  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true},customWords:[],pace:{}});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
 let state=def(), sessionStart=Date.now(), packCreatures=[];
-const save=(()=>{let t;return()=>{clearTimeout(t);
-  t=setTimeout(()=>{
-    try{ DB.set("kv","state",JSON.parse(JSON.stringify(state,(k,v)=>(k&&k[0]==="_")?undefined:v)))
-      .catch(()=>{}); }catch(e){}
-  },250);};})();
+const saveNow=()=>{
+  try{ DB.set("kv","state",JSON.parse(JSON.stringify(state,(k,v)=>(k&&k[0]==="_")?undefined:v)))
+    .catch(()=>{}); }catch(e){}
+};
+const save=(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(saveNow,250);};})();
+// Animals, vehicles and the buddy wander every few seconds. Where they stand is
+// cosmetic, so it is written at most every 30 s (and when the app is put away)
+// instead of serialising the whole valley on every step, which wore the battery down.
+const saveIdle=(()=>{let last=0;return()=>{if(Date.now()-last>=30000){last=Date.now();save();}};})();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveNow();});
+window.addEventListener("pagehide",saveNow);
 const allWords=()=>state.customWords.length?WORDS.concat(state.customWords):WORDS;
 
 function currentTier(){
   if(state.settings.tierOverride)return state.settings.tierOverride;
   let tier=1;
   for(let t=1;t<=MAX_TIER;t++){
-    const pool=allWords().filter(w=>w.t===t);
+    // levels open on sounding-out skill; tricky (heart) words are practised alongside, not gatekeepers
+    const pool=allWords().filter(w=>w.t===t&&!w.tricky);
     if(!pool.length)continue;
     const mastered=pool.filter(w=>(state.stats[w.w]||{}).mastered).length;
     const attempts=pool.reduce((a,w)=>a+((state.stats[w.w]||{}).seen||0),0);
     const firsts=pool.reduce((a,w)=>a+((state.stats[w.w]||{}).first||0),0);
-    // half the tier mastered at 85% first-try lets the next tier in
-    if(mastered>=Math.ceil(pool.length*.5)&&attempts>=12&&firsts/attempts>=.85)tier=Math.min(MAX_TIER,t+1);
+    // half the tier mastered at 85% first-try lets the next tier in; a tier he is
+    // reading quickly and cleanly (Pace) only needs a quarter, so he isn't kept on easy words
+    const quick=Pace.fluent(t);
+    if(mastered>=Math.ceil(pool.length*(quick?.25:.5))&&attempts>=(quick?8:12)&&firsts/attempts>=.85)tier=Math.min(MAX_TIER,t+1);
     else{tier=t;break;}
   }
   return tier;
@@ -3912,11 +3946,14 @@ setInterval(()=>{
     const roll=Math.random()*(night&&NIGHT_OWLS.has(cr.id)?.6:1);
     if(m.kind==="hunter"){
       const t=nearest(cr,"prey");
-      if(t&&t.d>1&&roll<.55){ // stalk: two steps toward prey, pounce when adjacent
+      // stalk: two steps toward prey, pounce once close. Nobody may stand right
+      // beside anyone else (see occupied), so "close" is two steps, not one.
+      if(t&&t.d>2&&roll<.55){
         const dc=Math.sign(t.o.c-cr.c)*Math.min(2,Math.abs(t.o.c-cr.c)), dr=Math.sign(t.o.r-cr.r);
         moveCritter(cr,dc,dr,true);
-        if(Math.abs(t.o.c-cr.c)+Math.abs(t.o.r-cr.r)<=1){act(cr,"pounce");if(!quiet&&Math.random()<.5)Sound.sfx.cry(m.cry);}
-      }else if(roll<.7)moveCritter(cr,Math.random()<.5?-1:1,Math.random()<.5?0:(Math.random()<.5?-1:1));
+        if(Math.abs(t.o.c-cr.c)+Math.abs(t.o.r-cr.r)<=2){act(cr,"pounce");if(!quiet&&Math.random()<.5)Sound.sfx.cry(m.cry);}
+      }else if(t&&t.d<=2&&roll<.4){act(cr,"pounce");if(!quiet&&Math.random()<.5)Sound.sfx.cry(m.cry);}
+      else if(roll<.7)moveCritter(cr,Math.random()<.5?-1:1,Math.random()<.5?0:(Math.random()<.5?-1:1));
       else if(roll<.8){act(cr,"roar");if(!quiet&&Math.random()<.35)Sound.sfx.cry(m.cry);}
     }else if(m.kind==="prey"){
       const h=nearest(cr,"hunter");
@@ -3933,7 +3970,7 @@ setInterval(()=>{
       else if(roll<.62)act(cr,"pounce");
     }
   });
-  save();
+  saveIdle();
 },2600);
 
 
@@ -4165,7 +4202,7 @@ setInterval(()=>{
       if(roll<.35)driveVehicle(v,dir*(2+Math.floor(Math.random()*3)),0,.3);
     }
   });
-  save();
+  saveIdle();
 },2400);
 
 /* ---- drag to look around ----
@@ -4433,9 +4470,12 @@ function pickCrates(){
   if(due.length){const w=allWords().find(x=>x.w===due[0]);if(w)out.push({...w,lost:true});}
   const vw=allWords().filter(w=>w.t<=tier&&VEH_WORD[w.w]&&!hasVeh(VEH_WORD[w.w])&&!out.some(o=>o.w===w.w));
   if(vw.length&&out.length<3&&state.wordsRead>1&&Math.random()<.45)out.push({...vw[Math.floor(Math.random()*vw.length)]});
+  // fast track: words he has mastered, and words from a tier he already reads fluently, come last
+  const stale=w=>Pace.on()?((state.stats[w.w]||{}).mastered?2:0)+(w.t<tier&&Pace.fluent(w.t)?1:0):0;
   allWords().filter(w=>w.t<=tier)
-    .sort((a,b)=>((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
-    .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w))out.push({...w});});
+    .sort((a,b)=>stale(a)-stale(b)||((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
+    // at most one heart word per set, so the checklist words come round steadily without crowding out sounding-out
+    .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w)&&!(w.tricky&&out.some(o=>o.tricky)))out.push({...w});});
   out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=chooseRung(o);});
   return out.sort(()=>Math.random()-.5);
 }
@@ -4488,6 +4528,21 @@ let cur=null, usedEar=false, misses=0;
      rung 1  build the word        (2 clean reads to climb)
      rung 2  read it, no picture   (1 clean read = mastered) */
 const RUNGS=[{n:"Find it",icon:"👀"},{n:"Build it",icon:"🧩"},{n:"Read it",icon:"⭐"}];
+/* ---- pace: quick, clean reads move him along faster ----
+   Every crate answer is timed from when the word appears. A read that is right
+   first time AND quick (a fluent reader, not a lucky tap) counts double on the
+   ladder, so one read climbs a rung. The last ten answers at each tier are kept;
+   when eight are quick and clean, that tier is "fluent": the next tier opens
+   early (see currentTier) and crates lean toward the new words instead of
+   ones he already has. A grown-up can switch this off in Parent mode. */
+const Pace={
+  on:()=>state.settings.fastTrack!==false,
+  // time for a fluent read of each rung (ms): picking a picture, building from sounds, reading then proving it
+  limit:(rung,w)=>rung===1?2500+1200*((w.p||[]).length||3):rung===2?5000:4000,
+  quick(w,rung,ms,clean){return Pace.on()&&clean&&rung!=null&&ms>=800&&ms<=Pace.limit(rung,w);},
+  log(t,quick){if(!t)return;const p=state.pace||(state.pace={}),a=p[t]||(p[t]=[]);a.push(quick?1:0);if(a.length>10)a.shift();},
+  fluent(t){if(!Pace.on())return false;const a=(state.pace||{})[t]||[];return a.length>=8&&a.filter(Boolean).length>=Math.ceil(a.length*.8);}
+};
 function rungOf(w){
   if(!state.settings.pics)return 2;
   const st=state.stats[w]||{};
@@ -4510,7 +4565,7 @@ function chooseRung(w){
   return Math.random()<(base===2?share*.5:share)?1:base;
 }
 function openWord(w,opt){
-  cur=w;usedEar=false;misses=0;cur._t0=performance.now();
+  cur=w;usedEar=false;misses=0;cur._t0=performance.now();cur._lock=false;cur._paid=false;cur._listen=false;
   document.getElementById("shieldHost").innerHTML="";document.getElementById("picks").classList.remove("locked-by-shield");
   const rung=(opt&&opt.rung!=null)?opt.rung:(w.rung!=null?w.rung:rungOf(w.w)), R=RUNGS[rung];
   cur.shownRung=rung;
@@ -4536,19 +4591,18 @@ function openWord(w,opt){
     slots.innerHTML="";bank.innerHTML="";
     w.p.forEach((_,i)=>{const d=document.createElement("div");d.className="wslot"+((w.syl||[]).includes(i)?" syl":"");d.dataset.i=i;
       d.onclick=()=>{ // tap a filled slot to send its tile back
-        if(!d.dataset.ph)return;
+        if(!d.dataset.ph||cur._lock)return;
         const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
         if(t)t.classList.remove("used");
         d.textContent="";delete d.dataset.ph;d.classList.remove("filled");Sound.sfx.soft();};
       slots.appendChild(d);});
     // scramble; add one distractor sound so it is a real choice
-    const mine=new Set(w.p.map(soundOf));
-    const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&!mine.has(soundOf(p))&&Phonics.known(p));
+    const pool=distractors(w.p);
     const extra=pool[Math.floor(Math.random()*pool.length)];
-    [...w.p,extra].sort(()=>Math.random()-.5).forEach(ph=>{
+    [...w.p,extra].filter(Boolean).sort(()=>Math.random()-.5).forEach(ph=>{
       const t=mkTile(ph,"lt bank");
       t.onclick=async()=>{
-        const open=[...slots.children].find(x=>!x.dataset.ph);if(!open)return;
+        const open=[...slots.children].find(x=>!x.dataset.ph);if(!open||cur._lock)return;
         Sound.sfx.soft();Sound.say("sound:"+ph,ph);
         open.textContent=tileText(ph);open.dataset.ph=ph;open.classList.add("filled");
         if(w.tricky&&ph.includes(":"))open.classList.add("heart");
@@ -4565,7 +4619,6 @@ function openWord(w,opt){
       :"Tap each letter, then blend them together.";
     document.getElementById("pickPrompt").style.display=rung===2?"none":"block";
     w.p.forEach((ph,i)=>L.appendChild(mkTile(ph,"lt",i)));
-    document.getElementById("earBtn").onclick=async()=>{usedEar=true;await Sound.say("word:"+cur.w,cur.w,.82);};
     const st=state.stats[w.w]||{};
     if(rung===0&&(w.tricky||!WORD_ART[w.w]||(st.seen>=1&&Math.random()<.5)))renderListen(w);
     else renderPicks(w,rung);
@@ -4580,7 +4633,7 @@ function checkBuild(){
   const slots=[...document.getElementById("slotsRow").children];
   const built=slots.map(x=>x.dataset.ph);
   if(built.join("|")===cur.p.join("|")){
-    slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
+    cur._lock=true;slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
     setTimeout(()=>{Sound.say("word:"+cur.w,cur.w,.82);setTimeout(succeed,500);},250);
   }else{
     misses++;Sound.sfx.nope();
@@ -4603,13 +4656,23 @@ function checkBuild(){
     },700);
   }
 }
+/* The two helper buttons always follow the screen that is open now (they used
+   to be rewired by each mode, so a story crate left them reading its sentence).
+   Blend sounds out exactly the tiles on screen, then says the word they spell:
+   the word's own tiles, what he has built so far, or the word in a sound swap. */
 async function blend(){
-  const tiles=[...document.querySelectorAll("#letters .lt")];
+  if(!cur)return;
+  if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  const L=document.getElementById("letters"),building=L.style.display==="none";
+  const tiles=building?[...document.querySelectorAll("#slotsRow .wslot")].filter(x=>x.dataset.ph):[...L.querySelectorAll(".lt")];
+  const ph=tiles.map(t=>t.dataset.ph);
   for(let i=0;i<tiles.length;i++){tiles[i].classList.add("blend");
-    await Sound.say("sound:"+cur.p[i],cur.p[i]);await new Promise(r=>setTimeout(r,90));}
+    await Sound.say("sound:"+ph[i],ph[i]);await new Promise(r=>setTimeout(r,90));}
   await new Promise(r=>setTimeout(r,180));
   tiles.forEach(t=>t.classList.remove("blend"));
-  await Sound.say("word:"+cur.w,cur.w,.82);
+  const spells=a=>a&&a.length===ph.length&&a.every((x,i)=>x===ph[i]);
+  const word=spells(cur.p)?cur.w:cur.from&&spells(cur.from.p)?cur.from.w:null;
+  if(word)await Sound.say("word:"+word,word,.82);
 }
 document.getElementById("blendBtn").onclick=blend;
 
@@ -4637,7 +4700,9 @@ document.getElementById("micBtn").onclick=()=>{
   const b=document.getElementById("micBtn");
   if(b.classList.contains("listening")){Speech.stop();return;}
   b.classList.add("listening");b.textContent="🎤 Listening...";
+  const word=cur;
   Speech.listen(alts=>{
+    if(cur!==word||word._paid||!ov("ovRead").classList.contains("on"))return;
     const hit=alts.some(a=>a===cur.w||a.split(/\s+/).includes(cur.w)||a.replace(/\s+/g,"")===cur.w);
     if(hit){toast("You said it! +2 💎");state.gems+=2;floater("+2 💎","#FFE9A8");Sound.sfx.chime();succeed();}
     else{toast(`I heard "${alts[0]||"..."}" — try once more, or tap I read it`);Sound.sfx.soft();}
@@ -4648,7 +4713,11 @@ function starPop(){
   document.body.appendChild(el);setTimeout(()=>el.remove(),1500);
   confetti();Sound.sfx.win();
 }
-document.getElementById("earBtn").onclick=async()=>{usedEar=true;await Sound.say("word:"+cur.w,cur.w,.82);};
+document.getElementById("earBtn").onclick=async()=>{
+  if(!cur)return;
+  if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  if(!cur._listen)usedEar=true;   // in "Hear it" the word is the question, so hearing it again is not a hint
+  await Sound.say("word:"+cur.w,cur.w,.82);};
 
 function renderPicks(w,rung=0){
   const P=document.getElementById("picks");P.innerHTML="";P.style.display="flex";
@@ -4685,17 +4754,21 @@ function miss(btn){
   setTimeout(blend,560);
 }
 function succeed(){
-  if(cur&&cur.p)Skills.result(cur,{ok:true,help:usedEar||misses>0,ms:performance.now()-(cur._t0||0)});
+  if(!cur||cur._paid)return;cur._paid=true;cur._lock=true;
+  const ms=performance.now()-(cur._t0||0);
+  if(cur&&cur.p)Skills.result(cur,{ok:true,help:usedEar||misses>0,ms});
+  const quick=!cur.swap&&Pace.quick(cur,cur.shownRung,ms,misses===0&&!usedEar);
+  if(!cur.swap&&cur.shownRung!=null)Pace.log(cur.t,quick);
   const st=state.stats[cur.w]||(state.stats[cur.w]={seen:0,first:0,miss:0,mastered:false,rung:0,rungClean:0});
   st.seen++;
   const clean0=misses===0&&!usedEar, wasMastered=st.mastered;
   if(clean0){
-    st.first++;st.rungClean=(st.rungClean||0)+1;
+    st.first++;st.rungClean=(st.rungClean||0)+(quick?2:1);   // a quick clean read counts double
     const need=(st.rung||0)===2?1:2;
     if(st.rungClean>=need){
       if((st.rung||0)>=2){st.mastered=true;}
       else{st.rung=(st.rung||0)+1;st.rungClean=0;
-        setTimeout(()=>toast(`"${cur.w}" moves up to ${RUNGS[st.rung].n} ${RUNGS[st.rung].icon}`),1600);}
+        setTimeout(()=>toast(`${quick?"⚡ Speedy! ":""}"${cur.w}" moves up to ${RUNGS[st.rung].n} ${RUNGS[st.rung].icon}`),1600);}
     }
   }else st.miss++;
   if(st.mastered&&!wasMastered){
@@ -6062,6 +6135,8 @@ const Mine=(()=>{
     if(t===T.SIGN&&gameSigns[key]){if(time-msgT>2){msgT=time;toast("That sign belongs to the mine.");}return;}
     if(!hard||(t===T.GRASS&&tx<TOWN)){if(time-msgT>2){msgT=time;toast("That can't be dug.");}return;}
     if(t===T.LAVA&&!m.boots&&perk()!=="fire"){if(time-msgT>2){msgT=time;toast("Too hot! Buy lava boots at the pick shop.");Sound.sfx.nope();}return;}
+    const o=ore[key];
+    if(o>=1&&o<=8&&bagCount()>=bagCap()){if(time-msgT>2){msgT=time;float(tx,ty,"Bag full!","#FF8A8A");toast("Your backpack is full! Sell your gems at the shop ⬆️, then come back for this one.",3200);Sound.sfx.nope();}P.digT=0;return;}
     const pow=PICKS[m.pick].pow;
     if(hard>pow){if(time-msgT>2){msgT=time;toast(`Too hard! Buy the ${(PICKS.find(k=>k.pow>=hard)||PICKS[PICKS.length-1]).name} at the pick shop ⬆️`,3000);Sound.sfx.nope();}return;}
     const need=digNeed(t);
@@ -6073,10 +6148,8 @@ const Mine=(()=>{
     const m=M(),i=idx(tx,ty),o=ore[i];
     tiles[i]=T.AIR;ore[i]=0;m.dugCount=(m.dugCount||0)+1;burst(tx,ty,PASS[t]?T.DIRT:t,10);Sound.sfx.thud();pocket(t,i);bump("dug");
     try{Quests.hit("dig");}catch(e){}
-    if(o>=1&&o<=8){
-      if(bagCount()>=bagCap()){float(tx,ty,"Bag full!","#FF8A8A");toast("Your backpack is full! Go sell at your shop. ⬆️");Sound.sfx.nope();}
-      else collectOre(tx,ty,o);
-    }else if(o===9){setTimeout(()=>wordStone(tx,ty),250);}
+    if(o>=1&&o<=8)collectOre(tx,ty,o);
+    else if(o===9){setTimeout(()=>wordStone(tx,ty),250);}
     else if(o===10)openChest(tx,ty);
     markDug();hud();
   }
@@ -6227,7 +6300,7 @@ const Mine=(()=>{
     const near=(a,b)=>LOOKS.some(g=>g.includes(a)&&g.includes(b));
     const others=allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&x.w!==w.w&&WORD_ART[x.w]!==WORD_ART[w.w]&&!near(x.w,w.w)).sort(()=>Math.random()-.5)
       .reduce((a,x)=>{if(a.length<2&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
-    const opts=[w,...others].sort(()=>Math.random()-.5);let misses=0,t0=performance.now();
+    const opts=[w,...others].sort(()=>Math.random()-.5);let misses=0,t0=performance.now(),fin=false;
     openPanel(`<h2>A word stone! 🔮</h2><p class="sub">Read the word, then tap its picture to crack it open.</p>
       <div class="mword">${w.w}</div><div class="mpics">${opts.map(o=>`<button class="mpic" data-w="${o.w}">${drawWord(o.w,"mine")}</button>`).join("")}</div>
       <div class="mrow"><button class="btn soft" id="mHear" style="visibility:hidden">🔊 Hear it</button></div>`);
@@ -6235,7 +6308,8 @@ const Mine=(()=>{
     if(Skills.slow){const mp=card().querySelector(".mpics");mp.classList.add("locked-by-shield");
       soundShield(card(),w,()=>{mp.classList.remove("locked-by-shield");t0=performance.now();});}
     card().querySelectorAll(".mpic").forEach(b=>b.onclick=()=>{
-      if(b.dataset.w===w.w){try{Skills.result(w,{ok:true,help:misses>0,ms:performance.now()-t0});}catch(e){}Sound.sfx.win();b.classList.add("right");const m=M();m.bag[9]=(m.bag[9]||0)+1;m.found[9]=1;
+      if(fin)return;
+      if(b.dataset.w===w.w){fin=true;try{Skills.result(w,{ok:true,help:misses>0,ms:performance.now()-t0});}catch(e){}Sound.sfx.win();b.classList.add("right");const m=M();m.bag[9]=(m.bag[9]||0)+1;m.found[9]=1;
         state.wordsRead++;Sound.say("word:"+w.w,w.w,.9);
         setTimeout(()=>{closePanel();float(tx,ty,"+1 magic gem","#E2CCFF");burst(tx,ty,T.CRYS,16);toast("CRACK! You found a magic gem!");save();},900);}
       else{try{Skills.result(w,{ok:false,confused:b.dataset.w,ms:performance.now()-t0});}catch(e){}t0=performance.now();misses++;Sound.sfx.nope();b.classList.add("wrong");setTimeout(()=>b.classList.remove("wrong"),500);
@@ -6247,7 +6321,7 @@ const Mine=(()=>{
   let shopQ=[],tray={},served=0,earned=0,hintOn=false;
   const QTY=["","a","two","three"];
   const GEMS=[3,5,6,7,8,9];
-  const tomorrow=()=>new Date(Date.now()+864e5).toISOString().slice(0,10);
+  const tomorrow=()=>{const d=new Date();d.setDate(d.getDate()+1);return ymd(d);};
   // who is coming in: one of his valley animals, or a guardian as a VIP
   function customer(vip){
     if(vip!=null){const g=GUARDIANS[vip];return{art:g.id,name:g.name,vip:true};}
@@ -6329,10 +6403,11 @@ const Mine=(()=>{
     card().querySelectorAll(".msay span").forEach(s=>s.onclick=()=>{if(hintOn){const w=s.textContent.replace(/[.,?!]/g,"").toLowerCase();Sound.say("word:"+w,w,.85);}});
     card().querySelector("#mHear").onclick=()=>Sound.say("sent:"+o.text,o.text,.9);
     card().querySelector("#mClose").onclick=()=>endShop();
+    let paid=false;
     card().querySelector("#mGive").onclick=()=>{
-      const got=Object.entries(tray).filter(([,n])=>n>0);
+      if(paid)return;const got=Object.entries(tray).filter(([,n])=>n>0);
       if(!got.length){Sound.sfx.nope();return;}
-      if(o.check(tray)){let base=0;got.forEach(([k,n])=>{m.bag[k]-=n;if(m.bag[k]<=0)delete m.bag[k];base+=OI(k).val*n;});
+      if(o.check(tray)){paid=true;let base=0;got.forEach(([k,n])=>{m.bag[k]-=n;if(m.bag[k]<=0)delete m.bag[k];base+=OI(k).val*n;});
         const gems=o.vip?3:1,pay=base*(o.vip?3:2)+SHOPS[m.shopLv].tip*(o.vip?4:1)+Math.floor(Math.random()*3);
         m.coins+=pay;earned+=pay;served++;
         m.orders=(m.orders||0)+1;m.ordersRight=(m.ordersRight||0)+1;bump("served");state.wordsRead++;state.gems+=gems;
@@ -6635,8 +6710,9 @@ const Mine=(()=>{
     for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){if(dx*dx+dy*dy>5)continue;const tx=x+dx,ty=y+dy;
       if(tx<1||tx>=MW-1||ty<SKY||ty>=MH)continue;const t=tileAt(tx,ty);
       if(t===T.AIR||t===T.BED||t===T.FOUND||t===T.SEAL||t===T.VAULT||t===T.VDOOR||(t===T.GRASS&&tx<TOWN)||(t===T.SIGN&&gameSigns[idx(tx,ty)]))continue;
-      const i=idx(tx,ty),o=ore[i];tiles[i]=T.AIR;ore[i]=0;delete m.placed[i];delete m.signs[i];burst(tx,ty,t,5);m.dugCount=(m.dugCount||0)+1;
-      if(o>=1&&o<=8){if(bagCount()<bagCap())collectOre(tx,ty,o);}else if(o===9&&!stone)stone=[tx,ty];else if(o===10)openChest(tx,ty);}
+      const i=idx(tx,ty),o=ore[i];if(o>=1&&o<=8&&bagCount()>=bagCap())continue;   // full bag: the gem stays put
+      tiles[i]=T.AIR;ore[i]=0;delete m.placed[i];delete m.signs[i];burst(tx,ty,t,5);m.dugCount=(m.dugCount||0)+1;
+      if(o>=1&&o<=8)collectOre(tx,ty,o);else if(o===9&&!stone)stone=[tx,ty];else if(o===10)openChest(tx,ty);}
     for(let k=0;k<26;k++)parts.push({x:x+.5,y:y+.5,vx:(Math.random()-.5)*16,vy:-Math.random()*12,life:.8,col:k%2?"#FF8A3D":"#FFC83D",s:.2});
     float(x,y-1,"BOOM!","#FFC83D");P.vy=-6;markDug();hud();try{Quests.hit("dig",5);}catch(e){}
     if(stone)setTimeout(()=>wordStone(stone[0],stone[1]),700);
@@ -6759,14 +6835,23 @@ const Mine=(()=>{
   const airAt=(x,y)=>tileAt(x,y)===T.AIR;
   function findAir(cx,cy,rx,ry,test){for(let k=0;k<40;k++){const x=cx+Math.floor((Math.random()*2-1)*rx),y=cy+Math.floor((Math.random()*2-1)*ry);
     if(x<2||x>MW-3||y<SKY+2||y>MH-4)continue;if(airAt(x,y)&&(!test||test(x,y)))return[x,y];}return null;}
+  // a locked vault's room and the ground by its door are no place for the lost animal: inside it can't
+  // be reached, and by the door the "use" button offers the vault instead of the animal
+  const byVault=(x,y)=>VAULTS.some(V=>!M().vaults[V.k]&&x>=V.x0-2&&x<=V.x0+8&&y>=V.y0-2&&y<=V.y0+6);
+  function lostSpot(maxD){
+    for(let k=0;k<400;k++){const x=TOWN+2+Math.floor(Math.random()*(MW-TOWN-4)),y=SKY+6+Math.floor(Math.random()*Math.max(1,maxD-6));
+      if(airAt(x,y)&&!airAt(x,y+1)&&tileAt(x,y+1)!==T.SEAL&&!byVault(x,y))return[x,y];}
+    return[TOWN+6,SKY+Math.min(10,maxD)];
+  }
   function lostAnimal(){
-    const m=M();if(m.lost&&m.lost.date===today())return m.lost;
-    const cap=(BOSSES.find(b=>!m.bosses[b.id])||{d:MDEPTH}).d-2,maxD=Math.min(cap,Math.max(12,(m.deepest||0)+6));
+    const m=M(),cap=(BOSSES.find(b=>!m.bosses[b.id])||{d:MDEPTH}).d-2,maxD=Math.min(cap,Math.max(12,(m.deepest||0)+6));
+    if(m.lost&&m.lost.date===today()){
+      // saved before vaults were avoided: move it out of the vault's way
+      if(!m.lost.rescued&&byVault(m.lost.x,m.lost.y)){const s=lostSpot(maxD);m.lost.x=s[0];m.lost.y=s[1];save();}
+      return m.lost;}
     const pool=CRITTERS.filter(c=>c.b<=Math.max(state.biome||0,1)+1),own=new Set((state.critters||[]).map(c=>c.id));
     const pick=(pool.filter(c=>!own.has(c.id)).length?pool.filter(c=>!own.has(c.id)):pool);const c=pick[Math.floor(Math.random()*pick.length)];
-    let spot=null;for(let k=0;k<400&&!spot;k++){const x=TOWN+2+Math.floor(Math.random()*(MW-TOWN-4)),y=SKY+6+Math.floor(Math.random()*Math.max(1,maxD-6));
-      if(airAt(x,y)&&!airAt(x,y+1)&&tileAt(x,y+1)!==T.SEAL)spot=[x,y];}
-    if(!spot){const y=SKY+Math.min(10,maxD);spot=[TOWN+6,y];}
+    const spot=lostSpot(maxD);
     m.lost={date:today(),id:c.id,x:spot[0],y:spot[1],rescued:false};save();return m.lost;
   }
   function spawn(){
@@ -7193,7 +7278,7 @@ const Books=(()=>{
   // ---------- questions ----------
   function quiz(){
     const q=book.quiz[quizIdx];if(!q){finish();return;}
-    const t=book.t,text=fill(q.q,t);let tries=0;
+    const t=book.t,text=fill(q.q,t);let tries=0,fin=false;
     const opts=q.pics?q.pics.map(p=>({v:p,h:`<div class="qart">${art(p,t)}</div>`})).sort(()=>Math.random()-.5)
       :q.words?q.words.map(w=>({v:w,h:`<b class="qword">${w}</b>`})).sort(()=>Math.random()-.5)
       :[{v:"yes",h:`<b class="qword">👍 yes</b>`},{v:"no",h:`<b class="qword">👎 no</b>`}];
@@ -7203,8 +7288,8 @@ const Books=(()=>{
     ov.querySelector("#bClose").onclick=close;
     setTimeout(()=>Sound.say("sent:"+text,text,.9),250);
     ov.querySelectorAll(".bopt").forEach(b=>b.onclick=()=>{
-      tries++;
-      if(b.dataset.v===ans){b.classList.add("right");Sound.sfx.win();if(tries===1)quizFirst++;
+      if(fin)return;tries++;
+      if(b.dataset.v===ans){fin=true;b.classList.add("right");Sound.sfx.win();if(tries===1)quizFirst++;
         state.comp=state.comp||{right:0,wrong:0};state.comp.right++;save();
         setTimeout(()=>{quizIdx++;quiz();},900);}
       else{b.classList.add("wrong");Sound.sfx.nope();state.comp=state.comp||{right:0,wrong:0};state.comp.wrong++;
@@ -7325,7 +7410,7 @@ let picOv=null;
 function openPicIt(){
   const ps=PicSentence.make();if(!ps){toast("Read a few more words first!");return;}
   if(!picOv){picOv=document.createElement("div");picOv.className="overlay";picOv.id="ovPic";document.body.appendChild(picOv);}
-  const bg=["meadow","farm","pond","town"][Math.floor(Math.random()*4)],t0=performance.now();let tries=0;
+  const bg=["meadow","farm","pond","town"][Math.floor(Math.random()*4)],t0=performance.now();let tries=0,fin=false;
   picOv.innerHTML=`<div class="sheet picit"><h2>🖼️ Picture it</h2><p class="sub">Read the sentence. Tap the picture that matches it — every word counts!</p>
     <div class="btext">${ps.text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
     <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg)}</button>`).join("")}</div>
@@ -7334,8 +7419,8 @@ function openPicIt(){
   picOv.querySelector("#psLater").onclick=()=>picOv.classList.remove("on");
   const comp=()=>state.comp||(state.comp={right:0,wrong:0});
   picOv.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
-    const o=ps.opts[+b.dataset.i];tries++;
-    if(o.ok){b.classList.add("right");comp().right++;const won=tries===1?2:1;state.gems+=won;state.wordsRead+=1;
+    if(fin)return;const o=ps.opts[+b.dataset.i];tries++;
+    if(o.ok){fin=true;b.classList.add("right");comp().right++;const won=tries===1?2:1;state.gems+=won;state.wordsRead+=1;
       Quests.hit("read");Sound.sfx.win();confetti();Sound.say("sent:"+ps.text,ps.text,.9);floater("+"+won+" 💎","#FFE9A8");
       renderHUD();save();setTimeout(()=>picOv.classList.remove("on"),1400);}
     else{comp().wrong++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
@@ -7361,7 +7446,7 @@ setInterval(()=>{
 
 /* ---- the grown-up reading report ---- */
 let repOv=null;
-function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);out.push(d.toISOString().slice(0,10));}return out;}
+function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);out.push(ymd(d));}return out;}
 function bars(days,get,fmt){
   const vals=days.map(get),max=Math.max(1,...vals);
   return`<div class="chart rchart">${days.map((d,i)=>`<div class="col"><b>${vals[i]?fmt?fmt(vals[i]):vals[i]:""}</b><i style="height:${vals[i]/max*100}%"></i><span>${"SMTWTFS"[new Date(d+"T12:00").getDay()]}</span></div>`).join("")}</div>`;
@@ -7388,6 +7473,8 @@ function openReport(){
   if(!Object.values(lib).some(b=>b.rec))tips.push(`Try <b>🎤 Read it to your pet</b> in a book. Hearing himself read is powerful — and you get recordings to keep.`);
   const tierWords=words.filter(w=>w.t===tier&&!w.tricky),tm=tierWords.filter(w=>(state.stats[w.w]||{}).mastered).length;
   if(tierWords.length&&tm/tierWords.length>=.7)tips.push(`He has mastered ${tm} of ${tierWords.length} level-${tier} words — he is close to the next level.`);
+  const quickT=[...Array(MAX_TIER).keys()].map(i=>i+1).filter(t=>Pace.fluent(t));
+  if(quickT.length)tips.push(`He reads level ${quickT.join(", ")} quickly and right the first time, so the game is moving him along faster (Fast track).`);
   if(!tips.length)tips.push("Everything looks on track. Keep sessions short and often: 10–15 minutes most days beats one long session.");
   repOv.innerHTML=`<div class="sheet report"><div class="rhead"><h2>📊 Reading report</h2><span class="rdate">${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</span></div>
     <div class="stat rstat">
@@ -7512,7 +7599,10 @@ const Adv=(()=>{
   function freePos(minD=2.5){
     for(let k=0;k<60;k++){const c=1+Math.random()*(COLS-3),r=firstRow()+Math.random()*(state.rows-1);
       if(Math.abs(c-P.c)<minD&&k<50)continue;if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.6&&Math.abs(p.r-r)<1))continue;
-      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;return{c:+c.toFixed(2),r:+r.toFixed(2)};}
+      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
+      // not on a treasure mark either: the spot would take the "use" button and the mark could never be dug
+      if(A().hunt&&A().hunt.marks.some(m=>!m.dug&&Math.abs(m.c-c)<1.6&&Math.abs(m.r-r)<1))continue;
+      return{c:+c.toFixed(2),r:+r.toFixed(2)};}
     return{c:Math.min(COLS-2,P.c+3),r:P.r};
   }
 
@@ -7653,6 +7743,8 @@ const Adv=(()=>{
     const spots=[];for(let k=0;k<200&&spots.length<4;k++){
       const c=1+Math.random()*(COLS-3),r=firstRow()+Math.random()*(state.rows-1);
       if(spots.some(s=>Math.abs(s.c-c)<3.2))continue;
+      // keep clear of notes and the quest giver, which win the "use" button over a mark
+      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
       spots.push({c:+c.toFixed(2),r:+r.toFixed(2)});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
@@ -7680,6 +7772,7 @@ const Adv=(()=>{
     if(!big)noteEl.onclick=e=>{if(e.target.closest(".bw,button"))return;showNote(true);};else noteEl.onclick=null;
   }
   function dig(m){
+    if(m.dug)return;
     const h=A().hunt,want=h.marks[h.order[h.step]];
     const el=landEls[h.marks.indexOf(m)];if(el){el.classList.remove("digging");void el.offsetWidth;el.classList.add("digging");}
     Sound.sfx.dig?Sound.sfx.dig():Sound.sfx.thud();
@@ -7836,9 +7929,8 @@ const Wild=(()=>{
   // spell its name: tap the sounds in order
   function nameRound(Q){
     const w=W.nameW,slots=w.p.map(()=>null);W.w=w;W.ans=w.w;
-    const mine=new Set(w.p.map(soundOf));
-    const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&!mine.has(soundOf(p))&&Phonics.known(p));
-    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]]);
+    const pool=distractors(w.p);
+    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]].filter(Boolean));
     Q.innerHTML=`<p class="wp">Last one! Call it by its name — tap the sounds in order.</p>
       <div class="wslots">${w.p.map((_,i)=>`<div class="wslot" data-i="${i}"></div>`).join("")}</div>
       <div class="wbank">${bank.map((ph,i)=>`<button class="lt bank" data-i="${i}">${tileText(ph)}</button>`).join("")}</div>
@@ -7906,14 +7998,14 @@ setTimeout(advBadge,1500);
    teams, endings, soft c/g, compound words, silent letters).
    ================================================================ */
 const Decode=(()=>{
-  const EXTRA={and:1,has:2,ha:1,yes:2,full:3,with:3,him:2,them:3,then:3,this:3,its:2,into:3,by:3,oh:1,
-    love:3,from:3,for:6,your:12,our:7,dad:1,mom:1,mum:2,ash:1,look:7,find:4,good:7,day:7,out:7,down:7,about:9,
-    under:6,after:8,over:5,little:8,snack:4,treat:7,hug:2,hugs:2,kiss:2,xo:1};
+  const EXTRA={and:1,has:2,ha:1,yes:2,full:3,with:3,him:2,them:3,then:3,this:3,its:2,into:3,oh:1,
+    love:3,for:6,our:7,dad:1,mom:1,mum:2,ash:1,find:4,good:7,day:7,about:9,
+    under:6,after:8,over:5,snack:4,treat:7,hug:2,hugs:2,kiss:2,xo:1};
   const DIG=["igh","sh","ch","th","wh","ck","ng","qu","ee","ea","ai","ay","oa","ow","oo","ou","ar","or","er","ir","ur","ll","ss","ff","zz","le"];
   const TEAM=new Set(["ee","ea","ai","ay","oa","ow","oo","ou","igh"]),RC=new Set(["ar","or","er","ir","ur"]),DG=new Set(["sh","ch","th","wh","ng","qu","ll","ss","ff","zz"]);
   const V="aeiou";
-  let LIST=null;
-  const list=()=>{if(!LIST){LIST={};allWords().forEach(w=>{LIST[w.w.toLowerCase()]=w.t;});}return LIST;};
+  let LIST=null,SRC=null;
+  const list=()=>{if(!LIST||SRC!==state.customWords){SRC=state.customWords;LIST={};allWords().forEach(w=>{LIST[w.w.toLowerCase()]=w.t;});}return LIST;};
   function tier(w){
     const lw=w.toLowerCase(),L=list();
     if(lw in EXTRA)return EXTRA[lw];
@@ -8063,13 +8155,13 @@ const Read=(()=>{
   function rec(w,ok,o){try{Skills.result(w,{ok,...o});}catch(e){}}
   // read the word, tap its picture
   function pic(host,done,w){
-    w=w||word();const t0=performance.now();let miss=0;
+    w=w||word();const t0=performance.now();let miss=0,fin=false;
     host.innerHTML=`<p class="wp">Read the word. Tap its picture!</p><div class="wword">${w.w}</div>
       <div class="wopts">${shuffle([w,...others(w)]).map(o=>`<button class="wpic" data-w="${o.w}">${drawWord(o.w,"q")}</button>`).join("")}</div>`;
     const box=host.querySelector(".wopts");host.dataset.ans=w.w;
     if(Skills.slow){box.classList.add("locked-by-shield");soundShield(host,w,()=>box.classList.remove("locked-by-shield"));}
     box.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
-      const ok=b.dataset.w===w.w;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
+      if(fin)return;const ok=b.dataset.w===w.w;if(ok)fin=true;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
       if(ok){b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
         if(miss>=2)box.querySelector(`[data-w="${w.w}"]`).classList.add("hint");}});
@@ -8077,25 +8169,25 @@ const Read=(()=>{
   }
   // look at the picture, find its word among look-alikes
   function wordPick(host,done,w){
-    w=w||word();const t0=performance.now();let miss=0;
+    w=w||word();const t0=performance.now();let miss=0,fin=false;
     const opts=shuffle([w.w,...lookalikes(w).map(x=>x.w)]);
     host.innerHTML=`<p class="wp">Which word is this? Look closely!</p><div class="wbig">${drawWord(w.w,"q")}</div>
       <div class="wopts">${opts.map(o=>`<button class="wwopt" data-w="${o}">${o}</button>`).join("")}</div>`;
     host.dataset.ans=w.w;
     host.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
-      const ok=b.dataset.w===w.w;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
+      if(fin)return;const ok=b.dataset.w===w.w;if(ok)fin=true;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
       if(ok){b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);Sound.say("word:"+b.dataset.w,b.dataset.w,.9);}});
     return w;
   }
   // read a sentence, pick the matching scene
   function sentence(host,done,bg){
-    const ps=PicSentence.make();if(!ps)return pic(host,done);let miss=0;
+    const ps=PicSentence.make();if(!ps)return pic(host,done);let miss=0,fin=false;
     host.innerHTML=`<p class="wp">Read it all, then find the picture!</p><div class="btext">${ps.text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
       <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg||"meadow")}</button>`).join("")}</div>`;
     Books.wireWords(host.querySelector(".btext"));host.dataset.ans="#"+ps.opts.findIndex(x=>x.ok);
     host.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
-      const o=ps.opts[+b.dataset.i];state.comp=state.comp||{right:0,wrong:0};state.comp[o.ok?"right":"wrong"]++;
+      if(fin)return;const o=ps.opts[+b.dataset.i];if(o.ok)fin=true;state.comp=state.comp||{right:0,wrong:0};state.comp[o.ok?"right":"wrong"]++;
       if(o.ok){b.classList.add("right");Sound.sfx.win();Sound.say("sent:"+ps.text,ps.text,.9);setTimeout(()=>done(!miss),1100);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
         if(miss>=2)host.querySelector(`.psopt[data-i="${ps.opts.findIndex(x=>x.ok)}"]`).classList.add("hint");}});
@@ -8104,9 +8196,8 @@ const Read=(()=>{
   // hear a word, build it from its sounds
   function build(host,done,w,prompt){
     w=w||word({max:5});const slots=w.p.map(()=>null);let miss=0;
-    const mine=new Set(w.p.map(soundOf));
-    const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&!mine.has(soundOf(p))&&Phonics.known(p));
-    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]]);
+    const pool=distractors(w.p);
+    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]].filter(Boolean));
     host.innerHTML=`<p class="wp">${prompt||"Listen, then tap the sounds in order."}</p>
       <div class="wslots">${w.p.map((_,i)=>`<div class="wslot${(w.syl||[]).includes(i)?" syl":""}"></div>`).join("")}</div>
       <div class="wbank">${bank.map((ph,i)=>`<button class="lt bank" data-i="${i}">${tileText(ph)}</button>`).join("")}</div>
@@ -8240,10 +8331,10 @@ const Quest=(()=>{
         doors=Read.shuffle([w.w,...lookalikes(w).map(x=>x.w)]).map((o,k)=>({k,html:`<b class="dword">${o}</b>`,ok:o===w.w,w:o}));right=w;}
       const s=sheet(`<div class="qhead"><span class="qbook">🏛️</span><b>Reading Temple · room ${room+1} of ${c.rooms}</b><button class="bx" id="qX">✕</button></div>
         <div class="tclue">${clue}</div><div class="tdoors">${doors.map(d=>`<button class="tdoor" data-k="${d.k}" data-ok="${d.ok?1:0}"><div class="tsign">${d.html}</div><div class="tarch"></div></button>`).join("")}</div>`,"temple");
-      s.querySelector("#qX").onclick=close;const t0=performance.now();let miss=0;
+      s.querySelector("#qX").onclick=close;const t0=performance.now();let miss=0,fin=false;
       const tc=s.querySelector(".tclue");if(tc.querySelector("b")&&useSent){const bb=tc.querySelector("b");bb.innerHTML=bb.textContent.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ");Books.wireWords(bb);}
       s.querySelectorAll(".tdoor").forEach(b=>b.onclick=()=>{
-        const d=doors[+b.dataset.k];
+        if(fin)return;const d=doors[+b.dataset.k];if(d.ok)fin=true;
         if(right)try{Skills.result(right,{ok:d.ok&&!miss,help:miss>0,confused:d.ok?null:d.w,ms:performance.now()-t0});}catch(e){}
         if(useSent){state.comp=state.comp||{right:0,wrong:0};state.comp[d.ok?"right":"wrong"]++;}
         if(d.ok){b.classList.add("open");Sound.sfx.win();state.wordsRead+=useSent?5:1;setTimeout(()=>{room++;next();},1000);}
@@ -8887,7 +8978,8 @@ const QUEST_POOL=[
   {id:"newveh", ic:"🔑", t:"Get a new vehicle",         k:"newveh", n:1},
   {id:"upgrade",ic:"⬆️", t:"Upgrade something",         k:"upgrade",n:1}
 ];
-const today=()=>new Date().toISOString().slice(0,10);
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>ymd(new Date());
 const Quests={
   ensure(){
     if(state.quests&&state.quests.date===today())return;
@@ -8973,7 +9065,7 @@ function renderBuddy(){
 function buddyGo(c,r){
   state.buddy={c:Math.max(0,Math.min(COLS-1,c)),r:Math.max(ROWS_MAX-state.rows,Math.min(ROWS_MAX-1,r))};
   try{Object.assign(state.buddy,freeSpot(state.buddy.c,state.buddy.r,state.buddy));}catch(e){}
-  renderBuddy();save();
+  renderBuddy();saveIdle();
 }
 function buddyCheer(){
   const el=document.getElementById("buddyWorld");if(!el)return;
@@ -9244,15 +9336,16 @@ function openSwap(pair){
     L.appendChild(b);
   });
   const bank=document.getElementById("letterBank");bank.style.display="flex";bank.innerHTML="";
-  const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&p!==pair.to.p[pair.i]&&p!==pair.from.p[pair.i]);
+  const pool=distractors([pair.to.p[pair.i],pair.from.p[pair.i]]);
   const opts=[pair.to.p[pair.i],...[...new Set(pool)].sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);
   opts.forEach(ph=>{
     const t=document.createElement("button");t.className="lt bank";t.textContent=tileText(ph);
     t.onclick=()=>{
+      if(cur._lock)return;
       Sound.say("sound:"+ph,ph);
       const tgt=L.children[pair.i];
       if(ph===pair.to.p[pair.i]){
-        tgt.textContent=tileText(ph);tgt.classList.remove("target");tgt.classList.add("blend");
+        cur._lock=true;tgt.textContent=tileText(ph);tgt.dataset.ph=ph;tgt.classList.remove("target");tgt.classList.add("blend");
         state.swaps=(state.swaps||0)+1;
         setTimeout(()=>{Sound.say("word:"+pair.to.w,pair.to.w,.82);setTimeout(()=>{state.gems+=2;floater("+2 💎","#FFE9A8");succeed();},600);},200);
       }else{misses++;Sound.sfx.nope();t.classList.add("wobble");setTimeout(()=>t.classList.remove("wobble"),520);}
@@ -9292,7 +9385,7 @@ setInterval(checkBadges,6000);
 function renderDaily(){
   const ch=document.getElementById("dailyChart");ch.innerHTML="";
   const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d);}
-  const vals=days.map(d=>(state.daily||{})[d.toISOString().slice(0,10)]||0);
+  const vals=days.map(d=>(state.daily||{})[ymd(d)]||0);
   const max=Math.max(4,...vals);
   days.forEach((d,i)=>{
     const c=document.createElement("div");c.className="col";
@@ -9369,7 +9462,7 @@ function renderListen(w){
   });
   usedEar=false; // the prompt is audio by design; hearing it is not a hint
   setTimeout(()=>Sound.say("word:"+w.w,w.w,.85),350);
-  document.getElementById("earBtn").onclick=()=>Sound.say("word:"+cur.w,cur.w,.85);
+  cur._listen=true;
 }
 
 /* ================================================================
@@ -9390,22 +9483,20 @@ function openScramble(sign){
   const slots=document.getElementById("slotsRow"),bank=document.getElementById("letterBank");
   slots.style.display="flex";bank.style.display="flex";slots.innerHTML="";bank.innerHTML="";
   words.forEach((_,i)=>{const d=document.createElement("div");d.className="wslot wordslot";d.dataset.i=i;
-    d.onclick=()=>{if(!d.dataset.ph)return;const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
+    d.onclick=()=>{if(!d.dataset.ph||cur._lock)return;const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
       if(t)t.classList.remove("used");d.textContent="";delete d.dataset.ph;d.classList.remove("filled");Sound.sfx.soft();};
     slots.appendChild(d);});
   words.map((w,i)=>w+"|"+i).sort(()=>Math.random()-.5).forEach(tag=>{
     const w=tag.split("|")[0];
     const t=document.createElement("button");t.className="lt bank word";t.textContent=w;t.dataset.ph=tag;
     t.onclick=()=>{
-      const open=[...slots.children].find(x=>!x.dataset.ph);if(!open)return;
+      const open=[...slots.children].find(x=>!x.dataset.ph);if(!open||cur._lock)return;
       Sound.sfx.soft();Sound.say("word:"+w.replace(/[.,!?]/g,"").toLowerCase(),w,.85);
       open.textContent=w;open.dataset.ph=tag;open.classList.add("filled");t.classList.add("used");
       if([...slots.children].every(x=>x.dataset.ph))checkScramble();
     };
     bank.appendChild(t);
   });
-  document.getElementById("earBtn").onclick=()=>Sound.say("sent:"+sign.s,sign.s,.9);
-  document.getElementById("blendBtn").onclick=()=>Sound.say("sent:"+sign.s,sign.s,.9);
   setTimeout(()=>Sound.say("sent:"+sign.s,sign.s,.9),400);
   show("ovRead");
 }
@@ -9413,7 +9504,7 @@ function checkScramble(){
   const slots=[...document.getElementById("slotsRow").children];
   const built=slots.map(x=>x.dataset.ph.split("|")[0]);
   if(built.join(" ")===cur.w){
-    slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
+    cur._lock=true;slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
     setTimeout(()=>{Sound.say("sent:"+cur.w,cur.w,.9);setTimeout(scrambleSuccess,800);},250);
   }else{
     misses++;Sound.sfx.nope();
@@ -9426,6 +9517,7 @@ function checkScramble(){
   }
 }
 function scrambleSuccess(){
+  if(cur._paid)return;cur._paid=true;
   state.crateCount++;state.wordsRead+=cur.words.length;sess.words+=cur.words.length;
   state.scrambles=(state.scrambles||0)+1;
   const won=(misses===0?6:4);state.gems+=won;floater("+"+won+" 💎","#FFE9A8");
@@ -9917,6 +10009,7 @@ function renderSettings(){
   document.getElementById("optSpell").value=String(state.settings.spell!=null?state.settings.spell:.6);
   renderVoicePicker();
   document.getElementById("optSpeech").checked=!!state.settings.speech;
+  document.getElementById("optFast").checked=state.settings.fastTrack!==false;
   document.getElementById("optTier").value=state.settings.tierOverride;
   document.getElementById("optTimer").value=state.settings.timer;
 }
@@ -9949,6 +10042,7 @@ document.getElementById("optRate").onchange=()=>Sound.speak("The dog had a nap i
 document.getElementById("optNature").onchange=e=>{state.settings.nature=e.target.checked;
   if(e.target.checked)Nature.start();else Nature.stop();save();};
 document.getElementById("optSpeech").onchange=e=>{state.settings.speech=e.target.checked;save();};
+document.getElementById("optFast").onchange=e=>{state.settings.fastTrack=e.target.checked;save();};
 document.getElementById("optTimer").onchange=e=>{state.settings.timer=+e.target.value;sessionStart=Date.now();
   delete document.body.dataset.yawned;save();};
 /* A full backup is the save plus every Voice Studio recording and creature-pack
@@ -10032,6 +10126,10 @@ function migrate(){
     if(isBuilding(t.id)&&!state.blueprints.includes(t.id))state.blueprints.push(t.id);
   });
   state.timers=state.timers||{};
+  // settings added after this save was made get their defaults (nature sounds, spelling share, timer)
+  state.settings=Object.assign(def().settings,state.settings||{});
+  // a stunt that was cut short by closing the app must not leave the vehicle frozen
+  (state.vehicles||[]).forEach(v=>{delete v.busy;delete v.hold;});
   // one of each: fold doubles into levels (anything past gold becomes gems)
   let merged=0;
   const seenB={};
@@ -10100,7 +10198,7 @@ function migrate(){
   if("serviceWorker" in navigator&&(location.protocol==="https:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)))
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   document.body.addEventListener("touchstart",()=>Sound.sfx.soft(),{once:true});
-  if(DB.mode()!=="idb")
+  if(DB.mode()==="mem")
     setTimeout(()=>toast("Heads up: this browser will not save progress here"),1200);
 })();
 

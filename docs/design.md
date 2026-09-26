@@ -581,6 +581,40 @@ So a friend gets the whole game — valley, mine, books, recording his own voice
 that one browser, so clearing website data loses it. Asher's backups on the NAS are untouched.
 Steps and the reasoning are in [deploy.md](deploy.md).
 
+### v9.0.1 — bug hunt
+- **One reward per answer.** Quick double taps used to count twice in several places: building a word (take a tile out and put it back during the "well done" pause), Sound swap, story crates, the shared challenges (letter locks, moles, vaults, races, feeding, Gloom, the lost animal), Picture it, word stones and the shop's "Give it" button. A tap on a wrong picture straight after the right one also turned a right answer into "no boost" or a lost heart. Now the first right answer locks the question.
+- **Storybook questions** no longer skip the next question (or pay the ending twice) after a double tap.
+- **"Build the word" extras never sound like the word.** The extra tile could be `k` or `ck` for "cat", or `ea` for "tree", so a word he built correctly by ear counted as a mistake. Extras now always make a different sound and look different. Same for "call it by its name" in Word Wilds, the Gloom spell words and Sound swap.
+- **The day starts at midnight at home.** Days were counted in UTC, so in California daily quests, animal snacks, mine jobs, eggs, the VIP customer and the daily chart all rolled over at 5 pm.
+- **Vehicles can't freeze.** Closing the app in the middle of a stunt (a rocket launch, a delivery) saved the vehicle as "busy", and it never moved or answered a tap again. Stunts are cleared when the valley loads.
+- **Older saves get every setting.** Saves from before nature sounds existed showed "Nature sounds" switched on in Parent mode, but the birds and wind never started. Missing settings now get their defaults.
+- **A full backpack keeps the gem in the rock.** Digging a gem with a full backpack used to smash it. Now he's told to go and sell first, and the gem waits for him.
+- **"🔊 Blend it" and "👂 Say the word" always say the word on screen.** A story crate rewired both buttons to read its sentence and never put them back, so after one, Blend (and, in Build it and Sound swap, Say the word) kept reading "The cat sat on a log." instead of his word. In Build it, Blend also sounded out the hidden tiles of the *previous* word. Now Blend sounds out exactly the tiles on screen (in Build it, what he has built so far) and then says the word they spell; Say the word always says the current word. `tests/buttons_e2e.js` checks both buttons on every rung after a story crate and after a long word.
+- The game voice and the device voice no longer talk over each other.
+- **Less battery use.** The wandering animals, vehicles and buddy used to rewrite the whole save every couple of seconds. Their spots are now saved every 30 seconds and whenever the app is put away.
+- **Hunters pounce again.** Nobody may stand right next to another animal, so a hunter could never get "adjacent" to its prey and never pounced. Now it pounces from two steps away.
+- **Treasure hunt:** a clue spot could land right on a note or the ghost's ❗, and then the button opened the note instead of digging, so that clue could never be dug. Clue spots and notes now keep apart.
+- **The mine's lost animal** could hide inside a locked word vault (unreachable until the vault was opened) or right by its door, where the button offered the vault instead of the animal. It now always hides clear of locked vaults, and one already saved in a bad spot is moved.
+- **Notes from home:** the level checker picks up a changed custom word list (after a restore, for example) straight away.
+- The "this browser will not save progress" warning only shows when nothing can be saved (it also showed when the backup storage was working).
+
+### v9.1 — Fast track: quick readers move on sooner
+Every crate answer was already timed; now the time counts. A read that is right the first time **and** quick (not a lucky tap under 0.8 s) is a sign he knows the word, not just that he got it:
+- **A quick, clean read counts double on the word's ladder,** so one read climbs a rung (Find it → Build it → Read it). "Quick" means within 4 s for picking a picture, 5 s for reading and proving it, and 2.5 s plus 1.2 s per sound for building it. Slower clean reads count once, as before, and mastering still takes a clean Read it.
+- **A level he reads fluently opens the next one early.** The game keeps his last ten answers at each level; when eight are quick and clean, the next level needs a quarter of this level's words mastered (and 8 tries) instead of half (and 12). The 85% first-try rule still applies.
+- **Crates lean toward new words.** Once a level is fluent, its words and any words he has mastered go to the back of the queue, so crates bring the new level's words instead of easy ones. The lost-crate reviews still come round.
+- A "⚡ Speedy!" toast shows when a quick read moves a word up. The reading report says which levels are being fast-tracked.
+- **Parent mode → Settings → Fast track** switches it off (it is on by default).
+
+### v9.2 — his class's tricky words
+The kindergarten tricky word checklist from his class is now part of level 1, his base level: one, all, were, two, from, here, three, was, there, the, when, he, a, word, she, blue, why, we, yellow, to, be, look, where, me, I, no, they, are, what, their, little, so, my, down, which, by, out, once, you, of, said, your, funny, says.
+- 21 of them are new words. The other 23 were already tricky words, some at much later levels (were, there and where at 9, two at 10); they all moved down to level 1.
+- Each word's tiles spell it, and the part that doesn't sound out is a ♥ heart tile to learn by heart ("o♥ n ce♥" in once, "s ay♥ s" in says). One new sound was added for this, the "wu" in one and once.
+- **They come round steadily:** each set of crates has at most one heart word from the regular word rotation, so sounding-out practice isn't crowded out; all 44 come round within a few days of play.
+- **They don't hold back level-ups:** levels open on sounding-out words only. Heart words are practised alongside but no longer have to be mastered first.
+- The 17 checklist words that had no recording got one in the game voice (Kokoro "Heart", like the rest).
+- `tests/checklist_e2e.js` checks every word is there, spells right, can be sounded out, and comes round in crates.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
