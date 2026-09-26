@@ -26,14 +26,21 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   await clear(28,34,S+8,S+10);await p.evaluate(([S])=>{for(let x=26;x<=36;x++)Mine._setTile(x,S+11,3);},[S]);await tp(30,S+10);await p.waitForTimeout(300);
   await p.evaluate(()=>{Mine._build(true);Mine._sel("dirt");Mine._p.face=1;Mine._in.jx=0;});await p.waitForTimeout(100);
   await p.screenshot({path:"m9_build.png"});
-  await p.evaluate(()=>{Mine._in.jx=.9;Mine._in.dig=true;});await p.waitForTimeout(120);await p.evaluate(()=>{Mine._in.jx=0;});await p.waitForTimeout(200);await p.evaluate(()=>{Mine._in.dig=false;});
-  const placed=await p.evaluate(([S])=>({t:Mine._tile(31,S+10),placed:Object.keys(state.mine.placed).length,dirt:state.mine.blocks.dirt}),[S]);
-  ok(placed.t===2&&placed.placed>=1,"placed a dirt block beside him: "+JSON.stringify(placed));
-  await p.evaluate(([S])=>{Mine._setTile(31,S+9,3);},[S]);
-  await tp(30,S+10);await p.waitForTimeout(200);
-  await p.evaluate(()=>{Mine._build(false);Mine._in.jx=.9;Mine._in.dig=true;});await p.waitForTimeout(300);
-  console.log("   dbg:",await p.evaluate(([S])=>JSON.stringify({P:Mine._p,t31:Mine._tile(31,S+10),t30:Mine._tile(30,S+10),toast:document.getElementById("mToast").textContent,paused:Mine._paused()}),[S]));await p.waitForTimeout(600);await p.evaluate(()=>{Mine._in.dig=false;Mine._in.jx=0;});
-  const back=await p.evaluate(([S])=>({t:Mine._tile(31,S+10),placed:Object.keys(state.mine.placed).length,dirt:state.mine.blocks.dirt}),[S]);
+  // hold until the first block goes down, then let go: fixed waits let a slow machine walk him up onto it and place a second
+  await p.evaluate(()=>{Mine._in.jx=.9;Mine._in.dig=true;});
+  await p.waitForFunction(()=>Object.keys(state.mine.placed).length>=1,null,{polling:"raf",timeout:5000}).catch(()=>{});
+  await p.evaluate(()=>{Mine._in.jx=0;Mine._in.dig=false;});await p.waitForTimeout(100);
+  // where it went: beside him, in his row (a slow machine can walk him a step before it lands)
+  const placed=await p.evaluate(([S])=>{const k=+Object.keys(state.mine.placed)[0],x=k%50,y=Math.floor(k/50);
+    return{x,y,t:Mine._tile(x,y),placed:Object.keys(state.mine.placed).length,dirt:state.mine.blocks.dirt};},[S]);
+  ok(placed.t===2&&placed.placed>=1&&placed.y===S+10&&placed.x>=31,"placed a dirt block beside him: "+JSON.stringify(placed));
+  const bx=placed.x;
+  await p.evaluate(([bx,S])=>{Mine._setTile(bx,S+9,3);},[bx,S]);
+  await tp(bx-1,S+10);await p.waitForTimeout(200);
+  await p.evaluate(()=>{Mine._build(false);Mine._p.face=1;Mine._in.jx=.9;Mine._in.dig=true;});
+  await p.waitForFunction(([bx,S])=>Mine._tile(bx,S+10)===0,[bx,S],{polling:"raf",timeout:8000}).catch(()=>{});
+  await p.evaluate(()=>{Mine._in.dig=false;Mine._in.jx=0;});
+  const back=await p.evaluate(([bx,S])=>({t:Mine._tile(bx,S+10),placed:Object.keys(state.mine.placed).length,dirt:state.mine.blocks.dirt}),[bx,S]);
   ok(back.t===0&&back.dirt===placed.dirt+1&&back.placed===placed.placed-1,"dug it back into his pocket: "+JSON.stringify(back));
   // 2 ladder: climb a shaft
   await clear(40,40,S+2,S+14);await p.evaluate(([S])=>{for(let y=S+3;y<=S+14;y++){Mine._setTile(40,y,11);state.mine.placed[y*50+40]=11;}Mine._setTile(40,S+15,3);},[S]);
