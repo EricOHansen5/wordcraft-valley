@@ -137,7 +137,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    ok(fast.rung===1,"a quick, clean read (2 s) climbs a rung at once: "+JSON.stringify(fast));
    ok((slow.rung||0)===0&&slow.rungClean===1,"a slow clean read (7 s) still counts once: "+JSON.stringify(slow));
    // a level he reads quickly opens the next one with a quarter mastered instead of half
-   const tier=await E(`(()=>{const t1=WORDS.filter(w=>w.t===1),st={};
+   const tier=await E(`(()=>{const t1=WORDS.filter(w=>w.t===1&&!w.tricky),st={};   // levels open on sounding-out words only
        t1.forEach((w,i)=>{st[w.w]={seen:1,first:1,miss:0,mastered:i<Math.ceil(t1.length*.3),rung:2,rungClean:0};});
        state.stats=st;state.settings.tierOverride=0;state.pace={1:[1,1,1,1,1,1,1,1,1,1]};
        const on=currentTier();state.settings.fastTrack=false;const off=currentTier();state.settings.fastTrack=true;
