@@ -95,6 +95,23 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    ok(full.ore===3&&full.tile===2&&!full.bag[3],"mine: a full backpack leaves the gem in the rock "+JSON.stringify(full));
    await E("Mine.exit()");}
 
+  // the note checker sees custom words added after it first ran
+  {await E(`Decode.tier("cat")`);await E(`state.customWords=[{w:"zib",p:["z","i","b"],t:1,custom:true}]`);
+   ok(await E(`Decode.tier("zib")`)===1,"note checker picks up a new custom word list: level "+await E(`Decode.tier("zib")`));
+   await E("state.customWords=[]");}
+
+  // wandering animals and vehicles don't rewrite the whole save every couple of seconds
+  {await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));addVehicle("v_car",false);addItem("hen");
+     window._w=0;const o=DB.set;DB.set=(...a)=>{if(a[1]==="state")window._w++;return o(...a);};`);
+   await run(12000);const n=await E("window._w");
+   ok(n<=2,"12 s of wandering writes the save at most twice ("+n+")");}
+
+  // a hunter two steps from its prey pounces (nobody can stand closer)
+  {const r=await E(`(()=>{state.critters=[{id:"fox",c:6,r:8,seed:1,lv:1,out:true},{id:"hen",c:8,r:8,seed:2,lv:1,out:true}];state.vehicles=[];renderCritters();
+     window._acts=[];const a=act;act=(cr,w)=>{window._acts.push(cr.id+":"+w);return a(cr,w);};const R=Math.random;Math.random=()=>.1;window._R=R;return true;})()`);
+   await run(2700);const acts=await E("Math.random=window._R;window._acts");
+   ok(acts.includes("fox:pounce"),"a hunter near its prey pounces ("+acts.join(",")+")");}
+
   ok(!errs.length,"no page errors "+errs.join(" | "));
   await b.close();srv.close();
 });

@@ -3616,11 +3616,17 @@ const def=()=>({v:5,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phas
   settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6},customWords:[]});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
 let state=def(), sessionStart=Date.now(), packCreatures=[];
-const save=(()=>{let t;return()=>{clearTimeout(t);
-  t=setTimeout(()=>{
-    try{ DB.set("kv","state",JSON.parse(JSON.stringify(state,(k,v)=>(k&&k[0]==="_")?undefined:v)))
-      .catch(()=>{}); }catch(e){}
-  },250);};})();
+const saveNow=()=>{
+  try{ DB.set("kv","state",JSON.parse(JSON.stringify(state,(k,v)=>(k&&k[0]==="_")?undefined:v)))
+    .catch(()=>{}); }catch(e){}
+};
+const save=(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(saveNow,250);};})();
+// Animals, vehicles and the buddy wander every few seconds. Where they stand is
+// cosmetic, so it is written at most every 30 s (and when the app is put away)
+// instead of serialising the whole valley on every step, which wore the battery down.
+const saveIdle=(()=>{let last=0;return()=>{if(Date.now()-last>=30000){last=Date.now();save();}};})();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveNow();});
+window.addEventListener("pagehide",saveNow);
 const allWords=()=>state.customWords.length?WORDS.concat(state.customWords):WORDS;
 
 function currentTier(){
@@ -3920,11 +3926,14 @@ setInterval(()=>{
     const roll=Math.random()*(night&&NIGHT_OWLS.has(cr.id)?.6:1);
     if(m.kind==="hunter"){
       const t=nearest(cr,"prey");
-      if(t&&t.d>1&&roll<.55){ // stalk: two steps toward prey, pounce when adjacent
+      // stalk: two steps toward prey, pounce once close. Nobody may stand right
+      // beside anyone else (see occupied), so "close" is two steps, not one.
+      if(t&&t.d>2&&roll<.55){
         const dc=Math.sign(t.o.c-cr.c)*Math.min(2,Math.abs(t.o.c-cr.c)), dr=Math.sign(t.o.r-cr.r);
         moveCritter(cr,dc,dr,true);
-        if(Math.abs(t.o.c-cr.c)+Math.abs(t.o.r-cr.r)<=1){act(cr,"pounce");if(!quiet&&Math.random()<.5)Sound.sfx.cry(m.cry);}
-      }else if(roll<.7)moveCritter(cr,Math.random()<.5?-1:1,Math.random()<.5?0:(Math.random()<.5?-1:1));
+        if(Math.abs(t.o.c-cr.c)+Math.abs(t.o.r-cr.r)<=2){act(cr,"pounce");if(!quiet&&Math.random()<.5)Sound.sfx.cry(m.cry);}
+      }else if(t&&t.d<=2&&roll<.4){act(cr,"pounce");if(!quiet&&Math.random()<.5)Sound.sfx.cry(m.cry);}
+      else if(roll<.7)moveCritter(cr,Math.random()<.5?-1:1,Math.random()<.5?0:(Math.random()<.5?-1:1));
       else if(roll<.8){act(cr,"roar");if(!quiet&&Math.random()<.35)Sound.sfx.cry(m.cry);}
     }else if(m.kind==="prey"){
       const h=nearest(cr,"hunter");
@@ -3941,7 +3950,7 @@ setInterval(()=>{
       else if(roll<.62)act(cr,"pounce");
     }
   });
-  save();
+  saveIdle();
 },2600);
 
 
@@ -4173,7 +4182,7 @@ setInterval(()=>{
       if(roll<.35)driveVehicle(v,dir*(2+Math.floor(Math.random()*3)),0,.3);
     }
   });
-  save();
+  saveIdle();
 },2400);
 
 /* ---- drag to look around ----
@@ -7925,8 +7934,8 @@ const Decode=(()=>{
   const DIG=["igh","sh","ch","th","wh","ck","ng","qu","ee","ea","ai","ay","oa","ow","oo","ou","ar","or","er","ir","ur","ll","ss","ff","zz","le"];
   const TEAM=new Set(["ee","ea","ai","ay","oa","ow","oo","ou","igh"]),RC=new Set(["ar","or","er","ir","ur"]),DG=new Set(["sh","ch","th","wh","ng","qu","ll","ss","ff","zz"]);
   const V="aeiou";
-  let LIST=null;
-  const list=()=>{if(!LIST){LIST={};allWords().forEach(w=>{LIST[w.w.toLowerCase()]=w.t;});}return LIST;};
+  let LIST=null,SRC=null;
+  const list=()=>{if(!LIST||SRC!==state.customWords){SRC=state.customWords;LIST={};allWords().forEach(w=>{LIST[w.w.toLowerCase()]=w.t;});}return LIST;};
   function tier(w){
     const lw=w.toLowerCase(),L=list();
     if(lw in EXTRA)return EXTRA[lw];
@@ -8986,7 +8995,7 @@ function renderBuddy(){
 function buddyGo(c,r){
   state.buddy={c:Math.max(0,Math.min(COLS-1,c)),r:Math.max(ROWS_MAX-state.rows,Math.min(ROWS_MAX-1,r))};
   try{Object.assign(state.buddy,freeSpot(state.buddy.c,state.buddy.r,state.buddy));}catch(e){}
-  renderBuddy();save();
+  renderBuddy();saveIdle();
 }
 function buddyCheer(){
   const el=document.getElementById("buddyWorld");if(!el)return;

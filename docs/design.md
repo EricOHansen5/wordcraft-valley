@@ -571,6 +571,9 @@ The valley used to be a picture he decorated. Now it is also a place he walks ar
 - **Older saves get every setting.** Saves from before nature sounds existed showed "Nature sounds" switched on in Parent mode, but the birds and wind never started. Missing settings now get their defaults.
 - **A full backpack keeps the gem in the rock.** Digging a gem with a full backpack used to smash it. Now he's told to go and sell first, and the gem waits for him.
 - The game voice and the device voice no longer talk over each other.
+- **Less battery use.** The wandering animals, vehicles and buddy used to rewrite the whole save every couple of seconds. Their spots are now saved every 30 seconds and whenever the app is put away.
+- **Hunters pounce again.** Nobody may stand right next to another animal, so a hunter could never get "adjacent" to its prey and never pounced. Now it pounces from two steps away.
+- **Notes from home:** the level checker picks up a changed custom word list (after a restore, for example) straight away.
 - The "this browser will not save progress" warning only shows when nothing can be saved (it also showed when the backup storage was working).
 
 ### Still on the list (v4 roadmap, in build order)
