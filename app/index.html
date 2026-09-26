@@ -4549,7 +4549,7 @@ function chooseRung(w){
   return Math.random()<(base===2?share*.5:share)?1:base;
 }
 function openWord(w,opt){
-  cur=w;usedEar=false;misses=0;cur._t0=performance.now();cur._lock=false;cur._paid=false;
+  cur=w;usedEar=false;misses=0;cur._t0=performance.now();cur._lock=false;cur._paid=false;cur._listen=false;
   document.getElementById("shieldHost").innerHTML="";document.getElementById("picks").classList.remove("locked-by-shield");
   const rung=(opt&&opt.rung!=null)?opt.rung:(w.rung!=null?w.rung:rungOf(w.w)), R=RUNGS[rung];
   cur.shownRung=rung;
@@ -4603,7 +4603,6 @@ function openWord(w,opt){
       :"Tap each letter, then blend them together.";
     document.getElementById("pickPrompt").style.display=rung===2?"none":"block";
     w.p.forEach((ph,i)=>L.appendChild(mkTile(ph,"lt",i)));
-    document.getElementById("earBtn").onclick=async()=>{usedEar=true;await Sound.say("word:"+cur.w,cur.w,.82);};
     const st=state.stats[w.w]||{};
     if(rung===0&&(w.tricky||!WORD_ART[w.w]||(st.seen>=1&&Math.random()<.5)))renderListen(w);
     else renderPicks(w,rung);
@@ -4641,13 +4640,23 @@ function checkBuild(){
     },700);
   }
 }
+/* The two helper buttons always follow the screen that is open now (they used
+   to be rewired by each mode, so a story crate left them reading its sentence).
+   Blend sounds out exactly the tiles on screen, then says the word they spell:
+   the word's own tiles, what he has built so far, or the word in a sound swap. */
 async function blend(){
-  const tiles=[...document.querySelectorAll("#letters .lt")];
+  if(!cur)return;
+  if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  const L=document.getElementById("letters"),building=L.style.display==="none";
+  const tiles=building?[...document.querySelectorAll("#slotsRow .wslot")].filter(x=>x.dataset.ph):[...L.querySelectorAll(".lt")];
+  const ph=tiles.map(t=>t.dataset.ph);
   for(let i=0;i<tiles.length;i++){tiles[i].classList.add("blend");
-    await Sound.say("sound:"+cur.p[i],cur.p[i]);await new Promise(r=>setTimeout(r,90));}
+    await Sound.say("sound:"+ph[i],ph[i]);await new Promise(r=>setTimeout(r,90));}
   await new Promise(r=>setTimeout(r,180));
   tiles.forEach(t=>t.classList.remove("blend"));
-  await Sound.say("word:"+cur.w,cur.w,.82);
+  const spells=a=>a&&a.length===ph.length&&a.every((x,i)=>x===ph[i]);
+  const word=spells(cur.p)?cur.w:cur.from&&spells(cur.from.p)?cur.from.w:null;
+  if(word)await Sound.say("word:"+word,word,.82);
 }
 document.getElementById("blendBtn").onclick=blend;
 
@@ -4688,7 +4697,11 @@ function starPop(){
   document.body.appendChild(el);setTimeout(()=>el.remove(),1500);
   confetti();Sound.sfx.win();
 }
-document.getElementById("earBtn").onclick=async()=>{usedEar=true;await Sound.say("word:"+cur.w,cur.w,.82);};
+document.getElementById("earBtn").onclick=async()=>{
+  if(!cur)return;
+  if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  if(!cur._listen)usedEar=true;   // in "Hear it" the word is the question, so hearing it again is not a hint
+  await Sound.say("word:"+cur.w,cur.w,.82);};
 
 function renderPicks(w,rung=0){
   const P=document.getElementById("picks");P.innerHTML="";P.style.display="flex";
@@ -9307,7 +9320,7 @@ function openSwap(pair){
       Sound.say("sound:"+ph,ph);
       const tgt=L.children[pair.i];
       if(ph===pair.to.p[pair.i]){
-        cur._lock=true;tgt.textContent=tileText(ph);tgt.classList.remove("target");tgt.classList.add("blend");
+        cur._lock=true;tgt.textContent=tileText(ph);tgt.dataset.ph=ph;tgt.classList.remove("target");tgt.classList.add("blend");
         state.swaps=(state.swaps||0)+1;
         setTimeout(()=>{Sound.say("word:"+pair.to.w,pair.to.w,.82);setTimeout(()=>{state.gems+=2;floater("+2 💎","#FFE9A8");succeed();},600);},200);
       }else{misses++;Sound.sfx.nope();t.classList.add("wobble");setTimeout(()=>t.classList.remove("wobble"),520);}
@@ -9424,7 +9437,7 @@ function renderListen(w){
   });
   usedEar=false; // the prompt is audio by design; hearing it is not a hint
   setTimeout(()=>Sound.say("word:"+w.w,w.w,.85),350);
-  document.getElementById("earBtn").onclick=()=>Sound.say("word:"+cur.w,cur.w,.85);
+  cur._listen=true;
 }
 
 /* ================================================================
@@ -9459,8 +9472,6 @@ function openScramble(sign){
     };
     bank.appendChild(t);
   });
-  document.getElementById("earBtn").onclick=()=>Sound.say("sent:"+sign.s,sign.s,.9);
-  document.getElementById("blendBtn").onclick=()=>Sound.say("sent:"+sign.s,sign.s,.9);
   setTimeout(()=>Sound.say("sent:"+sign.s,sign.s,.9),400);
   show("ovRead");
 }
