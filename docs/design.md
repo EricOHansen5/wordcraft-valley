@@ -577,6 +577,14 @@ The valley used to be a picture he decorated. Now it is also a place he walks ar
 - **Notes from home:** the level checker picks up a changed custom word list (after a restore, for example) straight away.
 - The "this browser will not save progress" warning only shows when nothing can be saved (it also showed when the backup storage was working).
 
+### v9.1 — Fast track: quick readers move on sooner
+Every crate answer was already timed; now the time counts. A read that is right the first time **and** quick (not a lucky tap under 0.8 s) is a sign he knows the word, not just that he got it:
+- **A quick, clean read counts double on the word's ladder,** so one read climbs a rung (Find it → Build it → Read it). "Quick" means within 4 s for picking a picture, 5 s for reading and proving it, and 2.5 s plus 1.2 s per sound for building it. Slower clean reads count once, as before, and mastering still takes a clean Read it.
+- **A level he reads fluently opens the next one early.** The game keeps his last ten answers at each level; when eight are quick and clean, the next level needs a quarter of this level's words mastered (and 8 tries) instead of half (and 12). The 85% first-try rule still applies.
+- **Crates lean toward new words.** Once a level is fluent, its words and any words he has mastered go to the back of the queue, so crates bring the new level's words instead of easy ones. The lost-crate reviews still come round.
+- A "⚡ Speedy!" toast shows when a quick read moves a word up. The reading report says which levels are being fast-tracked.
+- **Parent mode → Settings → Fast track** switches it off (it is on by default).
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

@@ -120,6 +120,23 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    await run(2700);const acts=await E("Math.random=window._R;window._acts");
    ok(acts.includes("fox:pounce"),"a hunter near its prey pounces ("+acts.join(",")+")");}
 
+  // fast track: a quick clean read climbs a rung in one go; a slow one still needs two
+  {const read=async(word,ms)=>{await E(`(()=>{delete state.stats[${JSON.stringify(word)}];Skills.slow=false;
+       openWord({...WORDS.find(x=>x.w===${JSON.stringify(word)}),rung:0});cur._t0=performance.now()-${ms};
+       document.querySelector('#picks .pick[data-w=${JSON.stringify(word)}]').click();})()`);await run(3000);
+     await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"))`);
+     return E(`state.stats[${JSON.stringify(word)}]`);};
+   const fast=await read("cat",2000),slow=await read("hat",7000);
+   ok(fast.rung===1,"a quick, clean read (2 s) climbs a rung at once: "+JSON.stringify(fast));
+   ok((slow.rung||0)===0&&slow.rungClean===1,"a slow clean read (7 s) still counts once: "+JSON.stringify(slow));
+   // a level he reads quickly opens the next one with a quarter mastered instead of half
+   const tier=await E(`(()=>{const t1=WORDS.filter(w=>w.t===1),st={};
+       t1.forEach((w,i)=>{st[w.w]={seen:1,first:1,miss:0,mastered:i<Math.ceil(t1.length*.3),rung:2,rungClean:0};});
+       state.stats=st;state.settings.tierOverride=0;state.pace={1:[1,1,1,1,1,1,1,1,1,1]};
+       const on=currentTier();state.settings.fastTrack=false;const off=currentTier();state.settings.fastTrack=true;
+       state.pace={1:[1,0,0,1,0,1,0,0,1,0]};const mixed=currentTier();return{on,off,mixed};})()`);
+   ok(tier.on===2&&tier.off===1&&tier.mixed===1,"fluent at level 1 with 30% mastered opens level 2; not when switched off or slow "+JSON.stringify(tier));}
+
   ok(!errs.length,"no page errors "+errs.join(" | "));
   await b.close();srv.close();
 });

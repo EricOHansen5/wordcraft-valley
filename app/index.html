@@ -1360,8 +1360,11 @@ body.exploring .slot-empty{display:none}
     <div class="row"><div class="grow"><div class="lbl">Spelling crates</div>
       <div class="meta">How often a crate asks him to build the word from its sounds.</div></div>
       <select id="optSpell"><option value="0.35">Some</option><option value="0.6">Lots</option><option value="0.9">Almost all</option></select></div>
+    <div class="row"><div class="grow"><div class="lbl">Fast track</div>
+      <div class="meta">Quick, right-first-time reads climb a word's ladder twice as fast, and a level he reads fluently opens the next one early.</div></div>
+      <label class="switch"><input type="checkbox" id="optFast" checked></label></div>
     <div class="row"><div class="grow"><div class="lbl">Reading tier</div>
-      <div class="meta">Moves up on its own at 85% first-try accuracy.</div></div>
+      <div class="meta">Moves up on its own at 85% first-try accuracy (sooner with Fast track).</div></div>
       <select id="optTier"><option value="0">Auto</option><option value="1">1 · short a, o</option>
         <option value="2">2 · short i, e, u</option><option value="3">3 · digraphs</option>
         <option value="4">4 · blends</option><option value="5">5 · magic e</option>
@@ -3613,7 +3616,7 @@ const def=()=>({v:5,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phas
   guardians:[],books:{},badges:[],swaps:0,daily:{},sawNight:false,
   seasonSeen:null,hats:[],hat:null,scrambles:0,
   vehicles:[],launched:false,vehStarter:false,
-  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6},customWords:[]});
+  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true},customWords:[],pace:{}});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
 let state=def(), sessionStart=Date.now(), packCreatures=[];
 const saveNow=()=>{
@@ -3638,8 +3641,10 @@ function currentTier(){
     const mastered=pool.filter(w=>(state.stats[w.w]||{}).mastered).length;
     const attempts=pool.reduce((a,w)=>a+((state.stats[w.w]||{}).seen||0),0);
     const firsts=pool.reduce((a,w)=>a+((state.stats[w.w]||{}).first||0),0);
-    // half the tier mastered at 85% first-try lets the next tier in
-    if(mastered>=Math.ceil(pool.length*.5)&&attempts>=12&&firsts/attempts>=.85)tier=Math.min(MAX_TIER,t+1);
+    // half the tier mastered at 85% first-try lets the next tier in; a tier he is
+    // reading quickly and cleanly (Pace) only needs a quarter, so he isn't kept on easy words
+    const quick=Pace.fluent(t);
+    if(mastered>=Math.ceil(pool.length*(quick?.25:.5))&&attempts>=(quick?8:12)&&firsts/attempts>=.85)tier=Math.min(MAX_TIER,t+1);
     else{tier=t;break;}
   }
   return tier;
@@ -4450,8 +4455,10 @@ function pickCrates(){
   if(due.length){const w=allWords().find(x=>x.w===due[0]);if(w)out.push({...w,lost:true});}
   const vw=allWords().filter(w=>w.t<=tier&&VEH_WORD[w.w]&&!hasVeh(VEH_WORD[w.w])&&!out.some(o=>o.w===w.w));
   if(vw.length&&out.length<3&&state.wordsRead>1&&Math.random()<.45)out.push({...vw[Math.floor(Math.random()*vw.length)]});
+  // fast track: words he has mastered, and words from a tier he already reads fluently, come last
+  const stale=w=>Pace.on()?((state.stats[w.w]||{}).mastered?2:0)+(w.t<tier&&Pace.fluent(w.t)?1:0):0;
   allWords().filter(w=>w.t<=tier)
-    .sort((a,b)=>((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
+    .sort((a,b)=>stale(a)-stale(b)||((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
     .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w))out.push({...w});});
   out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=chooseRung(o);});
   return out.sort(()=>Math.random()-.5);
@@ -4505,6 +4512,21 @@ let cur=null, usedEar=false, misses=0;
      rung 1  build the word        (2 clean reads to climb)
      rung 2  read it, no picture   (1 clean read = mastered) */
 const RUNGS=[{n:"Find it",icon:"👀"},{n:"Build it",icon:"🧩"},{n:"Read it",icon:"⭐"}];
+/* ---- pace: quick, clean reads move him along faster ----
+   Every crate answer is timed from when the word appears. A read that is right
+   first time AND quick (a fluent reader, not a lucky tap) counts double on the
+   ladder, so one read climbs a rung. The last ten answers at each tier are kept;
+   when eight are quick and clean, that tier is "fluent": the next tier opens
+   early (see currentTier) and crates lean toward the new words instead of
+   ones he already has. A grown-up can switch this off in Parent mode. */
+const Pace={
+  on:()=>state.settings.fastTrack!==false,
+  // time for a fluent read of each rung (ms): picking a picture, building from sounds, reading then proving it
+  limit:(rung,w)=>rung===1?2500+1200*((w.p||[]).length||3):rung===2?5000:4000,
+  quick(w,rung,ms,clean){return Pace.on()&&clean&&rung!=null&&ms>=800&&ms<=Pace.limit(rung,w);},
+  log(t,quick){if(!t)return;const p=state.pace||(state.pace={}),a=p[t]||(p[t]=[]);a.push(quick?1:0);if(a.length>10)a.shift();},
+  fluent(t){if(!Pace.on())return false;const a=(state.pace||{})[t]||[];return a.length>=8&&a.filter(Boolean).length>=Math.ceil(a.length*.8);}
+};
 function rungOf(w){
   if(!state.settings.pics)return 2;
   const st=state.stats[w]||{};
@@ -4704,17 +4726,20 @@ function miss(btn){
 }
 function succeed(){
   if(!cur||cur._paid)return;cur._paid=true;cur._lock=true;
-  if(cur&&cur.p)Skills.result(cur,{ok:true,help:usedEar||misses>0,ms:performance.now()-(cur._t0||0)});
+  const ms=performance.now()-(cur._t0||0);
+  if(cur&&cur.p)Skills.result(cur,{ok:true,help:usedEar||misses>0,ms});
+  const quick=!cur.swap&&Pace.quick(cur,cur.shownRung,ms,misses===0&&!usedEar);
+  if(!cur.swap&&cur.shownRung!=null)Pace.log(cur.t,quick);
   const st=state.stats[cur.w]||(state.stats[cur.w]={seen:0,first:0,miss:0,mastered:false,rung:0,rungClean:0});
   st.seen++;
   const clean0=misses===0&&!usedEar, wasMastered=st.mastered;
   if(clean0){
-    st.first++;st.rungClean=(st.rungClean||0)+1;
+    st.first++;st.rungClean=(st.rungClean||0)+(quick?2:1);   // a quick clean read counts double
     const need=(st.rung||0)===2?1:2;
     if(st.rungClean>=need){
       if((st.rung||0)>=2){st.mastered=true;}
       else{st.rung=(st.rung||0)+1;st.rungClean=0;
-        setTimeout(()=>toast(`"${cur.w}" moves up to ${RUNGS[st.rung].n} ${RUNGS[st.rung].icon}`),1600);}
+        setTimeout(()=>toast(`${quick?"⚡ Speedy! ":""}"${cur.w}" moves up to ${RUNGS[st.rung].n} ${RUNGS[st.rung].icon}`),1600);}
     }
   }else st.miss++;
   if(st.mastered&&!wasMastered){
@@ -7410,6 +7435,8 @@ function openReport(){
   if(!Object.values(lib).some(b=>b.rec))tips.push(`Try <b>🎤 Read it to your pet</b> in a book. Hearing himself read is powerful — and you get recordings to keep.`);
   const tierWords=words.filter(w=>w.t===tier&&!w.tricky),tm=tierWords.filter(w=>(state.stats[w.w]||{}).mastered).length;
   if(tierWords.length&&tm/tierWords.length>=.7)tips.push(`He has mastered ${tm} of ${tierWords.length} level-${tier} words — he is close to the next level.`);
+  const quickT=[...Array(MAX_TIER).keys()].map(i=>i+1).filter(t=>Pace.fluent(t));
+  if(quickT.length)tips.push(`He reads level ${quickT.join(", ")} quickly and right the first time, so the game is moving him along faster (Fast track).`);
   if(!tips.length)tips.push("Everything looks on track. Keep sessions short and often: 10–15 minutes most days beats one long session.");
   repOv.innerHTML=`<div class="sheet report"><div class="rhead"><h2>📊 Reading report</h2><span class="rdate">${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</span></div>
     <div class="stat rstat">
@@ -9946,6 +9973,7 @@ function renderSettings(){
   document.getElementById("optSpell").value=String(state.settings.spell!=null?state.settings.spell:.6);
   renderVoicePicker();
   document.getElementById("optSpeech").checked=!!state.settings.speech;
+  document.getElementById("optFast").checked=state.settings.fastTrack!==false;
   document.getElementById("optTier").value=state.settings.tierOverride;
   document.getElementById("optTimer").value=state.settings.timer;
 }
@@ -9978,6 +10006,7 @@ document.getElementById("optRate").onchange=()=>Sound.speak("The dog had a nap i
 document.getElementById("optNature").onchange=e=>{state.settings.nature=e.target.checked;
   if(e.target.checked)Nature.start();else Nature.stop();save();};
 document.getElementById("optSpeech").onchange=e=>{state.settings.speech=e.target.checked;save();};
+document.getElementById("optFast").onchange=e=>{state.settings.fastTrack=e.target.checked;save();};
 document.getElementById("optTimer").onchange=e=>{state.settings.timer=+e.target.value;sessionStart=Date.now();
   delete document.body.dataset.yawned;save();};
 /* A full backup is the save plus every Voice Studio recording and creature-pack
