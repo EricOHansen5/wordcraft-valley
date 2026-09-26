@@ -1,0 +1,21 @@
+const {chromium}=require("playwright");
+(async()=>{const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const p=await b.newPage({viewport:{width:1180,height:820}});
+  const errs=[];p.on("pageerror",e=>errs.push(e.message));const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+  await p.goto("http://localhost:8799/");await p.waitForTimeout(2500);
+  await p.evaluate(async()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.gems=4321;state.wordsRead=777;Sync._C().token="abc";save();
+    await DB.set("blobs","story:cat_hat:0",new Blob([new Uint8Array([1,2,3,4,5,6,7,8])],{type:"audio/webm"}));});
+  ok(await p.evaluate(()=>Sync.ping()),"game finds the server at its own address");
+  await p.evaluate(()=>{openParent();document.querySelector('.tab[data-tab="set"]').click();});await p.waitForTimeout(300);
+  await p.evaluate(()=>document.getElementById("syncRow").scrollIntoView());await p.screenshot({path:"sync_row.png"});
+  await p.click("#syncNow");await p.waitForTimeout(1500);
+  const list=await p.evaluate(async()=>(await fetch("/api/list",{headers:{"X-Token":"abc"}})).json());
+  ok(list.length>=1,"snapshot stored: "+list[0]);
+  await p.evaluate(()=>Sync.backup(false));await p.waitForTimeout(800);
+  const nolist=await p.evaluate(async()=>(await fetch("/api/list")).status);ok(nolist===401,"token required: "+nolist);
+  // wipe and restore
+  await p.evaluate(async()=>{state.gems=1;state.wordsRead=1;save();await DB.set("blobs","story:cat_hat:0",new Blob([]));});
+  p.on("dialog",d=>d.accept());
+  await p.evaluate(()=>{openParent();document.querySelector('.tab[data-tab="set"]').click();});await p.click("#syncGet");await p.waitForTimeout(2000);
+  const r=await p.evaluate(async()=>{const bl=await DB.get("blobs","story:cat_hat:0");return{g:state.gems,w:state.wordsRead,size:bl&&bl.size};});
+  ok(r.g===4321&&r.w===777&&r.size===8,"restored from server: "+JSON.stringify(r));
+  console.log("errors:",errs.length?errs:"none");await b.close();})();

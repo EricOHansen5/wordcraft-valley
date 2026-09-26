@@ -1,0 +1,23 @@
+/* v9 mine */
+#mBuild{right:170px;bottom:calc(env(safe-area-inset-bottom) + 138px);width:72px;height:72px;background:#E9C28A;font-size:34px}
+#mBuild.on{background:#9BD06A;box-shadow:0 0 0 5px #fff,0 5px 0 rgba(0,0,0,.4)}
+#mineMode.building #mDig{background:#9BD06A}
+#mHot{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 132px);display:flex;gap:8px}
+.mhot{width:70px;height:80px;border:3px solid #2E2620;border-radius:14px;background:rgba(255,251,239,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;font-family:inherit;padding:2px;transition:transform .12s}
+.mhot img{width:40px;height:40px;image-rendering:pixelated}.mhot b{position:absolute;top:2px;right:6px;font-size:14px}.mhot span{font-size:12px;font-weight:800}
+.mhot.on{background:#FFE58A;transform:translateY(-6px);box-shadow:0 0 0 3px #fff}.mhot.none{opacity:.45}
+#mJobs{pointer-events:auto}#mJobs.ready{background:#FFE58A;animation:mglow 1.4s infinite}
+#mLost{background:#FFF3E0}
+.msignline{min-height:56px;border:3px dashed #BDB3A3;border-radius:14px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.msw{font-size:26px;font-weight:900;border:0;background:#E9F4FF;border-radius:10px;padding:2px 10px;font-family:inherit}
+.msignbank{display:flex;flex-wrap:wrap;gap:6px;max-height:170px;overflow:auto;margin:8px 0}
+.mswb{font-size:20px;font-weight:800;border:3px solid #2E2620;border-radius:12px;background:#fff;padding:3px 10px;font-family:inherit}
+.mjobs{display:flex;flex-direction:column;gap:10px;margin:8px 0}
+.mjob{display:grid;grid-template-columns:1fr 110px 54px 110px;gap:10px;align-items:center;padding:10px;border:3px solid #2E2620;border-radius:14px;background:#FFFBEF}
+.mjob b{font-size:18px}.mjob.done{background:#EFFBE6}.mjob.paid{opacity:.6}
+.mjbar{height:14px;border:2px solid #2E2620;border-radius:8px;overflow:hidden;background:#fff}.mjbar i{display:block;height:100%;background:#5FB35B}
+.mjob em{font-style:normal;font-weight:800;text-align:right}
+.mq{min-height:200px;text-align:center}
+.mlost{display:flex;gap:14px;align-items:center;text-align:left}.mlost .art{width:110px;height:110px;flex:0 0 auto}.mlost .art svg{width:100%;height:100%}.mlost .art.happy{animation:mhappy .6s 3}
+@media (max-height:640px){#mBuild{width:60px;height:60px;right:150px;bottom:calc(env(safe-area-inset-bottom) + 116px)}#mHot{bottom:110px}.mhot{width:58px;height:68px}}
+@media (max-width:820px){.mjob{grid-template-columns:1fr 70px 44px;}.mjob em,.mjob .btn{grid-column:1/-1}}

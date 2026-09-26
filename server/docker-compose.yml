@@ -1,0 +1,15 @@
+# Synology: Container Manager -> Project -> Create -> path = <repo>/server (this folder).
+# The game is served straight from the repo's app/ folder; `git pull` updates it.
+services:
+  wordcraft:
+    build: .
+    container_name: wordcraft
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      - TOKEN=          # optional: set a word here and type the same word in the game's Settings
+      - KEEP=60         # daily snapshots to keep (plus the first of every month, forever)
+    volumes:
+      - ../app:/app:ro
+      - ./data:/data     # backups (git-ignored)

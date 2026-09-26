@@ -1,0 +1,10 @@
+node_modules/
+data/
+server/data/
+# voice generator model files (~350 MB) and its scratch output
+tools/voice/*.onnx
+tools/voice/*.bin
+tools/voice/out/
+.DS_Store
+*.log
+tests/*.png

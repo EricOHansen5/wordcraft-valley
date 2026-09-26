@@ -1,0 +1,14 @@
+const {chromium}=require("playwright");
+(async()=>{const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+  const A=await (await b.newContext()).newPage(),B=await (await b.newContext()).newPage();
+  await A.goto("http://localhost:8804/");await A.waitForTimeout(2500);
+  await A.evaluate(async()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.wordsRead=321;state.gems=99;save();await Sync.backup(false);});
+  const head=await A.evaluate(async()=>(await fetch("/api/head")).json());ok(head.words===321&&head.device,"server knows who played last: "+JSON.stringify(head));
+  await B.goto("http://localhost:8804/");await B.waitForTimeout(6000);
+  const prompt=await B.evaluate(()=>document.querySelector("#soYes")?document.querySelector("#soYes").closest(".sheet").querySelector("h2").textContent:null);
+  ok(!!prompt,"second device offers to carry on: "+prompt);await B.screenshot({path:"multi_prompt.png"});
+  await B.evaluate(()=>document.querySelector("#soYes").click());await B.waitForTimeout(3000);console.log("   toast:",await B.evaluate(()=>document.getElementById("toast").textContent));
+  ok(await B.evaluate(()=>state.wordsRead===321&&state.gems===99),"second device loaded the valley");
+  await A.reload();await A.waitForTimeout(6000);
+  ok(await A.evaluate(()=>!document.querySelector("#soYes")),"first device isn't asked about its own save");
+  await b.close();})();
