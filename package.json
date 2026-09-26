@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "PORT=8088 APP=./app DATA=./data node server/server.js",
     "test": "node tests/run-all.js",
-    "release": "node tools/release.js"
+    "release": "node tools/release.js",
+    "deploy": "npx -y wrangler@4 deploy"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",

@@ -1,0 +1,26 @@
+name: deploy
+# Publishes app/ to Cloudflare (Workers static assets) for friends and family.
+# Only green commits go out: this waits for the `test` workflow to pass on main.
+# Needs two repo secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+on:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # for workflow_run, check out the commit that was tested, not main's tip
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # worker name and app/ come from wrangler.toml
+          command: deploy

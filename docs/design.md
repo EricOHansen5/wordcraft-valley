@@ -562,6 +562,25 @@ The valley used to be a picture he decorated. Now it is also a place he walks ar
 - **Juice:** mined gems fly into his backpack.
 - **Voice:** 10 new lines (the mine's signs and the recipe cards) were recorded in the game voice.
 
+### Sharing it with friends and family
+
+Asher's cousins and friends wanted to play, which needed a second kind of deploy. The home NAS
+stays as it is. Alongside it, `app/` now publishes to Cloudflare (Workers static assets, the successor to Pages) as a plain static site —
+a link anyone can open and add to their home screen, with HTTPS (so offline play and the
+microphone work) and no account to make.
+
+The public copy runs **no server**, and that is the design, not a shortcut. The game backs up to
+whatever address it was loaded from, so a single shared server would put every family into one
+snapshot store: it would offer one child another child's valley, and since each snapshot holds
+his voice recordings and the backup routes are open by default, one family's audio would be
+downloadable by another. With no `/api/*` to find, backup quietly switches itself off and every
+recording stays on the device that made it.
+
+So a friend gets the whole game — valley, mine, books, recording his own voice, races, pets, all
+1791 voice clips — with their own separate progress, and no NAS backup. Their progress lives in
+that one browser, so clearing website data loses it. Asher's backups on the NAS are untouched.
+Steps and the reasoning are in [deploy.md](deploy.md).
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

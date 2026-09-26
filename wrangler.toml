@@ -1,0 +1,15 @@
+# Cloudflare (Workers static assets, the successor to Pages) for the
+# friends-and-family copy of the game. See docs/deploy.md.
+# app/ is uploaded as-is and app/_headers sets its cache rules. The tiny script
+# in cloudflare/worker.js only runs when no file matches: "/" and 404s.
+# There is no backup API. The home NAS deploy is unaffected (server/README.md).
+name = "wordcraft-valley"
+main = "cloudflare/worker.js"
+compatibility_date = "2026-09-25"
+
+[assets]
+directory = "./app"
+binding = "ASSETS"
+# serve /index.html as itself: the service worker caches it by that name, and a
+# redirected response breaks the offline app on its next launch
+html_handling = "none"

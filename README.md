@@ -4,7 +4,8 @@ A phonics adventure game made for one kid: letter sounds, decodable books, a val
 
 - Play locally: `npm install && npm run serve` → http://localhost:8088
 - Test: `npm test`
-- Deploy: see [server/README.md](server/README.md)
+- Deploy at home (with backups): see [server/README.md](server/README.md)
+- Share it with friends and family: see [docs/deploy.md](docs/deploy.md)
 - How it's built and why: [docs/design.md](docs/design.md)
 - Working on it with Claude Code: [CLAUDE.md](CLAUDE.md)
 

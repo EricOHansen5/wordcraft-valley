@@ -2,6 +2,12 @@
 
 Serves the game to the iPad and keeps daily backups of everything: progress, his recordings, and your voice.
 
+This server is for **your network only**. Everything below assumes the devices on it are yours.
+To share the game with friends and family, use [docs/deploy.md](../docs/deploy.md) instead — a
+static copy with no server, so each family keeps their own progress and no recording leaves their
+device. Don't just open this server to the internet: every device that loads the game from it
+backs up into the *same* snapshot store, and offers one child another child's valley.
+
 ## Synology (Container Manager)
 1. Install **Git Server** (Package Center) so the NAS has `git`, then over SSH: `cd /volume1/docker && git clone https://github.com/<you>/wordcraft-valley.git wordcraft`
    (private repo: use a fine-grained GitHub token with read-only Contents access as the password, or a deploy key).
