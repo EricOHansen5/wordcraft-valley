@@ -6819,14 +6819,23 @@ const Mine=(()=>{
   const airAt=(x,y)=>tileAt(x,y)===T.AIR;
   function findAir(cx,cy,rx,ry,test){for(let k=0;k<40;k++){const x=cx+Math.floor((Math.random()*2-1)*rx),y=cy+Math.floor((Math.random()*2-1)*ry);
     if(x<2||x>MW-3||y<SKY+2||y>MH-4)continue;if(airAt(x,y)&&(!test||test(x,y)))return[x,y];}return null;}
+  // a locked vault's room and the ground by its door are no place for the lost animal: inside it can't
+  // be reached, and by the door the "use" button offers the vault instead of the animal
+  const byVault=(x,y)=>VAULTS.some(V=>!M().vaults[V.k]&&x>=V.x0-2&&x<=V.x0+8&&y>=V.y0-2&&y<=V.y0+6);
+  function lostSpot(maxD){
+    for(let k=0;k<400;k++){const x=TOWN+2+Math.floor(Math.random()*(MW-TOWN-4)),y=SKY+6+Math.floor(Math.random()*Math.max(1,maxD-6));
+      if(airAt(x,y)&&!airAt(x,y+1)&&tileAt(x,y+1)!==T.SEAL&&!byVault(x,y))return[x,y];}
+    return[TOWN+6,SKY+Math.min(10,maxD)];
+  }
   function lostAnimal(){
-    const m=M();if(m.lost&&m.lost.date===today())return m.lost;
-    const cap=(BOSSES.find(b=>!m.bosses[b.id])||{d:MDEPTH}).d-2,maxD=Math.min(cap,Math.max(12,(m.deepest||0)+6));
+    const m=M(),cap=(BOSSES.find(b=>!m.bosses[b.id])||{d:MDEPTH}).d-2,maxD=Math.min(cap,Math.max(12,(m.deepest||0)+6));
+    if(m.lost&&m.lost.date===today()){
+      // saved before vaults were avoided: move it out of the vault's way
+      if(!m.lost.rescued&&byVault(m.lost.x,m.lost.y)){const s=lostSpot(maxD);m.lost.x=s[0];m.lost.y=s[1];save();}
+      return m.lost;}
     const pool=CRITTERS.filter(c=>c.b<=Math.max(state.biome||0,1)+1),own=new Set((state.critters||[]).map(c=>c.id));
     const pick=(pool.filter(c=>!own.has(c.id)).length?pool.filter(c=>!own.has(c.id)):pool);const c=pick[Math.floor(Math.random()*pick.length)];
-    let spot=null;for(let k=0;k<400&&!spot;k++){const x=TOWN+2+Math.floor(Math.random()*(MW-TOWN-4)),y=SKY+6+Math.floor(Math.random()*Math.max(1,maxD-6));
-      if(airAt(x,y)&&!airAt(x,y+1)&&tileAt(x,y+1)!==T.SEAL)spot=[x,y];}
-    if(!spot){const y=SKY+Math.min(10,maxD);spot=[TOWN+6,y];}
+    const spot=lostSpot(maxD);
     m.lost={date:today(),id:c.id,x:spot[0],y:spot[1],rescued:false};save();return m.lost;
   }
   function spawn(){

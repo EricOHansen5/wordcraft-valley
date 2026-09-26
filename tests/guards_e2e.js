@@ -100,6 +100,13 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    ok(room.tile===0&&room.bag[3]===1,"mine: with room in the backpack the gem is dug out "+JSON.stringify(room));
    const full=await digAt(30.2,"{1:10}");
    ok(full.ore===3&&full.tile===2&&!full.bag[3],"mine: a full backpack leaves the gem in the rock "+JSON.stringify(full));
+   // the lost animal is never put in (or by the door of) a locked word vault
+   const lost=await E(`(()=>{const V=Mine._vaults(),m=state.mine,bosses=m.bosses;m.bosses={beetle:1,golem:1,troll:1,worm:1,dragon:1};m.vaults={};m.deepest=110;let bad=0;
+     const inV=L=>V.some(v=>L.x>=v.x0-2&&L.x<=v.x0+8&&L.y>=v.y0-2&&L.y<=v.y0+6);
+     for(let k=0;k<200;k++){delete m.lost;if(inV(Mine._lost()))bad++;}
+     const v=V[0];m.lost={date:today(),id:"fox",x:v.x0+3,y:v.y0+2,rescued:false};const moved=Mine._lost();
+     m.bosses=bosses;return{bad,moved:!inV(moved),vaults:V.length};})()`);
+   ok(lost.bad===0&&lost.moved,"the lost animal stays clear of locked vaults ("+lost.bad+" of 200 picks weren't; a saved one inside is moved: "+lost.moved+")");
    await E("Mine.exit()");}
 
   // the note checker sees custom words added after it first ran

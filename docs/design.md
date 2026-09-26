@@ -594,6 +594,7 @@ Steps and the reasoning are in [deploy.md](deploy.md).
 - **Less battery use.** The wandering animals, vehicles and buddy used to rewrite the whole save every couple of seconds. Their spots are now saved every 30 seconds and whenever the app is put away.
 - **Hunters pounce again.** Nobody may stand right next to another animal, so a hunter could never get "adjacent" to its prey and never pounced. Now it pounces from two steps away.
 - **Treasure hunt:** a clue spot could land right on a note or the ghost's ❗, and then the button opened the note instead of digging, so that clue could never be dug. Clue spots and notes now keep apart.
+- **The mine's lost animal** could hide inside a locked word vault (unreachable until the vault was opened) or right by its door, where the button offered the vault instead of the animal. It now always hides clear of locked vaults, and one already saved in a bad spot is moved.
 - **Notes from home:** the level checker picks up a changed custom word list (after a restore, for example) straight away.
 - The "this browser will not save progress" warning only shows when nothing can be saved (it also showed when the backup storage was working).
 
