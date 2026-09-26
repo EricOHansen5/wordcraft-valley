@@ -101,8 +101,9 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    await E("state.customWords=[]");}
 
   // wandering animals and vehicles don't rewrite the whole save every couple of seconds
-  {await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));addVehicle("v_car",false);addItem("hen");
-     window._w=0;const o=DB.set;DB.set=(...a)=>{if(a[1]==="state")window._w++;return o(...a);};`);
+  {await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));addVehicle("v_car",false);addItem("hen");`);
+   await run(8000);   // let the setup's own saves (and any badge it earns) land first
+   await E(`window._w=0;const o=DB.set;DB.set=(...a)=>{if(a[1]==="state")window._w++;return o(...a);};`);
    await run(12000);const n=await E("window._w");
    ok(n<=2,"12 s of wandering writes the save at most twice ("+n+")");}
 
