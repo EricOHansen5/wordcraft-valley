@@ -65,13 +65,15 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   await p.waitForTimeout(300);const ml=await p.evaluate(()=>document.getElementById("mAct").textContent);ok(/Mole/.test(ml),"a mole pops out: "+ml);
   await p.screenshot({path:"m9_mole.png"});
   const c0=await p.evaluate(()=>state.mine.coins);await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.screenshot({path:"m9_riddle.png"});
-  await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForTimeout(1300);
+  // the challenge pays out about a second after the right answer: wait for it, not a fixed time
+  await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForFunction(c=>state.mine.coins>c&&state.mine.stat.moles===1,c0,{timeout:6000}).catch(()=>{});
   ok(await p.evaluate(c=>state.mine.coins>c&&state.mine.stat.moles===1,c0),"riddle pays coins");
   // 7 lost animal
   const L=await p.evaluate(()=>Mine._lost());console.log("   lost:",JSON.stringify(L));
   await tp(L.x,L.y);await p.waitForTimeout(400);const ll=await p.evaluate(()=>document.getElementById("mAct").textContent);ok(/lost/.test(ll),"found the lost animal: "+ll);
   await p.screenshot({path:"m9_lost.png"});
-  await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForTimeout(1500);
+  await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.evaluate(()=>__answer("#mCard .mq"));
+  await p.waitForFunction(id=>state.mine.lost.rescued&&state.critters.some(c=>c.id===id),L.id,{timeout:6000}).catch(()=>{});
   ok(await p.evaluate(id=>state.mine.lost.rescued&&state.critters.some(c=>c.id===id),L.id),"rescued: it moved into the valley");
   await p.screenshot({path:"m9_rescued.png"});await close();
   // 8 vault
