@@ -562,6 +562,17 @@ The valley used to be a picture he decorated. Now it is also a place he walks ar
 - **Juice:** mined gems fly into his backpack.
 - **Voice:** 10 new lines (the mine's signs and the recipe cards) were recorded in the game voice.
 
+### v9.0.1 — bug hunt
+- **One reward per answer.** Quick double taps used to count twice in several places: building a word (take a tile out and put it back during the "well done" pause), Sound swap, story crates, the shared challenges (letter locks, moles, vaults, races, feeding, Gloom, the lost animal), Picture it, word stones and the shop's "Give it" button. A tap on a wrong picture straight after the right one also turned a right answer into "no boost" or a lost heart. Now the first right answer locks the question.
+- **Storybook questions** no longer skip the next question (or pay the ending twice) after a double tap.
+- **"Build the word" extras never sound like the word.** The extra tile could be `k` or `ck` for "cat", or `ea` for "tree", so a word he built correctly by ear counted as a mistake. Extras now always make a different sound and look different. Same for "call it by its name" in Word Wilds, the Gloom spell words and Sound swap.
+- **The day starts at midnight at home.** Days were counted in UTC, so in California daily quests, animal snacks, mine jobs, eggs, the VIP customer and the daily chart all rolled over at 5 pm.
+- **Vehicles can't freeze.** Closing the app in the middle of a stunt (a rocket launch, a delivery) saved the vehicle as "busy", and it never moved or answered a tap again. Stunts are cleared when the valley loads.
+- **Older saves get every setting.** Saves from before nature sounds existed showed "Nature sounds" switched on in Parent mode, but the birds and wind never started. Missing settings now get their defaults.
+- **A full backpack keeps the gem in the rock.** Digging a gem with a full backpack used to smash it. Now he's told to go and sell first, and the gem waits for him.
+- The game voice and the device voice no longer talk over each other.
+- The "this browser will not save progress" warning only shows when nothing can be saved (it also showed when the backup storage was working).
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

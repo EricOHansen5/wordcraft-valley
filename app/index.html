@@ -3347,6 +3347,13 @@ const Phonics=makePhonics();
 // tile notation: "sh" plain; "e:uh" shows e, says uh; "e:" shows e, silent
 const soundOf=ph=>{ph=String(ph);const i=ph.indexOf(":");return i<0?ph:ph.slice(i+1);};
 const tileText=ph=>{ph=String(ph);const i=ph.indexOf(":");return (i<0?ph:ph.slice(0,i)).replace("_e","-e");};
+// extra tiles for "build the word": never one that sounds like a tile in the word
+// (c / k / ck, ee / ea, ai / a-e...) or looks like one, so listening is always enough
+const distractors=(ps,also)=>{
+  const key=p=>Phonics.resolve(soundOf(p))||soundOf(p),all=ps.concat(also||[]);
+  const snd=new Set(all.map(key)),txt=new Set(all.map(tileText));
+  return allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&Phonics.known(p)&&!snd.has(key(p))&&!txt.has(tileText(p)));
+};
 
 const Sound=(()=>{
   const cache=new Map();let ctx=null;
@@ -3494,6 +3501,7 @@ const Sound=(()=>{
   }
   function ttsSpeak(t,rate=.95,pitch=1.0){
     if(!state.settings.tts||!window.speechSynthesis)return Promise.resolve();
+    try{VoicePack.stop();}catch(e){}
     return new Promise(res=>{
       speechSynthesis.cancel();
       const u=new SpeechSynthesisUtterance(t);
@@ -4510,7 +4518,7 @@ function chooseRung(w){
   return Math.random()<(base===2?share*.5:share)?1:base;
 }
 function openWord(w,opt){
-  cur=w;usedEar=false;misses=0;cur._t0=performance.now();
+  cur=w;usedEar=false;misses=0;cur._t0=performance.now();cur._lock=false;cur._paid=false;
   document.getElementById("shieldHost").innerHTML="";document.getElementById("picks").classList.remove("locked-by-shield");
   const rung=(opt&&opt.rung!=null)?opt.rung:(w.rung!=null?w.rung:rungOf(w.w)), R=RUNGS[rung];
   cur.shownRung=rung;
@@ -4536,19 +4544,18 @@ function openWord(w,opt){
     slots.innerHTML="";bank.innerHTML="";
     w.p.forEach((_,i)=>{const d=document.createElement("div");d.className="wslot"+((w.syl||[]).includes(i)?" syl":"");d.dataset.i=i;
       d.onclick=()=>{ // tap a filled slot to send its tile back
-        if(!d.dataset.ph)return;
+        if(!d.dataset.ph||cur._lock)return;
         const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
         if(t)t.classList.remove("used");
         d.textContent="";delete d.dataset.ph;d.classList.remove("filled");Sound.sfx.soft();};
       slots.appendChild(d);});
     // scramble; add one distractor sound so it is a real choice
-    const mine=new Set(w.p.map(soundOf));
-    const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&!mine.has(soundOf(p))&&Phonics.known(p));
+    const pool=distractors(w.p);
     const extra=pool[Math.floor(Math.random()*pool.length)];
-    [...w.p,extra].sort(()=>Math.random()-.5).forEach(ph=>{
+    [...w.p,extra].filter(Boolean).sort(()=>Math.random()-.5).forEach(ph=>{
       const t=mkTile(ph,"lt bank");
       t.onclick=async()=>{
-        const open=[...slots.children].find(x=>!x.dataset.ph);if(!open)return;
+        const open=[...slots.children].find(x=>!x.dataset.ph);if(!open||cur._lock)return;
         Sound.sfx.soft();Sound.say("sound:"+ph,ph);
         open.textContent=tileText(ph);open.dataset.ph=ph;open.classList.add("filled");
         if(w.tricky&&ph.includes(":"))open.classList.add("heart");
@@ -4580,7 +4587,7 @@ function checkBuild(){
   const slots=[...document.getElementById("slotsRow").children];
   const built=slots.map(x=>x.dataset.ph);
   if(built.join("|")===cur.p.join("|")){
-    slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
+    cur._lock=true;slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
     setTimeout(()=>{Sound.say("word:"+cur.w,cur.w,.82);setTimeout(succeed,500);},250);
   }else{
     misses++;Sound.sfx.nope();
@@ -4637,7 +4644,9 @@ document.getElementById("micBtn").onclick=()=>{
   const b=document.getElementById("micBtn");
   if(b.classList.contains("listening")){Speech.stop();return;}
   b.classList.add("listening");b.textContent="🎤 Listening...";
+  const word=cur;
   Speech.listen(alts=>{
+    if(cur!==word||word._paid||!ov("ovRead").classList.contains("on"))return;
     const hit=alts.some(a=>a===cur.w||a.split(/\s+/).includes(cur.w)||a.replace(/\s+/g,"")===cur.w);
     if(hit){toast("You said it! +2 💎");state.gems+=2;floater("+2 💎","#FFE9A8");Sound.sfx.chime();succeed();}
     else{toast(`I heard "${alts[0]||"..."}" — try once more, or tap I read it`);Sound.sfx.soft();}
@@ -4685,6 +4694,7 @@ function miss(btn){
   setTimeout(blend,560);
 }
 function succeed(){
+  if(!cur||cur._paid)return;cur._paid=true;cur._lock=true;
   if(cur&&cur.p)Skills.result(cur,{ok:true,help:usedEar||misses>0,ms:performance.now()-(cur._t0||0)});
   const st=state.stats[cur.w]||(state.stats[cur.w]={seen:0,first:0,miss:0,mastered:false,rung:0,rungClean:0});
   st.seen++;
@@ -6062,6 +6072,8 @@ const Mine=(()=>{
     if(t===T.SIGN&&gameSigns[key]){if(time-msgT>2){msgT=time;toast("That sign belongs to the mine.");}return;}
     if(!hard||(t===T.GRASS&&tx<TOWN)){if(time-msgT>2){msgT=time;toast("That can't be dug.");}return;}
     if(t===T.LAVA&&!m.boots&&perk()!=="fire"){if(time-msgT>2){msgT=time;toast("Too hot! Buy lava boots at the pick shop.");Sound.sfx.nope();}return;}
+    const o=ore[key];
+    if(o>=1&&o<=8&&bagCount()>=bagCap()){if(time-msgT>2){msgT=time;float(tx,ty,"Bag full!","#FF8A8A");toast("Your backpack is full! Sell your gems at the shop ⬆️, then come back for this one.",3200);Sound.sfx.nope();}P.digT=0;return;}
     const pow=PICKS[m.pick].pow;
     if(hard>pow){if(time-msgT>2){msgT=time;toast(`Too hard! Buy the ${(PICKS.find(k=>k.pow>=hard)||PICKS[PICKS.length-1]).name} at the pick shop ⬆️`,3000);Sound.sfx.nope();}return;}
     const need=digNeed(t);
@@ -6073,10 +6085,8 @@ const Mine=(()=>{
     const m=M(),i=idx(tx,ty),o=ore[i];
     tiles[i]=T.AIR;ore[i]=0;m.dugCount=(m.dugCount||0)+1;burst(tx,ty,PASS[t]?T.DIRT:t,10);Sound.sfx.thud();pocket(t,i);bump("dug");
     try{Quests.hit("dig");}catch(e){}
-    if(o>=1&&o<=8){
-      if(bagCount()>=bagCap()){float(tx,ty,"Bag full!","#FF8A8A");toast("Your backpack is full! Go sell at your shop. ⬆️");Sound.sfx.nope();}
-      else collectOre(tx,ty,o);
-    }else if(o===9){setTimeout(()=>wordStone(tx,ty),250);}
+    if(o>=1&&o<=8)collectOre(tx,ty,o);
+    else if(o===9){setTimeout(()=>wordStone(tx,ty),250);}
     else if(o===10)openChest(tx,ty);
     markDug();hud();
   }
@@ -6227,7 +6237,7 @@ const Mine=(()=>{
     const near=(a,b)=>LOOKS.some(g=>g.includes(a)&&g.includes(b));
     const others=allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&x.w!==w.w&&WORD_ART[x.w]!==WORD_ART[w.w]&&!near(x.w,w.w)).sort(()=>Math.random()-.5)
       .reduce((a,x)=>{if(a.length<2&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
-    const opts=[w,...others].sort(()=>Math.random()-.5);let misses=0,t0=performance.now();
+    const opts=[w,...others].sort(()=>Math.random()-.5);let misses=0,t0=performance.now(),fin=false;
     openPanel(`<h2>A word stone! 🔮</h2><p class="sub">Read the word, then tap its picture to crack it open.</p>
       <div class="mword">${w.w}</div><div class="mpics">${opts.map(o=>`<button class="mpic" data-w="${o.w}">${drawWord(o.w,"mine")}</button>`).join("")}</div>
       <div class="mrow"><button class="btn soft" id="mHear" style="visibility:hidden">🔊 Hear it</button></div>`);
@@ -6235,7 +6245,8 @@ const Mine=(()=>{
     if(Skills.slow){const mp=card().querySelector(".mpics");mp.classList.add("locked-by-shield");
       soundShield(card(),w,()=>{mp.classList.remove("locked-by-shield");t0=performance.now();});}
     card().querySelectorAll(".mpic").forEach(b=>b.onclick=()=>{
-      if(b.dataset.w===w.w){try{Skills.result(w,{ok:true,help:misses>0,ms:performance.now()-t0});}catch(e){}Sound.sfx.win();b.classList.add("right");const m=M();m.bag[9]=(m.bag[9]||0)+1;m.found[9]=1;
+      if(fin)return;
+      if(b.dataset.w===w.w){fin=true;try{Skills.result(w,{ok:true,help:misses>0,ms:performance.now()-t0});}catch(e){}Sound.sfx.win();b.classList.add("right");const m=M();m.bag[9]=(m.bag[9]||0)+1;m.found[9]=1;
         state.wordsRead++;Sound.say("word:"+w.w,w.w,.9);
         setTimeout(()=>{closePanel();float(tx,ty,"+1 magic gem","#E2CCFF");burst(tx,ty,T.CRYS,16);toast("CRACK! You found a magic gem!");save();},900);}
       else{try{Skills.result(w,{ok:false,confused:b.dataset.w,ms:performance.now()-t0});}catch(e){}t0=performance.now();misses++;Sound.sfx.nope();b.classList.add("wrong");setTimeout(()=>b.classList.remove("wrong"),500);
@@ -6247,7 +6258,7 @@ const Mine=(()=>{
   let shopQ=[],tray={},served=0,earned=0,hintOn=false;
   const QTY=["","a","two","three"];
   const GEMS=[3,5,6,7,8,9];
-  const tomorrow=()=>new Date(Date.now()+864e5).toISOString().slice(0,10);
+  const tomorrow=()=>{const d=new Date();d.setDate(d.getDate()+1);return ymd(d);};
   // who is coming in: one of his valley animals, or a guardian as a VIP
   function customer(vip){
     if(vip!=null){const g=GUARDIANS[vip];return{art:g.id,name:g.name,vip:true};}
@@ -6329,10 +6340,11 @@ const Mine=(()=>{
     card().querySelectorAll(".msay span").forEach(s=>s.onclick=()=>{if(hintOn){const w=s.textContent.replace(/[.,?!]/g,"").toLowerCase();Sound.say("word:"+w,w,.85);}});
     card().querySelector("#mHear").onclick=()=>Sound.say("sent:"+o.text,o.text,.9);
     card().querySelector("#mClose").onclick=()=>endShop();
+    let paid=false;
     card().querySelector("#mGive").onclick=()=>{
-      const got=Object.entries(tray).filter(([,n])=>n>0);
+      if(paid)return;const got=Object.entries(tray).filter(([,n])=>n>0);
       if(!got.length){Sound.sfx.nope();return;}
-      if(o.check(tray)){let base=0;got.forEach(([k,n])=>{m.bag[k]-=n;if(m.bag[k]<=0)delete m.bag[k];base+=OI(k).val*n;});
+      if(o.check(tray)){paid=true;let base=0;got.forEach(([k,n])=>{m.bag[k]-=n;if(m.bag[k]<=0)delete m.bag[k];base+=OI(k).val*n;});
         const gems=o.vip?3:1,pay=base*(o.vip?3:2)+SHOPS[m.shopLv].tip*(o.vip?4:1)+Math.floor(Math.random()*3);
         m.coins+=pay;earned+=pay;served++;
         m.orders=(m.orders||0)+1;m.ordersRight=(m.ordersRight||0)+1;bump("served");state.wordsRead++;state.gems+=gems;
@@ -6635,8 +6647,9 @@ const Mine=(()=>{
     for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){if(dx*dx+dy*dy>5)continue;const tx=x+dx,ty=y+dy;
       if(tx<1||tx>=MW-1||ty<SKY||ty>=MH)continue;const t=tileAt(tx,ty);
       if(t===T.AIR||t===T.BED||t===T.FOUND||t===T.SEAL||t===T.VAULT||t===T.VDOOR||(t===T.GRASS&&tx<TOWN)||(t===T.SIGN&&gameSigns[idx(tx,ty)]))continue;
-      const i=idx(tx,ty),o=ore[i];tiles[i]=T.AIR;ore[i]=0;delete m.placed[i];delete m.signs[i];burst(tx,ty,t,5);m.dugCount=(m.dugCount||0)+1;
-      if(o>=1&&o<=8){if(bagCount()<bagCap())collectOre(tx,ty,o);}else if(o===9&&!stone)stone=[tx,ty];else if(o===10)openChest(tx,ty);}
+      const i=idx(tx,ty),o=ore[i];if(o>=1&&o<=8&&bagCount()>=bagCap())continue;   // full bag: the gem stays put
+      tiles[i]=T.AIR;ore[i]=0;delete m.placed[i];delete m.signs[i];burst(tx,ty,t,5);m.dugCount=(m.dugCount||0)+1;
+      if(o>=1&&o<=8)collectOre(tx,ty,o);else if(o===9&&!stone)stone=[tx,ty];else if(o===10)openChest(tx,ty);}
     for(let k=0;k<26;k++)parts.push({x:x+.5,y:y+.5,vx:(Math.random()-.5)*16,vy:-Math.random()*12,life:.8,col:k%2?"#FF8A3D":"#FFC83D",s:.2});
     float(x,y-1,"BOOM!","#FFC83D");P.vy=-6;markDug();hud();try{Quests.hit("dig",5);}catch(e){}
     if(stone)setTimeout(()=>wordStone(stone[0],stone[1]),700);
@@ -7193,7 +7206,7 @@ const Books=(()=>{
   // ---------- questions ----------
   function quiz(){
     const q=book.quiz[quizIdx];if(!q){finish();return;}
-    const t=book.t,text=fill(q.q,t);let tries=0;
+    const t=book.t,text=fill(q.q,t);let tries=0,fin=false;
     const opts=q.pics?q.pics.map(p=>({v:p,h:`<div class="qart">${art(p,t)}</div>`})).sort(()=>Math.random()-.5)
       :q.words?q.words.map(w=>({v:w,h:`<b class="qword">${w}</b>`})).sort(()=>Math.random()-.5)
       :[{v:"yes",h:`<b class="qword">👍 yes</b>`},{v:"no",h:`<b class="qword">👎 no</b>`}];
@@ -7203,8 +7216,8 @@ const Books=(()=>{
     ov.querySelector("#bClose").onclick=close;
     setTimeout(()=>Sound.say("sent:"+text,text,.9),250);
     ov.querySelectorAll(".bopt").forEach(b=>b.onclick=()=>{
-      tries++;
-      if(b.dataset.v===ans){b.classList.add("right");Sound.sfx.win();if(tries===1)quizFirst++;
+      if(fin)return;tries++;
+      if(b.dataset.v===ans){fin=true;b.classList.add("right");Sound.sfx.win();if(tries===1)quizFirst++;
         state.comp=state.comp||{right:0,wrong:0};state.comp.right++;save();
         setTimeout(()=>{quizIdx++;quiz();},900);}
       else{b.classList.add("wrong");Sound.sfx.nope();state.comp=state.comp||{right:0,wrong:0};state.comp.wrong++;
@@ -7325,7 +7338,7 @@ let picOv=null;
 function openPicIt(){
   const ps=PicSentence.make();if(!ps){toast("Read a few more words first!");return;}
   if(!picOv){picOv=document.createElement("div");picOv.className="overlay";picOv.id="ovPic";document.body.appendChild(picOv);}
-  const bg=["meadow","farm","pond","town"][Math.floor(Math.random()*4)],t0=performance.now();let tries=0;
+  const bg=["meadow","farm","pond","town"][Math.floor(Math.random()*4)],t0=performance.now();let tries=0,fin=false;
   picOv.innerHTML=`<div class="sheet picit"><h2>🖼️ Picture it</h2><p class="sub">Read the sentence. Tap the picture that matches it — every word counts!</p>
     <div class="btext">${ps.text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
     <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg)}</button>`).join("")}</div>
@@ -7334,8 +7347,8 @@ function openPicIt(){
   picOv.querySelector("#psLater").onclick=()=>picOv.classList.remove("on");
   const comp=()=>state.comp||(state.comp={right:0,wrong:0});
   picOv.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
-    const o=ps.opts[+b.dataset.i];tries++;
-    if(o.ok){b.classList.add("right");comp().right++;const won=tries===1?2:1;state.gems+=won;state.wordsRead+=1;
+    if(fin)return;const o=ps.opts[+b.dataset.i];tries++;
+    if(o.ok){fin=true;b.classList.add("right");comp().right++;const won=tries===1?2:1;state.gems+=won;state.wordsRead+=1;
       Quests.hit("read");Sound.sfx.win();confetti();Sound.say("sent:"+ps.text,ps.text,.9);floater("+"+won+" 💎","#FFE9A8");
       renderHUD();save();setTimeout(()=>picOv.classList.remove("on"),1400);}
     else{comp().wrong++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
@@ -7361,7 +7374,7 @@ setInterval(()=>{
 
 /* ---- the grown-up reading report ---- */
 let repOv=null;
-function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);out.push(d.toISOString().slice(0,10));}return out;}
+function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);out.push(ymd(d));}return out;}
 function bars(days,get,fmt){
   const vals=days.map(get),max=Math.max(1,...vals);
   return`<div class="chart rchart">${days.map((d,i)=>`<div class="col"><b>${vals[i]?fmt?fmt(vals[i]):vals[i]:""}</b><i style="height:${vals[i]/max*100}%"></i><span>${"SMTWTFS"[new Date(d+"T12:00").getDay()]}</span></div>`).join("")}</div>`;
@@ -7680,6 +7693,7 @@ const Adv=(()=>{
     if(!big)noteEl.onclick=e=>{if(e.target.closest(".bw,button"))return;showNote(true);};else noteEl.onclick=null;
   }
   function dig(m){
+    if(m.dug)return;
     const h=A().hunt,want=h.marks[h.order[h.step]];
     const el=landEls[h.marks.indexOf(m)];if(el){el.classList.remove("digging");void el.offsetWidth;el.classList.add("digging");}
     Sound.sfx.dig?Sound.sfx.dig():Sound.sfx.thud();
@@ -7836,9 +7850,8 @@ const Wild=(()=>{
   // spell its name: tap the sounds in order
   function nameRound(Q){
     const w=W.nameW,slots=w.p.map(()=>null);W.w=w;W.ans=w.w;
-    const mine=new Set(w.p.map(soundOf));
-    const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&!mine.has(soundOf(p))&&Phonics.known(p));
-    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]]);
+    const pool=distractors(w.p);
+    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]].filter(Boolean));
     Q.innerHTML=`<p class="wp">Last one! Call it by its name — tap the sounds in order.</p>
       <div class="wslots">${w.p.map((_,i)=>`<div class="wslot" data-i="${i}"></div>`).join("")}</div>
       <div class="wbank">${bank.map((ph,i)=>`<button class="lt bank" data-i="${i}">${tileText(ph)}</button>`).join("")}</div>
@@ -8063,13 +8076,13 @@ const Read=(()=>{
   function rec(w,ok,o){try{Skills.result(w,{ok,...o});}catch(e){}}
   // read the word, tap its picture
   function pic(host,done,w){
-    w=w||word();const t0=performance.now();let miss=0;
+    w=w||word();const t0=performance.now();let miss=0,fin=false;
     host.innerHTML=`<p class="wp">Read the word. Tap its picture!</p><div class="wword">${w.w}</div>
       <div class="wopts">${shuffle([w,...others(w)]).map(o=>`<button class="wpic" data-w="${o.w}">${drawWord(o.w,"q")}</button>`).join("")}</div>`;
     const box=host.querySelector(".wopts");host.dataset.ans=w.w;
     if(Skills.slow){box.classList.add("locked-by-shield");soundShield(host,w,()=>box.classList.remove("locked-by-shield"));}
     box.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
-      const ok=b.dataset.w===w.w;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
+      if(fin)return;const ok=b.dataset.w===w.w;if(ok)fin=true;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
       if(ok){b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
         if(miss>=2)box.querySelector(`[data-w="${w.w}"]`).classList.add("hint");}});
@@ -8077,25 +8090,25 @@ const Read=(()=>{
   }
   // look at the picture, find its word among look-alikes
   function wordPick(host,done,w){
-    w=w||word();const t0=performance.now();let miss=0;
+    w=w||word();const t0=performance.now();let miss=0,fin=false;
     const opts=shuffle([w.w,...lookalikes(w).map(x=>x.w)]);
     host.innerHTML=`<p class="wp">Which word is this? Look closely!</p><div class="wbig">${drawWord(w.w,"q")}</div>
       <div class="wopts">${opts.map(o=>`<button class="wwopt" data-w="${o}">${o}</button>`).join("")}</div>`;
     host.dataset.ans=w.w;
     host.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
-      const ok=b.dataset.w===w.w;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
+      if(fin)return;const ok=b.dataset.w===w.w;if(ok)fin=true;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
       if(ok){b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);Sound.say("word:"+b.dataset.w,b.dataset.w,.9);}});
     return w;
   }
   // read a sentence, pick the matching scene
   function sentence(host,done,bg){
-    const ps=PicSentence.make();if(!ps)return pic(host,done);let miss=0;
+    const ps=PicSentence.make();if(!ps)return pic(host,done);let miss=0,fin=false;
     host.innerHTML=`<p class="wp">Read it all, then find the picture!</p><div class="btext">${ps.text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
       <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg||"meadow")}</button>`).join("")}</div>`;
     Books.wireWords(host.querySelector(".btext"));host.dataset.ans="#"+ps.opts.findIndex(x=>x.ok);
     host.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
-      const o=ps.opts[+b.dataset.i];state.comp=state.comp||{right:0,wrong:0};state.comp[o.ok?"right":"wrong"]++;
+      if(fin)return;const o=ps.opts[+b.dataset.i];if(o.ok)fin=true;state.comp=state.comp||{right:0,wrong:0};state.comp[o.ok?"right":"wrong"]++;
       if(o.ok){b.classList.add("right");Sound.sfx.win();Sound.say("sent:"+ps.text,ps.text,.9);setTimeout(()=>done(!miss),1100);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
         if(miss>=2)host.querySelector(`.psopt[data-i="${ps.opts.findIndex(x=>x.ok)}"]`).classList.add("hint");}});
@@ -8104,9 +8117,8 @@ const Read=(()=>{
   // hear a word, build it from its sounds
   function build(host,done,w,prompt){
     w=w||word({max:5});const slots=w.p.map(()=>null);let miss=0;
-    const mine=new Set(w.p.map(soundOf));
-    const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&!mine.has(soundOf(p))&&Phonics.known(p));
-    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]]);
+    const pool=distractors(w.p);
+    const bank=shuffle([...w.p,pool[Math.floor(Math.random()*pool.length)]].filter(Boolean));
     host.innerHTML=`<p class="wp">${prompt||"Listen, then tap the sounds in order."}</p>
       <div class="wslots">${w.p.map((_,i)=>`<div class="wslot${(w.syl||[]).includes(i)?" syl":""}"></div>`).join("")}</div>
       <div class="wbank">${bank.map((ph,i)=>`<button class="lt bank" data-i="${i}">${tileText(ph)}</button>`).join("")}</div>
@@ -8240,10 +8252,10 @@ const Quest=(()=>{
         doors=Read.shuffle([w.w,...lookalikes(w).map(x=>x.w)]).map((o,k)=>({k,html:`<b class="dword">${o}</b>`,ok:o===w.w,w:o}));right=w;}
       const s=sheet(`<div class="qhead"><span class="qbook">🏛️</span><b>Reading Temple · room ${room+1} of ${c.rooms}</b><button class="bx" id="qX">✕</button></div>
         <div class="tclue">${clue}</div><div class="tdoors">${doors.map(d=>`<button class="tdoor" data-k="${d.k}" data-ok="${d.ok?1:0}"><div class="tsign">${d.html}</div><div class="tarch"></div></button>`).join("")}</div>`,"temple");
-      s.querySelector("#qX").onclick=close;const t0=performance.now();let miss=0;
+      s.querySelector("#qX").onclick=close;const t0=performance.now();let miss=0,fin=false;
       const tc=s.querySelector(".tclue");if(tc.querySelector("b")&&useSent){const bb=tc.querySelector("b");bb.innerHTML=bb.textContent.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ");Books.wireWords(bb);}
       s.querySelectorAll(".tdoor").forEach(b=>b.onclick=()=>{
-        const d=doors[+b.dataset.k];
+        if(fin)return;const d=doors[+b.dataset.k];if(d.ok)fin=true;
         if(right)try{Skills.result(right,{ok:d.ok&&!miss,help:miss>0,confused:d.ok?null:d.w,ms:performance.now()-t0});}catch(e){}
         if(useSent){state.comp=state.comp||{right:0,wrong:0};state.comp[d.ok?"right":"wrong"]++;}
         if(d.ok){b.classList.add("open");Sound.sfx.win();state.wordsRead+=useSent?5:1;setTimeout(()=>{room++;next();},1000);}
@@ -8887,7 +8899,8 @@ const QUEST_POOL=[
   {id:"newveh", ic:"🔑", t:"Get a new vehicle",         k:"newveh", n:1},
   {id:"upgrade",ic:"⬆️", t:"Upgrade something",         k:"upgrade",n:1}
 ];
-const today=()=>new Date().toISOString().slice(0,10);
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>ymd(new Date());
 const Quests={
   ensure(){
     if(state.quests&&state.quests.date===today())return;
@@ -9244,15 +9257,16 @@ function openSwap(pair){
     L.appendChild(b);
   });
   const bank=document.getElementById("letterBank");bank.style.display="flex";bank.innerHTML="";
-  const pool=allWords().flatMap(x=>x.p).filter(p=>!p.includes(":")&&p!==pair.to.p[pair.i]&&p!==pair.from.p[pair.i]);
+  const pool=distractors([pair.to.p[pair.i],pair.from.p[pair.i]]);
   const opts=[pair.to.p[pair.i],...[...new Set(pool)].sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);
   opts.forEach(ph=>{
     const t=document.createElement("button");t.className="lt bank";t.textContent=tileText(ph);
     t.onclick=()=>{
+      if(cur._lock)return;
       Sound.say("sound:"+ph,ph);
       const tgt=L.children[pair.i];
       if(ph===pair.to.p[pair.i]){
-        tgt.textContent=tileText(ph);tgt.classList.remove("target");tgt.classList.add("blend");
+        cur._lock=true;tgt.textContent=tileText(ph);tgt.classList.remove("target");tgt.classList.add("blend");
         state.swaps=(state.swaps||0)+1;
         setTimeout(()=>{Sound.say("word:"+pair.to.w,pair.to.w,.82);setTimeout(()=>{state.gems+=2;floater("+2 💎","#FFE9A8");succeed();},600);},200);
       }else{misses++;Sound.sfx.nope();t.classList.add("wobble");setTimeout(()=>t.classList.remove("wobble"),520);}
@@ -9292,7 +9306,7 @@ setInterval(checkBadges,6000);
 function renderDaily(){
   const ch=document.getElementById("dailyChart");ch.innerHTML="";
   const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d);}
-  const vals=days.map(d=>(state.daily||{})[d.toISOString().slice(0,10)]||0);
+  const vals=days.map(d=>(state.daily||{})[ymd(d)]||0);
   const max=Math.max(4,...vals);
   days.forEach((d,i)=>{
     const c=document.createElement("div");c.className="col";
@@ -9390,14 +9404,14 @@ function openScramble(sign){
   const slots=document.getElementById("slotsRow"),bank=document.getElementById("letterBank");
   slots.style.display="flex";bank.style.display="flex";slots.innerHTML="";bank.innerHTML="";
   words.forEach((_,i)=>{const d=document.createElement("div");d.className="wslot wordslot";d.dataset.i=i;
-    d.onclick=()=>{if(!d.dataset.ph)return;const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
+    d.onclick=()=>{if(!d.dataset.ph||cur._lock)return;const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
       if(t)t.classList.remove("used");d.textContent="";delete d.dataset.ph;d.classList.remove("filled");Sound.sfx.soft();};
     slots.appendChild(d);});
   words.map((w,i)=>w+"|"+i).sort(()=>Math.random()-.5).forEach(tag=>{
     const w=tag.split("|")[0];
     const t=document.createElement("button");t.className="lt bank word";t.textContent=w;t.dataset.ph=tag;
     t.onclick=()=>{
-      const open=[...slots.children].find(x=>!x.dataset.ph);if(!open)return;
+      const open=[...slots.children].find(x=>!x.dataset.ph);if(!open||cur._lock)return;
       Sound.sfx.soft();Sound.say("word:"+w.replace(/[.,!?]/g,"").toLowerCase(),w,.85);
       open.textContent=w;open.dataset.ph=tag;open.classList.add("filled");t.classList.add("used");
       if([...slots.children].every(x=>x.dataset.ph))checkScramble();
@@ -9413,7 +9427,7 @@ function checkScramble(){
   const slots=[...document.getElementById("slotsRow").children];
   const built=slots.map(x=>x.dataset.ph.split("|")[0]);
   if(built.join(" ")===cur.w){
-    slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
+    cur._lock=true;slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
     setTimeout(()=>{Sound.say("sent:"+cur.w,cur.w,.9);setTimeout(scrambleSuccess,800);},250);
   }else{
     misses++;Sound.sfx.nope();
@@ -9426,6 +9440,7 @@ function checkScramble(){
   }
 }
 function scrambleSuccess(){
+  if(cur._paid)return;cur._paid=true;
   state.crateCount++;state.wordsRead+=cur.words.length;sess.words+=cur.words.length;
   state.scrambles=(state.scrambles||0)+1;
   const won=(misses===0?6:4);state.gems+=won;floater("+"+won+" 💎","#FFE9A8");
@@ -10032,6 +10047,10 @@ function migrate(){
     if(isBuilding(t.id)&&!state.blueprints.includes(t.id))state.blueprints.push(t.id);
   });
   state.timers=state.timers||{};
+  // settings added after this save was made get their defaults (nature sounds, spelling share, timer)
+  state.settings=Object.assign(def().settings,state.settings||{});
+  // a stunt that was cut short by closing the app must not leave the vehicle frozen
+  (state.vehicles||[]).forEach(v=>{delete v.busy;delete v.hold;});
   // one of each: fold doubles into levels (anything past gold becomes gems)
   let merged=0;
   const seenB={};
@@ -10100,7 +10119,7 @@ function migrate(){
   if("serviceWorker" in navigator&&(location.protocol==="https:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)))
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   document.body.addEventListener("touchstart",()=>Sound.sfx.soft(),{once:true});
-  if(DB.mode()!=="idb")
+  if(DB.mode()==="mem")
     setTimeout(()=>toast("Heads up: this browser will not save progress here"),1200);
 })();
 
