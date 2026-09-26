@@ -78,7 +78,14 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    const miss=await E(`(()=>{const h=Adv._A().hunt,m=h.marks[h.order[0]];Adv._P.c=m.c;Adv._P.r=m.r;return 0;})()`);
    await E(`document.getElementById("noteGo").click()`);await run(300);await E("Adv._act();Adv._act()");await run(800);
    ok(await E("Adv._A().hunt.miss")===0&&await E("Adv._A().hunt.step")===1,"treasure hunt: double tap on the right spot is not a miss");
-   await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));Adv.exit()`);}
+   await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"))`);
+   // a treasure mark never lands on a note (the note would take the button and the mark could never be dug)
+   const clash=await E(`(()=>{state.notes=[{id:"nx",text:"Hi.",from:"Dad",at:1,c:9,r:7.4,found:false}];Adv.redraw();let n=0;
+     for(let k=0;k<60;k++){Adv._A().hunt=null;Adv.newHunt();document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+       if(Adv._A().hunt.marks.some(m=>Math.abs(m.c-9)<1.6&&Math.abs(m.r-7.4)<1))n++;}
+     state.notes=[];Adv._A().hunt=null;Adv.redraw();return n;})()`);
+   ok(clash===0,"treasure marks never land on a note ("+clash+" of 60 hunts did)");
+   await E("Adv.exit()");}
 
   // mine: shop counter and a full backpack
   {await E("Mine.enter()");await run(500);await E(`document.getElementById("mPanel").classList.remove("on")`);

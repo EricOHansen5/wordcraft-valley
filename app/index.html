@@ -7534,7 +7534,10 @@ const Adv=(()=>{
   function freePos(minD=2.5){
     for(let k=0;k<60;k++){const c=1+Math.random()*(COLS-3),r=firstRow()+Math.random()*(state.rows-1);
       if(Math.abs(c-P.c)<minD&&k<50)continue;if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.6&&Math.abs(p.r-r)<1))continue;
-      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;return{c:+c.toFixed(2),r:+r.toFixed(2)};}
+      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
+      // not on a treasure mark either: the spot would take the "use" button and the mark could never be dug
+      if(A().hunt&&A().hunt.marks.some(m=>!m.dug&&Math.abs(m.c-c)<1.6&&Math.abs(m.r-r)<1))continue;
+      return{c:+c.toFixed(2),r:+r.toFixed(2)};}
     return{c:Math.min(COLS-2,P.c+3),r:P.r};
   }
 
@@ -7675,6 +7678,8 @@ const Adv=(()=>{
     const spots=[];for(let k=0;k<200&&spots.length<4;k++){
       const c=1+Math.random()*(COLS-3),r=firstRow()+Math.random()*(state.rows-1);
       if(spots.some(s=>Math.abs(s.c-c)<3.2))continue;
+      // keep clear of notes and the quest giver, which win the "use" button over a mark
+      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
       spots.push({c:+c.toFixed(2),r:+r.toFixed(2)});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
