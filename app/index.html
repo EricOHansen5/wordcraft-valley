@@ -2673,15 +2673,28 @@ const WORDS=[
   // A tile written "e:uh" shows "e" but says "uh"; "e:" is silent.
   {w:"the",p:["th:dh","e:uh"],t:1,tricky:1},{w:"a",p:["a:uh"],t:1,tricky:1},{w:"I",p:["I:eye"],t:1,tricky:1},
   {w:"is",p:["i","s:z"],t:1,tricky:1},{w:"to",p:["t","o:oo"],t:1,tricky:1},
-  {w:"was",p:["w","a:o","s:z"],t:2,tricky:1},{w:"he",p:["h","e:ee"],t:2,tricky:1},{w:"she",p:["sh","e:ee"],t:2,tricky:1},
-  {w:"we",p:["w","e:ee"],t:2,tricky:1},{w:"me",p:["m","e:ee"],t:2,tricky:1},{w:"my",p:["m","y:eye"],t:2,tricky:1},
-  {w:"go",p:["g","o:oh"],t:2,tricky:1},{w:"no",p:["n","o:oh"],t:2,tricky:1},{w:"so",p:["s","o:oh"],t:2,tricky:1},
+  // Kindergarten tricky word checklist (from his class): all at the base level,
+  // the part that doesn't sound out is a heart tile (learn it by heart)
+  {w:"one",p:["o:wu","n","e:"],t:1,tricky:1},{w:"once",p:["o:wu","n","ce:s"],t:1,tricky:1},
+  {w:"from",p:["f","r","o:u","m"],t:1,tricky:1},{w:"here",p:["h","e:ee","re:r"],t:1,tricky:1},
+  {w:"three",p:["th","r","ee"],t:1,tricky:1},{w:"when",p:["wh","e","n"],t:1,tricky:1},
+  {w:"word",p:["w","or:er","d"],t:1,tricky:1},{w:"blue",p:["b","l","ue:oo"],t:1,tricky:1},
+  {w:"why",p:["wh","y:eye"],t:1,tricky:1},{w:"yellow",p:["y","e","ll","ow:oh"],t:1,tricky:1},
+  {w:"be",p:["b","e:ee"],t:1,tricky:1},{w:"look",p:["l","oo","k"],t:1,tricky:1},
+  {w:"their",p:["th:dh","ei:e","r"],t:1,tricky:1},{w:"little",p:["l","i","tt:t","le"],t:1,tricky:1},
+  {w:"down",p:["d","ow:ou","n"],t:1,tricky:1},{w:"which",p:["wh","i","ch"],t:1,tricky:1},
+  {w:"by",p:["b","y:eye"],t:1,tricky:1},{w:"out",p:["ou","t"],t:1,tricky:1},
+  {w:"your",p:["y","our:or"],t:1,tricky:1},{w:"funny",p:["f","u","nn:n","y:ee"],t:1,tricky:1},
+  {w:"says",p:["s","ay:e","s:z"],t:1,tricky:1},
+  {w:"was",p:["w","a:o","s:z"],t:1,tricky:1},{w:"he",p:["h","e:ee"],t:1,tricky:1},{w:"she",p:["sh","e:ee"],t:1,tricky:1},
+  {w:"we",p:["w","e:ee"],t:1,tricky:1},{w:"me",p:["m","e:ee"],t:1,tricky:1},{w:"my",p:["m","y:eye"],t:1,tricky:1},
+  {w:"go",p:["g","o:oh"],t:2,tricky:1},{w:"no",p:["n","o:oh"],t:1,tricky:1},{w:"so",p:["s","o:oh"],t:1,tricky:1},
   {w:"his",p:["h","i","s:z"],t:2,tricky:1},
-  {w:"said",p:["s","ai:e","d"],t:3,tricky:1},{w:"you",p:["y","ou:oo"],t:3,tricky:1},{w:"of",p:["o:u","f:v"],t:3,tricky:1},
-  {w:"do",p:["d","o:oo"],t:3,tricky:1},{w:"are",p:["are:ar"],t:3,tricky:1},{w:"they",p:["th:dh","ey:ay"],t:3,tricky:1},
-  {w:"have",p:["h","a","ve:v"],t:3,tricky:1},{w:"all",p:["a:aw","ll"],t:3,tricky:1},
+  {w:"said",p:["s","ai:e","d"],t:1,tricky:1},{w:"you",p:["y","ou:oo"],t:1,tricky:1},{w:"of",p:["o:u","f:v"],t:1,tricky:1},
+  {w:"do",p:["d","o:oo"],t:3,tricky:1},{w:"are",p:["are:ar"],t:1,tricky:1},{w:"they",p:["th:dh","ey:ay"],t:1,tricky:1},
+  {w:"have",p:["h","a","ve:v"],t:3,tricky:1},{w:"all",p:["a:aw","ll"],t:1,tricky:1},
   {w:"come",p:["c","o:u","m","e:"],t:4,tricky:1},{w:"some",p:["s","o:u","m","e:"],t:4,tricky:1},
-  {w:"what",p:["wh","a:u","t"],t:4,tricky:1},{w:"put",p:["p","u:oo","t"],t:4,tricky:1},
+  {w:"what",p:["wh","a:u","t"],t:1,tricky:1},{w:"put",p:["p","u:oo","t"],t:4,tricky:1},
   // Tier 6 — bossy r: ar, or, er / ir / ur
   {w:"star",p:["s","t","ar"],t:6},{w:"jar",p:["j","ar"],t:6},{w:"barn",p:["b","ar","n"],t:6},{w:"shark",p:["sh","ar","k"],t:6},
   {w:"fork",p:["f","or","k"],t:6},{w:"corn",p:["c","or","n"],t:6},{w:"horse",p:["h","or","s","e:"],t:6},{w:"shorts",p:["sh","or","t","s"],t:6},
@@ -2720,9 +2733,9 @@ const WORDS=[
   {w:"rested",p:["r", "e", "s", "t", "e:i", "d"],t:9,syl:[4]},
   {w:"wished",p:["w", "i", "sh", "ed:t"],t:9,syl:[3]},
   {w:"yelled",p:["y", "e", "ll", "ed:d"],t:9,syl:[3]},
-  {w:"there",p:["th:dh", "e", "re:r"],t:9,tricky:1},
-  {w:"where",p:["wh", "e", "re:r"],t:9,tricky:1},
-  {w:"were",p:["w", "ere:er"],t:9,tricky:1},
+  {w:"there",p:["th:dh", "e", "re:r"],t:1,tricky:1},
+  {w:"where",p:["wh", "e", "re:r"],t:1,tricky:1},
+  {w:"were",p:["w", "ere:er"],t:1,tricky:1},
   {w:"city",p:["c:s", "i", "t", "y:ee"],t:10,syl:[2]},
   {w:"mice",p:["m", "i_e", "c:s"],t:10},
   {w:"ice",p:["i_e", "c:s"],t:10},
@@ -2738,7 +2751,7 @@ const WORDS=[
   {w:"fly",p:["f", "l", "y:eye"],t:10},
   {w:"sky",p:["s", "k", "y:eye"],t:10},
   {w:"cry",p:["c", "r", "y:eye"],t:10},
-  {w:"two",p:["t", "wo:oo"],t:10,tricky:1},
+  {w:"two",p:["t", "wo:oo"],t:1,tricky:1},
   {w:"want",p:["w", "a:o", "n", "t"],t:10,tricky:1},
   {w:"rainbow",p:["r", "ai", "n", "b", "ow"],t:11,syl:[3],comp:1},
   {w:"popcorn",p:["p", "o", "p", "c", "or", "n"],t:11,syl:[3],comp:1},
@@ -3165,6 +3178,7 @@ function makePhonics(){
     j:{k:"affr",voiced:true,dur:.22},
     ch:{k:"affr",voiced:false,dur:.22},
     x:{k:"seq",parts:["k","s"]},
+    wu:{k:"seq",parts:["w","u"]},       // the "wu" in one, once
     q:{k:"seq",parts:["k","w"]},
     wh:V([[320,720,2250],[540,1150,2450]],.28,{glide:1,breath:1})
   };
@@ -3636,7 +3650,8 @@ function currentTier(){
   if(state.settings.tierOverride)return state.settings.tierOverride;
   let tier=1;
   for(let t=1;t<=MAX_TIER;t++){
-    const pool=allWords().filter(w=>w.t===t);
+    // levels open on sounding-out skill; tricky (heart) words are practised alongside, not gatekeepers
+    const pool=allWords().filter(w=>w.t===t&&!w.tricky);
     if(!pool.length)continue;
     const mastered=pool.filter(w=>(state.stats[w.w]||{}).mastered).length;
     const attempts=pool.reduce((a,w)=>a+((state.stats[w.w]||{}).seen||0),0);
@@ -4459,7 +4474,8 @@ function pickCrates(){
   const stale=w=>Pace.on()?((state.stats[w.w]||{}).mastered?2:0)+(w.t<tier&&Pace.fluent(w.t)?1:0):0;
   allWords().filter(w=>w.t<=tier)
     .sort((a,b)=>stale(a)-stale(b)||((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
-    .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w))out.push({...w});});
+    // at most one heart word per set, so the checklist words come round steadily without crowding out sounding-out
+    .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w)&&!(w.tricky&&out.some(o=>o.tricky)))out.push({...w});});
   out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=chooseRung(o);});
   return out.sort(()=>Math.random()-.5);
 }
@@ -7982,9 +7998,9 @@ setTimeout(advBadge,1500);
    teams, endings, soft c/g, compound words, silent letters).
    ================================================================ */
 const Decode=(()=>{
-  const EXTRA={and:1,has:2,ha:1,yes:2,full:3,with:3,him:2,them:3,then:3,this:3,its:2,into:3,by:3,oh:1,
-    love:3,from:3,for:6,your:12,our:7,dad:1,mom:1,mum:2,ash:1,look:7,find:4,good:7,day:7,out:7,down:7,about:9,
-    under:6,after:8,over:5,little:8,snack:4,treat:7,hug:2,hugs:2,kiss:2,xo:1};
+  const EXTRA={and:1,has:2,ha:1,yes:2,full:3,with:3,him:2,them:3,then:3,this:3,its:2,into:3,oh:1,
+    love:3,for:6,our:7,dad:1,mom:1,mum:2,ash:1,find:4,good:7,day:7,about:9,
+    under:6,after:8,over:5,snack:4,treat:7,hug:2,hugs:2,kiss:2,xo:1};
   const DIG=["igh","sh","ch","th","wh","ck","ng","qu","ee","ea","ai","ay","oa","ow","oo","ou","ar","or","er","ir","ur","ll","ss","ff","zz","le"];
   const TEAM=new Set(["ee","ea","ai","ay","oa","ow","oo","ou","igh"]),RC=new Set(["ar","or","er","ir","ur"]),DG=new Set(["sh","ch","th","wh","ng","qu","ll","ss","ff","zz"]);
   const V="aeiou";

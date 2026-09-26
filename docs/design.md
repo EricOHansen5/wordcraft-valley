@@ -606,6 +606,15 @@ Every crate answer was already timed; now the time counts. A read that is right 
 - A "⚡ Speedy!" toast shows when a quick read moves a word up. The reading report says which levels are being fast-tracked.
 - **Parent mode → Settings → Fast track** switches it off (it is on by default).
 
+### v9.2 — his class's tricky words
+The kindergarten tricky word checklist from his class is now part of level 1, his base level: one, all, were, two, from, here, three, was, there, the, when, he, a, word, she, blue, why, we, yellow, to, be, look, where, me, I, no, they, are, what, their, little, so, my, down, which, by, out, once, you, of, said, your, funny, says.
+- 21 of them are new words. The other 23 were already tricky words, some at much later levels (were, there and where at 9, two at 10); they all moved down to level 1.
+- Each word's tiles spell it, and the part that doesn't sound out is a ♥ heart tile to learn by heart ("o♥ n ce♥" in once, "s ay♥ s" in says). One new sound was added for this, the "wu" in one and once.
+- **They come round steadily:** each set of crates has at most one heart word from the regular word rotation, so sounding-out practice isn't crowded out; all 44 come round within a few days of play.
+- **They don't hold back level-ups:** levels open on sounding-out words only. Heart words are practised alongside but no longer have to be mastered first.
+- The 17 checklist words that had no recording got one in the game voice (Kokoro "Heart", like the rest).
+- `tests/checklist_e2e.js` checks every word is there, spells right, can be sounded out, and comes round in crates.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
