@@ -1256,7 +1256,7 @@ body.exploring .slot-empty{display:none}
 </div></div>
 
 <div class="overlay" id="ovParent"><div class="sheet">
-  <h2>Grown-up menu</h2><p class="sub">Progress, words, your voice, and creatures.</p>
+  <h2>Grown-up menu</h2><p class="sub">Progress, words, your voice, and creatures. <span id="appVer" style="opacity:.6;white-space:nowrap"></span></p>
   <div class="tabs">
     <button class="tab on" data-tab="prog">Progress</button>
     <button class="tab" data-tab="words">Words</button>
@@ -1390,6 +1390,7 @@ body.exploring .slot-empty{display:none}
 <div id="fx"></div><div id="toast"></div>
 
 <script>
+const APP_VERSION="wcv-2026-09-27a"; /* stamped by tools/release.js, matches sw.js VERSION */
 "use strict";
 /* ================================================================
    1. ART — procedural hand-inked SVG
@@ -10195,6 +10196,7 @@ function migrate(){
   document.body.addEventListener("pointerdown",()=>Nature.start(),{once:true});
   try{ if(navigator.audioSession)navigator.audioSession.type="playback"; }catch(e){}
   // works offline once installed; only possible over https or on localhost
+  {const v=document.getElementById("appVer");if(v)v.textContent="Version "+APP_VERSION.replace(/^wcv-/,"");}
   if("serviceWorker" in navigator&&(location.protocol==="https:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)))
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   document.body.addEventListener("touchstart",()=>Sound.sfx.soft(),{once:true});
