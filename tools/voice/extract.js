@@ -143,14 +143,17 @@ function spokenLiterals(src){
   }
   return{found,skipped};
 }
-// Quest: the chapter stories and the ending (they are inside the module, so read from the source)
+// Story arcs: the chapter stories and the ending of every questArc({...}) call (they sit in the config, so read from the source)
 function questStories(src){
-  const q=src.indexOf("const Quest=(()=>{");if(q<0)return[];
-  const grab=name=>{const i=src.indexOf("const "+name+"=[",q);if(i<0)return[];const s=i+name.length+8,e=balanced(src,s,"[","]");
-    return Function("return ["+src.slice(s,e)+"]")();};
-  const out=[];
-  grab("CH").forEach(c=>(c.story||[]).forEach(t=>out.push({text:t,from:"quest "+c.title})));
-  grab("END").forEach(t=>out.push({text:t,from:"quest ending"}));
+  const out=[],re=new RegExp("const (Quest[A-Za-z0-9_]*)=questArc[(][{]","g");let m;
+  while((m=re.exec(src))){
+    const start=m.index+m[0].length,end=balanced(src,start,"{","}");if(end<0)continue;
+    const cfg=src.slice(start,end);
+    const grab=name=>{const i=cfg.indexOf(name+":[");if(i<0)return[];const s=i+name.length+2,e=balanced(cfg,s,"[","]");
+      try{return Function("return ["+cfg.slice(s,e)+"]")();}catch(err){return[];}};
+    grab("CH").forEach(c=>(c.story||[]).forEach(t=>out.push({text:t,from:m[1]+" "+c.title})));
+    grab("END").forEach(t=>out.push({text:t,from:m[1]+" ending"}));
+  }
   return out;
 }
 
