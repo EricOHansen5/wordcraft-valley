@@ -619,6 +619,8 @@ The kindergarten tricky word checklist from his class is now part of level 1, hi
 - The Grown-up menu shows the build under its title (e.g. "Version 2026-09-27a"): the date of the release plus a letter for each release that day. It is the same value as the service-worker `VERSION`, so when it changes the iPad has the new build.
 - `npm run release` stamps both `sw.js` and `APP_VERSION` in `index.html`; `tests/version_check.js` fails if they differ.
 
+See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
