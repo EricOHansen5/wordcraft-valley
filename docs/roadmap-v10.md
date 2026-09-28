@@ -176,6 +176,38 @@ Two weeks after v10.1, the "Where the time goes" block answers one question: **d
 
 ---
 
+## v10.3 — Looks and holidays (after Jobs)
+Decided 28 Sept 2026. Builds on what is already there: the four seasons (`SEASONS`, `applySeason`, `seedSeasonParticles`: tint, particles, a free seasonal plan such as the pumpkin patch or snowman, a greeting), the plans shop, the buddy hats (`HATS`), the sticker book, Adventure spots and the treasure hunt.
+
+### Looks
+- A **Look** is a named pack, data not code: a palette tint and sky, a particle kind, three to five props at fixed valley spots (jack-o'-lanterns by the door, string lights on the garage, hearts on the bakery, flags on the crane), a buddy hat, the HUD trim, the crate skin (`.crate.season` exists) and one greeting line. `LOOKS=[{id,name,ic,window,tint,particles,props:[{id,at}],hat,greet}]`; `window` is a month-day range, or a function for Easter and his birthday.
+- **Earned, never bought.** Each holiday's mini-game hands its look out piece by piece (props first, the hat last). Nothing is sold; the plans shop and coins are untouched. During its window the valley shows the season as it does today; the holiday look is the reward layer on top of it.
+- **Worn any day.** A closet button (🎨, next to 📐) lists the looks he has earned plus "Valley" (none). The choice is `state.look` and stays until he changes it, so Halloween in March is allowed. A look he is part-way through shows its earned pieces. This layer is also the "Look: Classic / New" switch the graphics work needs, so it is built once, here.
+- Saves, in `def()`: `look:""` and `looks:{}` (`{halloween:{pieces:[],done:false}}`). Nothing else changes shape.
+
+### Mini-games, one per holiday, all reading
+Each one is a content pack on an engine that exists. It opens only in its window from a holiday button on the HUD, never as a gate, pays the usual 💎 plus one look piece per finish, and keeps its content at his level (the decode check). Fixed lines get clips.
+
+| Holiday | Window | Mini-game | Reuses | Look pieces |
+|---|---|---|---|---|
+| Halloween | 15–31 Oct | **Trick-or-Read.** Doors appear on the valley buildings in Adventure. Knock, and a creature in costume asks a word or a sentence at his level; a right read gives candy (🪙) and the door closes. Ten doors a night. | Adventure spots (`Adv.provide`) and the crate-loop rungs | jack-o'-lanterns, a ghost in the pine, bat particles, witch hat |
+| Thanksgiving | 15 Nov – Thanksgiving | **Feast table.** Picture-it with food words; each read puts a dish on a long table. When the table is full every creature comes to eat and the buddy says thanks. | `Read.pic` and a scene overlay | corn-and-leaf garlands, a pie on the porch, leaf particles, pilgrim hat |
+| Winter holidays | 1–25 Dec | **Light the tree** and **advent doors.** Each word read lights a bulb on the big valley tree and a sentence lights the star. One advent door a day, 25 in all, with one read behind it: a word, a page, or a heart-word check. | crate loop and `Retain`-style spaced picks | string lights, a wreath on the garage, snow (exists), Santa hat |
+| Valentine's | 1–14 Feb | **Word mail.** The creatures send heart letters to read; he answers by picking a word. A full mailbag brings a new friend to the valley. | Notes from home | hearts on the bakery, petal-heart particles, heart-antennae hat |
+| Easter | the two weeks before Easter | **Egg hunt.** The treasure hunt with eggs that hold words: three clues, three eggs a day. | Adventure hunt | eggs in the grass, a bunny by the bush, chick hat |
+| 4th of July | 28 Jun – 4 Jul | **Fireworks.** At night each read launches a firework and a sentence a big one, plus a sparkler race. | crate-loop reward and `Race` | flags on the crane, firework particles, star hat |
+| His birthday | that week | **Party.** The creatures gather at a cake, and one storybook in his name ("{hero}'s Big Day") at his level. The party hat (exists) is free that week. | Books and a scene | balloons, a banner, the cake on the table |
+
+The birthday needs one Grown-up setting (`settings.birthday`, month and day). Easter is computed (the anonymous Gregorian algorithm, a dozen lines).
+
+### Order and size
+- **First** the Look system with the closet and `looks_e2e.js` (about 300 lines), then whichever holiday's window comes next once Jobs has shipped: Thanksgiving if that is before 10 November, otherwise the winter one. Halloween 2026 keeps Harvest Days only.
+- Then one holiday per window as the calendar comes round, each 150–300 lines plus its own suite on `tests/lib.js`. Nothing is built for a window more than two months out, and anything not ready by its window waits a year.
+- Art: props as procedural SVG like the seasonal builds, plus a few Fluent Emoji (MIT) icons embedded like the others (jack-o'-lantern, ghost, gift, heart, egg, fireworks, turkey), attributions kept in About.
+- Judged by: opens per day in the window against the week before, and reading minutes in the window from "Where the time goes".
+
+---
+
 ## Build order
 
 | Phase | Ships | Judged by |
@@ -184,6 +216,7 @@ Two weeks after v10.1, the "Where the time goes" block answers one question: **d
 | **v10.0** | 18 books for levels 1–6; two new quiz types; second story arc (3 chapters); sentence reread timing and words-per-minute trend; Read with Dad; reading tickets with parent toggle; hero name | Reading minutes vs baseline; books finished per week |
 | **v10.1** | Jobs engine with 3 kits; Shopkeeper and Lawn mower; math track K–1; Trading Post with two shelves and the 1 = 5 exchange; "Mine tasks" rename | Reading minutes hold or rise; Jobs opens per week |
 | **v10.2** | Chosen by the data (see above) | |
+| **v10.3** | Look system with a closet; then one holiday mini-game per window, starting with the first window after Jobs (Thanksgiving or Winter) | Opens per day and reading minutes in the window |
 | Later | Items under Deferred, each with its trigger | |
 
 Each phase follows the usual workflow: tests, voice clips, `npm run release`, a `design.md` section, then deploy.
@@ -193,6 +226,7 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 - **Read with Dad depends on Dad's time.** One book per session, five to seven pages. It is a bonus, not a requirement, and nothing is locked behind it.
 - **More books means more voice and more decode checks.** Each book is data; the decode check and `books2_e2e` catch a word above level before it ships.
 - **Two currencies is still two.** The 🪙 shelf shows only coins, the 💎 shelf only gems, and the exchange appears only once he has both.
+- **Holiday work is time-boxed.** Each pack is data on an engine that exists. Anything not ready by its window waits a year, and the Look system ships on its own first.
 - **Size on the older iPad.** `index.html` is 1.9 MB, mostly art. Eighteen books and two jobs add well under 100 KB of text. The content-file split is deferred with its trigger below.
 
 ## Decisions made (27 Sept 2026)
@@ -212,6 +246,14 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 | Levels 13–24, placement | Deferred. Trigger: he reaches level 9 |
 | Content files (`app/content/*.json`) | Deferred. Trigger: `index.html` passes 3 MB or the iPad boots in over 3 s |
 | Four currencies, decorations, gears | Dropped |
+
+## Decisions made (28 Sept 2026)
+| Topic | Choice |
+|---|---|
+| Looks and holidays | After Jobs (v10.3). Halloween 2026 keeps Harvest Days; the first holiday pack is Thanksgiving or Winter |
+| Getting a look | Earned from its mini-game only, piece by piece. Nothing sold |
+| Wearing a look | Any earned look on any day, from a closet button |
+| Holidays | All seven: Halloween, Thanksgiving, Winter, Valentine's, Easter, 4th of July, his birthday |
 
 ---
 
