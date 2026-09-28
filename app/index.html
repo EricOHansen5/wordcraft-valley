@@ -3639,8 +3639,11 @@ const MW=50, SKY=6, MDEPTH=120, MH=SKY+MDEPTH, TOWN=19, SPAWN_X=20.2;
 /* ---- the save ----
    def() is the whole save: every field any part of the game keeps, with its default,
    grouped by the part that owns it. A new field gets its default here, not where it is
-   first used; loading fills in whatever an older save is missing (defaults() in BOOT). */
-const def=()=>({v:5,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phase:0,best:0,cam:null,
+   first used; loading fills in whatever an older save is missing (defaults() in BOOT).
+   SAVE_V is how many one-time conversions a save has had (MIGRATIONS in BOOT); a new
+   save needs none. Saves from before this count carry v:5 or no v at all. */
+const SAVE_V=6;
+const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phase:0,best:0,cam:null,
   grid:{},inventory:{},selected:null,stats:{},review:[],critters:[],creatures:[],
   blueprints:[],fed:0,timers:{},quests:null,tour:0,buddy:{c:10,r:ROWS_MAX-1},
   guardians:[],books:{},badges:[],swaps:0,daily:{},sawNight:false,
@@ -10253,7 +10256,7 @@ async function restoreBackup(obj){
     await DB.set("blobs",k,b64ToBlob(v.data,v.type));
     if(String(k).startsWith("aud:"))Sound.invalidate(String(k).slice(4));
   }
-  state=withDefaults(st);migrate();settleMovers();
+  loadSave(st);settleMovers();
   try{await loadPack();}catch(e){}
   save();paintBackdrop();renderWorld();renderDock();renderHUD();applyNight();
 }
@@ -10319,63 +10322,94 @@ function withDefaults(saved){
   return defaults(saved,def());
 }
 
-/* Saves from the block-building version carry items that no longer do
-   anything. Convert them to gems rather than leaving dead buttons in the
-   dock, and clear scenery blocks out of the grid. */
-function migrate(){
+/* ---- one-time conversions ----
+   state.v is how many have run. When a save older than a step is loaded (or restored
+   from a backup), the step runs once, in order, and state.v moves past it for good.
+   A future conversion is added as step 7, 8, … with SAVE_V raised to match, and a step
+   is never edited once released: saves that already ran it will not run it again. */
+const MIGRATIONS={6:legacyBlockEra};
+/* Step 6. Saves from the block-building version carry items that no longer do
+   anything: convert them to gems rather than leaving dead buttons in the dock, and
+   clear scenery blocks out of the grid. Saves from before "one of each" (v3.7) carry
+   doubles: fold them into levels. Both say so once, with a toast. */
+function legacyBlockEra(s){
   const isBuilding=id=>!!BUILD_OF(id);
   let refund=0;
-  Object.entries(state.inventory||{}).forEach(([id,it])=>{
-    if(!isBuilding(id)){refund+=(it.n||0)*2;delete state.inventory[id];}
+  Object.entries(s.inventory||{}).forEach(([id,it])=>{
+    if(!isBuilding(id)){refund+=(it.n||0)*2;delete s.inventory[id];}
   });
-  Object.entries(state.grid||{}).forEach(([k,t])=>{
-    if(!isBuilding(t.id)){refund+=2;delete state.grid[k];}
+  Object.entries(s.grid||{}).forEach(([k,t])=>{
+    if(!isBuilding(t.id)){refund+=2;delete s.grid[k];}
   });
-  if(state.selected&&!isBuilding(state.selected))state.selected=null;
-  // anything already standing in the valley counts as a plan he owns
-  Object.values(state.grid).forEach(t=>{
-    if(isBuilding(t.id)&&!state.blueprints.includes(t.id))state.blueprints.push(t.id);
-  });
-  // a stunt that was cut short by closing the app must not leave the vehicle frozen
-  (state.vehicles||[]).forEach(v=>{delete v.busy;delete v.hold;});
+  if(s.selected&&!isBuilding(s.selected))s.selected=null;
   // one of each: fold doubles into levels (anything past gold becomes gems)
   let merged=0;
   const seenB={};
-  Object.keys(state.grid).forEach(k=>{const t=state.grid[k];
-    if(seenB[t.id]){const keep=state.grid[seenB[t.id]];
+  Object.keys(s.grid).forEach(k=>{const t=s.grid[k];
+    if(seenB[t.id]){const keep=s.grid[seenB[t.id]];
       if((keep.lv||1)<MAX_LV)keep.lv=(keep.lv||1)+(t.lv||1);else refund+=Math.round((BUILD_OF(t.id).gems||10)/2);
-      keep.lv=Math.min(MAX_LV,keep.lv);delete state.grid[k];merged++;}
+      keep.lv=Math.min(MAX_LV,keep.lv);delete s.grid[k];merged++;}
     else seenB[t.id]=k;});
-  Object.entries(state.inventory||{}).forEach(([id,it])=>{
+  Object.entries(s.inventory||{}).forEach(([id,it])=>{
     const n=it.n||0;if(!n)return;
-    if(seenB[id]){const keep=state.grid[seenB[id]];const add=n;keep.lv=Math.min(MAX_LV,(keep.lv||1)+add);delete state.inventory[id];merged+=add;}
-    else if(n>1){state.inventory[id]={n:1,lv:Math.min(MAX_LV,(it.lv||1)+n-1)};merged+=n-1;}
+    if(seenB[id]){const keep=s.grid[seenB[id]];const add=n;keep.lv=Math.min(MAX_LV,(keep.lv||1)+add);delete s.inventory[id];merged+=add;}
+    else if(n>1){s.inventory[id]={n:1,lv:Math.min(MAX_LV,(it.lv||1)+n-1)};merged+=n-1;}
     else it.lv=it.lv||1;});
   const fold=(list)=>{const out=[],by={};
     (list||[]).forEach((x,i)=>{const k=by[x.id];
       if(k){const sum=(k.lv||1)+(x.lv||1);if(sum>MAX_LV)refund+=5*(sum-MAX_LV);k.lv=Math.min(MAX_LV,sum);merged++;}
       else{x.lv=x.lv||1;if(x.since==null)x.since=i;if(x.out==null)x.out=true;by[x.id]=x;out.push(x);}});
     return out;};
-  state.critters=fold(state.critters);state.vehicles=fold(state.vehicles);
-  const trim=(list,max)=>{const on=list.filter(x=>x.out!==false).sort((a,b)=>(a.since||0)-(b.since||0));
-    while(on.length>max){on.shift().out=false;}};
-  trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
-  if(merged&&!state.tidied){state.tidied=true;
+  s.critters=fold(s.critters);s.vehicles=fold(s.vehicles);
+  if(merged&&!s.tidied){s.tidied=true;
     setTimeout(()=>{toast("Tidied up! Doubles became upgrades ★ — extra animals and vehicles are resting in the sticker book.");
       buddySay("Look, some of our things leveled up!");},5200);}
   if(refund){
-    state.gems=(state.gems||0)+refund;
+    s.gems=(s.gems||0)+refund;
     setTimeout(()=>toast(`Your old blocks became ${refund} gems — spend them on buildings`),1400);
   }
 }
 
+/* Small repairs on every load. Each is harmless when there is nothing to repair. */
+function bootFixups(){
+  // a stunt that was cut short by closing the app must not leave the vehicle frozen
+  state.vehicles.forEach(v=>{delete v.busy;delete v.hold;});
+  // anything already standing in the valley counts as a plan he owns
+  Object.values(state.grid).forEach(t=>{
+    if(BUILD_OF(t.id)&&!state.blueprints.includes(t.id))state.blueprints.push(t.id);
+  });
+  // every building in the bag, animal and vehicle has a level; animals and vehicles
+  // also have a place in line and are either out or resting
+  Object.values(state.inventory).forEach(it=>{if(it&&it.n)it.lv=it.lv||1;});
+  [state.critters,state.vehicles].forEach(list=>list.forEach((x,i)=>{
+    x.lv=x.lv||1;if(x.since==null)x.since=i;if(x.out==null)x.out=true;}));
+  // only so many are out at once: the ones out longest go and rest first
+  const trim=(list,max)=>{const on=list.filter(x=>x.out!==false).sort((a,b)=>(a.since||0)-(b.since||0));
+    while(on.length>max){on.shift().out=false;}};
+  trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
+}
+
+/* Load a save: fill in its defaults, run the one-time conversions it has not had, then
+   the every-load repairs. Returns true when a conversion ran. With nothing stored, the
+   new valley made at startup is kept (it needs no conversions). */
+function loadSave(saved){
+  const had=isPlain(saved);
+  // a save from before versions were counted is at 0, not at the newest
+  const from=had?(+saved.v||0):SAVE_V;
+  state=withDefaults(had?saved:state);
+  state.v=from;
+  let ran=false;
+  while((state.v||0)<SAVE_V){state.v=(state.v||0)+1;const m=MIGRATIONS[state.v];if(m){m(state);ran=true;}}
+  bootFixups();
+  return ran;
+}
+
 (async function boot(){
   // Nothing in here may stop the valley from being drawn.
-  try{
-    const saved=await DB.get("kv","state");
-    if(saved)state=withDefaults(saved);
-  }catch(e){ console.warn("no saved valley:",e&&e.message); }
-  migrate();
+  let saved=null;
+  try{ saved=await DB.get("kv","state"); }catch(e){ console.warn("no saved valley:",e&&e.message); }
+  // a converted save is written straight away, so the next start does not convert it again
+  if(loadSave(saved))save();
   try{ await loadPack(); }catch(e){ packCreatures=[]; }
   try{ settleMovers(); }catch(e){}
   paintBackdrop();
