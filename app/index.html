@@ -7907,7 +7907,7 @@ const Reread=(()=>{
   const MIN=800,MAX=90000,KEEP=400,DAYS=90,GEMS=2;
   let cur=null;   // the reread on screen: {el,info,t0}; t0 stays 0 until the words show
   // the words he reads on the page: anything with a letter or a digit in it
-  const count=s=>String(s||"").split(/\s+/).filter(w=>/[A-Za-z0-9À-ɏ]/.test(w)).length;
+  const count=s=>String(s||"").split(/\s+/).filter(w=>/[A-Za-z0-9\u00C0-\u024F]/.test(w)).length;
   // today's paid pages ("bookId:page"); a new day starts an empty list
   function paid(){const d=today();let p=state.rereadPaid;
     if(!p||typeof p!=="object"||p.date!==d||!Array.isArray(p.pages))p=state.rereadPaid={date:d,pages:[]};
