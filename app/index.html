@@ -227,6 +227,9 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
 .lt:active,.lt.lit{background:var(--gold);transform:translateY(4px);box-shadow:none}
 .lt.blend{background:var(--meadow);color:#fff}
 .lt.wobble{animation:wobble .5s}
+.lt.flip{animation:tileflip .6s ease-in-out;background:var(--gold)}
+@keyframes tileflip{0%{transform:perspective(400px) rotateY(0)}50%{transform:perspective(400px) rotateY(90deg)}100%{transform:perspective(400px) rotateY(0)}}
+.readtip{text-align:center;font-weight:800;color:var(--ink);background:rgba(127,176,105,.18);border-radius:14px;padding:8px 14px;margin:0 auto 10px;max-width:520px}
 @keyframes wobble{0%,100%{transform:none}20%{transform:rotate(-7deg)}45%{transform:rotate(6deg)}70%{transform:rotate(-4deg)}}
 #picks{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:4px}
 .pick{width:124px;height:124px;padding:8px;background:var(--paper);border:3px solid var(--ink);
@@ -3182,6 +3185,7 @@ function makePhonics(){
     or:V([[580,900,2500],[480,1000,1750]],.50),
     er:V([[480,1350,1650]],.46),
     ou:V([[780,1300,2600],[430,900,2400]],.50),
+    uu:V([[470,1150,2600]],.36,{g:[20,12,12]}),   // the short oo in book and look
     // sonorants: voiced and held
     l:V([[360,1250,2700]],.44,{soft:1}),
     r:V([[420,1250,1650]],.44,{soft:1}),
@@ -3220,7 +3224,7 @@ function makePhonics(){
     ir:"er",ur:"er",igh:"eye",uh:"u",bb:"b",nn:"n",tt:"t",pp:"p",dd:"d",mm:"m",rr:"r"};
   // per-sound level trim, measured offline so every tile plays at about the
   // same loudness with headroom (hisses a little quieter, as they carry)
-  const NORM={a:0.21,e:0.199,i:0.154,o:0.246,u:0.286,ee:0.232,ay:0.239,eye:0.239,oh:0.258,oo:0.272,aw:0.253,ar:0.253,or:0.23,er:0.232,ou:0.226,l:0.249,r:0.148,w:0.162,y:0.171,m:0.144,n:0.143,ng:0.145,s:0.347,sh:0.258,f:0.344,th:0.579,dh:0.313,h:0.656,z:0.238,v:0.332,p:0.891,t:0.75,k:0.876,b:0.169,d:0.204,g:0.198,j:0.345,ch:0.415,wh:0.16};
+  const NORM={a:0.21,e:0.199,i:0.154,o:0.246,u:0.286,ee:0.232,ay:0.239,eye:0.239,oh:0.258,oo:0.272,uu:0.27,aw:0.253,ar:0.253,or:0.23,er:0.232,ou:0.226,l:0.249,r:0.148,w:0.162,y:0.171,m:0.144,n:0.143,ng:0.145,s:0.347,sh:0.258,f:0.344,th:0.579,dh:0.313,h:0.656,z:0.238,v:0.332,p:0.891,t:0.75,k:0.876,b:0.169,d:0.204,g:0.198,j:0.345,ch:0.415,wh:0.16};
   const resolve=ph=>{ph=String(ph||"").toLowerCase();return T[ph]?ph:(ALIAS[ph]&&T[ALIAS[ph]]?ALIAS[ph]:null);};
 
   // --- shared sources, cached per audio context ----------------------
@@ -3359,19 +3363,30 @@ function makePhonics(){
     }
     return dur;
   }
-  function render(ctx,dest,t0,ph,level){
+  // stretch: held sounds (vowels, m, n, s, f, h...) can be drawn out for a connected
+  // blend ("mmmaaat"); stops, ch/j and the glides w/y can't, so they never stretch
+  const HOLD={vowel:1,nasal:1,fric:1,breath:1};
+  const held=(p,stretch)=>stretch&&stretch!==1&&HOLD[p.k]&&!p.glide?Object.assign({},p,{dur:p.dur*stretch}):p;
+  function render(ctx,dest,t0,ph,level,stretch){
     level=level==null?1:level;
     const key=resolve(ph);if(!key)return 0;
-    const p=T[key];
-    if(p.k==="seq"){let t=t0;p.parts.forEach((q,i)=>{const d=render(ctx,dest,t,q,level);t+=d*(i===0?.78:1);});return t-t0;}
+    const p=held(T[key],stretch);
+    if(p.k==="seq"){let t=t0;p.parts.forEach((q,i)=>{const d=render(ctx,dest,t,q,level,stretch);t+=d*(i===0?.78:1);});return t-t0;}
     return ({vowel,nasal,fric,breath,stop,affr})[p.k](ctx,dest,t0,p,level*(NORM[key]||.3));
   }
   // length without rendering, for timing the blend
-  function duration(ph){
-    const key=resolve(ph);if(!key)return 0;const p=T[key];
-    if(p.k==="seq")return p.parts.reduce((a,q,i)=>a+duration(q)*(i===0?.78:1),0);
+  function duration(ph,stretch){
+    const key=resolve(ph);if(!key)return 0;const p=held(T[key],stretch);
+    if(p.k==="seq")return p.parts.reduce((a,q,i)=>a+duration(q,stretch)*(i===0?.78:1),0);
     if(p.k==="stop")return p.voiced?.142:.11;
     return p.dur;
+  }
+  // how a sound joins the next one in a blend: "stop" (p, t, k, b, d, g, ch, j: a burst,
+  // can't be held), "glide" (w, y) or "held"; a pair like x (k+s) goes by its last part
+  function kind(ph){
+    const key=resolve(ph);if(!key)return null;const p=T[key];
+    if(p.k==="seq")return kind(p.parts[p.parts.length-1]);
+    return p.k==="stop"||p.k==="affr"?"stop":p.glide?"glide":"held";
   }
   // one output stage per audio context. No compressor: Web Audio's adds
   // automatic make-up gain, which pushed these into clipping. The sounds are
@@ -3390,7 +3405,7 @@ function makePhonics(){
       return Promise.resolve(false);
     }
   }
-  return{play,render,duration,known:ph=>!!resolve(ph),resolve,table:T};
+  return{play,render,duration,kind,known:ph=>!!resolve(ph),resolve,table:T};
 }
 const Phonics=makePhonics();
 // tile notation: "sh" plain; "e:uh" shows e, says uh; "e:" shows e, silent
@@ -3563,7 +3578,71 @@ const Sound=(()=>{
       setTimeout(res,Math.min(8000,600+t.length*90));
     });
   }
-  async function say(key,fallback,rate=.75){
+  /* Connected phonation (Gonzalez-Frey & Ehri 2021): Blend it runs the sounds together
+     as one stretched stream, "mmmaaat" rather than "m – a – t", so the first sound is
+     still in his ear when the last one arrives. Each sound starts part-way through the
+     one before (held sounds at 72 %, stops at 85 %: a burst can't be held, so it only
+     overlaps its tail) and fades out across the overlap; held synth sounds are drawn out
+     by a third. A parent's recording is trimmed of its silence and used in the same way.
+     blend() feeds the stream one tile at a time through say(), so each tile lights as its
+     sound begins; anything that fails drops back to the old one-sound-at-a-time blend. */
+  const JOIN={held:.72,glide:.72,stop:.85},LOOK=.1,STRETCH=1.33;
+  function decode(c,ab){return new Promise((ok,no)=>{const r=c.decodeAudioData(ab,ok,no);if(r&&r.then)r.then(ok,no);});}
+  async function clipFor(c,ph){
+    let u=await url("sound:"+ph);if(!u){const k=Phonics.resolve(ph);if(k&&k!==ph)u=await url("sound:"+k);}
+    if(!u)return null;
+    const buf=await decode(c,await (await fetch(u)).arrayBuffer()),d=buf.getChannelData(0);
+    let peak=0;for(let i=0;i<d.length;i++){const a=Math.abs(d[i]);if(a>peak)peak=a;}
+    const thr=Math.max(.01,peak*.08);let a=0,b=d.length-1;
+    while(a<b&&Math.abs(d[a])<thr)a++;while(b>a&&Math.abs(d[b])<thr)b--;
+    const off=Math.max(0,a/buf.sampleRate-.01),dur=Math.min(buf.duration-off,(b-a)/buf.sampleRate+.03);
+    return dur>.03?{buf,off,dur}:null;
+  }
+  function stream(phs){
+    const c=actx();
+    if(c.state==="suspended"&&c.resume){const r=c.resume();if(r&&r.catch)r.catch(()=>{});}
+    const out=c.createGain();out.gain.value=1;out.connect(c.destination);
+    // a suspended context's clock stands still, so time the tiles by the wall clock then
+    const a0=c.currentTime,w0=performance.now();
+    const now=()=>c.state==="running"?c.currentTime:a0+(performance.now()-w0)/1000;
+    const clips=new Map(),S={broken:false,stopped:false,t:0,t0:null,end:0,log:[]};
+    const want=[...new Set(phs.map(soundOf).filter(Boolean))];
+    S.ready=Promise.all(want.map(ph=>clipFor(c,ph).then(k=>{if(k)clips.set(ph,k);})))
+      .catch(()=>{S.broken=true;});
+    S.add=ph=>{
+      if(S.broken||S.stopped)return null;
+      const snd=soundOf(ph),t=Math.max(S.t,now()+.04);
+      if(S.t0==null)S.t0=t;
+      if(snd===""){S.log.push({ph,at:+(t-S.t0).toFixed(3),dur:0});return Promise.resolve();}   // a silent letter takes no time
+      const clip=clips.get(snd),kd=Phonics.kind(snd);
+      if(!clip&&!kd)throw new Error("no sound for "+snd);
+      const g=c.createGain();g.connect(out);let dur;
+      if(clip){
+        const src=c.createBufferSource();src.buffer=clip.buf;src.connect(g);src.start(t,clip.off,clip.dur);dur=clip.dur;
+        g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+.02);
+      }else{
+        const m=c.createGain();m.gain.value=1.25;m.connect(g);   // the synth's own output level (as in Phonics.play)
+        dur=Phonics.render(c,m,t,snd,1,kd==="held"?STRETCH:1);
+        if(!(dur>0))throw new Error("synth made no sound for "+snd);
+        g.gain.setValueAtTime(1,t);
+      }
+      const next=t+dur*(JOIN[kd||"held"]);
+      g.gain.setValueAtTime(1,next);g.gain.linearRampToValueAtTime(0,t+dur);
+      S.t=next;S.end=Math.max(S.end,t+dur);
+      S.log.push({ph:snd,at:+(t-S.t0).toFixed(3),dur:+dur.toFixed(3),next:+(next-S.t0).toFixed(3),src:clip?"clip":"synth",kind:kd||"held"});
+      return new Promise(r=>setTimeout(r,Math.max(0,Math.round((next-LOOK-now())*1000))));
+    };
+    S.done=()=>new Promise(r=>setTimeout(r,Math.max(0,Math.round((S.end-now())*1000))+40))
+      .then(()=>{setTimeout(()=>{try{out.disconnect();}catch(e){}},200);});
+    S.stop=()=>{S.stopped=true;try{out.gain.cancelScheduledValues(0);out.gain.value=0;out.disconnect();}catch(e){}};
+    return S;
+  }
+  async function say(key,fallback,rate=.75,opt){
+    // Blend it: this sound joins the connected stream; if that fails, play it on its own
+    if(opt&&opt.stream&&key.startsWith("sound:")){
+      try{const p=opt.stream.add(key.slice(6));if(p)return p;}
+      catch(e){opt.stream.broken=true;if(typeof console!=="undefined")console.warn("Connected blend fell back:",e&&e.message);}
+    }
     // a tile like "e:uh" is recorded in the Voice Studio under the sound it makes ("uh")
     let u=null;
     if(key.startsWith("sound:")){const ph=soundOf(key.slice(6));
@@ -3578,7 +3657,7 @@ const Sound=(()=>{
       if(Phonics.known(ph))return Phonics.play(actx(),ph);
       return speak(fallback,.8);}
     return speak(fallback,rate>=.9?rate:.82);}
-  return{say,sfx,speak,ctx:()=>actx(),stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
+  return{say,sfx,speak,stream,ctx:()=>actx(),stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
     has:k=>DB.get("blobs","aud:"+k).then(b=>!!b),
     invalidate:k=>{const u=cache.get(k);if(u)URL.revokeObjectURL(u);cache.delete(k);}};
 })();
@@ -4910,20 +4989,41 @@ function checkBuild(){
 /* The two helper buttons always follow the screen that is open now (they used
    to be rewired by each mode, so a story crate left them reading its sentence).
    Blend sounds out exactly the tiles on screen, then says the word they spell:
-   the word's own tiles, what he has built so far, or the word in a sound swap. */
+   the word's own tiles, what he has built so far, or the word in a sound swap.
+   The sounds run together as one stretched stream before the word (Sound.stream);
+   tapping a single tile still plays just that sound. A newer blend cuts off an older one. */
+let blendRun=0,blendStream=null;
 async function blend(){
   if(!cur)return;
   if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  const run=++blendRun;
+  if(blendStream){blendStream.stop();blendStream=null;}
   const L=document.getElementById("letters"),building=L.style.display==="none";
   const tiles=building?[...document.querySelectorAll("#slotsRow .wslot")].filter(x=>x.dataset.ph):[...L.querySelectorAll(".lt")];
   const ph=tiles.map(t=>t.dataset.ph);
+  tiles.forEach(t=>t.classList.remove("blend"));
+  let S=null;
+  try{S=Sound.stream(ph);blendStream=S;await S.ready;}catch(e){S=null;}
+  if(run!==blendRun)return;
+  const log={mode:S&&!S.broken?"connected":"sequential",sounds:S?S.log:[],word:null,done:false};
+  try{window._lastBlend=log;}catch(e){}
   for(let i=0;i<tiles.length;i++){tiles[i].classList.add("blend");
-    await Sound.say("sound:"+ph[i],ph[i]);await new Promise(r=>setTimeout(r,90));}
+    const joined=!!(S&&!S.broken);
+    await Sound.say("sound:"+ph[i],ph[i],undefined,joined?{stream:S}:undefined);
+    if(run!==blendRun)return;
+    if(!S||S.broken)await new Promise(r=>setTimeout(r,90));}   // one at a time, as before
+  if(S&&S.broken)log.mode="sequential";
+  if(S&&!S.broken)await S.done();
+  if(run!==blendRun)return;
+  if(blendStream===S)blendStream=null;
   await new Promise(r=>setTimeout(r,180));
+  if(run!==blendRun)return;
   tiles.forEach(t=>t.classList.remove("blend"));
   const spells=a=>a&&a.length===ph.length&&a.every((x,i)=>x===ph[i]);
   const word=spells(cur.p)?cur.w:cur.from&&spells(cur.from.p)?cur.from.w:null;
+  log.word=word;
   if(word)await Sound.say("word:"+word,word,.82);
+  log.done=true;
 }
 document.getElementById("blendBtn").onclick=blend;
 
@@ -4994,6 +5094,94 @@ function choices(w,P){
     P.appendChild(b);
   });
 }
+/* ---- after a miss: say what to try next ----
+   Kind, and it never costs anything. Only on the FIRST miss (the second lights the right
+   answer, as before):
+   - he picked a word one sound away from this one (cap for cat): name both sounds,
+     "That one has the sound /p/. This word has the sound /t/." Feedback that says what
+     to fix works best (Hattie & Timperley 2007).
+   - otherwise, from level 5, when a letter or team in the word has more than one common
+     reading (ea in leaf / bread / break), "set for variability": "That didn't sound like
+     a word. Try the other sound for 'ea'." and that tile flips and plays the sound it
+     makes in this word. Once per word per session, never for a heart word (those are
+     learned by heart), never at levels 1-4 (one sound per letter there).
+   Anything else keeps the plain feedback: a wobble, then Blend it. */
+const OTHER_SOUND={ea:["ee","e","ay"],ow:["oh","ou"],oo:["oo","uu"],ou:["ou","oo","u"],ie:["eye","ee"],ey:["ee","ay"],
+  y:["ee","eye"],c:["k","s"],g:["g","j"],a_e:["ay","a"],i_e:["eye","i"],o_e:["oh","o"],u_e:["oo","u"],e_e:["ee","e"],
+  a:["a","ay"],e:["e","ee"],i:["i","eye"],o:["o","oh","u"],u:["u","oo"]};
+// the letters as the voice says them: "E A" (so i-e and ie share a line)
+const otherSoundLine=L=>"That didn't sound like a word. Try the other sound for "+L.replace("_","").toUpperCase().split("").join(" ")+".";
+const NAMED_LINES=["That one has the sound","This word has the sound"];
+const otherSoundDone=new Set();
+// the tile to flex in this word, or null
+function otherSoundTile(w){
+  if(!w||!w.p||w.tricky||w.swap||(w.t||1)<5)return null;
+  const two=!!(w.syl&&w.syl.length);let best=null;
+  w.p.forEach((tile,i)=>{
+    const L=tile.split(":")[0].toLowerCase(),alts=OTHER_SOUND[L];if(!alts)return;
+    const snd=Phonics.resolve(soundOf(tile));if(!snd||alts.indexOf(snd)<0)return;
+    const odd=tile.indexOf(":")>=0;   // this word reads it the less usual way (c:s, o:oh, y:ee)
+    let rank;
+    if(L.length===1&&"aeiou".indexOf(L)>=0){if(!two||!odd)return;rank=0;}   // open/closed vowel in a two-part word
+    else if(L==="c"||L==="g"){const nx=w.p[i+1];if(!odd&&!(nx&&/^[eiy]/.test(nx)))return;rank=odd?0:2;}
+    else rank=odd?0:1;
+    if(!best||rank<best.rank)best={i,L,snd,rank};
+  });
+  return best;
+}
+// where the word he picked differs from this one by exactly one sound
+function soundDiff(w,picked){
+  const o=picked&&allWords().find(x=>x.w===picked);
+  if(!o||!o.p||!w.p||o.w===w.w||o.p.length!==w.p.length)return null;
+  const key=t=>{const s=soundOf(t);return Phonics.resolve(s)||s;};
+  const d=w.p.map((t,i)=>key(t)!==key(o.p[i])?i:-1).filter(i=>i>=0);
+  if(d.length!==1)return null;
+  const i=d[0],theirs=o.p[i],mine=w.p[i];
+  if(!Phonics.known(soundOf(theirs))||!Phonics.known(soundOf(mine)))return null;
+  return{i,theirs,mine};
+}
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const helpLive=(w,tok)=>cur===w&&w._fb===tok&&!w._paid&&ov("ovRead").classList.contains("on");
+function readTip(text){
+  const h=document.getElementById("shieldHost");let t=h.querySelector(".readtip");
+  if(!t){t=document.createElement("div");t.className="readtip";h.appendChild(t);}
+  t.textContent=text;return t;
+}
+async function namedSound(w,d,tok){
+  const shown=t=>t.indexOf(":")>=0?soundOf(t):tileText(t);
+  const text=`That one has the sound '${shown(d.theirs)}'. This word has the sound '${shown(d.mine)}'.`;
+  buddySay(text,6000);readTip(text);
+  await Sound.speak(NAMED_LINES[0],.95);if(!helpLive(w,tok))return;
+  await Sound.say("sound:"+d.theirs,soundOf(d.theirs));if(!helpLive(w,tok))return;
+  await pause(250);
+  await Sound.speak(NAMED_LINES[1],.95);if(!helpLive(w,tok))return;
+  const tile=document.querySelectorAll("#letters .lt")[d.i];
+  if(tile)tile.classList.add("lit");
+  await Sound.say("sound:"+d.mine,soundOf(d.mine));
+  if(tile)tile.classList.remove("lit");
+  if(!helpLive(w,tok))return;
+  await pause(350);if(helpLive(w,tok))blend();
+}
+async function tryOtherSound(w,o,tok){
+  const text=`That didn't sound like a word. Try the other sound for '${tileText(w.p[o.i])}'.`;
+  buddySay(text,6000);readTip(text);
+  await Sound.speak(otherSoundLine(o.L),.95);if(!helpLive(w,tok))return;
+  const tile=document.querySelectorAll("#letters .lt")[o.i];
+  if(tile){tile.classList.remove("flip");void tile.offsetWidth;tile.classList.add("flip");}
+  await pause(300);   // the tile is edge-on: its other side is showing
+  await Sound.say("sound:"+w.p[o.i],o.snd);
+  if(tile)setTimeout(()=>tile.classList.remove("flip"),300);
+  if(!helpLive(w,tok))return;
+  await pause(450);if(helpLive(w,tok))blend();
+}
+// the first-miss help for this word and pick, or null for the plain feedback
+function missHelp(w,picked){
+  const d=soundDiff(w,picked);
+  if(d)return tok=>namedSound(w,d,tok);
+  const o=otherSoundTile(w);
+  if(o&&!otherSoundDone.has(w.w)){otherSoundDone.add(w.w);return tok=>tryOtherSound(w,o,tok);}
+  return null;
+}
 function miss(btn){
   Skills.result(cur,{ok:false,confused:btn.dataset.w,ms:performance.now()-(cur._t0||0)});cur._t0=performance.now();
   misses++;Sound.sfx.nope();
@@ -5002,7 +5190,15 @@ function miss(btn){
     setTimeout(()=>t.classList.remove("wobble"),520);});
   if(misses>=2)document.querySelectorAll("#picks .pick").forEach(p=>{
     if(p.dataset.w===cur.w)p.classList.add("hint");});
-  setTimeout(blend,560);
+  const w=cur,tok=w._fb=(w._fb||0)+1;     // a newer miss cuts off the help still being spoken
+  if(w._helping){w._helping=false;try{VoicePack.stop();Sound.stopVoice();}catch(e){}}
+  let help=null;
+  if(misses===1){try{help=missHelp(w,btn.dataset.w);}catch(e){help=null;}}
+  setTimeout(()=>{
+    if(!help)return blend();
+    w._helping=true;
+    help(tok).catch(()=>{if(helpLive(w,tok))blend();}).then(()=>{if(w._fb===tok)w._helping=false;});
+  },560);
 }
 function succeed(){
   if(!cur||cur._paid)return;cur._paid=true;cur._lock=true;
