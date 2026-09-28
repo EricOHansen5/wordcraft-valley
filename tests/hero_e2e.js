@@ -87,12 +87,12 @@ const srv=http.createServer((q,r)=>{let f=decodeURIComponent(q.url.split("?")[0]
   await E(`state.hero="D'Angelo";state.settings.tierOverride=6`);
   await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"))`);
 
-  // the game voice: the default name uses today's "Ash" clips, any other name the device voice
+  // the game voice: the default name has clips (its own since 28g, and the old "Ash" ones as a fallback); any other name uses the device voice
   const v=await E(`(async()=>{await VoicePack.load();const r={};
-      state.hero="Asher";r.def=VoicePack.has("Asher and the dog went to the pond.");
-      state.hero="D'Angelo";r.other=VoicePack.has("D'Angelo and the dog went to the pond.");r.otherAsh=VoicePack.has("Asher and the dog went to the pond.");
+      state.hero="Asher";r.def=VoicePack.has("Asher and the dog went to the pond.");r.legacy=heroLegacy("Asher and the dog went to the pond.");
+      state.hero="D'Angelo";r.other=VoicePack.has("D'Angelo and the dog went to the pond.");r.otherLegacy=heroLegacy("Asher and the dog went to the pond.");
       state.hero="Asher";return r;})()`);
-  ok(v.def&&!v.other&&!v.otherAsh,"voice: Asher plays the recorded Ash line; another name uses the device voice "+JSON.stringify(v));
+  ok(v.def&&!v.other&&v.legacy==="Ash and the dog went to the pond."&&v.otherLegacy===null,"voice: the hero's line has a clip, another name uses the device voice, and the old Ash clips stand in only for the default name "+JSON.stringify(v));
 
   // it is saved
   await E(`state.hero="Kim";saveNow()`);await p.waitForTimeout(300);await p.reload();await p.waitForTimeout(2200);
