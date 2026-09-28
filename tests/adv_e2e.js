@@ -30,8 +30,9 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   // near a building -> action button
   await p.evaluate(()=>{Adv._P.c=6.4;Adv._P.r=8;});await p.waitForTimeout(200);
   const lab=await p.evaluate(()=>document.getElementById("advAct").textContent);ok(/Cottage|🚪/.test(lab),"action button near a building: "+lab);
-  await p.evaluate(()=>{Adv._P.c=14.3;Adv._P.r=8;const d=state.critters.find(x=>x.id==="dog");d.c=14;d.r=8;});await p.waitForTimeout(200);
-  ok(/dog/i.test(await p.evaluate(()=>document.getElementById("advAct").textContent)),"action button near an animal");
+  // on a free spot: a note or the quest giver standing there would rightly win the button
+  await p.evaluate(()=>{const f=Adv.freePos(0);Adv._P.c=f.c+.3;Adv._P.r=f.r;const d=state.critters.find(x=>x.id==="dog");d.c=f.c;d.r=f.r;});await p.waitForTimeout(200);
+  const labA=await p.evaluate(()=>document.getElementById("advAct").textContent);ok(/dog/i.test(labA),"action button near an animal: "+labA);
   await p.screenshot({path:"a_near.png"});
   // walk through tall grass until something appears
   const g=await p.evaluate(()=>Adv._patches()[0]);
