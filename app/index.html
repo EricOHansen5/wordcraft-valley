@@ -665,6 +665,17 @@ button.mpill{cursor:pointer}
 .bpage.end{text-align:center}.bstars{font-size:54px;margin:6px 0}.bwhy{list-style:none;padding:0;font-size:19px;font-weight:700}
 .bpage .mrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
 .bpage.end .mrow,.bpage.cover .mrow{justify-content:center}
+/* Read it again: the page's words alone and large, and one Done */
+.bpage.rereading>*:not(.breread){display:none}
+.breread{text-align:center;padding:6px 0 4px}
+.rrhead{font-weight:900;font-size:20px;color:var(--ink-soft)}
+.rrwait{font-size:54px;margin:34px 0;animation:ears 1s ease-in-out infinite}
+.rrtext{font-size:clamp(40px,6.2vw,64px);font-weight:800;line-height:1.45;margin:28px 8px 32px;letter-spacing:.02em;animation:pop .3s cubic-bezier(.2,1.3,.4,1)}
+.breread .btn{min-width:240px;min-height:80px;font-size:28px}
+.rrgem{left:50%;top:40%;font-size:32px;color:#2F8F3A;text-shadow:0 2px 0 #fff;z-index:5}
+.rspeed{border-collapse:collapse;font-size:15px;margin:2px 0 6px}
+.rspeed th,.rspeed td{padding:4px 16px 4px 0;text-align:left;border-bottom:2px solid rgba(46,38,32,.12)}
+.rspeed th{font-size:13px;color:var(--ink-soft)}
 /* sound shield */
 .shield{margin:6px auto 12px;padding:12px;border:4px solid #6FA8C7;border-radius:22px;background:linear-gradient(160deg,#E4F3FF,#C9E4FA);text-align:center;
   animation:pop .3s cubic-bezier(.2,1.3,.4,1);max-width:560px}
@@ -3799,6 +3810,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   library:{},
   // STORYBOOKS: the day of each book finished in "Read together" (the last 60), for the Grown-up report
   togetherDays:[],
+  // STORYBOOKS, Read it again: each timed reread of a page, {d:day,t:level,w:words,ms} (the last 90 days,
+  // at most 400), and the pages ("bookId:page") whose reread bonus was paid on that date
+  reread:[],rereadPaid:{date:"",pages:[]},
   // VALLEY ADVENTURE: the Word-Dex and the treasure hunt
   adv:{dex:{},hunt:null,huntDay:null,hunts:0,caught:0},
   // NOTES FROM HOME: the notes and who signs them
@@ -7891,6 +7905,7 @@ const Books=(()=>{
     ov.querySelector("#bHear").onclick=()=>Sound.say("sent:"+words,words,.9);
     ov.querySelector("#bNext").onclick=()=>{page++;if(page<book.pages.length)showPage();else quiz();};
     tgKid();
+    try{Reread.offer(ov,book,page,words);}catch(e){}
   }
   // ---------- questions ----------
   function quiz(){
@@ -7986,6 +8001,92 @@ const Rec=(()=>{
     mr.onstop=()=>{try{stream.getTracks().forEach(t=>t.stop());}catch(e){}res(new Blob(chunks,{type:mr.mimeType||"audio/mp4"}));mr=null;};
     try{mr.stop();}catch(e){res(null);}});}
   return{ok,start,stop};
+})();
+
+/* ---- Read it again: how smoothly he reads a page he has just read (no microphone) ----
+   Once a book page has been read, "🔁 Read it again" sits beside Next. It shows the page's
+   words alone, large, with one big Done. A spoken line says what to do, then the words
+   appear, and the time from then to Done is logged against the page's word count
+   (state.reread) for the report's Reading speed. Under 0.8 s (a tap-through) or over 90 s
+   (he walked away) nothing is logged and nothing is said. The first logged reread of a page
+   on a day pays 2 💎 (state.rereadPaid); another the same day is logged and pays nothing,
+   quietly. A reread is not a new read: quests, the daily goal and the reading counts don't
+   move. It is never asked for. His own books (My Own Book) aren't levelled: no button. */
+const Reread=(()=>{
+  const MIN=800,MAX=90000,KEEP=400,DAYS=90,GEMS=2;
+  let cur=null;   // the reread on screen: {el,info,t0}; t0 stays 0 until the words show
+  // the words he reads on the page: anything with a letter or a digit in it
+  const count=s=>String(s||"").split(/\s+/).filter(w=>/[A-Za-z0-9\u00C0-\u024F]/.test(w)).length;
+  // today's paid pages ("bookId:page"); a new day starts an empty list
+  function paid(){const d=today();let p=state.rereadPaid;
+    if(!p||typeof p!=="object"||p.date!==d||!Array.isArray(p.pages))p=state.rereadPaid={date:d,pages:[]};
+    return p;}
+  // one reread: logged when it took 0.8-90 s; first is true when it earns the page's bonus today
+  function log(info,ms){
+    const w=count(info.words);if(!w||!(ms>=MIN&&ms<=MAX))return null;
+    if(!Array.isArray(state.reread))state.reread=[];
+    const cut=new Date();cut.setDate(cut.getDate()-DAYS);const from=ymd(cut);
+    state.reread.push({d:today(),t:info.t,w,ms:Math.round(ms)});
+    state.reread=state.reread.filter(x=>x&&x.d>=from).slice(-KEEP);
+    const p=paid(),k=info.id+":"+info.page,first=p.pages.indexOf(k)<0;
+    if(first){p.pages.push(k);state.gems+=GEMS;}
+    save();return{first,w};
+  }
+  // Books.showPage: the button waits in the row that shows once the page has been read
+  function offer(ov,book,page,words){
+    if(!ov||!book||book.mine)return;
+    const row=ov.querySelector(".bafter"),next=row&&row.querySelector("#bNext");
+    if(!next||row.querySelector("#bAgain"))return;
+    const b=document.createElement("button");b.className="btn soft";b.id="bAgain";b.textContent="🔁 Read it again";
+    row.insertBefore(b,next);
+    b.onclick=()=>open(ov.querySelector(".bpage"),{id:book.id,page,t:book.t,words});
+  }
+  function open(pg,info){
+    if(!pg||(cur&&document.body.contains(cur.el)))return;
+    Sound.sfx.pop();
+    const el=document.createElement("div");el.className="breread";
+    el.innerHTML=`<div class="rrhead">🔁 Read it again</div><div class="rrwait">👀</div>
+      <div class="rrtext" style="display:none">${esc(info.words)}</div>
+      <button class="btn primary big" id="bAgainDone">✓ Done</button>`;
+    pg.appendChild(el);pg.classList.add("rereading");pg.scrollTop=0;
+    const me=cur={el,info,t0:0};
+    const btn=el.querySelector("#bAgainDone");btn.onclick=()=>done(me);try{btn.focus();}catch(e){}   // Space or Enter works too
+    // the words show once the line has been said (or after 6 s, if the voice never says it has finished)
+    const show=()=>{if(cur!==me||me.t0||!document.body.contains(el))return;
+      el.querySelector(".rrwait").style.display="none";el.querySelector(".rrtext").style.display="";me.t0=performance.now();};
+    let said=null;try{said=Sound.speak("Read it again, nice and smooth. Tap Done when you finish.",.95);}catch(e){}
+    Promise.race([Promise.resolve(said).catch(()=>{}),new Promise(r=>setTimeout(r,6000))]).then(show);
+  }
+  function done(me){
+    if(cur!==me)return;cur=null;
+    const ms=me.t0?performance.now()-me.t0:0,pg=me.el.parentNode;
+    if(!me.t0){try{VoicePack.stop();}catch(e){}try{Sound.stopVoice();}catch(e){}}
+    me.el.remove();if(pg)pg.classList.remove("rereading");
+    const r=log(me.info,ms);
+    if(r&&r.first){Sound.sfx.chime();try{renderHUD();}catch(e){}
+      if(pg){const f=document.createElement("div");f.className="floater rrgem";f.textContent="+"+GEMS+" 💎";pg.appendChild(f);setTimeout(()=>f.remove(),1300);}}
+    else Sound.sfx.pop();
+  }
+  // words a minute at each level: the middle of the last 5 rereads, and of the 5 before them once there are 3 of those
+  function stats(){
+    const all=(Array.isArray(state.reread)?state.reread:[]).filter(x=>x&&x.t&&x.w>0&&x.ms>0);
+    const med=a=>{const s=a.map(x=>x.w*60000/x.ms).sort((p,q)=>p-q),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+    const levels=all.map(x=>x.t).filter((t,i,a)=>a.indexOf(t)===i).sort((a,b)=>a-b);
+    return levels.map(t=>{const a=all.filter(x=>x.t===t),before=a.slice(-10,-5);
+      return{t,n:a.length,now:Math.round(med(a.slice(-5))),before:before.length>=3?Math.round(med(before)):null};});
+  }
+  // the grown-up report's Reading speed block (days: the report's week)
+  function report(days){
+    const rows=stats(),from=(days&&days[0])||today();
+    if(!rows.length)return`<h3>Reading speed</h3><p class="rnote" id="rSpeed">No rereads yet. When he taps <b>🔁 Read it again</b> on a book page he has just read, his words a minute at each level show here.</p>`;
+    const week=state.reread.filter(x=>x&&x.d>=from).length;
+    const trend=r=>r.before==null?"":r.now>=r.before*1.1?" ↑":r.now<=r.before*.9?" ↓":" ≈";
+    return`<h3>Reading speed</h3><div id="rSpeed"><p class="rnote">Words a minute when he reads a book page again (🔁 Read it again), timed from the words appearing to his tap on Done. <b>${week}</b> reread${week===1?"":"s"} this week.</p>
+      <table class="rspeed"><tr><th>Level</th><th>Last 5</th><th>5 before</th><th>Rereads</th></tr>
+      ${rows.map(r=>`<tr data-t="${r.t}"><td>Level ${r.t}</td><td><b>${r.now}</b> wpm${trend(r)}</td><td>${r.before==null?"<i>first week</i>":r.before+" wpm"}</td><td>${r.n}</td></tr>`).join("")}</table>
+      <p class="rnote">Each figure is the middle one of its group, so one rushed or stuck page doesn't move it. A new level reads slower at first; the rise over the weeks is what counts.</p></div>`;
+  }
+  return{offer,open,log,count,paid,stats,report,MIN,MAX,GEMS,_cur:()=>cur};
 })();
 
 /* ================================================================
@@ -8154,6 +8255,7 @@ function openReport(){
     ${gT||gN?`<p class="rnote rgoal">Reading goal reached <b>${gN} of 7</b> days this week${gT?` (${gT} words a day, or a whole book)`:" (the goal is off now)"}.</p>`:""}
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}
+    ${Reread.report(days)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <p class="rnote" id="rTogether">${tgWeek} book${tgWeek===1?"":"s"} read together this week${tgWeek?"":" (👨‍👦 Read together is on the book shelf: take turns, or read each page first and he echoes it)"}.</p>
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
@@ -10935,7 +11037,7 @@ function defaults(t,d){
 // they were null (`state.x||(state.x=…)`, and the settings, animals and vehicles on load),
 // so for them a saved null means "not made yet" and gets the default.
 const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","buddy","daily","pace","badges","modeMin","modeOpens",
-  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","quest2","mybooks","write","sync","togetherDays",
+  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","reread","rereadPaid","adv","notes","quest","quest2","mybooks","write","sync","togetherDays",
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
   "adv.dex"];
 function withDefaults(saved){
