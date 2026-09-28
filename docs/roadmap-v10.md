@@ -1,15 +1,225 @@
-# Roadmap v10+: reading to 4th grade, other subjects, and Jobs
+# Roadmap v10+: reading depth first, then one job at a time
 
-Status: **plan only, nothing built yet.** Decisions made so far are listed at the end. It is written against `app/index.html` as of v9.2.1 (`MAX_TIER=12`, 235 words of which 59 are tricky (♥), and the `Read`, `Skills`, `Decode`, `Pace` and `Adv.provide` / `hookCrit` / `hookVeh` modules).
+Status: **plan only, nothing built yet.** Revised 27 Sept 2026 after a review of the first draft. The first draft (Factory → Store with four currencies → Jobs → Geometry → Physics → reading 13–24) is kept in full under **Deferred** at the end, so nothing designed there is lost. Written against `app/index.html` as of v9.2.1 (`MAX_TIER=12`, 235 words of which 59 are tricky (♥), 24 storybooks, and the `Read`, `Books`, `Skills`, `Decode`, `Pace`, `Quests`, `Rec` and `Adv.provide` / `hookCrit` / `hookVeh` modules).
+
+## Why the order changed
+The review asked four questions, and the answers reordered everything:
+
+| Question | Answer | What it changed |
+|---|---|---|
+| Where is Asher on levels 1–12? | **Levels 1–4, steady.** | Levels 13–24 would sit unused for a year or more. They move to Deferred, with a trigger (he reaches level 9). |
+| Who is this for? | **Asher first; cousins and friends are a bonus.** | Hero name stays (cheap, and the public copy needs it). The build-a-hero avatar and the placement check are deferred. |
+| Reading first, or breadth first? | **Reading first, then one big mode.** | New reading work is depth at *his* level: more books, sentence fluency, a read-with-Dad mode. Jobs (two jobs only) is the one non-reading mode this year. Factory, Geometry and Physics are deferred. |
+| Four currencies? | **Two: 💎 gems and the existing 🪙 coins.** | Shape stars and gears are dropped. The Trading Post shrinks to two shelves. The exchange stays as a small multiplication lesson. |
+
+What was actually observed at home, and what this plan does about it:
+
+| Observed | Response |
+|---|---|
+| He drifts to the Mine, Races and vehicles and reads as little as he can. | **Reading tickets**: a short read opens a Mine run, a race or a job shift. Tiny cost, parent toggle, and measured before and after. |
+| Sessions run long, then he is done for days. | A **visible daily reading goal** with a finish line and a celebration, then the session timer nudges the break. Short and often beats long and rare. |
+| Nobody knows which of the ~15 modes he actually returns to. | **Per-mode minutes and opens** in the Grown-up report, shipped first, so the next two releases are decided on two weeks of data instead of guesses. |
 
 ## Where we are
 - **Levels 1–12** cover kindergarten to the end of 1st grade: short vowels, then digraphs, blends, silent e, bossy r, vowel teams, two-part words, -ing/-ed, soft c/g and y, compound words, silent letters and contractions.
-- **Subjects:** reading only.
-- **Modes:** Adventure, Wilds, Mine, Races, Books and the others. Each one is an IIFE module that plugs into the valley through `Adv.provide` (a spot on the map) or a hook (an action when he walks up to an animal or vehicle).
+- **Books:** 24 decodable storybooks, two per level. Levels 1–4, where he is, have 8.
+- **Loop mechanics already there:** the 85% rule and Fast track (`Pace` times single words), a spaced review queue for unmastered words (`state.review`, due after 3/10/30 crates), three daily quests with one always a reading quest, a session timer (`settings.timer`) that yawns the buddy, and microphone recording (`Rec`) for Read-to-your-pet.
+- **Subjects:** reading only. **Currencies:** 💎 gems everywhere, 🪙 coins in the Mine (`state.mine.coins`), which books already pay.
+
+## Guiding rules for this roadmap
+1. **Build for Asher's next six months, not for grade 4.** Content he will meet this year beats content that waits.
+2. **Reading is the door.** Every other mode is reached through a little reading, never the other way round.
+3. **Measure before adding.** No new mode ships until the report can show whether the last one moved reading minutes.
+4. **At most two currencies.** 💎 and 🪙. Nothing else gets a purse.
+5. The usual rules stand: offline and self-contained, older iPad Safari, kind feedback, never break an old save.
 
 ---
 
-## v9.3 — Factory mode (from Lean Mine), built before v10
+## v9.3 — Measure and pace (small; ships first)
+
+Nothing new to play. It makes the next decisions measurable and fixes the pacing problem.
+
+### Per-mode minutes and opens
+- The "minutes played" counter already ticks once a minute while the app is visible and touched. Extend it: the tick also reads `document.querySelector(".overlay.on")` and credits the minute to that overlay's mode (`ovRead` → crates, `ovBook` → books, `ovRace`, `ovWild`, `ovWrite`, the Mine's overlay, and so on), or to **valley** when none is open.
+- Opens: a `Modes.open(id)` call at each mode's entry point (about 15 call sites), counted per day.
+- Saved as `state.modeMin[ymd][mode]` and `state.modeOpens[ymd][mode]`, added in `def()`; old saves start empty. Pruned to 60 days.
+- **Report:** a new "Where the time goes" block: a 7-day bar per mode with minutes and opens, and reading modes (crates, books, Wilds, Write it, Picture it) totalled as **reading minutes** against everything else. This one number is what v10 and v10.1 are judged on.
+
+### Daily reading goal with a finish line
+- A small ring on the HUD: **"Today's reading"**, filled by words read (crate reads, book pages, Wilds words, signs). The goal is 12 words or one book, whichever comes first, and a Grown-up setting (8/12/20).
+- Filling it plays the daily-quest chest early if the reading quest is done, the buddy says "That's your reading for today! The valley is yours," and the counter keeps going with no further fanfare. The session timer stays as it is.
+- Purpose: a clear end, so a session can be short and still feel finished. He can keep playing; the game just stops asking for more reading.
+
+### Retention checks for mastered tricky words (small)
+- Today `state.review` drops a word once it is mastered. Add one retention read for each mastered ♥ word at 30 and then 90 crates after mastery. A miss puts it back on the review queue; it never un-masters and never costs anything.
+
+### Tests and workflow
+- `modes_e2e.js`: opening a mode and a fake minute tick credit the right mode; the report renders totals; the daily ring fills and the "reading done" line fires once.
+- Voice: about 6 clips (goal reached, goal reminders, retention read intro).
+- Then two weeks of real play before v10 ships, so the tracking has a baseline.
+
+---
+
+## v10.0 — Reading depth at his level
+
+### More books where he is
+- Levels 1–6 go from 2 books each to **5 books each**: 18 new books of 5–7 pages, with the existing quiz types (who/what, yes/no, count). Art comes from `WORD_ART` and the existing scenes, so a book is data plus a decode check plus voice.
+- Two new quiz types, both spoken and both kind: **What happened first?** (two pictures from the book, tap the earlier one) and **Which page said it?** (hear a sentence, tap the matching picture). These are the sequencing questions the first draft put at level 17, brought down to where he is.
+- The **second story arc** (after The Letter Thief) starts here with 3 of its 6 chapters, at levels 3–6.
+
+### Sentence fluency, no microphone
+- `Pace` times single words. Books get a **Read it again** button on a finished page: the page text shows without pictures, he reads and taps "Done", and the time is logged against the page's word count. Anything under 800 ms is ignored, as `Pace.quick` does today.
+- The report shows **words per minute by level** as a trend, from these rereads only. No speech scoring, which is unreliable offline.
+- A reread pays a small 💎 bonus the first time per page per day. It is optional and never asked for twice.
+
+### Read with Dad (two-player)
+- A **Read together** button on the book shelf. Two ways to play, chosen on the first screen and remembered:
+  - **Take turns:** pages alternate. Dad's page shows the text large with a "Dad read it" tap; Asher's page is the normal read flow.
+  - **Echo:** every page is read by Dad first, then Asher. Two taps per page.
+- Pays the same 💎 as a solo read, plus a "Read with Dad" sticker on the cover and a line in the report ("3 books read together this week").
+- `Rec` can record the session as it does for Read-to-your-pet, stored the same way, so cousins can hear the two of them. Optional.
+- About 150 lines, no new voice clips, no new save shape beyond `books[id].together`.
+
+### Reading tickets (the soft gate)
+- Reading earns 🎟️ tickets: a crate word read = 1, a book page = 1, a finished book = 3, a Wilds word = 1. Shown on the HUD next to gems.
+- Entering the **Mine**, starting a **Race**, or clocking into a **Job** (v10.1) costs **3 tickets** for one run. Vehicles, Adventure, Animal care and Books are never gated.
+- With no tickets the buddy says "Read three words and the mine opens," and the nearest crate glows. Tickets never go negative and are never taken away.
+- **Grown-up setting: "Reading opens the mine and races"**, default on. When off, nothing changes from today.
+- Honest risk: this can turn reading into a toll booth. Mitigations: the cost is three words, the message is always the same and always kind, and the v9.3 tracking shows within two weeks whether reading minutes rose or total minutes fell. If reading minutes do not rise, turn it off and say so in `design.md`.
+
+### Hero name (Grown-up setting)
+- Grown-up menu → Settings → **Hero name**, default **"Asher"**. It replaces "Ash" in the storybooks, Adventure, My Own Book, cut-scenes and the spoken lines that include it.
+- Stored as `state.hero`; `migrate()` adds `"Asher"` to old saves. Book text stores `{hero}`, as `{pet}` already works.
+- Decode treats the hero's name as a level-1 word, because children read their own name early.
+- Voice clips exist for the default name. A different name falls back to the device voice for those lines, and Settings says so.
+
+### Tests
+- `books2_e2e.js`: every new book passes the decode check at its level, has a voice clip per page, and its quizzes resolve with `dataset.ans`.
+- `together_e2e.js`: both modes finish a book, pay once, and set the sticker.
+- `tickets_e2e.js`: tickets are earned once per read, a gated mode refuses politely at zero, the setting off removes the gate, and a double tap spends once.
+- `hero_e2e.js`: a book page shows the name, changing it updates the page, decode passes with any name.
+- Voice: about 120 clips for the books and chapters, 10 for tickets and the goal, 10 for read-together.
+
+---
+
+## v10.1 — Jobs, small: Shopkeeper and Lawn mower
+
+The one non-reading mode this year. It earns its place because **every task starts with reading**: the customer's order, the mowing directions. Math rides along at his level.
+
+### How it plays
+- A **Job board** in the valley (an `Adv.provide` spot) and a button in the mode bar. He picks a job, puts on its uniform, and clocks in. Clocking in costs 3 🎟️ (v10.0).
+- A shift runs until he taps **Clock out**. Every 5 tasks there is a small cheer and a "keep going or clock out?" moment.
+- **Pay** is 🪙 per task, paid at once into `state.mine.coins`, the purse the Mine already uses. A wrong answer means "the customer waits a moment"; pay is never taken away. Five right in a row earns a tip.
+- Each job gains XP. Job levels unlock a harder task type, a badge, and a uniform or tool on the 🪙 shelf.
+- **Name clash.** The Gem Mine's daily "Mine jobs" panel is renamed **"Mine tasks"**; `state.mine.jobs` keeps its name.
+
+### The two launch jobs
+| Job | Opens at | Reading in every task | Math at his level | Kits |
+|---|---|---|---|---|
+| 🛒 Shopkeeper | Level 2 (he has it) | Read the customer's order: "A red hat, please!" | Count items to 10, then add two small groups, then coins to 20¢ | pick, pad |
+| 🌱 Lawn mower | Level 4 (he has it) | Read the direction words: "mow 4 left, then 2 up" | Count squares mowed, then add two rows, then rows × columns as arrays | path, pad |
+
+Later jobs (Janitor, Mail carrier, Baker, Construction, and the reuse jobs Vet and Librarian) keep their designs from the first draft under Deferred, and each is data only once the kits exist.
+
+### Three kits, not six
+Kits are the only UI code. Each renders a question, sets `dataset.ans`, and calls `done(ok)` exactly once with the same double-tap guard as `Read.pic`.
+- `pick`: tap the right thing.
+- `pad`: a big number pad.
+- `path`: tap arrows or tiles to follow directions.
+
+`order`, `sort` and `build` wait for the jobs that need them.
+
+### The math track, only what the jobs need
+`Tracks.register({id:"math", ...})` from the first draft, with the K–1 levels only: counting to 10 and 20, comparing, adding and subtracting within 10, then within 20, and coins. Every question is generated, seeded, and read aloud, so his reading level never holds his math back. The full track design is under Deferred.
+
+### Registration
+```js
+Jobs.register({
+  id:"shop", name:"Shopkeeper", icon:"🛒", uniform:"apron", unlock:{tier:2},
+  pay:{perTask:3, streakTip:5},
+  tasks:[
+    {kit:"pick", track:"reading", gen:lvl=>{const w=Read.word();
+      return {say:`Can I have a ${w.w}?`, text:`A ${w.w}, please!`, choices:Read.others(w,3), ans:w.w};}},
+    {kit:"pad", track:"math", minGrade:"K", gen:lvl=>{const a=1+rnd(5),b=1+rnd(5);
+      return {say:`${a} apples and ${b} pears. How many things?`, ans:a+b};}},
+  ]
+});
+```
+Generators are pure and take a seed. Unknown `kit` or `track` values are skipped with a console warning, never a crash.
+
+### The Trading Post, two shelves
+- A building in the valley (near the Job board) plus a HUD button showing 💎 and 🪙.
+- **💎 shelf: outfits.** The wardrobe hats move here unchanged (`state.hats`, `state.hat`). About 8 new items priced 10–60.
+- **🪙 shelf: uniforms and tools.** The Mine's helmets move here unchanged. Job uniforms and tools unlock by job level. About 10 items priced 15–80.
+- **Exchange:** 1 💎 = 5 🪙, both ways, whole bundles of 5 only, and every swap shows its sum ("10 🪙 → 2 💎"). It appears only once he has earned both.
+- No decorations shelf, no selling, no fees, and prices never change over time. Blueprints and the Mine pick shop stay where they are.
+- Data-driven: `Store.item({id:"cape_red", shelf:"outfit", cost:{gems:12}, art:"cape_red", tag:"new"})`.
+
+### Save fields
+`jobs:{current:null, xp:{}, tasks:0}, tracks:{}, tickets:0, owned:{}, hero:"Asher"` added through `def()` and `migrate()`. 💎 stays in `state.gems`, 🪙 in `state.mine.coins`; `migrate()` creates the Mine purse if the Mine was never opened. Nothing is renamed.
+
+### Tests
+- `jobs_e2e.js` walks every registered job × task: answers via `dataset.ans`, pay added once, double tap ignored, a wrong answer takes nothing away, no console errors, and every text a generator can produce decode-checks at the job's level. A new job gets tested with no new test code.
+- `tracks_e2e.js`: 200 seeds per math level, answers correct and present in `choices`.
+- `store_e2e.js`: buying charges the right purse once, never negative, exchange sums right, and hats and helmets owned before the upgrade are still owned after `migrate()`.
+- Voice: about 80 clips (job intros, orders, direction words, tips, numbers to 20 if not indexed).
+
+---
+
+## v10.2 — Decided by the data
+Two weeks after v10.1, the "Where the time goes" block answers one question: **did reading minutes go up?**
+- **If yes, and Jobs holds his attention:** add two more jobs from the deferred list (Baker for sequencing, Mail carrier for place value) and math grade 2.
+- **If reading went up but Jobs is ignored:** more books for levels 5–8 and the rest of the second story arc. Leave Jobs at two.
+- **If reading did not go up:** turn the ticket gate off, keep the daily goal, and look at the per-mode data before building anything.
+
+---
+
+## Build order
+
+| Phase | Ships | Judged by |
+|---|---|---|
+| **v9.3** | Per-mode minutes and opens; daily reading goal; retention reads for mastered ♥ words | Two weeks of baseline data |
+| **v10.0** | 18 books for levels 1–6; two new quiz types; second story arc (3 chapters); sentence reread timing and words-per-minute trend; Read with Dad; reading tickets with parent toggle; hero name | Reading minutes vs baseline; books finished per week |
+| **v10.1** | Jobs engine with 3 kits; Shopkeeper and Lawn mower; math track K–1; Trading Post with two shelves and the 1 = 5 exchange; "Mine tasks" rename | Reading minutes hold or rise; Jobs opens per week |
+| **v10.2** | Chosen by the data (see above) | |
+| Later | Items under Deferred, each with its trigger | |
+
+Each phase follows the usual workflow: tests, voice clips, `npm run release`, a `design.md` section, then deploy.
+
+## Risks
+- **The ticket gate makes reading a chore.** Three words is the whole cost, the parent toggle is one tap, and the per-mode data decides within two weeks.
+- **Read with Dad depends on Dad's time.** One book per session, five to seven pages. It is a bonus, not a requirement, and nothing is locked behind it.
+- **More books means more voice and more decode checks.** Each book is data; the decode check and `books2_e2e` catch a word above level before it ships.
+- **Two currencies is still two.** The 🪙 shelf shows only coins, the 💎 shelf only gems, and the exchange appears only once he has both.
+- **Size on the older iPad.** `index.html` is 1.9 MB, mostly art. Eighteen books and two jobs add well under 100 KB of text. The content-file split is deferred with its trigger below.
+
+## Decisions made (27 Sept 2026)
+| Topic | Choice |
+|---|---|
+| Order | Measure → reading depth at his level → Jobs (two) → decided by data |
+| Reading depth | Books at levels 1–6 to 5 each; sequencing quizzes; sentence reread timing; Read with Dad |
+| Loop | Daily reading goal with a finish line; reading tickets open the Mine, Races and Jobs; parent toggle, default on |
+| Measurement | Per-mode minutes and opens in the report, shipped before any new mode |
+| One mode this year | Jobs: Shopkeeper and Lawn mower, kits pick/pad/path only |
+| Currencies | 💎 and 🪙 only; exchange 1 = 5 in bundles of 5 |
+| Store | Trading Post with two shelves; hats and Mine helmets move in; no decorations, no selling |
+| Job pay | 🪙 into `state.mine.coins`; shift endless until Clock out; entry costs 3 🎟️ |
+| Hero | Name setting, default "Asher". Avatar builder deferred |
+| Factory | Deferred to next year. Trigger: he adds within 20 comfortably and asks for building games |
+| Geometry, Physics | Deferred. Trigger: Jobs data shows math holds his attention |
+| Levels 13–24, placement | Deferred. Trigger: he reaches level 9 |
+| Content files (`app/content/*.json`) | Deferred. Trigger: `index.html` passes 3 MB or the iPad boots in over 3 s |
+| Four currencies, decorations, gears | Dropped |
+
+---
+
+# Deferred
+
+Everything below is the first draft's design, kept unchanged so it can be picked up when its trigger fires. Section names keep their original "Part" letters. The Jobs, Store and hero-name sections above supersede Parts C, D and G; the parts of C and D kept here are the later jobs, the remaining kits and the four-currency store, for reference only.
+
+## Factory mode (from Lean Mine)
+**Trigger:** he adds within 20 comfortably and asks for building games. Was v9.3 in the first draft.
+
 
 Based on the concepts in **Lean Mine**, a separate React game (`LeanMine.jsx`). The kid version keeps its best ideas:
 - Drills on ore, belts to a hub, and machines that combine things into something worth more.
@@ -91,6 +301,7 @@ About 60 new clips: level intros, machine names, tips, "How many altogether?", a
 ---
 
 ## Part A — Reading levels 13–24 (grades 2–4)
+**Trigger:** he reaches level 9. Includes the placement check and the content-file loader.
 
 | Lvl | Skill | Examples | Grade |
 |---|---|---|---|
@@ -138,6 +349,7 @@ About 20 words per level, so roughly 240 new words.
 ---
 
 ## Part B — Other subjects
+**Status:** the math track's K–1 levels ship in v10.1. The rest (math grades 2–4, science, social studies, spelling) waits for the v10.2 data.
 
 ### One engine for every subject: "tracks"
 Every subject is a registered track: a list of levels, each with a question generator. Tracks reuse what reading already has:
@@ -188,7 +400,8 @@ Math questions are always read aloud, so his reading level never holds back his 
 
 ---
 
-## Part C — Jobs mode
+## Part C — Jobs mode (first draft; v10.1 above supersedes it)
+**Kept for:** the four later jobs, the next-wave list, and the `order`, `sort` and `build` kits.
 
 ### How it plays
 - **Starting a shift.** A **Job board** stands in the valley (an `Adv.provide` spot) and there is a button in the mode bar. He picks an unlocked job, puts on its uniform, and clocks in.
@@ -291,7 +504,8 @@ wallet:{shapes:0, gears:0}, owned:{}, placed:[], hero:"Asher"
 
 ---
 
-## Part D — Currencies and the Trading Post
+## Part D — Currencies and the Trading Post (first draft, four currencies; dropped)
+**Kept for:** the decorations idea and the store item schema. The two-shelf store in v10.1 replaces it.
 
 ### Four currencies, one per mode
 | Currency | Earned in | Buys (its shelf) |
@@ -329,6 +543,7 @@ wallet:{shapes:0, gears:0}, owned:{}, placed:[], hero:"Asher"
   - Items owned before the upgrade are still owned after `migrate()`.
 
 ## Part E — Geometry mode: Block builder
+**Trigger:** the Jobs data shows math holds his attention.
 
 A Minecraft-style grid workshop, separate from Jobs. He opens it from a **Workshop** building in the valley and the mode bar.
 
@@ -355,6 +570,7 @@ A Minecraft-style grid workshop, separate from Jobs. He opens it from a **Worksh
 - **Tests (`geo_e2e.js`):** every blueprint at every level can be solved using `dataset.ans`, pays 🔷 once, and has no errors. The generators pass 200 seeds.
 
 ## Part F — Physics mode: Contraption lab
+**Trigger:** the Jobs data shows math holds his attention, and Geometry has shipped.
 
 A separate mode opened from a **Lab** building. The contraptions he's proudest of are saved in the Lab so he can replay them.
 
@@ -387,15 +603,8 @@ A separate mode opened from a **Lab** building. The contraptions he's proudest o
 - **Best practice.** The prediction options are computed by running the simulation headless first, so the "right" answer is always what actually happens on screen.
 - **Tests (`lab_e2e.js`):** every level's setup gives the same outcome 3 runs in a row; the answer marked right matches what the headless run produced; each puzzle has a known solution; pay is added once.
 
-## Part G — The hero's name (Grown-up setting)
-- Grown-up menu → Settings → **Hero name**, defaulting to **"Asher"**. It replaces "Ash" in the storybooks, Adventure, My Own Book, cut-scenes and voice lines. This rename is part of the first phase.
-- **Saves.** It is stored as `state.hero`, and `migrate()` adds `"Asher"` to old saves.
-- **Books.** The book text stores a placeholder (`{hero}`) instead of the name.
-- **Decode.** The hero's name is always treated as a level-1 word, because children read their own name early. That keeps the books at levels 1–5 decodable.
-- **Voice.** Clips are generated for the default "Asher" lines. If a parent types a different name, those lines fall back to the device voice, and a note in Settings says so.
-- **Tests:** a book page shows the name; changing the name updates the page; the decode check passes with any name.
-
 ## Part G2 — Build-a-hero avatar
+**Trigger:** he asks to look like himself on screen, or the public copy gets regular players.
 - **Replaces the fox fallback.** An uploaded photo can still be used as the face on a badge, but the hero on screen is a drawn character.
 - **He designs it** in a first-run screen, and can change it any time for free from the Trading Post's outfit shelf:
   - Skin tone (6)
@@ -412,51 +621,3 @@ A separate mode opened from a **Lab** building. The contraptions he's proudest o
 - There are no hard gates. Reading stays the core because it unlocks the jobs and pays for outfits.
 - The Grown-up report gets a tab for each mode (level, accuracy, time spent) and a ledger of what was earned and spent.
 
----
-
-## Build order
-Each phase follows the usual workflow: tests, voice clips, `npm run release`, a `design.md` section, then deploy.
-
-| Phase | Ships |
-|---|---|
-| **v9.3** | Factory mode: levels F1–F12, the sandbox, jam tips, counting and adding orders |
-| **v10.0** | Hero name setting; build-a-hero avatar; the four currencies and `wallet`; exchange booth; Trading Post with the four shelves (hats and Mine hats moved in); placing decorations; renaming "Mine jobs" to "Mine tasks" |
-| **v10.1** | Jobs engine and the 6 kits; Shopkeeper (level 2) and Lawn mower (level 4); math track K–1; the content-file loader |
-| **v10.2** | Janitor, Mail carrier, Baker, Construction; math grade 2; daily quests across modes |
-| **v11.0** | Geometry block builder, G1–G6 (K–2); builds become decorations |
-| **v11.1** | Geometry G7–G12 (grades 3–4) |
-| **v12.0** | Physics engine and Contraption lab, P1–P5 |
-| **v12.1** | Physics P6–P9; the report tabs for every mode |
-| **v13** | Placement check; reading levels 13–16 (grade 2); sentence fluency |
-| **v14–15** | Reading levels 17–24 (grades 3–4); passages; math grades 3–4; science track; next-wave jobs |
-
-## Risks
-- **Size and memory on the older iPad.** Load content per phase from JSON, and keep art as OpenMoji or Fluent Emoji references.
-- **Abstract words have no pictures.** Use meaning-pick and fill-the-blank instead.
-- **Microphone scoring for fluency is unreliable offline.** Time taps and self-paced reads instead of scoring speech.
-- **Physics on the older iPad.** Keep scenes under 30 bodies and pause the simulation when the app is hidden.
-- **Too many currencies for a 6-year-old.** Each shelf shows only its own currency, and the exchange booth appears only once he has earned 2 kinds.
-- **Grade 3–4 content for a 6-year-old.** Keep the level gates earned (the 85% rule). Fast track only speeds them up; it never skips mastery.
-
-## Decisions made
-| Topic | Choice |
-|---|---|
-| Content storage | New content in `app/content/*.json`, cached by the service worker |
-| Job pay | 🪙 coins, which convert to gems |
-| Subject order | Math → Science → Social studies |
-| Currencies | One per mode (💎 🪙 🔷 ⚙️), fixed exchange of 1 = 5 |
-| Store | Walk-in Trading Post plus a HUD button; hats and Mine cosmetics moved in; blueprints and the pick shop stay where they are |
-| Store shelves | Outfits, uniforms and tools, decorations, vehicles and pets |
-| Store pricing | Each shelf priced in its own mode's currency |
-| Job unlocks | Reading-level ladder: 2, 4, 6, 8, 10, 12, and so on |
-| Shift length | Endless, until he clocks out |
-| Geometry | Block builder; pick a shape, then tap to place |
-| Physics | Contraption lab (predict → watch → explain); all four topic groups |
-| Level gating | Geometry and Physics levels are independent and read aloud |
-| Creations | Placed in the valley; contraptions saved in the Lab |
-| Balance | Daily quests mix the modes; no hard gates |
-| Build order | Store → Jobs → Geometry → Physics → reading 13+ |
-| Factory (v9.3) | Colour gem factory theme (primary colours mix, toys stamped at the end); valley building; sandbox pays for orders only, 5 a day; counting and adding; mixer, splitter, sorter, stamper, tunnel; order levels then sandbox; glow and kind tips; drag belts; stops when closed; pays 💎 (⚙️ after v10) |
-| Hero name | Set by a parent, default "Asher" |
-| Hero look | Build-a-hero avatar; outfits drawn on top |
-| Launch catalog | About 15 items per shelf |
