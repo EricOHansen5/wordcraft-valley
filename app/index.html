@@ -650,6 +650,9 @@ button.mpill{cursor:pointer}
 .blisten.love::after{content:"❤️";position:absolute;top:-22px;right:-6px;font-size:28px}
 @keyframes ears{50%{transform:translateY(-6px) rotate(4deg)}}
 .bq{font-size:30px;font-weight:800;text-align:center;margin:18px 0}
+.bsaid{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;max-width:760px;margin:-6px auto 18px;padding:10px 16px;
+  background:#FFF8E6;border:3px dashed var(--ink);border-radius:18px;font-size:28px;font-weight:700}
+.bsaid .bx{min-width:52px;min-height:52px}
 .bopts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .bopt{min-width:150px;min-height:110px;border:4px solid var(--ink);border-radius:20px;background:#fff;padding:10px;box-shadow:0 5px 0 rgba(0,0,0,.2);font-family:inherit}
 .bopt .qart{width:130px;height:130px}.bopt .qart svg,.bopt .qart img{width:100%;height:100%;object-fit:contain}
@@ -7286,7 +7289,10 @@ document.getElementById("mineBtn").onclick=()=>{Sound.sfx.pop();Mine.enter();};
    a creature, or "ash" (his avatar) or "pet" (his pet); x is the centre in % from the left,
    scale is the width (1 = 26% of the scene), y lifts it in % above the ground.
    In text, {pet} is his pet's name (petWord). Every word must pass Decode.check at level t.
-   Quiz items: {q, pics:[art...], a} tap a picture · {q, yes:true|false} · {q, words:[...], a} tap a word. */
+   In text, {hero} is his name (state.hero, a Grown-up setting).
+   Quiz items: {q, pics:[art...], a} tap a picture · {q, yes:true|false} · {q, words:[...], a} tap a word ·
+     {q:"What happened first?", order:[art, art], a} two pictures from the book, tap the earlier one ·
+     {q:"Which page said it?", said:"a sentence from the book", pics:[art...], a} hear it, tap its picture. */
 const BOOKS=[
   {"id":"cat_hat","t":1,"title":"The Cat and the Hat","bg":"meadow","cover":"cat","pages":[["A cat sat.",[["cat",50,1.1]]],["The cat had a hat.",[["cat",50,1.1],["hat",50,0.55,34]]],["A dog ran at the cat.",[["dog",28,1],["cat",72,1]]],["The cat ran and ran.",[["cat",70,1],["hat",30,0.6]]],["The hat got on the dog!",[["dog",50,1.1],["hat",52,0.55,34]]]],"quiz":[{"q":"Who had the hat at the end?","pics":["dog","cat","fox"],"a":"dog"},{"q":"Who ran at the cat?","pics":["pig","dog","hen"],"a":"dog"}]},
   {"id":"fox_box","t":1,"title":"The Fox and the Box","bg":"meadow","cover":"fox","pages":[["A fox had a box.",[["fox",35,1],["box",68,1.1]]],["The fox sat on top.",[["box",50,1.1],["fox",50,0.7,30]]],["Hop! The box can hop! Hop, hop, hop.",[["box",45,1.1,10],["fox",45,0.7,38]]],["Bop! The fox is on the mat.",[["box",68,1.1],["fox",30,0.9]]],["A cat sat on the box. Ha, ha!",[["box",60,1.1],["cat",60,0.7,30],["fox",25,0.9]]]],"quiz":[{"q":"What did the fox have?","pics":["box","log","pot"],"a":"box"},{"q":"Who sat on the box at the end?","pics":["cat","dog","hen"],"a":"cat"}]},
@@ -7567,15 +7573,23 @@ const Books=(()=>{
   // ---------- questions ----------
   function quiz(){
     const q=book.quiz[quizIdx];if(!q){finish();return;}
-    const t=book.t,text=fill(q.q,t);let tries=0,fin=false;
-    const opts=q.pics?q.pics.map(p=>({v:p,h:`<div class="qart">${art(p,t)}</div>`})).sort(()=>Math.random()-.5)
-      :q.words?q.words.map(w=>({v:w,h:`<b class="qword">${w}</b>`})).sort(()=>Math.random()-.5)
+    // five kinds: {q,pics,a} tap a picture · {q,words,a} tap a word · {q,yes} yes or no ·
+    // {q,order:[first,later],a} "What happened first?", two pictures from the book, tap the earlier one ·
+    // {q,said,pics,a} "Which page said it?", a sentence from the book is shown and spoken, tap its picture
+    const t=book.t,text=fill(q.q,t),said=q.said?fill(q.said,t):"",my=quizIdx;let tries=0,fin=false;
+    const pic=p=>({v:p,h:`<div class="qart">${art(p,t)}</div>`}),mix=a=>a.sort(()=>Math.random()-.5);
+    const opts=q.pics?mix(q.pics.map(pic)):q.order?mix(q.order.map(pic))
+      :q.words?mix(q.words.map(w=>({v:w,h:`<b class="qword">${w}</b>`})))
       :[{v:"yes",h:`<b class="qword">👍 yes</b>`},{v:"no",h:`<b class="qword">👎 no</b>`}];
-    const ans=q.pics||q.words?q.a:(q.yes?"yes":"no");
+    const ans=q.a!=null?q.a:(q.yes?"yes":"no");
     ov.innerHTML=`<div class="bpage"><div class="bhead"><button class="bx" id="bClose">✕</button><div class="bdots">🧠 Question ${quizIdx+1} of ${book.quiz.length}</div></div>
-      <div class="bq">${esc(text)}</div><div class="bopts">${opts.map(o=>`<button class="bopt" data-v="${o.v}">${o.h}</button>`).join("")}</div></div>`;
+      <div class="bq">${esc(text)}</div>
+      ${said?`<div class="bsaid"><button class="bx" id="bSaid" aria-label="Hear it">🔊</button><span>${said.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</span></div>`:""}
+      <div class="bopts" data-ans="${esc(ans)}">${opts.map(o=>`<button class="bopt" data-v="${o.v}">${o.h}</button>`).join("")}</div></div>`;
     ov.querySelector("#bClose").onclick=close;view="quiz";
-    setTimeout(()=>Sound.say("sent:"+text,text,.9),250);
+    const hearSaid=()=>{if(said&&quizIdx===my&&view==="quiz")return Sound.say("sent:"+said,said,.9);};
+    if(said){wireWords(ov.querySelector(".bsaid"));ov.querySelector("#bSaid").onclick=hearSaid;}
+    setTimeout(async()=>{await Sound.say("sent:"+text,text,.9);if(said)await hearSaid();},250);
     ov.querySelectorAll(".bopt").forEach(b=>b.onclick=()=>{
       if(fin)return;tries++;
       if(b.dataset.v===ans){fin=true;b.classList.add("right");Sound.sfx.win();if(tries===1)quizFirst++;
@@ -7583,6 +7597,8 @@ const Books=(()=>{
         setTimeout(()=>{quizIdx++;quiz();},900);}
       else{b.classList.add("wrong");Sound.sfx.nope();state.comp.wrong++;
         if(tries>=2){const r=ov.querySelector(`.bopt[data-v="${ans}"]`);if(r)r.classList.add("hint");}
+        // nothing is lost on a miss; for "which page said it?" he hears the sentence again
+        else if(said)setTimeout(hearSaid,700);
         setTimeout(()=>b.classList.remove("wrong"),600);}
     });
   }
