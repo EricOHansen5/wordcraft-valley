@@ -114,9 +114,10 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
      Mine._setTile(cx,Mine.SKY,2);Mine._setOre(cx,Mine.SKY,3);window._cx=cx;Mine._in.dig=true;})()`);
      await run(1500);await E("Mine._in.dig=false");return{ore:await E("Mine._ore(window._cx,Mine.SKY)"),tile:await E("Mine._tile(window._cx,Mine.SKY)"),bag:await E("state.mine.bag")};};
    const room=await digAt(24.2,"{}");
-   ok(room.tile===0&&room.bag[3]===1,"mine: with room in the backpack the gem is dug out "+JSON.stringify(room));
+   // 1 dig in 40 comes out shiny, and a shiny gem 3 goes in the bag as 23
+   ok(room.tile===0&&(room.bag[3]||0)+(room.bag[23]||0)===1,"mine: with room in the backpack the gem is dug out "+JSON.stringify(room));
    const full=await digAt(30.2,"{1:10}");
-   ok(full.ore===3&&full.tile===2&&!full.bag[3],"mine: a full backpack leaves the gem in the rock "+JSON.stringify(full));
+   ok(full.ore===3&&full.tile===2&&!full.bag[3]&&!full.bag[23],"mine: a full backpack leaves the gem in the rock "+JSON.stringify(full));
    // the lost animal is never put in (or by the door of) a locked word vault
    const lost=await E(`(()=>{const V=Mine._vaults(),m=state.mine,bosses=m.bosses;m.bosses={beetle:1,golem:1,troll:1,worm:1,dragon:1};m.vaults={};m.deepest=110;let bad=0;
      const inV=L=>V.some(v=>L.x>=v.x0-2&&L.x<=v.x0+8&&L.y>=v.y0-2&&L.y<=v.y0+6);
