@@ -625,6 +625,12 @@ The kindergarten tricky word checklist from his class is now part of level 1, hi
 - Text a grown-up types — a note's message and "From", and the home-server address/token — is now escaped before it's shown, so it can never be read as live markup. Only the display changes: the reading-level check and the voice lookup still see the exact words typed.
 - `.gitattributes` now normalizes line endings to LF, and `tests/version_check.js` accepts either ending, so `npm test` passes on a Windows checkout with `core.autocrlf=true` too, not just on Linux CI.
 
+### v9.3 — where the time goes
+- **Grown-up menu → Full reading report** has a new section, **Where the time goes**, after the minutes chart: this week's minutes split into reading and writing against everything else, then a small 7-day chart for each thing he spent time in (Gem Mine, Reading words, Books, Adventure, Word Wilds, the valley itself...) with its minutes and how many times he opened it. Things he opened but never stayed in for a counted minute are listed on one line.
+- Reading and writing means the word crates (and sound swaps, story crates), books, Picture it, signs, notes from home, The Letter Thief, Word Wilds, animal care, Write it and My own book. The word stones, vaults, moles and boss fights in the Mine count as reading; the digging counts as the Mine.
+- It uses the same once-a-minute count as "minutes this week" (only while the app is on screen and touched in the last 90 s), which now also notes what was on top. Opening something counts once; closing and reopening it within 2 s (the crates, then the word he picked) is one visit. Both are kept for 60 days. Old saves start at zero, so this week adds up to less than "minutes this week" at first.
+- Nothing else changed: the game looks and plays the same. Under the hood every mode now opens and closes in one place (`Modes` in `index.html`), which is what will let the game gate some modes later; nothing is gated yet. `tests/modes_e2e.js` covers it.
+
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 
 ### Still on the list (v4 roadmap, in build order)
