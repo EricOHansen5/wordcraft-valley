@@ -8120,6 +8120,7 @@ function openReport(){
   const mins=days.reduce((a,d)=>a+((state.minutes||{})[d]||0),0),rush=days.reduce((a,d)=>a+((state.rushes||{})[d]||0),0);
   const comp=state.comp||{right:0,wrong:0},compPct=comp.right+comp.wrong?Math.round(comp.right/(comp.right+comp.wrong)*100):null;
   const lib=state.library||{},done=BOOKS.filter(b=>!b.mine&&(lib[b.id]||{}).done);
+  const tgWeek=(Array.isArray(state.togetherDays)?state.togetherDays:[]).filter(d=>days.indexOf(d)>=0).length;
   const sk=Skills.all().filter(s=>s.t<=tier+1);
   const ST={new:["not yet","#BDB3A3"],learning:["learning","#E8B33D"],shaky:["needs practice","#D9674A"],strong:["strong","#5FB35B"]};
   const conf=Skills.confusions().slice(0,6);
@@ -8154,6 +8155,7 @@ function openReport(){
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
+    <p class="rnote" id="rTogether">${tgWeek} book${tgWeek===1?"":"s"} read together this week${tgWeek?"":" (👨‍👦 Read together is on the book shelf: take turns, or read each page first and he echoes it)"}.</p>
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
     <h3>Story and extras</h3><p class="rnote">The Letter Thief: ${Math.min(6,(state.quest||{}).ch||0)} of 6 chapters. ${Quest2.TITLE}: ${Math.min(Quest2.CH.length,(state.quest2||{}).ch||0)} of ${Quest2.CH.length} chapters (more to come). ${Quest2.note()}Notes from home found: ${(state.notes||[]).filter(n=>n.found).length}. Races won: ${(state.vehicles||[]).reduce((a,v)=>a+(v.wins||0),0)}.</p>
     <h3>Adventure</h3><p class="rnote">${Object.values((state.adv||{}).dex||{}).filter(d=>d.caught).length} wild friends in the Word-Dex · ${(state.adv||{}).hunts||0} treasure hunts solved. Each friend takes 3–5 reading answers; each hunt is three notes to read.</p>
