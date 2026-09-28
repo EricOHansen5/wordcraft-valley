@@ -1,23 +1,10 @@
 // Today's reading: the daily goal ring, the finish line (once a day), a finished book, the date rollover and the report line.
-const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8813,async()=>{
-  const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
-  // this test server answers every path with the page, so keep the service worker out of it (its script would be HTML)
-  const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true,serviceWorkers:"block"});
-  const p=await ctx.newPage();const errs=[];p.on("pageerror",e=>errs.push(e.message));p.on("console",m=>{if(m.type()==="error")errs.push("console: "+m.text());});
-  const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return ymd(d);};
+const {launch,reload,waitFor,check}=require("./lib");
+(async()=>{
+  const T=check("goal"),ok=T.ok;
   // an old save: no goal setting, no goal, no goalDays
-  const st={tour:99,guardians:[0,1],wordsRead:60,gems:20,rows:6,biome:2,vehStarter:true,seasonSeen:"autumn",phase:0,grid:{"6,8":{id:"cottage",seed:3,lv:1}},inventory:{},
-    critters:[],vehicles:[{id:"v_car",c:10,r:8,lv:1,out:true,since:1}],adv:{seenIntro:1,dex:{}},
-    settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0},
-    mine:{seed:12345,x:20.2,y:5.05,coins:40,bag:{},pick:1,bagLv:1,lamp:0,boots:0,shopLv:0,look:{skin:1,hair:2,hairStyle:1,shirt:3,pants:0,helmet:"miner"},
-      owned:{miner:1,cap:1},made:true,pet:null,bosses:{},eggs:[]}};
-  await p.goto("http://localhost:8813/");
-  await p.evaluate(s=>new Promise(res=>{const r=indexedDB.open("wordcraft-valley",2);r.onupgradeneeded=()=>{r.result.createObjectStore("kv");r.result.createObjectStore("blobs");};
-    r.onsuccess=()=>{const tx=r.result.transaction("kv","readwrite");tx.objectStore("kv").put(s,"state");tx.oncomplete=()=>{r.result.close();res();};};}),st);
-  await p.reload();await p.waitForTimeout(2200);
-  let fails=0;const ok=(c,m)=>{if(!c)fails++;console.log((c?"PASS ":"FAIL ")+m);};
+  const {page:p,errs,close}=await launch({seed:{settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0}}});
+  const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const E=(f,a)=>p.evaluate(f,a);
   await E(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.settings.tierOverride=3;renderHUD();
     // note every spoken line, so the finish line can be counted
@@ -59,7 +46,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   ok(g.words===12&&g.done,"12 words: the goal is done");
   ok(await E(()=>state.goalDays[today()]===true),"today is noted in goalDays");
   ok(await E(()=>Object.keys(state.goalDays).length===1),"goalDays keeps only the last 60 days (a day 100 days ago is gone): "+await E(()=>JSON.stringify(state.goalDays)));
-  await p.waitForTimeout(1900);
+  await waitFor(p,l=>document.getElementById("buddyBubble").textContent===l,{arg:LINE});
   const bub=await E(()=>document.getElementById("buddyBubble").textContent);
   ok(bub===LINE,"the buddy says the finish line: "+bub);
   ok(await said()===1&&await E(()=>Goal.cheers===1),"the finish line is spoken once");
@@ -77,7 +64,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
 
   // 6. save and reload keep today's progress, and do not cheer again
   await E(()=>saveNow());await p.waitForTimeout(600);
-  await p.reload();await p.waitForTimeout(2200);
+  await reload(p);
   await E(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));window._said=[];const sp=Sound.speak;Sound.speak=(t,r,pi)=>{window._said.push(t);return sp(t,r,pi);};});
   g=await E(()=>state.goal);R=await ring();
   ok(g.words===15&&g.done&&R.done,"save and reload keep today's goal: "+JSON.stringify(g));
@@ -100,7 +87,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
 
   // 9. the report line
   await E(()=>{state.goalDays[ymd(new Date(Date.now()-2*864e5))]=true;state.goalDays[ymd(new Date(Date.now()-3*864e5))]=true;openReport();});
-  await p.waitForTimeout(300);
+  await waitFor(p,"#ovReport .rgoal");
   const rep=await E(()=>{const el=document.querySelector("#ovReport .rgoal");return el?el.textContent:"";});
   ok(/Reading goal reached 3 of 7 days this week/.test(rep)&&/20 words a day/.test(rep),"the report shows the goal line: "+rep);
   await p.screenshot({path:"g_report.png"});
@@ -111,4 +98,5 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
 
   // 10. no errors
   ok(!errs.length,"no page or console errors"+(errs.length?": "+errs.slice(0,3).join(" | "):""));
-  await b.close();srv.close();process.exit(fails?1:0);});
+  await close();T.done();
+})().catch(e=>{console.log("FAIL goal suite crashed: "+(e&&e.stack||e));process.exit(1);});

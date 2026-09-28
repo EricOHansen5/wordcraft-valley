@@ -6,6 +6,7 @@
     "serve": "PORT=8088 APP=./app DATA=./data node server/server.js",
     "test": "node tests/run-all.js",
     "release": "node tools/release.js",
+    "voice:extract": "node tools/voice/extract.js",
     "deploy": "npx -y wrangler@4 deploy"
   },
   "devDependencies": {
