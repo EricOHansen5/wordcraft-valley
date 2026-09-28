@@ -8806,7 +8806,7 @@ const MyBook=(()=>{
       if(t==="pics"){const pics=["ash",...(state.mine&&state.mine.pet?["pet"]:[]),...noun.map(artFor).filter(Boolean).filter(x=>x!=="ash")];
         bank.innerHTML=[...new Set(pics)].map(a=>`<button class="mkpicb" data-a="${a}">${Books.art(a,9)}</button>`).join("");
         bank.querySelectorAll(".mkpicb").forEach(b=>b.onclick=()=>{p.a=b.dataset.a;Sound.sfx.pop();edit.tab="who";edit();});return;}
-      const list=(cats[t]||[]).filter(w=>okWord(w.toLowerCase().replace(/[^a-z']/g,"")));
+      const list=(cats[t]||[]).filter(w=>w===heroName()||okWord(w.toLowerCase().replace(/[^a-z']/g,"")));
       bank.innerHTML=list.map(w=>`<button class="mkb${artFor(w)&&t==="who"?" n":""}" data-w="${esc(w)}">${esc(w)}</button>`).join("")||`<span class="mkhint">Read more words to unlock these!</span>`;
       bank.querySelectorAll(".mkb").forEach(b=>b.onclick=()=>{
         let w=b.dataset.w;if(!p.words.length&&!title)w=w[0].toUpperCase()+w.slice(1);

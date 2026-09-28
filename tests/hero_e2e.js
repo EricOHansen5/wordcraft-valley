@@ -74,6 +74,10 @@ const srv=http.createServer((q,r)=>{let f=decodeURIComponent(q.url.split("?")[0]
   // My Own Book offers his name as a word, with his picture
   await E("MyBook.create()");await p.waitForTimeout(200);
   ok(await E(`!!document.querySelector('#ovMaker .mkb.n[data-w="D\\'Angelo"]')`),"My Own Book's word bank has D'Angelo");
+  // an accented name is offered from level 1 too
+  await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.hero="Chloé";state.settings.tierOverride=1;MyBook.create()`);await p.waitForTimeout(200);
+  ok(await E(`!!document.querySelector('#ovMaker .mkb.n[data-w="Chloé"]')`),"My Own Book offers Chloé at level 1");
+  await E(`state.hero="D'Angelo";state.settings.tierOverride=6`);
   await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"))`);
 
   // the game voice: the default name uses today's "Ash" clips, any other name the device voice
