@@ -77,7 +77,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   const pick=async(tab,w)=>{await p.click(`.mktab[data-t="${tab}"]`);await p.click(`.mkb[data-w="${w}"]`);await p.waitForTimeout(80);};
   await pick("little","The");await pick("who","dog");await pick("doing","hid");await pick("little","in");await pick("little","the");await pick("who","box");
   await p.click('[data-p="."]');await p.screenshot({path:"v8_maker.png"});
-  await p.click("#mkAdd");await pick("who","Ash");await pick("doing","sat");await pick("little","on");await pick("little","a");await pick("who","log");await p.click('[data-p="!"]');
+  await p.click("#mkAdd");await pick("who","Asher");await pick("doing","sat");await pick("little","on");await pick("little","a");await pick("who","log");await p.click('[data-p="!"]');
   await p.click("#mkDone");await p.waitForTimeout(200);await pick("little","My");await pick("who","dog");await p.click("#mkSave");await p.waitForTimeout(500);
   await p.screenshot({path:"v8_mybook_done.png"});
   const mb=await p.evaluate(()=>({b:state.mybooks[0],shelf:BOOKS.filter(b=>b.mine).map(b=>b.title+"|"+b.pages.map(x=>x[0]).join(" / "))}));
