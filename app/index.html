@@ -198,7 +198,7 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
 .crate svg{width:66px;height:66px}
 .crate .w{font-size:27px;font-weight:800;letter-spacing:.05em;margin-top:2px}
 .crate.lost{background:#F2DDC2;border-style:dashed}
-.crate.keep{background:linear-gradient(160deg,#FFEAF2,#FAD6E4);border-color:#B8457E}
+.crate.keep,.crate.keep.spell{background:linear-gradient(160deg,#FFEAF2,#FAD6E4);border-color:#B8457E}
 .lt.heart,.wslot.heart{border-color:#D14C8E;background:linear-gradient(160deg,#FFE3F0,#FFD1E6);position:relative}
 .lt.heart::after,.wslot.heart::after{content:"♥";position:absolute;top:-14px;left:50%;transform:translateX(-50%);
   font-size:18px;color:#D14C8E;text-shadow:0 1px 0 #fff}
@@ -4625,7 +4625,8 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
      stage-2 check read clean    -> kept for good: no more checks    (stats[word].kept)
      a check that is not clean   -> the ordinary review queue in 3 crates (a lost crate);
                                     it stays mastered. Read clean there -> stage 1 again.
-   Clean means first try with no 👂, as everywhere else. A check comes up as a ♥ crate;
+   A check is a Build-it read (hear the word, put its sounds in order), never "I read it!";
+   clean means first try with no 👂, as everywhere else. A check comes up as a ♥ crate;
    a miss on it gets the same kind feedback as any miss and costs nothing. A word is
    never on state.retain and state.review at once. Regular words are not affected. */
 const Retain={
@@ -4686,7 +4687,9 @@ function pickCrates(){
     .sort((a,b)=>stale(a)-stale(b)||((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
     // at most one heart word per set, so the checklist words come round steadily without crowding out sounding-out
     .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w)&&!(w.tricky&&out.some(o=>o.tricky)))out.push({...w});});
-  out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=chooseRung(o);});
+  // a retention check always opens at Build it: he hears the word and puts its sounds in order
+  // (the heart part still marked), so it can't pass on "I read it!" alone
+  out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=o.keep?1:chooseRung(o);});
   return out.sort(()=>Math.random()-.5);
 }
 document.getElementById("crateIcon").innerHTML=ART.crate();
@@ -4713,15 +4716,15 @@ document.getElementById("crateBtn").onclick=()=>{
     }else{
       const inSeason=seasonWords().includes(w.w);
       b.className="crate"+(w.lost?" lost":"")+(w.keep?" keep":"")+(inSeason?" season":"")+(w.target?" target":"");
-      if(w.keep)b.title="A heart word you learned. Do you still remember it?";
+      if(w.keep)b.title="A heart word you learned. Listen and build it.";
       const spell=w.rung===1;
       if(spell)b.classList.add("spell");
-      const tag=w.keep?"♥ remember this one?":w.target?"🎯 "+w.target+" practice":w.tricky?"♥ tricky word":w.lost?"lost crate · bonus gems"
+      const tag=w.keep?"♥ remember this one? Listen and build it.":w.target?"🎯 "+w.target+" practice":w.tricky?"♥ tricky word":w.lost?"lost crate · bonus gems"
           :(VEH_WORD[w.w]&&!hasVeh(VEH_WORD[w.w])&&state.wordsRead>1)?"🚗 unlocks a vehicle!"
           :inSeason?`${season().ic} double gems`:"";
       b.innerHTML=ART.crate()+
         (spell?`<div class="w">${w.p.map(()=>'<span class="sb"></span>').join("")}</div>`:`<div class="w">${w.w}</div>`)+
-        (spell?`<div class="tagline">🧩 spell it${tag?" · "+tag:" · +1 gem"}</div>`:tag?`<div class="tagline">${tag}</div>`:"");
+        (spell&&!w.keep?`<div class="tagline">🧩 spell it${tag?" · "+tag:" · +1 gem"}</div>`:tag?`<div class="tagline">${tag}</div>`:"");
       b.onclick=()=>{Sound.sfx.pop();hide("ovCrates");openWord(w);};
     }
     row.appendChild(b);
@@ -4974,7 +4977,10 @@ function succeed(){
   st.seen++;
   const clean0=misses===0&&!usedEar, wasMastered=st.mastered;
   // retention reads (Retain): was a check due for this heart word, or was it on review?
-  const rt=cur.tricky?state.retain.find(r=>r.word===cur.w):null, rtDue=rt&&rt.dueAt<=state.crateCount?rt.stage:0,
+  // Only a read at Build it is a check (a ♥ crate always opens there); a due word that comes
+  // up at another rung (a target, bonus or ordinary crate) leaves its check waiting
+  const rt=cur.tricky?state.retain.find(r=>r.word===cur.w):null,
+    rtDue=rt&&rt.dueAt<=state.crateCount&&cur.shownRung===1?rt.stage:0,
     wasReview=Retain.onReview(cur.w);
   if(clean0){
     st.first++;st.rungClean=(st.rungClean||0)+(quick?2:1);   // a quick clean read counts double

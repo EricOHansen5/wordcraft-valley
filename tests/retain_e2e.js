@@ -30,9 +30,13 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   // for a word with a picture, prove it
   const readIt=async w=>{await wait(1100);await E(()=>document.querySelector("#picks .btn").click());await wait(300);
     await E(w=>{const b=document.querySelector(`#picks .pick[data-w="${w}"]`);if(b)b.click();},w);await wait(500);await clear();};
+  // build the word on screen (Build it): wait, then tap its sound tiles in order
+  const buildIt=async()=>{await wait(1100);
+    await E(()=>{cur.p.forEach(ph=>{const t=[...document.querySelectorAll("#letterBank .lt:not(.used)")].find(x=>x.dataset.ph===ph);t.click();});});
+    await wait(1500);await clear();};
   // open the crate row with chance pinned, so there are no bonus crates and every word opens at its own rung
   const openCrates=()=>E(()=>{const r=Math.random;Math.random=()=>0.99;try{document.getElementById("crateBtn").click();}finally{Math.random=r;}
-    return [...document.querySelectorAll("#crateRow .crate")].map(c=>({cls:c.className,tag:(c.querySelector(".tagline")||{}).textContent||"",title:c.title}));});
+    return [...document.querySelectorAll("#crateRow .crate")].map(c=>({cls:c.className,tag:(c.querySelector(".tagline")||{}).textContent||"",title:c.title,word:(c.querySelector(".w")||{}).textContent||""}));});
 
   // old save: the default is filled in
   ok(await E(()=>Array.isArray(state.retain)&&state.retain.length===0),"old save gets retain: [] by default");
@@ -67,21 +71,36 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   crates=await openCrates();
   const kc=crates.filter(c=>/\bkeep\b/.test(c.cls));
   ok(kc.length===1&&!/\blost\b/.test(kc[0].cls)&&/remember/.test(kc[0].tag)&&/♥/.test(kc[0].tag)&&!!kc[0].title,"the crate row shows one ♥ retention crate, not lost: "+J(kc[0]));
+  ok(kc[0].cls.split(" ").includes("spell")&&kc[0].word!=="the"&&kc[0].tag==="♥ remember this one? Listen and build it.","the ♥ crate is a Build-it crate: the word is hidden until he builds it");
+  ok(await E(()=>{for(let i=0;i<40;i++){const k=pickCrates().find(o=>o.keep);if(k&&k.rung!==1)return false;}return true;}),"a ♥ crate is always at Build it, whatever chance says");
   await wait(400);await (await p.$("#crateRow")).screenshot({path:"rt_crates.png"});
   const g0=await E(()=>state.gems);
   await E(()=>document.querySelector("#crateRow .crate.keep").click());await wait(300);
-  ok(await E(()=>cur&&cur.w==="the"&&cur.keep&&cur.shownRung===2),"the ♥ crate opens \"the\" at its own rung (Read it)");
-  await wait(1100);await E(()=>document.querySelector("#picks .btn").click());await wait(1800);
+  ok(await E(()=>cur&&cur.w==="the"&&cur.keep&&cur.shownRung===1&&getComputedStyle(document.getElementById("slotsRow")).display!=="none"
+    &&!document.querySelector("#picks .btn")&&!!document.querySelector("#letterBank .lt.heart")),"the ♥ crate opens \"the\" at Build it (sound tiles, heart part marked, no \"I read it!\")");
+  await wait(1100);
+  await E(()=>{cur.p.forEach(ph=>{const t=[...document.querySelectorAll("#letterBank .lt:not(.used)")].find(x=>x.dataset.ph===ph);t.click();});});
+  await wait(2700);
   const t1=await E(()=>document.getElementById("toast").textContent);await clear();
   s=await sched("the");
   ok(J(s.rt)===J([{word:"the",dueAt:s.n+90,stage:2}])&&!s.rv.length,"clean check -> stage 2 at +90: "+J(s.rt));
   ok(/remembered/.test(t1),"a passed check says so kindly: "+t1);
   ok(!s.both.length,"nothing is on both lists");
 
+  // 5b. a due word read at Read it (say, as an ordinary or target crate) is not a check: "I read it!" changes nothing
+  await E(()=>{state.crateCount=state.retain.find(r=>r.word==="the").dueAt;});
+  const pre=await sched("the");
+  await E(()=>openWord({...allWords().find(x=>x.w==="the")},{rung:2}));
+  await readIt("the");
+  s=await sched("the");
+  ok(J(s.rt)===J(pre.rt)&&!s.rv.length&&s.n===pre.n+1,"a Read-it self-pass is not taken as the check; it is still due: "+J(s.rt));
+  ok(await E(()=>{let k;for(let i=0;i<30&&!k;i++)k=pickCrates().find(o=>o.keep);return !!k&&k.w==="the"&&k.rung===1;}),"the check is still waiting as a ♥ Build-it crate");
+
   // 6. the stage-2 check missed (a wrong build first): back on review at +3, still mastered, nothing taken
   await E(()=>{state.crateCount=state.retain.find(r=>r.word==="the").dueAt;});
   const g1=await E(()=>state.gems);
-  await E(()=>{let k;for(let i=0;i<30&&!k;i++)k=pickCrates().find(o=>o.keep);openWord(k,{rung:1});});await wait(1100);
+  await E(()=>{let k;for(let i=0;i<30&&!k;i++)k=pickCrates().find(o=>o.keep);openWord(k);});await wait(1100);
+  ok(await E(()=>cur.shownRung===1&&!document.querySelector("#picks .btn")),"the stage-2 check opens at Build it too");
   // both sounds in the wrong order
   await E(()=>{const bank=[...document.querySelectorAll("#letterBank .lt")];bank.find(t=>t.dataset.ph==="e:uh").click();bank.find(t=>t.dataset.ph==="th:dh").click();});
   await wait(1200);
@@ -112,8 +131,8 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   // 8. stage 1 then stage 2 both clean: kept, no more checks
   for(const stage of [1,2]){
     await E(()=>{state.crateCount=state.retain.find(r=>r.word==="the").dueAt;});
-    await E(()=>{let k;for(let i=0;i<30&&!k;i++)k=pickCrates().find(o=>o.keep);openWord(k,{rung:2});});
-    await readIt("the");
+    await E(()=>{let k;for(let i=0;i<30&&!k;i++)k=pickCrates().find(o=>o.keep);openWord(k);});
+    await buildIt();
   }
   s=await sched("the");
   ok(!s.rt.length&&!s.rv.length&&s.st.kept===true&&s.st.mastered,"stage 2 read clean -> kept, off both lists");
