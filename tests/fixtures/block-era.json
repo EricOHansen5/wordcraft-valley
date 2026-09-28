@@ -1,0 +1,175 @@
+{
+ "wordsRead": 48,
+ "gems": 31,
+ "crateCount": 52,
+ "rows": 5,
+ "biome": 1,
+ "best": 6,
+ "grid": {
+  "2,8": {
+   "id": "grass",
+   "seed": 101
+  },
+  "3,8": {
+   "id": "lantern",
+   "seed": 102
+  },
+  "5,8": {
+   "id": "flowers",
+   "seed": 103
+  },
+  "7,7": {
+   "id": "well",
+   "seed": 104
+  },
+  "9,8": {
+   "id": "lantern",
+   "seed": 105
+  },
+  "11,7": {
+   "id": "fence",
+   "seed": 106
+  },
+  "13,8": {
+   "id": "campfire",
+   "seed": 107
+  },
+  "15,7": {
+   "id": "lantern",
+   "seed": 108
+  },
+  "17,8": {
+   "id": "stone",
+   "seed": 109
+  }
+ },
+ "inventory": {
+  "grass": {
+   "n": 6
+  },
+  "dirt": {
+   "n": 3
+  },
+  "torch": {
+   "n": 2
+  },
+  "campfire": {
+   "n": 1
+  },
+  "birdhouse": {
+   "n": 3
+  },
+  "lantern": {
+   "n": 1
+  },
+  "water": {
+   "n": 0
+  }
+ },
+ "selected": "dirt",
+ "stats": {
+  "cat": {
+   "seen": 6,
+   "first": 5,
+   "miss": 1,
+   "mastered": true
+  },
+  "dog": {
+   "seen": 5,
+   "first": 5,
+   "miss": 0,
+   "mastered": true
+  },
+  "sun": {
+   "seen": 4,
+   "first": 4,
+   "miss": 0,
+   "mastered": true
+  },
+  "pig": {
+   "seen": 3,
+   "first": 2,
+   "miss": 1,
+   "mastered": false
+  },
+  "hen": {
+   "seen": 2,
+   "first": 1,
+   "miss": 1,
+   "mastered": false
+  },
+  "map": {
+   "seen": 4,
+   "first": 4,
+   "miss": 0,
+   "mastered": true
+  },
+  "log": {
+   "seen": 1,
+   "first": 0,
+   "miss": 1,
+   "mastered": false
+  }
+ },
+ "review": [
+  {
+   "word": "hen",
+   "dueAt": 55
+  },
+  {
+   "word": "log",
+   "dueAt": 82
+  }
+ ],
+ "critters": [
+  {
+   "id": "fox",
+   "seed": 5,
+   "c": 5,
+   "r": 8
+  },
+  {
+   "id": "dog",
+   "seed": 7,
+   "c": 9,
+   "r": 8
+  },
+  {
+   "id": "fox",
+   "seed": 11,
+   "c": 12,
+   "r": 7
+  },
+  {
+   "id": "hen",
+   "seed": 3,
+   "c": 14,
+   "r": 8
+  },
+  {
+   "id": "fox",
+   "seed": 13,
+   "c": 3,
+   "r": 7
+  }
+ ],
+ "creatures": [],
+ "customWords": [
+  {
+   "w": "zip",
+   "p": [
+    "z",
+    "i",
+    "p"
+   ],
+   "t": 1,
+   "custom": true
+  }
+ ],
+ "settings": {
+  "pics": true,
+  "tts": true,
+  "ambient": false,
+  "tierOverride": 0
+ }
+}

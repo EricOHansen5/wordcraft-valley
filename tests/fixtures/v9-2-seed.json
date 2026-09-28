@@ -1,0 +1,65 @@
+{
+ "tour": 99,
+ "guardians": [
+  0,
+  1
+ ],
+ "wordsRead": 60,
+ "gems": 20,
+ "rows": 6,
+ "biome": 2,
+ "vehStarter": true,
+ "seasonSeen": "autumn",
+ "phase": 0,
+ "grid": {},
+ "inventory": {},
+ "critters": [
+  {
+   "id": "dog",
+   "c": 14,
+   "r": 8,
+   "seed": 1
+  }
+ ],
+ "vehicles": [],
+ "adv": {
+  "seenIntro": 1,
+  "dex": {}
+ },
+ "mine": {
+  "seed": 12345,
+  "x": 20.2,
+  "y": 5.05,
+  "coins": 40,
+  "bag": {
+   "1": 3,
+   "2": 2
+  },
+  "pick": 2,
+  "bagLv": 2,
+  "lamp": 0,
+  "boots": 0,
+  "shopLv": 0,
+  "look": {
+   "skin": 1,
+   "hair": 2,
+   "hairStyle": 1,
+   "shirt": 3,
+   "pants": 0,
+   "helmet": "miner"
+  },
+  "owned": {
+   "miner": 1,
+   "cap": 1
+  },
+  "made": true,
+  "pet": "dog",
+  "bosses": {
+   "beetle": 1,
+   "golem": 1
+  },
+  "eggs": [],
+  "deepest": 30,
+  "petHint": 1
+ }
+}

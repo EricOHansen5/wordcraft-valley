@@ -3,7 +3,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const p=await b.newPage({viewport:{width:1180,height:820}});
   const errs=[];p.on("pageerror",e=>errs.push(e.message));
   await p.goto("http://localhost:8794/");await p.waitForTimeout(1800);
-  await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.mine={seed:12345,x:20.2,y:5.05,coins:40,bag:{},pick:0,bagLv:1,lamp:0,boots:0,shopLv:0,look:{skin:1,hair:2,hairStyle:1,shirt:3,pants:0,helmet:"miner"},owned:{miner:1,cap:1},made:true,bosses:{beetle:1,golem:1,troll:1,worm:1},eggs:[]};Mine.enter();});
+  await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.mine=Object.assign(def().mine,{seed:12345,x:20.2,y:5.05,coins:40,bag:{},pick:0,bagLv:1,lamp:0,boots:0,shopLv:0,look:{skin:1,hair:2,hairStyle:1,shirt:3,pants:0,helmet:"miner"},owned:{miner:1,cap:1},made:true,bosses:{beetle:1,golem:1,troll:1,worm:1},eggs:[]});Mine.enter();});
   await p.waitForTimeout(600);for(let i=0;i<4;i++){await p.evaluate(()=>{const b=document.querySelector("#mPanel.on #mClose");if(b)b.click();});await p.waitForTimeout(200);}
   console.log("paused:",await p.evaluate(()=>Mine._paused()));
   // a stone corridor at depth 8: air at x=25, stone to the left and right, floor below

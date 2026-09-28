@@ -675,6 +675,12 @@ button.mpill{cursor:pointer}
 .rst{font-weight:800;font-size:13px;text-align:right}
 .rconf{display:flex;gap:8px;flex-wrap:wrap}.rconf span{padding:6px 12px;border:2px solid var(--ink);border-radius:14px;background:#FFF0E6}
 .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.rchart{height:90px}
+.rsplit{height:18px;margin:2px 0 10px}
+.rmodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px 16px}
+.rmode h4{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 4px;font-size:16px}
+.rmode h4 span{font-size:13px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+/* numbers in a row along the top, so every bar is to scale in a short chart */
+.rmode .rchart{height:96px}.rmode .rchart .col{padding-top:17px}.rmode .rchart .col b{position:absolute;top:0;margin:0}
 .rbooks{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
 .rbook{display:flex;flex-direction:column;gap:4px;padding:10px;border:2px solid var(--ink);border-radius:14px;background:var(--paper-deep)}
 .rbook .btn{min-height:40px;padding:6px 12px;font-size:15px;align-self:flex-start}
@@ -1391,7 +1397,7 @@ body.exploring .slot-empty{display:none}
 
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-09-28c"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-09-28d"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* ================================================================
@@ -3627,13 +3633,62 @@ setTimeout(()=>{if(!state.voiceCached&&location.protocol.startsWith("http"))Voic
    ================================================================ */
 // The valley is wider than the screen; PAGES is how many screenfuls across.
 const COLS=22, ROWS_MAX=9, ROWS_START=4, PAGES=2.6, EDGE=0.06;
-const def=()=>({v:5,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phase:0,best:0,cam:null,
+// the Gem Mine's world: width, sky rows, depth, town width and where the miner starts
+// (here rather than in GEM MINE because the Mine's part of the save below starts there)
+const MW=50, SKY=6, MDEPTH=120, MH=SKY+MDEPTH, TOWN=19, SPAWN_X=20.2;
+/* ---- the save ----
+   def() is the whole save: every field any part of the game keeps, with its default,
+   grouped by the part that owns it. A new field gets its default here, not where it is
+   first used; loading fills in whatever an older save is missing (defaults() in BOOT).
+   SAVE_V is how many one-time conversions a save has had (MIGRATIONS in BOOT); a new
+   save needs none. Saves from before this count carry v:5 or no v at all. */
+const SAVE_V=6;
+const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phase:0,best:0,cam:null,
   grid:{},inventory:{},selected:null,stats:{},review:[],critters:[],creatures:[],
   blueprints:[],fed:0,timers:{},quests:null,tour:0,buddy:{c:10,r:ROWS_MAX-1},
   guardians:[],books:{},badges:[],swaps:0,daily:{},sawNight:false,
   seasonSeen:null,hats:[],hat:null,scrambles:0,
   vehicles:[],launched:false,vehStarter:false,
-  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true},customWords:[],pace:{}});
+  // GAME VOICE adds the chosen device voice, the game-voice switch and the speaking rate
+  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true,
+    voice:null,voicePack:true,voiceRate:1},customWords:[],pace:{},
+  modeMin:{},modeOpens:{},
+  // BOOT: the block-era tidy-up has said "Tidied up!"
+  tidied:false,
+  // GAME VOICE: when the voice clips were saved for offline play
+  voiceCached:0,
+  // CRATE LOOP: the last word he read (the parrot repeats it; the buddy's evolution may ask for it)
+  lastWord:null,
+  // SIGNATURE MOVES and the word bubbles: when each small gem gift was last given
+  treats:{},
+  // LEVELS, UPGRADES: upgrades done
+  upgrades:0,
+  // GEM MINE: miner, shop, tunnels, museum, pets. There is no `w` (world width) on purpose:
+  // the Mine stamps it on first use, and a mine saved without one is from the narrower world
+  // and gets fresh tunnels. The seed is new each time def() runs; a saved mine keeps its own.
+  mine:{seed:(Math.random()*1e9)|0,dug:"",x:SPAWN_X,y:SKY-0.95,coins:0,bag:{},pick:0,bagLv:0,lamp:0,
+    boots:0,shopLv:0,look:{skin:0,hair:0,hairStyle:0,shirt:1,pants:0,helmet:"miner"},owned:{miner:1,cap:1},made:false,
+    deepest:0,dugCount:0,orders:0,ordersRight:0,ordersWrong:0,layers:[],mineNo:1,
+    found:{},museum:{},bosses:{},items:{},eggs:[],blocks:{dirt:6,stone:0,sand:0,ladder:4,torch:3,sign:2},
+    placed:{},signs:{},vaults:{},stat:{}},
+  // SOUND SKILLS: evidence per sound pattern, misses per pattern, and per day the answers and quick guesses
+  skills:{},skillMiss:{},answers:{},rushes:{},
+  // READING HUB: minutes played per day; picture and book questions right and wrong
+  minutes:{},comp:{right:0,wrong:0},
+  // STORYBOOKS: how far he got in each book
+  library:{},
+  // VALLEY ADVENTURE: the Word-Dex and the treasure hunt
+  adv:{dex:{},hunt:null,huntDay:null,hunts:0,caught:0},
+  // NOTES FROM HOME: the notes and who signs them
+  notes:[],noteFrom:"Dad",
+  // VALLEY QUEST: chapter of "The Letter Thief"
+  quest:{ch:0,day:null,active:null,done:false},
+  // MY OWN BOOK: the books he wrote
+  mybooks:[],
+  // WRITE IT: each letter's practice, and words written
+  write:{},writes:0,
+  // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
+  sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
 let state=def(), sessionStart=Date.now(), packCreatures=[];
 const saveNow=()=>{
@@ -4013,7 +4068,6 @@ function renderVehicles(){
   });
 }
 function addVehicle(id,announce,at){
-  state.vehicles=state.vehicles||[];
   const have=state.vehicles.find(v=>v.id===id);
   if(have){ // a repeat levels up the one he has
     const res=levelOrPay("vehicle",have);have._up=!!res.up;have._max=!!res.max;return have;}
@@ -4448,12 +4502,114 @@ setInterval(()=>{
 },95000);
 
 /* ================================================================
+   MODES — the one place a mode opens and closes
+   Everything he can be "in" (a crate, a book, the Mine, Adventure, a
+   race, the grown-up menu...) opens with Modes.open(id, el) and closes
+   with Modes.close(id, el). Modes.shut(el) takes the "on" class off an
+   overlay and closes its mode in one go. show()/hide() below do this for
+   the overlays in the page, mapped by element id (OV).
+   The open modes form a stack, so Modes.top() is the one he is looking
+   at now, and "valley" when nothing is open. Nothing here changes what
+   is on screen: the class toggles and their timing are as before.
+   A missed close must not wedge the stack: an entry whose element has
+   lost its "on" class or left the page is dropped. A MutationObserver
+   watches every element handed to open(), and top() checks again.
+   Seam for later: Modes.guard(fn) registers fn(id); when it returns
+   false, open() refuses and returns false. No guard is set and no entry
+   point checks the return value yet, so nothing is gated today.
+   For the Grown-up report ("Where the time goes"), each open is counted
+   in state.modeOpens, and the minutes tick credits Modes.top() in
+   state.modeMin; both are {"YYYY-MM-DD": {mode: n}}, last 60 days kept.
+   A mode that closes and opens again within 2 s (the crates, then the
+   word he picked; a chapter's story, then its game) is one visit, not two.
+   ================================================================ */
+const Modes=(()=>{
+  // reading:true is what the Grown-up report adds up as reading time
+  const MODES={
+    valley:{name:"The valley",reading:false},          // nothing open: building, tapping animals, driving
+    read:{name:"Reading words",reading:true},          // word crates, sound swaps, story crates, upgrades; word stones, vaults, moles and bosses in the Mine
+    book:{name:"Books",reading:true},                  // the bookshelf and the keepers' story books
+    pic:{name:"Picture it",reading:true},
+    sign:{name:"Signs",reading:true},
+    note:{name:"Notes from home",reading:true},
+    story:{name:"The Letter Thief",reading:true},
+    wild:{name:"Word Wilds",reading:true},
+    care:{name:"Animal care",reading:true},
+    write:{name:"Writing",reading:true},               // Write it, and signs he writes in the Mine
+    maker:{name:"My own book",reading:true},
+    mine:{name:"Gem Mine",reading:false},
+    adventure:{name:"Adventure",reading:false},
+    race:{name:"Races",reading:false},
+    dex:{name:"Word-Dex",reading:false},
+    craft:{name:"Building plans",reading:false},
+    album:{name:"Sticker book",reading:false},
+    quests:{name:"Daily quests",reading:false},
+    reward:{name:"Rewards",reading:false},
+    evo:{name:"Buddy evolving",reading:false},
+    scene:{name:"Keeper wakes up",reading:false},
+    recap:{name:"Session recap",reading:false},
+    photo:{name:"Postcard",reading:false},
+    gate:{name:"Grown-up gate",reading:false},
+    parent:{name:"Grown-up menu",reading:false},
+    report:{name:"Reading report",reading:false},
+    other:{name:"Other",reading:false}};
+  // overlays, by element id
+  const OV={ovCrates:"read",ovRead:"read",ovReward:"reward",ovSign:"sign",ovCraft:"craft",ovQuests:"quests",ovPhoto:"photo",
+    ovRecap:"recap",ovScene:"scene",ovBook:"book",ovAlbum:"album",ovGate:"gate",ovParent:"parent",advHud:"adventure",
+    ovStory:"book",ovPic:"pic",ovReport:"report",ovDex:"dex",ovWild:"wild",ovNote:"note",ovQuest:"story",ovMaker:"maker",
+    ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine"};
+  const stack=[];            // {id, el}, innermost last
+  const SAME_VISIT=2000,lastClose={};
+  let guardFn=null,mo=null;
+  const of=el=>(el&&(OV[el.id]||el.dataset.mode))||"other";
+  const alive=e=>!e.el||(document.documentElement.contains(e.el)&&e.el.classList.contains("on"));
+  function drop(i){const e=stack.splice(i,1)[0];if(e)lastClose[e.id]=Date.now();}
+  function reconcile(){for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i]))drop(i);}
+  function watch(el){
+    if(!mo&&typeof MutationObserver!=="undefined"){mo=new MutationObserver(reconcile);mo.observe(document.body,{childList:true});}
+    if(mo)mo.observe(el,{attributes:true,attributeFilter:["class"]});
+  }
+  // el is optional; when it is given it should already carry "on"
+  function open(id,el){
+    id=id||of(el);if(!MODES[id])id="other";
+    reconcile();
+    const i=stack.findIndex(e=>el?e.el===el:(!e.el&&e.id===id));
+    if(i>=0&&stack[i].id===id)return true;            // already open: shown again, nothing new
+    if(guardFn){let ok=true;try{ok=guardFn(id)!==false;}catch(e){}if(!ok)return false;}
+    if(i>=0)drop(i);                                   // the same element, now as another mode
+    if(el){el.dataset.mode=id;watch(el);}
+    const visit=!stack.some(e=>e.id===id)&&Date.now()-(lastClose[id]||0)>SAME_VISIT;
+    stack.push({id,el:el||null});
+    if(visit)bump("modeOpens",id);
+    return true;
+  }
+  // one more for this mode today; days older than 60 are dropped as it writes
+  function bump(key,id){
+    try{
+      const all=state[key];
+      const cut=new Date();cut.setDate(cut.getDate()-59);const oldest=ymd(cut);
+      Object.keys(all).forEach(k=>{if(k<oldest)delete all[k];});
+      const d=today(),day=all[d]||(all[d]={});day[id]=(day[id]||0)+1;save();
+    }catch(e){}
+  }
+  // by element when there is one, otherwise the innermost open mode with that id
+  function close(id,el){
+    for(let i=stack.length-1;i>=0;i--){const e=stack[i];if(el?e.el===el:e.id===id){drop(i);return;}}
+  }
+  function shut(el){if(!el)return;el.classList.remove("on");close(null,el);}
+  function top(){reconcile();return stack.length?stack[stack.length-1].id:"valley";}
+  // the minutes tick: this minute goes to whatever is on top
+  const credit=()=>bump("modeMin",top());
+  return{open,close,shut,top,of,credit,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
+})();
+
+/* ================================================================
    7. CRATE LOOP
    ================================================================ */
 const ov=id=>document.getElementById(id);
-const show=id=>ov(id).classList.add("on");
-const hide=id=>ov(id).classList.remove("on");
-document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>b.closest(".overlay").classList.remove("on"));
+const show=id=>{const el=ov(id);el.classList.add("on");Modes.open(null,el);};
+const hide=id=>Modes.shut(ov(id));
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>Modes.shut(b.closest(".overlay")));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");
   setTimeout(()=>t.classList.remove("on"),2400);}
 
@@ -4543,7 +4699,7 @@ const Pace={
   // time for a fluent read of each rung (ms): picking a picture, building from sounds, reading then proving it
   limit:(rung,w)=>rung===1?2500+1200*((w.p||[]).length||3):rung===2?5000:4000,
   quick(w,rung,ms,clean){return Pace.on()&&clean&&rung!=null&&ms>=800&&ms<=Pace.limit(rung,w);},
-  log(t,quick){if(!t)return;const p=state.pace||(state.pace={}),a=p[t]||(p[t]=[]);a.push(quick?1:0);if(a.length>10)a.shift();},
+  log(t,quick){if(!t)return;const p=state.pace,a=p[t]||(p[t]=[]);a.push(quick?1:0);if(a.length>10)a.shift();},
   fluent(t){if(!Pace.on())return false;const a=(state.pace||{})[t]||[];return a.length>=8&&a.filter(Boolean).length>=Math.ceil(a.length*.8);}
 };
 function rungOf(w){
@@ -4780,7 +4936,7 @@ function succeed(){
     Quests.hit("master");
   }
   Quests.hit("read");state.lastWord=cur.w;
-  state.daily=state.daily||{};state.daily[today()]=(state.daily[today()]||0)+1;
+  state.daily[today()]=(state.daily[today()]||0)+1;
   state.wordsRead++;state.crateCount++;
   const clean=misses===0&&!usedEar;
   setStreak(clean?streak+1:0);
@@ -4916,7 +5072,7 @@ function ready(id,ms){
   const last=(state.timers||{})[id]||0;
   return Date.now()-last>=ms*(LV_COOL[bLv]||1);
 }
-function arm(id){state.timers=state.timers||{};state.timers[id]=Date.now();}
+function arm(id){state.timers[id]=Date.now();}
 function payout(key,amount,label){
   const p=atPct(key);
   amount=Math.round(amount*(LV_PAY[bLv]||1));
@@ -4967,7 +5123,7 @@ function cAt(cr){const a=vehAnchor(cr),h=parseFloat(cr._el?cr._el.style.height:4
   return{x:a.x,feet:a.top,mid:a.top-h*.5/vh*100,head:a.top-h*.85/vh*100,dir:a.dir,h,w:a.w};}
 // small gifts on a cooldown, bigger for levelled-up animals
 function gift(key,amount,x,yPct,label){
-  state.treats=state.treats||{};const last=state.treats[key]||0;
+  const last=state.treats[key]||0;
   if(Date.now()-last<300000)return false;
   state.treats[key]=Date.now();state.gems+=amount;
   floater("+"+amount+" 💎","#FFE9A8");sparkleBurst(toView(x),yPct,8);
@@ -5623,7 +5779,6 @@ function maybeBubble(o,id){
       await new Promise(r=>setTimeout(r,90));spans[i].classList.remove("on");}
     await Sound.say("word:"+w,w,.85);
     b.classList.add("read");Quests.hit("bubble");
-    state.treats=state.treats||{};
     if(Date.now()-(state.treats.bubble||0)>45000){state.treats.bubble=Date.now();state.gems+=1;floater("+1 💎","#FFE9A8");renderHUD();Sound.sfx.chime();save();}
     setTimeout(()=>{b.classList.add("bye");setTimeout(()=>b.remove(),300);},900);
   });
@@ -5648,7 +5803,7 @@ function evolveScene(from,to){
   document.getElementById("evoText").textContent=from===0?"What? The egg is hatching!":`What? ${old} is evolving!`;
   document.getElementById("evoWord").textContent=word;
   document.getElementById("evoAsk").style.display="";document.getElementById("evoDone").style.display="none";
-  ov.className="evo on";Sound.sfx.chime();
+  ov.className="evo on";Modes.open("evo",ov);Sound.sfx.chime();
   Sound.speak(from===0?"What? The egg is hatching!":"What? Your buddy is evolving!",.95);
   document.getElementById("evoHear").onclick=()=>Sound.say("word:"+word,word,.85);
   document.getElementById("evoGo").onclick=()=>{
@@ -5658,7 +5813,7 @@ function evolveScene(from,to){
       Sound.speak(`Congratulations! ${old} became ${nm}!`,.9);
       document.getElementById("evoDone").style.display="";setTimeout(()=>ov.classList.remove("flash"),700);},3300);
   };
-  document.getElementById("evoDone").onclick=()=>{ov.className="evo";renderHUD();
+  document.getElementById("evoDone").onclick=()=>{ov.className="evo";Modes.close("evo",ov);renderHUD();
     try{const el=document.getElementById("buddyBtn");el.classList.add("pulse");setTimeout(()=>el.classList.remove("pulse"),1000);}catch(e){}
     try{renderBuddy&&renderBuddy();}catch(e){}};
 }
@@ -5678,7 +5833,7 @@ function evolveScene(from,to){
 if(typeof CanvasRenderingContext2D!=="undefined"&&!CanvasRenderingContext2D.prototype.roundRect)
   CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);
     this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();};
-const MW=50, SKY=6, MDEPTH=120, MH=SKY+MDEPTH, TOWN=19, SPAWN_X=20.2;
+// MW, SKY, MDEPTH, MH, TOWN and SPAWN_X are with the save's defaults in STATE
 const T={AIR:0,GRASS:1,DIRT:2,STONE:3,DEEP:4,HOT:5,CRYS:6,BED:7,LAVA:8,FOUND:9,SEAL:10,LADDER:11,TORCH:12,SIGN:13,SAND:14,VAULT:15,VDOOR:16};
 const HARD={1:1,2:1,3:2,4:3,5:4,6:5,8:4,11:1,12:1,13:1,14:1};
 // ladders, torches and signs can be walked through
@@ -5750,14 +5905,12 @@ const Mine=(()=>{
   const PET={x:SPAWN_X-1,y:SKY-1,hop:-9};
 
   /* ---------- save data ---------- */
+  // the save's defaults are in def() (STATE)
   function M(){
-    if(!state.mine)state.mine={seed:(Math.random()*1e9)|0,dug:"",x:SPAWN_X,y:SKY-0.95,coins:0,bag:{},pick:0,bagLv:0,lamp:0,
-      boots:0,shopLv:0,look:{skin:0,hair:0,hairStyle:0,shirt:1,pants:0,helmet:"miner"},owned:{miner:1,cap:1},made:false,
-      deepest:0,dugCount:0,orders:0,ordersRight:0,ordersWrong:0,layers:[],mineNo:1,w:MW};
     const m=state.mine;
-    if(m.w!==MW){m.w=MW;m.dug="";m.x=SPAWN_X;m.y=SKY-.95;}   // the world got wider: fresh tunnels, everything owned stays
-    m.found=m.found||{};m.museum=m.museum||{};m.bosses=m.bosses||{};m.items=m.items||{};m.eggs=m.eggs||[];
-    m.blocks=m.blocks||{dirt:6,stone:0,sand:0,ladder:4,torch:3,sign:2};m.placed=m.placed||{};m.signs=m.signs||{};m.vaults=m.vaults||{};m.stat=m.stat||{};
+    // the world got wider: fresh tunnels, everything owned stays. A new mine has no width
+    // yet (see def), so this also stamps it the first time.
+    if(m.w!==MW){m.w=MW;m.dug="";m.x=SPAWN_X;m.y=SKY-.95;}
     return m;
   }
   const bagCount=()=>Object.values(M().bag).reduce((a,n)=>a+n,0);
@@ -6026,7 +6179,7 @@ const Mine=(()=>{
     if(!root){buildDom();buildTextures();}
     const m=M();gen();layerSeen=new Set(m.layers||[]);ENT.length=0;setBuild(false);lostAnimal();jobs();
     P.x=m.x||SPAWN_X;P.y=m.y||SKY-.95;P.vx=P.vy=0;if(solidBox(P.x,P.y))Object.assign(P,{x:SPAWN_X,y:SKY-.95});
-    root.classList.add("on");running=true;paused=false;resize();hud();
+    root.classList.add("on");Modes.open("mine",root);running=true;paused=false;resize();hud();
     cam.x=P.x*TS-vw/2;cam.y=P.y*TS-vh*.45;
     lastT=performance.now();requestAnimationFrame(loop);
     PET.x=P.x-1;PET.y=P.y;
@@ -6038,7 +6191,7 @@ const Mine=(()=>{
     else toast("Dig down and find gems! Sell them at your shop.",3000);
   }
   function exit(){
-    const m=M();m.x=P.x;m.y=P.y;markDug();dirty=false;running=false;root.classList.remove("on");
+    const m=M();m.x=P.x;m.y=P.y;markDug();dirty=false;running=false;panelMode(null);root.classList.remove("on");Modes.close("mine",root);
     try{renderHUD();}catch(e){}
   }
   function toSurface(){
@@ -6291,8 +6444,11 @@ const Mine=(()=>{
 
   /* ---------- panels ---------- */
   const panel=root=>document.getElementById("mPanel"),card=()=>document.getElementById("mCard");
-  function openPanel(html){paused=true;input.dig=false;input.jx=input.jy=0;card().innerHTML=html;panel().classList.add("on");}
-  function closePanel(){panel().classList.remove("on");paused=false;hud();}
+  // mode: the reading ("read") and writing ("write") panels are modes of their own inside the Mine
+  function openPanel(html,mode){paused=true;input.dig=false;input.jx=input.jy=0;card().innerHTML=html;panel().classList.add("on");panelMode(mode);}
+  function closePanel(){panel().classList.remove("on");panelMode(null);paused=false;hud();}
+  let pMode=null;
+  function panelMode(m){m=m||null;if(m===pMode)return;if(pMode)Modes.close(pMode,panel());pMode=m;if(m)Modes.open(m,panel());}
 
   // word stone: match the word to its picture
   function wordStone(tx,ty){
@@ -6306,7 +6462,7 @@ const Mine=(()=>{
     const opts=[w,...others].sort(()=>Math.random()-.5);let misses=0,t0=performance.now(),fin=false;
     openPanel(`<h2>A word stone! 🔮</h2><p class="sub">Read the word, then tap its picture to crack it open.</p>
       <div class="mword">${w.w}</div><div class="mpics">${opts.map(o=>`<button class="mpic" data-w="${o.w}">${drawWord(o.w,"mine")}</button>`).join("")}</div>
-      <div class="mrow"><button class="btn soft" id="mHear" style="visibility:hidden">🔊 Hear it</button></div>`);
+      <div class="mrow"><button class="btn soft" id="mHear" style="visibility:hidden">🔊 Hear it</button></div>`,"read");
     card().querySelector("#mHear").onclick=()=>Sound.say("word:"+w.w,w.w,.85);
     if(Skills.slow){const mp=card().querySelector(".mpics");mp.classList.add("locked-by-shield");
       soundShield(card(),w,()=>{mp.classList.remove("locked-by-shield");t0=performance.now();});}
@@ -6572,7 +6728,7 @@ const Mine=(()=>{
     const b=BOSSES[i];battle={i,hp:b.hp,hearts:3,round:0,right:0,lock:false};input.dig=false;
     openPanel(`<div class="mboss">${bossArt(b,"enter")}<h2>${b.name}!</h2><p class="mtaunt">“${b.taunt}”</p>
       <p class="sub">Read to power up your pickaxe. Every right answer is a hit! ${b.hp} hits wins.</p>
-      <div class="mrow"><button class="btn soft" id="mRun">Run away</button><button class="btn primary" id="mFight">Fight! ⚔️</button></div></div>`);
+      <div class="mrow"><button class="btn soft" id="mRun">Run away</button><button class="btn primary" id="mFight">Fight! ⚔️</button></div></div>`,"read");
     Sound.sfx.rumble();setTimeout(()=>Sound.speak(b.taunt,.95),400);
     card().querySelector("#mFight").onclick=()=>bossRound();
     card().querySelector("#mRun").onclick=()=>{battle=null;bossCool=time+4;closePanel();toSurface();};
@@ -6589,7 +6745,7 @@ const Mine=(()=>{
       body=`<p class="sub">Which word is this? Look closely!</p><div class="mpic big">${drawWord(w.w,"boss")}</div>
         <div class="mwords">${opts.map(o=>`<button class="mwopt" data-w="${o}">${o}</button>`).join("")}</div>`;}
     openPanel(`<div class="mboss fight">${bossArt(b,"small")}
-      <div class="mbars"><div><b>${b.name}</b> ${"🖤".repeat(battle.hp)}</div><div><b>You</b> ${"❤️".repeat(battle.hearts)}${"🤍".repeat(3-battle.hearts)}</div></div>${body}</div>`);
+      <div class="mbars"><div><b>${b.name}</b> ${"🖤".repeat(battle.hp)}</div><div><b>You</b> ${"❤️".repeat(battle.hearts)}${"🤍".repeat(3-battle.hearts)}</div></div>${body}</div>`,"read");
     card().querySelectorAll("[data-w]").forEach(el=>el.onclick=()=>answer(el,el.dataset.w===w.w,w));
     if(Skills.slow&&!pictureFirst){const mp=card().querySelector(".mpics");mp.classList.add("locked-by-shield");
       soundShield(card().querySelector(".mboss"),w,()=>{mp.classList.remove("locked-by-shield");battle.t0=performance.now();});}
@@ -6600,12 +6756,12 @@ const Mine=(()=>{
     openPanel(`<div class="mboss fight">${bossArt(b,"small")}
       <div class="mbars"><div><b>${b.name}</b> ${"🖤".repeat(battle.hp)}</div><div><b>You</b> ${"❤️".repeat(battle.hearts)}${"🤍".repeat(3-battle.hearts)}</div></div>
       <p class="sub">Boss riddle! Read it all, then tap the picture that matches.</p><div class="mps">${ps.text}</div>
-      <div class="mpics">${ps.opts.map((o,i)=>`<button class="psopt" data-w="${o.ok?"#ps":"#no"+i}">${PicSentence.draw(o,"cave")}</button>`).join("")}</div></div>`);
+      <div class="mpics">${ps.opts.map((o,i)=>`<button class="psopt" data-w="${o.ok?"#ps":"#no"+i}">${PicSentence.draw(o,"cave")}</button>`).join("")}</div></div>`,"read");
     card().querySelectorAll("[data-w]").forEach(el=>el.onclick=()=>answer(el,el.dataset.w==="#ps",w));
   }
   function answer(el,ok,w){
     if(battle.lock)return;battle.lock=true;const art=card().querySelector(".mbossart");
-    try{if(w.ps){state.comp=state.comp||{right:0,wrong:0};state.comp[ok?"right":"wrong"]++;}
+    try{if(w.ps){state.comp[ok?"right":"wrong"]++;}
       else Skills.result(w,{ok,confused:ok?null:el.dataset.w,ms:performance.now()-(battle.t0||0)});}catch(e){}
     if(ok){el.classList.add("right");battle.right++;
       const help=perk()==="strong"&&Math.random()<(snackOn()?.6:.35),dmg=help?2:1;battle.hp=Math.max(0,battle.hp-dmg);
@@ -6808,7 +6964,7 @@ const Mine=(()=>{
         <div class="msignline">${words.length?words.map((w,k)=>`<button class="msw" data-k="${k}">${w}</button>`).join(" "):`<span class="sub">…</span>`}</div>
         <div class="mrow"><button class="btn soft" data-p=".">.</button><button class="btn soft" data-p="!">!</button><button class="btn soft" id="mSHear">🔊</button><button class="btn soft" id="mSUndo">⌫</button></div>
         <div class="msignbank">${bank.map(w=>`<button class="mswb" data-w="${w}">${w}</button>`).join("")}</div>
-        <div class="mrow"><button class="btn soft" id="mSNo">No sign</button><button class="btn primary" id="mSOk" ${words.length?"":"disabled"}>Put it up 🪧</button></div>`);
+        <div class="mrow"><button class="btn soft" id="mSNo">No sign</button><button class="btn primary" id="mSOk" ${words.length?"":"disabled"}>Put it up 🪧</button></div>`,"write");
       const text=()=>words.join(" ").replace(/ ([.!?])/g,"$1");
       card().querySelectorAll(".mswb").forEach(b=>b.onclick=()=>{if(words.length>=8)return;let w=b.dataset.w;if(!words.length)w=w[0].toUpperCase()+w.slice(1);words.push(w);Sound.say("word:"+b.dataset.w.toLowerCase(),b.dataset.w.toLowerCase(),.9);draw();});
       card().querySelectorAll(".msw").forEach(b=>b.onclick=()=>{words.splice(+b.dataset.k,1);draw();});
@@ -6825,7 +6981,7 @@ const Mine=(()=>{
   // ---------- vaults ----------
   function openVault(V){
     const lvl=V.n,kind=["pic","wordPick","sentence","build"][lvl]||"pic";
-    openPanel(`<h2>🔐 A word vault!</h2><p class="sub">Only a reader can open this door.</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`);
+    openPanel(`<h2>🔐 A word vault!</h2><p class="sub">Only a reader can open this door.</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`,"read");
     card().querySelector("#mClose").onclick=closePanel;
     const host=card().querySelector(".mq");
     const done=()=>{const m=M();m.vaults[V.k]=1;tiles[idx(V.door[0],V.door[1])]=T.AIR;bump("vaults");state.wordsRead+=3;dirty=true;save();
@@ -6887,7 +7043,7 @@ const Mine=(()=>{
   }
   const moleNear=()=>ENT.find(e=>e.type==="mole"&&e.life>0&&Math.abs(e.x-(P.x+P.w/2))<2&&Math.abs(e.y-(P.y+.5))<1.5);
   function moleRiddle(e){
-    e.life=99;openPanel(`<h2>🐹 A mole's riddle!</h2><p class="sub">“Read my word, and I'll give you my treasure!”</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Bye, mole!</button></div>`);
+    e.life=99;openPanel(`<h2>🐹 A mole's riddle!</h2><p class="sub">“Read my word, and I'll give you my treasure!”</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Bye, mole!</button></div>`,"read");
     card().querySelector("#mClose").onclick=()=>{e.life=.3;closePanel();};
     Read[Math.random()<.5?"pic":"wordPick"](card().querySelector(".mq"),ok=>{const m=M(),c=ok?15+Math.floor(Math.random()*10):8;m.coins+=c;bump("moles");
       const gift=Math.random()<.35;if(gift)m.blocks.torch=(m.blocks.torch||0)+2;
@@ -6896,11 +7052,11 @@ const Mine=(()=>{
   function rescue(){
     const L=M().lost,c=CRIT(L.id),name=c.name.toLowerCase();
     openPanel(`<div class="mlost"><div class="art">${drawThing(L.id,5)}</div><div><h2>A lost ${name}!</h2><p class="sub">“Help! I'm lost in the mine. Read with me, and I can find my way home.”</p></div></div>
-      <div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`);
+      <div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`,"read");
     card().querySelector("#mClose").onclick=closePanel;Sound.sfx.cry(c.cry);
     const host=card().querySelector(".mq"),fn=currentTier()>=2?Read.sentence:Read.pic;
     fn(host,()=>{L.rescued=true;bump("rescued");const m=M();m.coins+=25;state.gems+=4;
-      let res=null;try{res=addItem(L.id);const a=state.adv||(state.adv={dex:{}});a.dex=a.dex||{};const d=a.dex[L.id]=a.dex[L.id]||{};d.seen=1;d.caught=(d.caught||0)+1;}catch(e){}
+      let res=null;try{res=addItem(L.id);const a=state.adv;const d=a.dex[L.id]=a.dex[L.id]||{};d.seen=1;d.caught=(d.caught||0)+1;}catch(e){}
       save();hud();Sound.sfx.fanfare();try{confetti();}catch(e){}
       openPanel(`<div class="mlost"><div class="art happy">${drawThing(L.id,5)}</div><div><h2>The ${name} is home! 🏡</h2>
         <p class="mpaid">+25 🪙 &nbsp; +4 💎</p><p class="sub">${res&&res.new?`It moved into your valley — and it's in your Word-Dex!`:`Your ${name} in the valley says thank you!`}</p></div></div>
@@ -7062,7 +7218,7 @@ const Skills=(()=>{
   const VOW={a:"a",e:"e",i:"i",o:"o",u:"u"};
   // tiles that carry a later-level pattern
   const CMAP={"c:s":"soft","g:j":"soft","y:ee":"y","y:eye":"y","ed:t":"ing","ed:d":"ing","e:i":"ing","kn:n":"silent","wr:r":"silent","ph:f":"silent","mb":"silent"};
-  const S=()=>state.skills||(state.skills={});
+  const S=()=>state.skills;
   const isCons=t=>{const L=t.split(":")[0];return L.length&&!/[aeiouy]/.test(L)&&!MAP[L]||(MAP[L]==="cons");};
   // which skills a word practises, tile by tile
   function ofWord(w){
@@ -7090,7 +7246,7 @@ const Skills=(()=>{
     const s=S()[id]||(S()[id]={p:.5,n:0,e:{}});
     const k=Math.min(.4,.28*wt);s.p=Math.max(0,Math.min(1,s.p+((good?1:0)-s.p)*k));s.n=+(s.n+wt).toFixed(2);s.last=Date.now();
     if(conf){s.e[conf]=(s.e[conf]||0)+1;}
-    if(!good){state.skillMiss=state.skillMiss||{};state.skillMiss[id]=(state.skillMiss[id]||0)+1;}
+    if(!good){state.skillMiss[id]=(state.skillMiss[id]||0)+1;}
   }
   // letters he confused one for another, for the report: "reads b as d"
   function confusions(){const c=[];Object.entries(S()).forEach(([id,s])=>Object.entries(s.e||{}).forEach(([k,n])=>c.push({id,k,n})));
@@ -7121,8 +7277,8 @@ const Skills=(()=>{
     // speed guard
     const rushed=!o.ok&&o.ms!=null&&o.ms<900;
     recent.push(rushed);if(recent.length>6)recent.shift();
-    if(rushed){state.rushes=state.rushes||{};state.rushes[today()]=(state.rushes[today()]||0)+1;}
-    state.answers=state.answers||{};const d=state.answers[today()]||(state.answers[today()]={n:0,ok:0,ms:0});
+    if(rushed){state.rushes[today()]=(state.rushes[today()]||0)+1;}
+    const d=state.answers[today()]||(state.answers[today()]={n:0,ok:0,ms:0});
     d.n++;if(o.ok)d.ok++;if(o.ms)d.ms+=Math.min(o.ms,15000);
     if(recent.filter(Boolean).length>=2){slow=true;recent.length=0;}
     save();
@@ -7169,7 +7325,7 @@ function soundShield(host,word,onOpen){
    becomes his own audiobook. Questions at the end check understanding.
    ================================================================ */
 const Books=(()=>{
-  const L=()=>state.library||(state.library={});
+  const L=()=>state.library;
   let ov=null,book=null,page=0,helps=0,recs=0,quizFirst=0,quizIdx=0,reading=false;
   function petId(){try{return state.mine&&state.mine.pet&&CRIT(state.mine.pet)?state.mine.pet:null;}catch(e){return null;}}
   function petWord(t){const id=petId();const w=id&&allWords().find(x=>x.w===id&&!x.tricky);return w&&w.t<=t?id:"dog";}
@@ -7199,7 +7355,7 @@ const Books=(()=>{
   function build(){
     if(ov)return;ov=document.createElement("div");ov.id="ovStory";ov.className="overlay sbook";document.body.appendChild(ov);
   }
-  function close(){ov.classList.remove("on");stopAudio();try{booksBadge();}catch(e){}}
+  function close(){Modes.shut(ov);stopAudio();try{booksBadge();}catch(e){}}
   // ---------- shelf ----------
   function shelf(){
     build();stopAudio();try{MyBook.inject();}catch(e){}
@@ -7211,7 +7367,7 @@ const Books=(()=>{
     ov.innerHTML=`<div class="bpage"><div class="bhead"><h2>📚 My books</h2><button class="bx" id="bClose">✕</button></div>
       <p class="sub">Read a book to earn stars. Read it to your pet and it becomes your own audiobook! 🎧</p>
       <div class="bshelf">${cards}</div></div>`;
-    ov.classList.add("on");
+    ov.classList.add("on");Modes.open("book",ov);
     ov.querySelector("#bClose").onclick=close;
     ov.querySelectorAll(".bcov:not(.locked):not(.maker)").forEach(c=>c.onclick=()=>openBook(c.dataset.id));
     const mk=ov.querySelector("#bMake");if(mk)mk.onclick=()=>{close();MyBook.create();};
@@ -7225,7 +7381,7 @@ const Books=(()=>{
       <h1 class="btitle">${book.title.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</h1>
       <div class="mrow"><button class="btn primary big" id="bStart">Read it! 📖</button>
       ${p.rec?`<button class="btn soft big" id="bListen">🎧 Listen to me read it</button>`:""}</div></div>`;
-    ov.classList.add("on");
+    ov.classList.add("on");Modes.open("book",ov);
     wireWords(ov.querySelector(".btitle"));
     ov.querySelector("#bBack").onclick=shelf;ov.querySelector("#bClose").onclick=close;
     ov.querySelector("#bStart").onclick=()=>showPage();
@@ -7293,9 +7449,9 @@ const Books=(()=>{
     ov.querySelectorAll(".bopt").forEach(b=>b.onclick=()=>{
       if(fin)return;tries++;
       if(b.dataset.v===ans){fin=true;b.classList.add("right");Sound.sfx.win();if(tries===1)quizFirst++;
-        state.comp=state.comp||{right:0,wrong:0};state.comp.right++;save();
+        state.comp.right++;save();
         setTimeout(()=>{quizIdx++;quiz();},900);}
-      else{b.classList.add("wrong");Sound.sfx.nope();state.comp=state.comp||{right:0,wrong:0};state.comp.wrong++;
+      else{b.classList.add("wrong");Sound.sfx.nope();state.comp.wrong++;
         if(tries>=2){const r=ov.querySelector(`.bopt[data-v="${ans}"]`);if(r)r.classList.add("hint");}
         setTimeout(()=>b.classList.remove("wrong"),600);}
     });
@@ -7419,15 +7575,15 @@ function openPicIt(){
     <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg)}</button>`).join("")}</div>
     <div style="text-align:center;margin-top:12px"><button class="btn ghost" id="psLater">Later</button></div></div>`;
   Books.wireWords(picOv.querySelector(".btext"));
-  picOv.querySelector("#psLater").onclick=()=>picOv.classList.remove("on");
-  const comp=()=>state.comp||(state.comp={right:0,wrong:0});
+  picOv.querySelector("#psLater").onclick=()=>Modes.shut(picOv);
+  const comp=()=>state.comp;
   picOv.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
     if(fin)return;const o=ps.opts[+b.dataset.i];tries++;
     if(o.ok){fin=true;b.classList.add("right");comp().right++;const won=tries===1?2:1;state.gems+=won;state.wordsRead+=1;
       Quests.hit("read");Sound.sfx.win();confetti();Sound.say("sent:"+ps.text,ps.text,.9);floater("+"+won+" 💎","#FFE9A8");
-      renderHUD();save();setTimeout(()=>picOv.classList.remove("on"),1400);}
+      renderHUD();save();setTimeout(()=>Modes.shut(picOv),1400);}
     else{comp().wrong++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
-      if(performance.now()-t0<2500){state.rushes=state.rushes||{};state.rushes[today()]=(state.rushes[today()]||0)+1;}
+      if(performance.now()-t0<2500){state.rushes[today()]=(state.rushes[today()]||0)+1;}
       // point at the word that makes the difference
       const key=o.swap?ps.words[0]:o.rel!==ps.opts.find(x=>x.ok).rel?ps.words[1]:ps.words[0];
       const sp=[...picOv.querySelectorAll(".bw")].find(x=>x.textContent.replace(/[^a-z]/gi,"").toLowerCase()===key);
@@ -7435,17 +7591,21 @@ function openPicIt(){
       if(tries>=2)picOv.querySelector(`.psopt[data-i="${ps.opts.findIndex(x=>x.ok)}"]`).classList.add("hint");
       save();}
   });
-  picOv.classList.add("on");
+  picOv.classList.add("on");Modes.open("pic",picOv);
   setTimeout(()=>Sound.speak("Read it, then find the picture.",.95),300);
 }
 
-/* ---- minutes played: counted only while visible and touched recently ---- */
+/* ---- minutes played: counted only while visible and touched recently ----
+   Each minute also goes to the mode on top (Modes.credit), for the
+   report's "Where the time goes". Named so a test can fire it. */
 let lastTouch=Date.now();
 document.addEventListener("pointerdown",()=>{lastTouch=Date.now();},true);
-setInterval(()=>{
+function minuteTick(){
   if(document.visibilityState!=="visible"||Date.now()-lastTouch>90000)return;
-  state.minutes=state.minutes||{};state.minutes[today()]=(state.minutes[today()]||0)+1;save();
-},60000);
+  state.minutes[today()]=(state.minutes[today()]||0)+1;
+  Modes.credit();save();
+}
+setInterval(minuteTick,60000);
 
 /* ---- the grown-up reading report ---- */
 let repOv=null;
@@ -7453,6 +7613,26 @@ function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.s
 function bars(days,get,fmt){
   const vals=days.map(get),max=Math.max(1,...vals);
   return`<div class="chart rchart">${days.map((d,i)=>`<div class="col"><b>${vals[i]?fmt?fmt(vals[i]):vals[i]:""}</b><i style="height:${vals[i]/max*100}%"></i><span>${"SMTWTFS"[new Date(d+"T12:00").getDay()]}</span></div>`).join("")}</div>`;
+}
+/* "Where the time goes": the week's minutes by mode (Modes, state.modeMin),
+   how often each was opened (state.modeOpens), and reading against the rest. */
+function whereTime(days,mins){
+  const MM=Modes.list(),mMin=state.modeMin||{},mOpen=state.modeOpens||{};
+  const week=(src,id)=>days.reduce((a,d)=>a+((src[d]||{})[id]||0),0);
+  const ids=Object.create(null);days.forEach(d=>{Object.keys(mMin[d]||{}).concat(Object.keys(mOpen[d]||{})).forEach(k=>{ids[k]=1;});});
+  // a mode this version doesn't know (from a newer backup) shows by its id, and counts as everything else
+  const known=id=>Object.prototype.hasOwnProperty.call(MM,id);
+  const rows=Object.keys(ids).map(id=>({key:id,id:esc(id),name:known(id)?MM[id].name:esc(id),reading:known(id)&&!!MM[id].reading,m:week(mMin,id),o:week(mOpen,id)}));
+  const used=rows.filter(x=>x.m>0).sort((a,b)=>b.m-a.m),brief=rows.filter(x=>!x.m&&x.o>0).sort((a,b)=>b.o-a.o);
+  const total=used.reduce((a,x)=>a+x.m,0),rd=used.filter(x=>x.reading).reduce((a,x)=>a+x.m,0),pct=total?Math.round(rd/total*100):0;
+  const kinds=Object.keys(MM).filter(id=>MM[id].reading).map(id=>MM[id].name).join(", ");
+  if(!used.length&&!brief.length)return`<h3>Where the time goes</h3><p class="rnote">Nothing counted yet. From now on, each minute he plays is noted against what he was doing.</p>`;
+  return`<h3>Where the time goes</h3>
+    <p class="rnote rwhere">This week: <b>${rd} min</b> reading and writing, <b>${total-rd} min</b> everything else${total?` — ${pct}% reading`:""}.</p>
+    ${total?`<div class="rbar rsplit"><i style="width:${pct}%;background:var(--meadow)"></i></div>`:""}
+    <div class="rmodes">${used.map(x=>`<div class="rmode" data-id="${x.id}"><h4>${x.name}<span>${x.m} min${x.key==="valley"?"":` · opened ${x.o}×`}</span></h4>${bars(days,d=>(mMin[d]||{})[x.key]||0)}</div>`).join("")}</div>
+    ${brief.length?`<p class="rnote">Also opened, too briefly to count a minute: ${brief.map(x=>`${x.name} ${x.o}×`).join(", ")}.</p>`:""}
+    <p class="rnote">Reading and writing: ${kinds}. Each minute goes to whatever was on screen when it was counted, so the reading inside the Mine (word stones, vaults, bosses) counts as reading and the digging does not.${total<mins?" Counting by activity began with this update, so this week it adds up to less than the minutes above.":""}</p>`;
 }
 function openReport(){
   if(!repOv){repOv=document.createElement("div");repOv.className="overlay";repOv.id="ovReport";document.body.appendChild(repOv);}
@@ -7493,20 +7673,21 @@ function openReport(){
     <div class="rgrid"><div><h3>Minutes a day</h3>${bars(days,d=>(state.minutes||{})[d]||0)}</div>
       <div><h3>Quick guesses a day</h3>${bars(days,d=>(state.rushes||{})[d]||0)}</div></div>
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
+    ${whereTime(days,mins)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${b.title}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
     <h3>Story and extras</h3><p class="rnote">The Letter Thief: ${Math.min(6,(state.quest||{}).ch||0)} of 6 chapters. Notes from home found: ${(state.notes||[]).filter(n=>n.found).length}. Races won: ${(state.vehicles||[]).reduce((a,v)=>a+(v.wins||0),0)}.</p>
     <h3>Adventure</h3><p class="rnote">${Object.values((state.adv||{}).dex||{}).filter(d=>d.caught).length} wild friends in the Word-Dex · ${(state.adv||{}).hunts||0} treasure hunts solved. Each friend takes 3–5 reading answers; each hunt is three notes to read.</p>
     <h3>Mine</h3><p class="rnote">${m.bossWins||0} bosses beaten · ${m.dugCount||0} blocks dug · ${m.coins||0} coins. Every boss hit and word stone is a word read.</p>
     <div class="mrow rbtns"><button class="btn soft" id="rPrint">🖨️ Print</button><button class="btn primary" id="rClose">Done</button></div></div>`;
-  repOv.querySelector("#rClose").onclick=()=>{Books.stopAudio();repOv.classList.remove("on");};
+  repOv.querySelector("#rClose").onclick=()=>{Books.stopAudio();Modes.shut(repOv);};
   repOv.querySelector("#rPrint").onclick=()=>{document.body.classList.add("printing");window.print();setTimeout(()=>document.body.classList.remove("printing"),500);};
   repOv.querySelectorAll(".rplay").forEach(b=>b.onclick=async()=>{
     if(b.classList.contains("on")){b.classList.remove("on");Books.stopAudio();return;}
     b.classList.add("on");b.textContent="⏹ Stop";const bk=BOOKS.find(x=>x.id===b.dataset.id);
     for(let k=0;k<bk.pages.length&&b.classList.contains("on");k++){const blob=await DB.get("blobs",`story:${bk.id}:${k}`);if(blob)await Books.playBlob(blob);}
     b.classList.remove("on");b.textContent="🎧 Hear him read";});
-  repOv.classList.add("on");
+  repOv.classList.add("on");Modes.open("report",repOv);
 }
 document.getElementById("reportBtn").onclick=openReport;
 setTimeout(booksBadge,300);
@@ -7525,7 +7706,7 @@ setTimeout(booksBadge,300);
                   note tells him which landmark hides the next clue.
    ================================================================ */
 const Adv=(()=>{
-  const A=()=>state.adv||(state.adv={dex:{},hunt:null,huntDay:null,hunts:0,caught:0});
+  const A=()=>state.adv;
   let on=false,raf=0,lastT=0,hud=null,ash=null,petEl=null,noteEl=null,grassEls=[],landEls=[];
   const P={c:10,r:8,face:1,walk:0,moving:false,pc:10,pr:8};   // pc/pr = pet position
   const input={jx:0,jy:0};
@@ -7705,7 +7886,7 @@ const Adv=(()=>{
   function enter(){
     if(!hud)buildHud();
     if(state.selected){state.selected=null;renderDock();}
-    on=true;document.body.classList.add("exploring");hud.classList.add("on");
+    on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);
     // start where he is looking, at the front of the valley
     const W=worldW(),t=((cam+viewW()/2)/W-EDGE)/(1-EDGE*2);
     P.c=Math.max(0,Math.min(COLS-1,t*(COLS-1)));P.r=ROWS_MAX-1;P.pc=P.c-.9;P.pr=P.r;
@@ -7717,7 +7898,7 @@ const Adv=(()=>{
     try{if(Quest.available())setTimeout(()=>toast("❗ Gloom the ghost is up to something! Find the ❗"),a.seenIntro?700:4000);}catch(e){}
   }
   function exit(){
-    on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");
+    on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");Modes.close("adventure",hud);
     input.jx=input.jy=0;[...grassEls,...landEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];ash=petEl=null;
     Sound.sfx.soft();
   }
@@ -7836,8 +8017,8 @@ const Dex={
         return`<button class="dexc ${st}${d.shiny?" shiny":""}" data-id="${c.id}"><i>#${String(i+1).padStart(2,"0")}</i>
           <div class="dart">${st==="none"?"?":drawThing(c.id,5)}</div><b>${st==="got"?c.name:st==="seen"?"???":"&nbsp;"}</b>
           ${d.shiny?`<span class="spk">✨</span>`:""}${c.rar===3?`<span class="leg">★</span>`:""}</button>`;}).join("")}</div></div>`;
-    ov.classList.add("on");
-    ov.querySelector("#dexX").onclick=()=>ov.classList.remove("on");
+    ov.classList.add("on");Modes.open("dex",ov);
+    ov.querySelector("#dexX").onclick=()=>Modes.shut(ov);
     ov.querySelectorAll(".dexc.got").forEach(b=>b.onclick=()=>{const c=CRIT(b.dataset.id);const s=`The ${c.name.toLowerCase()}. ${Dex.facts[c.kind]||""}`;
       Sound.sfx.cry(c.cry);setTimeout(()=>Sound.say("sent:"+s,s,.9),350);b.classList.add("pop");setTimeout(()=>b.classList.remove("pop"),600);});
     ov.querySelectorAll(".dexc.seen").forEach(b=>b.onclick=()=>{Sound.sfx.soft();toast("You met this one! Find it in the grass again.");});
@@ -7863,13 +8044,13 @@ const Wild=(()=>{
         <div class="wcrit${shiny?" shiny":""}"><div class="wbody">${drawThing(c.id,W.seed=Math.floor(Math.random()*999))}</div><div class="wpad"></div></div></div>
       <div class="whead"><b id="wTitle">A wild ${shiny?"✨shiny✨ ":""}${c.name.toLowerCase()} appeared!</b><span class="whearts" id="wHearts"></span></div>
       <div id="wQ"></div><div class="wfoot"><button class="btn ghost" id="wRun">🏃 Run away</button></div></div>`;
-    ov.classList.add("on");hearts();
+    ov.classList.add("on");Modes.open("wild",ov);hearts();
     Sound.sfx.cry(c.cry);setTimeout(()=>Sound.speak(`A wild ${shiny?"shiny ":""}${c.name}! Read to make friends!`,.95),450);
     ov.querySelector("#wRun").onclick=()=>{Sound.sfx.soft();close();};
     setTimeout(round,1300);
   }
   function hearts(){ov.querySelector("#wHearts").textContent="💗".repeat(W.hearts)+"🤍".repeat(W.need-W.hearts);}
-  function close(){ov.classList.remove("on");W=null;Adv.refreshHud();}
+  function close(){Modes.shut(ov);W=null;Adv.refreshHud();}
   const shuffle=a=>a.sort(()=>Math.random()-.5);
   function wordFor(){
     const tier=currentTier();let w=null;
@@ -7917,7 +8098,7 @@ const Wild=(()=>{
   }
   function answer(b,ok){
     if(!W||W.lock)return;W.lock=true;const ms=performance.now()-W.t0;
-    try{if(W.type==="sent"){state.comp=state.comp||{right:0,wrong:0};state.comp[ok?"right":"wrong"]++;}
+    try{if(W.type==="sent"){state.comp[ok?"right":"wrong"]++;}
       else Skills.result(W.w,{ok,confused:ok?null:b.dataset.w,ms});}catch(e){}
     if(ok){b.classList.add("right");good();}
     else{b.classList.add("wrong");const r=ov.querySelector(`[data-w="${W.ans}"]`);if(r)r.classList.add("hint");
@@ -8055,7 +8236,7 @@ const Decode=(()=>{
    had a go. The treasure is real: whatever you hid.
    ================================================================ */
 const Notes=(()=>{
-  const L=()=>state.notes||(state.notes=[]);
+  const L=()=>state.notes;
   const pending=()=>L().filter(n=>!n.found);
   let recBlob=null;
   // ---------- grown-up side ----------
@@ -8120,7 +8301,7 @@ const Notes=(()=>{
         <button class="btn soft" id="nLater">I'll look later</button><button class="btn primary big" id="nFound">🎁 I found it!</button></div></div>`;
     Books.wireWords(ov.querySelector(".btext"));
     ov.querySelectorAll(".bw").forEach(b=>b.addEventListener("click",()=>tries++));
-    ov.classList.add("on");Sound.sfx.chime();
+    ov.classList.add("on");Modes.open("note",ov);Sound.sfx.chime();
     const hear=ov.querySelector("#nHear");
     // his own try first: the voice unlocks after he says he read it
     const playVoice=async()=>{const b=await DB.get("blobs","note:"+n.id);if(b)await Books.playBlob(b);else Sound.say("sent:"+n.text,n.text,.9);};
@@ -8129,9 +8310,9 @@ const Notes=(()=>{
       Sound.sfx.pop();if(hear)hear.disabled=false;ov.querySelector("#nRead").style.display="none";ov.querySelector(".nfound").style.display="";
       if(!n.read){n.read=true;state.wordsRead+=Decode.words(n.text).length;state.gems+=3;floater("+3 💎","#FFE9A8");renderHUD();save();}
       setTimeout(()=>Sound.speak(`Go and find it!`,.95),300);};
-    ov.querySelector("#nLater").onclick=()=>ov.classList.remove("on");
+    ov.querySelector("#nLater").onclick=()=>Modes.shut(ov);
     ov.querySelector("#nFound").onclick=()=>{n.found=true;n.foundAt=Date.now();state.gems+=5;save();badge();
-      confetti();Sound.sfx.fanfare();ov.classList.remove("on");try{Quests.hit("read",2);}catch(e){}
+      confetti();Sound.sfx.fanfare();Modes.shut(ov);try{Quests.hit("read",2);}catch(e){}
       document.getElementById("rewardArt").innerHTML=`<div style="font-size:110px;line-height:1">🎁</div>`;
       document.getElementById("rewardName").textContent="You found it!";
       document.getElementById("rewardWord").textContent=`You read ${n.from}'s note all by yourself. +5 💎`;show("ovReward");};
@@ -8196,7 +8377,7 @@ const Read=(()=>{
       <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg||"meadow")}</button>`).join("")}</div>`;
     Books.wireWords(host.querySelector(".btext"));host.dataset.ans="#"+ps.opts.findIndex(x=>x.ok);
     host.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
-      if(fin)return;const o=ps.opts[+b.dataset.i];if(o.ok)fin=true;state.comp=state.comp||{right:0,wrong:0};state.comp[o.ok?"right":"wrong"]++;
+      if(fin)return;const o=ps.opts[+b.dataset.i];if(o.ok)fin=true;state.comp[o.ok?"right":"wrong"]++;
       if(o.ok){b.classList.add("right");Sound.sfx.win();Sound.say("sent:"+ps.text,ps.text,.9);setTimeout(()=>done(!miss),1100);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
         if(miss>=2)host.querySelector(`.psopt[data-i="${ps.opts.findIndex(x=>x.ok)}"]`).classList.add("hint");}});
@@ -8241,7 +8422,7 @@ const Read=(()=>{
    "what happens next?" is the best reason to come back.
    ================================================================ */
 const Quest=(()=>{
-  const Q=()=>state.quest||(state.quest={ch:0,day:null,active:null,done:false});
+  const Q=()=>state.quest;
   const CH=[
     {title:"The Letter Thief",prize:"R",type:"letters",lock:"pic",
      story:["Oh no! A ghost named Gloom came in the night.","Gloom took the magic letters from the valley.","The signs are blank. The books are blank!","Can you get the letters back? Find them and read to unlock them."]},
@@ -8261,9 +8442,9 @@ const Quest=(()=>{
   let ov=null;
   function sheet(html,cls){
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovQuest";document.body.appendChild(ov);}
-    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet qsheet ${cls||""}${again?" noanim":""}">${html}</div>`;ov.classList.add("on");return ov.querySelector(".sheet");
+    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet qsheet ${cls||""}${again?" noanim":""}">${html}</div>`;ov.classList.add("on");Modes.open("story",ov);return ov.querySelector(".sheet");
   }
-  const close=()=>ov&&ov.classList.remove("on");
+  const close=()=>ov&&Modes.shut(ov);
   function story(title,pages,after){
     let i=0;
     const show=()=>{
@@ -8345,7 +8526,7 @@ const Quest=(()=>{
       s.querySelectorAll(".tdoor").forEach(b=>b.onclick=()=>{
         if(fin)return;const d=doors[+b.dataset.k];if(d.ok)fin=true;
         if(right)try{Skills.result(right,{ok:d.ok&&!miss,help:miss>0,confused:d.ok?null:d.w,ms:performance.now()-t0});}catch(e){}
-        if(useSent){state.comp=state.comp||{right:0,wrong:0};state.comp[d.ok?"right":"wrong"]++;}
+        if(useSent){state.comp[d.ok?"right":"wrong"]++;}
         if(d.ok){b.classList.add("open");Sound.sfx.win();state.wordsRead+=useSent?5:1;setTimeout(()=>{room++;next();},1000);}
         else{miss++;b.classList.add("puff");Sound.sfx.nope();setTimeout(()=>b.classList.remove("puff"),900);
           toast(["Creak! Just dust. Read the clue again!","A bat flew out! Not this one.","Locked! Try another door."][miss%3]);
@@ -8399,7 +8580,7 @@ const Quest=(()=>{
    about every word, in order, and what it means.
    ================================================================ */
 const MyBook=(()=>{
-  const S=()=>state.mybooks||(state.mybooks=[]);
+  const S=()=>state.mybooks;
   // the words he can use, grouped so the choice is manageable
   const GROUPS={
     little:["The","A","I","My","the","a","and","is","was","on","in","to","at","by","with","his","has","can","not","it","he","she","we","you","they","of","for","up"],
@@ -8423,7 +8604,7 @@ const MyBook=(()=>{
   }
   let ov=null,book=null,page=0,title=false;
   const sheet=html=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovMaker";document.body.appendChild(ov);}
-    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet maker${again?" noanim":""}">${html}</div>`;ov.classList.add("on");return ov.querySelector(".sheet");};
+    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet maker${again?" noanim":""}">${html}</div>`;ov.classList.add("on");Modes.open("maker",ov);return ov.querySelector(".sheet");};
   function create(){
     book={id:"my_"+Date.now().toString(36),title:"",pages:[{a:null,words:[]}],bg:["meadow","pond","farm","town","night","sea"][S().length%6],at:Date.now()};
     page=0;title=false;edit();
@@ -8461,7 +8642,7 @@ const MyBook=(()=>{
     s.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{if(!p.words.length)return;if(/[.!?]$/.test(p.words[p.words.length-1]||""))p.words.pop();p.words.push(b.dataset.p);edit();});
     s.querySelector("#mkUndo").onclick=()=>{p.words.pop();edit();};
     s.querySelector("#mkHear").onclick=()=>Sound.say("sent:"+text,text,.9);
-    s.querySelector("#mkX").onclick=()=>{ov.classList.remove("on");};
+    s.querySelector("#mkX").onclick=()=>{Modes.shut(ov);};
     const add=s.querySelector("#mkAdd");if(add)add.onclick=()=>{if(book.pages.length>=8){toast("8 pages is a big book!");return;}
       endStop(p);book.pages.splice(page+1,0,{a:null,words:[]});page++;edit();};
     const prev=s.querySelector("#mkPrev");if(prev)prev.onclick=()=>{page--;edit();};
@@ -8480,8 +8661,8 @@ const MyBook=(()=>{
       ${first?`<p class="mpaid">+${5+book.pages.length} 💎</p>`:""}
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="mkShelf">📚 My shelf</button>
       <button class="btn primary big" id="mkRead">🎤 Read it to my ${Books.petWord(1)}</button></div></div>`);
-    s.querySelector("#mkShelf").onclick=()=>{ov.classList.remove("on");Books.shelf();};
-    s.querySelector("#mkRead").onclick=()=>{ov.classList.remove("on");Books.openBook(book.id);};
+    s.querySelector("#mkShelf").onclick=()=>{Modes.shut(ov);Books.shelf();};
+    s.querySelector("#mkRead").onclick=()=>{Modes.shut(ov);Books.openBook(book.id);};
   }
   function card(){return`<button class="bcov maker" id="bMake"><div class="bart">✏️</div><b>Make my own book</b><span>${S().length?S().length+" made":"NEW!"}</span></button>`;}
   function editBook(id){const b=S().find(x=>x.id===id);if(!b)return;book=JSON.parse(JSON.stringify(b));page=0;title=false;edit();}
@@ -8501,7 +8682,7 @@ const MyBook=(()=>{
    forms is a sound he's reinforcing.
    ================================================================ */
 const Write=(()=>{
-  const S=()=>state.write||(state.write={});
+  const S=()=>state.write;
   const SZ=300,FONT=`700 ${Math.round(SZ*.78)}px "Andika","Comic Sans MS","Chalkboard SE",system-ui,sans-serif`;
   const level=ch=>{const s=S()[ch]||{};return s.ok>=6?2:s.ok>=2?1:0;};   // 0 trace, 1 faint, 2 memory
   let ov=null,word=null,letters=[],li=0,ink=[],drawing=false,cv,g,fails=0,t0=0;
@@ -8523,8 +8704,8 @@ const Write=(()=>{
       <div class="wrmsg" id="wrMsg"></div>
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="wrHear">👂 Hear it</button><button class="btn soft" id="wrClear">🧽 Clear</button>
         <button class="btn primary big" id="wrOk">✓ Done</button></div></div>`;
-    ov.classList.add("on");
-    ov.querySelector("#wrX").onclick=()=>ov.classList.remove("on");
+    ov.classList.add("on");Modes.open("write",ov);
+    ov.querySelector("#wrX").onclick=()=>Modes.shut(ov);
     ov.querySelector("#wrHear").onclick=()=>hear();
     ov.querySelector("#wrClear").onclick=()=>{ink=[];paint();};
     ov.querySelector("#wrOk").onclick=check;
@@ -8603,7 +8784,7 @@ const Write=(()=>{
     ov.querySelector(".wrpad").innerHTML=`<div class="wrdone">${word.w}<div class="wrart">${WORD_ART[word.w]?drawWord(word.w,"w"):""}</div></div>`;
     ov.querySelector("#wrMsg").textContent=`You wrote “${word.w}”! +${gems} 💎`;
     ov.querySelector(".mrow").innerHTML=`<button class="btn soft" id="wrMore">✍️ Another word</button><button class="btn primary big" id="wrOk2">Done</button>`;
-    ov.querySelector("#wrMore").onclick=()=>start();ov.querySelector("#wrOk2").onclick=()=>ov.classList.remove("on");
+    ov.querySelector("#wrMore").onclick=()=>start();ov.querySelector("#wrOk2").onclick=()=>Modes.shut(ov);
   }
   // for the report: letters he writes from memory
   const report=()=>Object.entries(S()).map(([c,s])=>({c,lv:level(c),n:s.n})).sort((a,b)=>a.c<b.c?-1:1);
@@ -8635,7 +8816,7 @@ const Care=(()=>{
     ov.innerHTML=`<div class="sheet caresheet"><div class="bhead"><h2>🍓 Snack time</h2><button class="bx" id="cX">✕</button></div>
       <div class="cwho"><div class="cart">${cr.img?`<img src="${cr.img}">`:drawThing(cr.id,cr.seed)}</div>
         <div class="cbub">I want <b>${w.w}</b>!</div></div><div class="cq"></div></div>`;
-    ov.classList.add("on");ov.querySelector("#cX").onclick=()=>ov.classList.remove("on");
+    ov.classList.add("on");Modes.open("care",ov);ov.querySelector("#cX").onclick=()=>Modes.shut(ov);
     Sound.sfx.cry((CRIT(cr.id)||{}).cry);
     // pictures of foods, so reading the word is the only way to know
     const host=ov.querySelector(".cq");
@@ -8644,7 +8825,7 @@ const Care=(()=>{
       const a=ov.querySelector(".cart");a.classList.add("yum");Sound.sfx.gulp();
       host.innerHTML=`<div class="wdone"><h2>Yum! The ${name.toLowerCase()} loves you. 💕</h2><p class="mpaid">+${ok?2:1} 💎</p>
         <button class="btn primary big" id="cOk">OK</button></div>`;
-      host.querySelector("#cOk").onclick=()=>{ov.classList.remove("on");renderCritters();Adv.redraw();};
+      host.querySelector("#cOk").onclick=()=>{Modes.shut(ov);renderCritters();Adv.redraw();};
     },w);
     host.querySelector(".wp").textContent=`Which one is ${w.w}?`;
     // the food choices are other foods, not random things
@@ -8675,8 +8856,8 @@ const Race=(()=>{
       <div class="track">${R.cars.map((c,i)=>`<div class="lane${c.me?" me":""}"><div class="rcar" id="rc${i}">${drawThing(c.id,1)}</div><span class="rname">${c.name}</span></div>`).join("")}
         ${R.gates.map(gx=>`<div class="gate" style="left:${gx}%"></div>`).join("")}<div class="finish"></div></div>
       <div class="rq" id="rQ"><p class="wp">Read at the gates for a turbo boost! 🚀</p><button class="btn primary big" id="rGo">Go! 🏁</button></div></div>`;
-    ov.classList.add("on");
-    ov.querySelector("#rX").onclick=()=>{cancelAnimationFrame(raf);ov.classList.remove("on");R=null;};
+    ov.classList.add("on");Modes.open("race",ov);
+    ov.querySelector("#rX").onclick=()=>{cancelAnimationFrame(raf);Modes.shut(ov);R=null;};
     ov.querySelector("#rGo").onclick=()=>{ov.querySelector("#rQ").innerHTML="";Sound.sfx.veh&&Sound.sfx.veh("honk");run();};
   }
   function run(){
@@ -8715,7 +8896,7 @@ const Race=(()=>{
     ov.querySelector("#rQ").innerHTML=`<div class="wdone"><div class="podium">${order.map((o,i)=>`<div class="pod p${i+1}${o.c.me?" me":""}"><div>${drawThing(o.c.id,1)}</div><b>${["🥇","🥈","🥉"][i]}</b></div>`).join("")}</div>
       <h2>${place===1?"You won!":place===2?"Second place!":"Third place!"}</h2><p class="mpaid">+${gems} 💎 · ${R.right} of 3 gates read</p>
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="rAgain">🔁 Race again</button><button class="btn primary big" id="rOk">Done</button></div></div>`;
-    ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{ov.classList.remove("on");R=null;};
+    ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{Modes.shut(ov);R=null;};
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
   return{start,_R:()=>R};
@@ -8731,7 +8912,7 @@ const Race=(()=>{
    background (at most every 30 minutes).
    ================================================================ */
 const Sync=(()=>{
-  const C=()=>state.sync||(state.sync={url:"",token:"",last:0,auto:true});
+  const C=()=>state.sync;
   const base=()=>(C().url||location.origin).replace(/\/+$/,"");
   let found=null,busy=false;
   // this device's id lives outside the save, so loading another device's progress doesn't take it
@@ -8790,13 +8971,13 @@ const Sync=(()=>{
   // played on another device? offer to carry on from there
   async function checkOther(){
     try{const h=await call("/api/head");if(!h||!h.file||h.file===C().seenHead||h.device===myId||(h.words||0)<=state.wordsRead)return;
-      const ov=document.createElement("div");ov.className="overlay on";ov.innerHTML=`<div class="sheet" style="max-width:520px;text-align:center">
+      const ov=document.createElement("div");ov.className="overlay on";ov.id="ovSync";ov.innerHTML=`<div class="sheet" style="max-width:520px;text-align:center">
         <div style="font-size:64px">📲</div><h2>You played on another device!</h2><p class="sub">There you have read <b>${h.words}</b> words (here: ${state.wordsRead}). Carry on from there?</p>
         <div class="mrow" style="justify-content:center;display:flex;gap:10px"><button class="btn soft" id="soNo">Not now</button><button class="btn primary big" id="soYes">Yes, load it</button></div></div>`;
-      document.body.appendChild(ov);
-      ov.querySelector("#soNo").onclick=()=>{C().seenHead=h.file;save();ov.remove();};
+      document.body.appendChild(ov);Modes.open("other",ov);
+      ov.querySelector("#soNo").onclick=()=>{C().seenHead=h.file;save();ov.remove();Modes.close("other",ov);};
       ov.querySelector("#soYes").onclick=async()=>{ov.querySelector("#soYes").textContent="Loading…";
-        try{const j=await call("/api/latest",{long:true});await restoreBackup(j);C().seenHead=h.file;C().last=Date.now();save();toast("Welcome back! ✓");}catch(e){toast("Couldn't load: "+e.message);}ov.remove();};
+        try{const j=await call("/api/latest",{long:true});await restoreBackup(j);C().seenHead=h.file;C().last=Date.now();save();toast("Welcome back! ✓");}catch(e){toast("Couldn't load: "+e.message);}ov.remove();Modes.close("other",ov);};
     }catch(e){}
   }
   setTimeout(()=>{ping().then(async ok=>{renderRow();if(ok){await checkOther();tick(false);}});},4000);
@@ -9064,7 +9245,7 @@ function renderBuddy(){
     el.onclick=e=>{e.stopPropagation();buddyTalk();};
     tilesEl.appendChild(el);}
   else if(!el.isConnected)tilesEl.appendChild(el);
-  const b=state.buddy||(state.buddy={c:10,r:ROWS_MAX-1});
+  const b=state.buddy;
   const firstRow=ROWS_MAX-state.rows;if(b.r<firstRow)b.r=firstRow;
   const g=geom(b.c,b.r), size=baseSize()*g.scale*.9;
   el.style.left=g.x+"px";el.style.top=g.y*100+"%";el.style.width=size+"px";el.style.height=size+"px";
@@ -9373,7 +9554,6 @@ function openSwap(pair){
    7j. BADGES
    ================================================================ */
 function checkBadges(){
-  state.badges=state.badges||[];
   const fresh=BADGES.filter(b=>!state.badges.includes(b.id)&&b.t(state));
   fresh.forEach((b,k)=>{
     state.badges.push(b.id);
@@ -9531,7 +9711,7 @@ function scrambleSuccess(){
   state.scrambles=(state.scrambles||0)+1;
   const won=(misses===0?6:4);state.gems+=won;floater("+"+won+" 💎","#FFE9A8");
   Quests.hit("sign");Quests.hit("read",cur.words.length);
-  state.daily=state.daily||{};state.daily[today()]=(state.daily[today()]||0)+cur.words.length;
+  state.daily[today()]=(state.daily[today()]||0)+cur.words.length;
   hide("ovRead");
   if(pendingUpgrade)finishUpgrade();else giveReward();
   renderHUD();save();
@@ -9722,7 +9902,7 @@ function startUpgrade(u){
   const t=upgradeTarget(u);if(!t||t.lv>=MAX_LV)return;
   if(state.gems<t.cost){toast(`You need ${t.cost} gems to upgrade the ${t.name.toLowerCase()}`);Sound.sfx.nope();return;}
   pendingUpgrade=u;
-  document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+  document.querySelectorAll(".overlay.on").forEach(o=>Modes.shut(o));
   const tier=currentTier();
   if(t.lv===1){
     const pool=allWords().filter(w=>w.t<=tier&&w.p.length>=2&&w.p.length<=5);
@@ -10076,7 +10256,7 @@ async function restoreBackup(obj){
     await DB.set("blobs",k,b64ToBlob(v.data,v.type));
     if(String(k).startsWith("aud:"))Sound.invalidate(String(k).slice(4));
   }
-  state=Object.assign(def(),st);migrate();settleMovers();
+  loadSave(st);settleMovers();
   try{await loadPack();}catch(e){}
   save();paintBackdrop();renderWorld();renderDock();renderHUD();applyNight();
 }
@@ -10116,67 +10296,120 @@ let rz;window.addEventListener("resize",()=>{clearTimeout(rz);
   rz=setTimeout(()=>{paintBackdrop();renderWorld();seedParticles();applyCamera();},180);});
 
 
-/* Saves from the block-building version carry items that no longer do
-   anything. Convert them to gems rather than leaving dead buttons in the
-   dock, and clear scenery blocks out of the grid. */
-function migrate(){
+/* ---- loading a save ----
+   defaults() gives a save every field it is missing, from def(), inside nested objects
+   too (not inside lists). A value the save already has is never replaced, not even a
+   null, 0, "" or false. Used when the game starts and when a backup is restored. */
+const isPlain=x=>Object.prototype.toString.call(x)==="[object Object]";
+function defaults(t,d){
+  Object.keys(d).forEach(k=>{
+    if(!Object.prototype.hasOwnProperty.call(t,k)||t[k]===undefined)t[k]=d[k];
+    else if(isPlain(t[k])&&isPlain(d[k]))defaults(t[k],d[k]);
+  });
+  return t;
+}
+// The one exception to "a saved null is kept": these were re-made by the game whenever
+// they were null (`state.x||(state.x=…)`, and the settings, animals and vehicles on load),
+// so for them a saved null means "not made yet" and gets the default.
+const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","buddy","daily","pace","badges","modeMin","modeOpens",
+  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","mybooks","write","sync",
+  "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
+  "adv.dex"];
+function withDefaults(saved){
+  if(!isPlain(saved))saved={};
+  NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];
+    if(isPlain(o)&&o[f]===null)delete o[f];});
+  return defaults(saved,def());
+}
+
+/* ---- one-time conversions ----
+   state.v is how many have run. When a save older than a step is loaded (or restored
+   from a backup), the step runs once, in order, and state.v moves past it for good.
+   A future conversion is added as step 7, 8, … with SAVE_V raised to match, and a step
+   is never edited once released: saves that already ran it will not run it again. */
+const MIGRATIONS={6:legacyBlockEra};
+/* Step 6. Saves from the block-building version carry items that no longer do
+   anything: convert them to gems rather than leaving dead buttons in the dock, and
+   clear scenery blocks out of the grid. Saves from before "one of each" (v3.7) carry
+   doubles: fold them into levels. Both say so once, with a toast. */
+function legacyBlockEra(s){
   const isBuilding=id=>!!BUILD_OF(id);
   let refund=0;
-  Object.entries(state.inventory||{}).forEach(([id,it])=>{
-    if(!isBuilding(id)){refund+=(it.n||0)*2;delete state.inventory[id];}
+  Object.entries(s.inventory||{}).forEach(([id,it])=>{
+    if(!isBuilding(id)){refund+=(it.n||0)*2;delete s.inventory[id];}
   });
-  Object.entries(state.grid||{}).forEach(([k,t])=>{
-    if(!isBuilding(t.id)){refund+=2;delete state.grid[k];}
+  Object.entries(s.grid||{}).forEach(([k,t])=>{
+    if(!isBuilding(t.id)){refund+=2;delete s.grid[k];}
   });
-  if(state.selected&&!isBuilding(state.selected))state.selected=null;
-  state.blueprints=state.blueprints||[];
-  // anything already standing in the valley counts as a plan he owns
-  Object.values(state.grid).forEach(t=>{
-    if(isBuilding(t.id)&&!state.blueprints.includes(t.id))state.blueprints.push(t.id);
-  });
-  state.timers=state.timers||{};
-  // settings added after this save was made get their defaults (nature sounds, spelling share, timer)
-  state.settings=Object.assign(def().settings,state.settings||{});
-  // a stunt that was cut short by closing the app must not leave the vehicle frozen
-  (state.vehicles||[]).forEach(v=>{delete v.busy;delete v.hold;});
+  if(s.selected&&!isBuilding(s.selected))s.selected=null;
   // one of each: fold doubles into levels (anything past gold becomes gems)
   let merged=0;
   const seenB={};
-  Object.keys(state.grid).forEach(k=>{const t=state.grid[k];
-    if(seenB[t.id]){const keep=state.grid[seenB[t.id]];
+  Object.keys(s.grid).forEach(k=>{const t=s.grid[k];
+    if(seenB[t.id]){const keep=s.grid[seenB[t.id]];
       if((keep.lv||1)<MAX_LV)keep.lv=(keep.lv||1)+(t.lv||1);else refund+=Math.round((BUILD_OF(t.id).gems||10)/2);
-      keep.lv=Math.min(MAX_LV,keep.lv);delete state.grid[k];merged++;}
+      keep.lv=Math.min(MAX_LV,keep.lv);delete s.grid[k];merged++;}
     else seenB[t.id]=k;});
-  Object.entries(state.inventory||{}).forEach(([id,it])=>{
+  Object.entries(s.inventory||{}).forEach(([id,it])=>{
     const n=it.n||0;if(!n)return;
-    if(seenB[id]){const keep=state.grid[seenB[id]];const add=n;keep.lv=Math.min(MAX_LV,(keep.lv||1)+add);delete state.inventory[id];merged+=add;}
-    else if(n>1){state.inventory[id]={n:1,lv:Math.min(MAX_LV,(it.lv||1)+n-1)};merged+=n-1;}
+    if(seenB[id]){const keep=s.grid[seenB[id]];const add=n;keep.lv=Math.min(MAX_LV,(keep.lv||1)+add);delete s.inventory[id];merged+=add;}
+    else if(n>1){s.inventory[id]={n:1,lv:Math.min(MAX_LV,(it.lv||1)+n-1)};merged+=n-1;}
     else it.lv=it.lv||1;});
   const fold=(list)=>{const out=[],by={};
     (list||[]).forEach((x,i)=>{const k=by[x.id];
       if(k){const sum=(k.lv||1)+(x.lv||1);if(sum>MAX_LV)refund+=5*(sum-MAX_LV);k.lv=Math.min(MAX_LV,sum);merged++;}
       else{x.lv=x.lv||1;if(x.since==null)x.since=i;if(x.out==null)x.out=true;by[x.id]=x;out.push(x);}});
     return out;};
-  state.critters=fold(state.critters);state.vehicles=fold(state.vehicles);
-  const trim=(list,max)=>{const on=list.filter(x=>x.out!==false).sort((a,b)=>(a.since||0)-(b.since||0));
-    while(on.length>max){on.shift().out=false;}};
-  trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
-  if(merged&&!state.tidied){state.tidied=true;
+  s.critters=fold(s.critters);s.vehicles=fold(s.vehicles);
+  if(merged&&!s.tidied){s.tidied=true;
     setTimeout(()=>{toast("Tidied up! Doubles became upgrades ★ — extra animals and vehicles are resting in the sticker book.");
       buddySay("Look, some of our things leveled up!");},5200);}
   if(refund){
-    state.gems=(state.gems||0)+refund;
+    s.gems=(s.gems||0)+refund;
     setTimeout(()=>toast(`Your old blocks became ${refund} gems — spend them on buildings`),1400);
   }
 }
 
+/* Small repairs on every load. Each is harmless when there is nothing to repair. */
+function bootFixups(){
+  // a stunt that was cut short by closing the app must not leave the vehicle frozen
+  state.vehicles.forEach(v=>{delete v.busy;delete v.hold;});
+  // anything already standing in the valley counts as a plan he owns
+  Object.values(state.grid).forEach(t=>{
+    if(BUILD_OF(t.id)&&!state.blueprints.includes(t.id))state.blueprints.push(t.id);
+  });
+  // every building in the bag, animal and vehicle has a level; animals and vehicles
+  // also have a place in line and are either out or resting
+  Object.values(state.inventory).forEach(it=>{if(it&&it.n)it.lv=it.lv||1;});
+  [state.critters,state.vehicles].forEach(list=>list.forEach((x,i)=>{
+    x.lv=x.lv||1;if(x.since==null)x.since=i;if(x.out==null)x.out=true;}));
+  // only so many are out at once: the ones out longest go and rest first
+  const trim=(list,max)=>{const on=list.filter(x=>x.out!==false).sort((a,b)=>(a.since||0)-(b.since||0));
+    while(on.length>max){on.shift().out=false;}};
+  trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
+}
+
+/* Load a save: fill in its defaults, run the one-time conversions it has not had, then
+   the every-load repairs. Returns true when a conversion ran. With nothing stored, the
+   new valley made at startup is kept (it needs no conversions). */
+function loadSave(saved){
+  const had=isPlain(saved);
+  // a save from before versions were counted is at 0, not at the newest
+  const from=had?(+saved.v||0):SAVE_V;
+  state=withDefaults(had?saved:state);
+  state.v=from;
+  let ran=false;
+  while((state.v||0)<SAVE_V){state.v=(state.v||0)+1;const m=MIGRATIONS[state.v];if(m){m(state);ran=true;}}
+  bootFixups();
+  return ran;
+}
+
 (async function boot(){
   // Nothing in here may stop the valley from being drawn.
-  try{
-    const saved=await DB.get("kv","state");
-    if(saved)state=Object.assign(def(),saved);
-  }catch(e){ console.warn("no saved valley:",e&&e.message); }
-  migrate();
+  let saved=null;
+  try{ saved=await DB.get("kv","state"); }catch(e){ console.warn("no saved valley:",e&&e.message); }
+  // a converted save is written straight away, so the next start does not convert it again
+  if(loadSave(saved))save();
   try{ await loadPack(); }catch(e){ packCreatures=[]; }
   try{ settleMovers(); }catch(e){}
   paintBackdrop();

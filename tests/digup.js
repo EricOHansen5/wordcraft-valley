@@ -4,7 +4,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   const p=await ctx.newPage();const cdp=await ctx.newCDPSession(p);
   const touch=async(type,pts)=>cdp.send("Input.dispatchTouchEvent",{type,touchPoints:pts.map(([x,y],i)=>({x,y,id:i+1}))});
   await p.goto("http://localhost:8787/");await p.waitForTimeout(1800);
-  await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.mine=null;Mine.enter();});
+  await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.mine=def().mine;Mine.enter();});
   await p.waitForTimeout(400);await p.evaluate(()=>document.getElementById("mClose").click());
   // a one-block pocket at depth 10 with stone above and below
   const R=Mine_SKY=>0;
