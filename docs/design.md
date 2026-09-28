@@ -618,6 +618,7 @@ The kindergarten tricky word checklist from his class is now part of level 1, hi
 ### v9.2.1 — version number
 - The Grown-up menu shows the build under its title (e.g. "Version 2026-09-27a"): the date of the release plus a letter for each release that day. It is the same value as the service-worker `VERSION`, so when it changes the iPad has the new build.
 - `npm run release` stamps both `sw.js` and `APP_VERSION` in `index.html`; `tests/version_check.js` fails if they differ.
+- Treasure-hunt marks (and anything placed with `freePos`) are rounded before the "keep clear of notes" check, not after. Rounding could nudge a mark back onto a note (about 1 hunt in 60 near a note), where the note took the button and the mark couldn't be dug.
 
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 

@@ -85,6 +85,15 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
        if(Adv._A().hunt.marks.some(m=>Math.abs(m.c-9)<1.6&&Math.abs(m.r-7.4)<1))n++;}
      state.notes=[];Adv._A().hunt=null;Adv.redraw();return n;})()`);
    ok(clash===0,"treasure marks never land on a note ("+clash+" of 60 hunts did)");
+   // the edge that 60 random hunts only hit now and then: a spot that clears the note before
+   // rounding (10.6049) but not after (10.60, and 10.60-9 is 1.5999... in floating point)
+   const edge=await E(`(()=>{const v=(10.6049-1)/(COLS-3),r0=+((ROWS_MAX-state.rows)+v*(state.rows-1)).toFixed(2);
+     state.notes=[{id:"ne",text:"Hi.",from:"Dad",at:1,c:9,r:r0,found:false}];Adv.redraw();
+     const R=Math.random;Math.random=()=>v;try{Adv._A().hunt=null;Adv.newHunt();}finally{Math.random=R;}
+     document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+     const bad=Adv._A().hunt.marks.filter(m=>Math.abs(m.c-9)<1.6&&Math.abs(m.r-r0)<1).length;
+     state.notes=[];Adv._A().hunt=null;Adv.redraw();return bad;})()`);
+   ok(edge===0,"treasure mark on the rounding edge of a note is kept clear ("+edge+" on it)");
    await E("Adv.exit()");}
 
   // mine: shop counter and a full backpack

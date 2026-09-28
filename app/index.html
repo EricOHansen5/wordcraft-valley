@@ -1390,8 +1390,8 @@ body.exploring .slot-empty{display:none}
 <div id="fx"></div><div id="toast"></div>
 
 <script>
-const APP_VERSION="wcv-2026-09-27a"; /* stamped by tools/release.js, matches sw.js VERSION */
 "use strict";
+const APP_VERSION="wcv-2026-09-28a"; /* stamped by tools/release.js, matches sw.js VERSION */
 /* ================================================================
    1. ART — procedural hand-inked SVG
    Every drawing is built from wobbly paths with a per-tile seed, so
@@ -7598,12 +7598,12 @@ const Adv=(()=>{
   function mount(){if(!on){grassEls=[];landEls=[];spotEls=[];ash=null;petEl=null;return;}drawGrass();drawLand();drawSpots();drawAsh();}
   // a free spot a few steps from Ash, for things that arrive while he explores
   function freePos(minD=2.5){
-    for(let k=0;k<60;k++){const c=1+Math.random()*(COLS-3),r=firstRow()+Math.random()*(state.rows-1);
+    for(let k=0;k<60;k++){const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
       if(Math.abs(c-P.c)<minD&&k<50)continue;if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.6&&Math.abs(p.r-r)<1))continue;
       if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
       // not on a treasure mark either: the spot would take the "use" button and the mark could never be dug
       if(A().hunt&&A().hunt.marks.some(m=>!m.dug&&Math.abs(m.c-c)<1.6&&Math.abs(m.r-r)<1))continue;
-      return{c:+c.toFixed(2),r:+r.toFixed(2)};}
+      return{c,r};}
     return{c:Math.min(COLS-2,P.c+3),r:P.r};
   }
 
@@ -7742,12 +7742,13 @@ const Adv=(()=>{
     if(pick.length<4){toast("Read a few more words first!");return;}
     // spread the landmarks around the valley
     const spots=[];for(let k=0;k<200&&spots.length<4;k++){
-      const c=1+Math.random()*(COLS-3),r=firstRow()+Math.random()*(state.rows-1);
+      // rounded before the checks: the stored value is the one that must keep clear
+      const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
       if(spots.some(s=>Math.abs(s.c-c)<3.2))continue;
       // keep clear of notes and the quest giver, which win the "use" button over a mark
       if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
-      spots.push({c:+c.toFixed(2),r:+r.toFixed(2)});}
+      spots.push({c,r});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
     const order=[0,1,2].sort(()=>Math.random()-.5);
     A().hunt={marks,order,step:0,miss:0,t0:Date.now(),tier};save();
