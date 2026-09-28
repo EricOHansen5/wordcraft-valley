@@ -7616,7 +7616,7 @@ const Books=(()=>{
       else{b.classList.add("wrong");Sound.sfx.nope();state.comp.wrong++;
         if(tries>=2){const r=ov.querySelector(`.bopt[data-v="${ans}"]`);if(r)r.classList.add("hint");}
         // nothing is lost on a miss; for "which page said it?" he hears the sentence again
-        else if(said)setTimeout(hearSaid,700);
+        else if(said)setTimeout(()=>{if(!fin)hearSaid();},700);
         setTimeout(()=>b.classList.remove("wrong"),600);}
     });
   }
