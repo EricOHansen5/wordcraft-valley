@@ -53,7 +53,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   ok(/^41\.7/.test(R.dash)&&!R.done&&/5 of 12/.test(R.label),`the ring fills part way: ${R.dash} "${R.label}"`);
   ok(await said()===0&&await E(()=>Goal.cheers===0),"below the goal nothing is said");
 
-  // 4. reaching the goal: done, one celebration, the chest opens (the reading quest is done)
+  // 4. reaching the goal: done, one celebration; the quest chest is left to the quests
   await E(()=>Quests.hit("read",7));
   g=await E(()=>state.goal);
   ok(g.words===12&&g.done,"12 words: the goal is done");
@@ -67,7 +67,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   await p.screenshot({path:"g_done.png"});
   await p.waitForTimeout(8000);
   const ch=await E(()=>({opened:state.quests.opened,gems:state.gems,rd:state.quests.list.filter(q=>q.k==="read")[0].p}));
-  ok(ch.rd>=q0.n&&ch.opened&&ch.gems>=q0.gems+20,`the reading quest is credited (${ch.rd}/${q0.n}) and the chest opens (gems ${q0.gems}→${ch.gems})`);
+  ok(ch.rd>=q0.n&&ch.opened===false&&ch.gems<q0.gems+20,`the reading quest is credited (${ch.rd}/${q0.n}) and the chest stays closed (opened ${ch.opened}, gems ${q0.gems}→${ch.gems})`);
 
   // 5. more reading after the finish line: counted, nothing more said
   await E(()=>Quests.hit("read",3));await p.waitForTimeout(2200);

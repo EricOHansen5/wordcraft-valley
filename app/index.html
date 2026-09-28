@@ -9196,9 +9196,8 @@ const today=()=>ymd(new Date());
 /* ---- TODAY'S READING: a daily goal with a finish line ----
    state.settings.goal words a day (0 = off). It counts what Quests.hit("read",n) counts,
    and a finished book (Quests.hit("book")) completes the day whatever the count. The first
-   time it is reached on a day: confetti, the win sound and one line from the buddy, and the
-   quest chest opens if the reading quest is done. After that the ring stays full and words
-   keep counting quietly. Not reaching it has no message and no consequence. */
+   time it is reached on a day: confetti, the win sound and one line from the buddy. The quest
+   chest is left to the quests. After that the ring stays full and words keep counting quietly. Not reaching it has no message and no consequence. */
 const GOAL_LINE="That's your reading for today! The valley is yours.";
 const Goal={
   cheers:0,   // how many times the finish line has played since the page opened (tests read it)
@@ -9227,14 +9226,8 @@ const Goal={
       try{confetti();}catch(e){}Sound.sfx.win();
       const r=document.getElementById("goalRing");if(r){r.classList.remove("pop");void r.offsetWidth;r.classList.add("pop");}
       buddySay(GOAL_LINE,4200);toast("📖 "+GOAL_LINE);
-      const said=Promise.resolve(Sound.speak(GOAL_LINE,.95)).catch(()=>{});
-      Promise.all([said,new Promise(res=>setTimeout(res,2600))]).then(()=>setTimeout(()=>this.chest(),500));
+      Sound.speak(GOAL_LINE,.95);
     },1400);
-  },
-  // the day's chest as the reward for the reading: only once the reading quest is done
-  chest(){
-    try{Quests.ensure();const q=state.quests,rd=q.list.filter(x=>x.k==="read")[0];
-      if(!q.opened&&rd&&rd.p>=rd.n)Quests.open(true);}catch(e){}
   },
   render(){
     const el=document.getElementById("goalRing");if(!el)return;
@@ -9267,7 +9260,7 @@ const Quests={
       if(q.p>=q.n){setTimeout(()=>{toast("Quest done: "+q.t+" ✓");Sound.sfx.chime();buddySay("Quest done!");},700);}
     });
     if(bumped){save();this.badge();}
-    // today's reading goal counts the same reading (after the quest, so the chest sees it done)
+    // today's reading goal counts the same reading
     try{if(k==="read")Goal.add(by);else if(k==="book")Goal.book();}catch(e){}
   },
   allDone(){this.ensure();return state.quests.list.every(q=>q.p>=q.n);},
@@ -9292,9 +9285,8 @@ const Quests={
     sub.textContent=state.quests.opened?"Opened! New quests tomorrow."
       :this.allDone()?"Tap the chest!":"Finish the quests to unlock the chest.";
   },
-  // early: the reading goal was reached (Goal.chest), which opens it before the other two quests
-  open(early){
-    if(!(early||this.allDone())||state.quests.opened){Sound.sfx.soft();return;}
+  open(){
+    if(!this.allDone()||state.quests.opened){Sound.sfx.soft();return;}
     state.quests.opened=true;
     const locked=lockedBuildings();
     let msg;
