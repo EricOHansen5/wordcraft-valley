@@ -623,6 +623,7 @@ The kindergarten tricky word checklist from his class is now part of level 1, hi
 ### v9.2.2 — small fixes
 - The home server no longer crashes on a malformed request URL (e.g. `/%`); it answers 400 instead, and top-level error handlers keep it serving even if a future handler has a bug. **This is a `server/` change, so the NAS container needs a restart after `git pull`** — an `app/`-only change doesn't need one.
 - Text a grown-up types — a note's message and "From", and the home-server address/token — is now escaped before it's shown, so it can never be read as live markup. Only the display changes: the reading-level check and the voice lookup still see the exact words typed.
+- The note's Adventure button label ("💌 Note from …") is not escaped, because the button is filled with `textContent`, which is already literal. Escaping it showed "Mom &amp; Dad" on the button.
 - `.gitattributes` now normalizes line endings to LF, and `tests/version_check.js` accepts either ending, so `npm test` passes on a Windows checkout with `core.autocrlf=true` too, not just on Linux CI.
 
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.

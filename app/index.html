@@ -1391,7 +1391,7 @@ body.exploring .slot-empty{display:none}
 
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-09-28b"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-09-28c"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* ================================================================
@@ -8104,7 +8104,7 @@ const Notes=(()=>{
   // envelopes in Adventure
   Adv.provide(()=>pending().map(n=>{
     if(n.c==null){const p=Adv.freePos(1.5);n.c=p.c;n.r=p.r;save();}
-    return{c:n.c,r:n.r,size:.55,cls:"note",html:`<div class="env">💌</div>`,label:`💌 Note from ${esc(n.from)}`,act:()=>open(n)};}));
+    return{c:n.c,r:n.r,size:.55,cls:"note",html:`<div class="env">💌</div>`,label:`💌 Note from ${n.from}`,act:()=>open(n)};}));
   let ov=null;
   function open(n){
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovNote";document.body.appendChild(ov);}

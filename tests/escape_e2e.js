@@ -30,6 +30,11 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   ok(r.nfromText.indexOf(FROM)>=0,"the note overlay's 'from' shows the typed text literally: "+JSON.stringify(r.nfromText));
   ok(r.btextTagCount===0,"no <b> element is created from the note body text");
   ok(r.rebuilt===TEXT,"the note body's words rebuild to the exact text typed: "+JSON.stringify(r.rebuilt));
+  // the Adventure action button shows its label with textContent, so the name must not be escaped a second time
+  const lab=await E(from=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+    state.notes=[{id:"nlab",text:"Hi.",from,at:Date.now(),voice:false,read:false,found:false}];state.adv={dex:{},seenIntro:1};
+    Adv.enter();const n=state.notes[0];Adv._P.c=n.c;Adv._P.r=n.r;return new Promise(r=>setTimeout(()=>{const t=document.getElementById("advAct").textContent;Adv.exit();r(t);},400));},"Mom & Dad");
+  ok(lab==="💌 Note from Mom & Dad","the note's action button reads the name as typed: "+JSON.stringify(lab));
   // the home-server address field (Sync module) is just as literal
   const s=await E(({url,token})=>{
     state.sync={url,token,last:0,auto:true};Sync.renderRow();
