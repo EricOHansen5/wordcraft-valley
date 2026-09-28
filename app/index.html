@@ -4448,12 +4448,95 @@ setInterval(()=>{
 },95000);
 
 /* ================================================================
+   MODES — the one place a mode opens and closes
+   Everything he can be "in" (a crate, a book, the Mine, Adventure, a
+   race, the grown-up menu...) opens with Modes.open(id, el) and closes
+   with Modes.close(id, el). Modes.shut(el) takes the "on" class off an
+   overlay and closes its mode in one go. show()/hide() below do this for
+   the overlays in the page, mapped by element id (OV).
+   The open modes form a stack, so Modes.top() is the one he is looking
+   at now, and "valley" when nothing is open. Nothing here changes what
+   is on screen: the class toggles and their timing are as before.
+   A missed close must not wedge the stack: an entry whose element has
+   lost its "on" class or left the page is dropped. A MutationObserver
+   watches every element handed to open(), and top() checks again.
+   Seam for later: Modes.guard(fn) registers fn(id); when it returns
+   false, open() refuses and returns false. No guard is set and no entry
+   point checks the return value yet, so nothing is gated today.
+   ================================================================ */
+const Modes=(()=>{
+  // reading:true is what the Grown-up report adds up as reading time
+  const MODES={
+    valley:{name:"The valley",reading:false},          // nothing open: building, tapping animals, driving
+    read:{name:"Reading words",reading:true},          // word crates, sound swaps, story crates, upgrades; word stones, vaults, moles and bosses in the Mine
+    book:{name:"Books",reading:true},                  // the bookshelf and the keepers' story books
+    pic:{name:"Picture it",reading:true},
+    sign:{name:"Signs",reading:true},
+    note:{name:"Notes from home",reading:true},
+    story:{name:"The Letter Thief",reading:true},
+    wild:{name:"Word Wilds",reading:true},
+    care:{name:"Animal care",reading:true},
+    write:{name:"Writing",reading:true},               // Write it, and signs he writes in the Mine
+    maker:{name:"My own book",reading:true},
+    mine:{name:"Gem Mine",reading:false},
+    adventure:{name:"Adventure",reading:false},
+    race:{name:"Races",reading:false},
+    dex:{name:"Word-Dex",reading:false},
+    craft:{name:"Building plans",reading:false},
+    album:{name:"Sticker book",reading:false},
+    quests:{name:"Daily quests",reading:false},
+    reward:{name:"Rewards",reading:false},
+    evo:{name:"Buddy evolving",reading:false},
+    scene:{name:"Keeper wakes up",reading:false},
+    recap:{name:"Session recap",reading:false},
+    photo:{name:"Postcard",reading:false},
+    gate:{name:"Grown-up gate",reading:false},
+    parent:{name:"Grown-up menu",reading:false},
+    report:{name:"Reading report",reading:false},
+    other:{name:"Other",reading:false}};
+  // overlays, by element id
+  const OV={ovCrates:"read",ovRead:"read",ovReward:"reward",ovSign:"sign",ovCraft:"craft",ovQuests:"quests",ovPhoto:"photo",
+    ovRecap:"recap",ovScene:"scene",ovBook:"book",ovAlbum:"album",ovGate:"gate",ovParent:"parent",advHud:"adventure",
+    ovStory:"book",ovPic:"pic",ovReport:"report",ovDex:"dex",ovWild:"wild",ovNote:"note",ovQuest:"story",ovMaker:"maker",
+    ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine"};
+  const stack=[];            // {id, el}, innermost last
+  let guardFn=null,mo=null;
+  const of=el=>(el&&(OV[el.id]||el.dataset.mode))||"other";
+  const alive=e=>!e.el||(document.documentElement.contains(e.el)&&e.el.classList.contains("on"));
+  function drop(i){stack.splice(i,1);}
+  function reconcile(){for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i]))drop(i);}
+  function watch(el){
+    if(!mo&&typeof MutationObserver!=="undefined"){mo=new MutationObserver(reconcile);mo.observe(document.body,{childList:true});}
+    if(mo)mo.observe(el,{attributes:true,attributeFilter:["class"]});
+  }
+  // el is optional; when it is given it should already carry "on"
+  function open(id,el){
+    id=id||of(el);if(!MODES[id])id="other";
+    reconcile();
+    const i=stack.findIndex(e=>el?e.el===el:(!e.el&&e.id===id));
+    if(i>=0&&stack[i].id===id)return true;            // already open: shown again, nothing new
+    if(guardFn){let ok=true;try{ok=guardFn(id)!==false;}catch(e){}if(!ok)return false;}
+    if(i>=0)drop(i);                                   // the same element, now as another mode
+    if(el){el.dataset.mode=id;watch(el);}
+    stack.push({id,el:el||null});
+    return true;
+  }
+  // by element when there is one, otherwise the innermost open mode with that id
+  function close(id,el){
+    for(let i=stack.length-1;i>=0;i--){const e=stack[i];if(el?e.el===el:e.id===id){drop(i);return;}}
+  }
+  function shut(el){if(!el)return;el.classList.remove("on");close(null,el);}
+  function top(){reconcile();return stack.length?stack[stack.length-1].id:"valley";}
+  return{open,close,shut,top,of,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
+})();
+
+/* ================================================================
    7. CRATE LOOP
    ================================================================ */
 const ov=id=>document.getElementById(id);
-const show=id=>ov(id).classList.add("on");
-const hide=id=>ov(id).classList.remove("on");
-document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>b.closest(".overlay").classList.remove("on"));
+const show=id=>{const el=ov(id);el.classList.add("on");Modes.open(null,el);};
+const hide=id=>Modes.shut(ov(id));
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>Modes.shut(b.closest(".overlay")));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");
   setTimeout(()=>t.classList.remove("on"),2400);}
 
@@ -5648,7 +5731,7 @@ function evolveScene(from,to){
   document.getElementById("evoText").textContent=from===0?"What? The egg is hatching!":`What? ${old} is evolving!`;
   document.getElementById("evoWord").textContent=word;
   document.getElementById("evoAsk").style.display="";document.getElementById("evoDone").style.display="none";
-  ov.className="evo on";Sound.sfx.chime();
+  ov.className="evo on";Modes.open("evo",ov);Sound.sfx.chime();
   Sound.speak(from===0?"What? The egg is hatching!":"What? Your buddy is evolving!",.95);
   document.getElementById("evoHear").onclick=()=>Sound.say("word:"+word,word,.85);
   document.getElementById("evoGo").onclick=()=>{
@@ -5658,7 +5741,7 @@ function evolveScene(from,to){
       Sound.speak(`Congratulations! ${old} became ${nm}!`,.9);
       document.getElementById("evoDone").style.display="";setTimeout(()=>ov.classList.remove("flash"),700);},3300);
   };
-  document.getElementById("evoDone").onclick=()=>{ov.className="evo";renderHUD();
+  document.getElementById("evoDone").onclick=()=>{ov.className="evo";Modes.close("evo",ov);renderHUD();
     try{const el=document.getElementById("buddyBtn");el.classList.add("pulse");setTimeout(()=>el.classList.remove("pulse"),1000);}catch(e){}
     try{renderBuddy&&renderBuddy();}catch(e){}};
 }
@@ -6026,7 +6109,7 @@ const Mine=(()=>{
     if(!root){buildDom();buildTextures();}
     const m=M();gen();layerSeen=new Set(m.layers||[]);ENT.length=0;setBuild(false);lostAnimal();jobs();
     P.x=m.x||SPAWN_X;P.y=m.y||SKY-.95;P.vx=P.vy=0;if(solidBox(P.x,P.y))Object.assign(P,{x:SPAWN_X,y:SKY-.95});
-    root.classList.add("on");running=true;paused=false;resize();hud();
+    root.classList.add("on");Modes.open("mine",root);running=true;paused=false;resize();hud();
     cam.x=P.x*TS-vw/2;cam.y=P.y*TS-vh*.45;
     lastT=performance.now();requestAnimationFrame(loop);
     PET.x=P.x-1;PET.y=P.y;
@@ -6038,7 +6121,7 @@ const Mine=(()=>{
     else toast("Dig down and find gems! Sell them at your shop.",3000);
   }
   function exit(){
-    const m=M();m.x=P.x;m.y=P.y;markDug();dirty=false;running=false;root.classList.remove("on");
+    const m=M();m.x=P.x;m.y=P.y;markDug();dirty=false;running=false;panelMode(null);root.classList.remove("on");Modes.close("mine",root);
     try{renderHUD();}catch(e){}
   }
   function toSurface(){
@@ -6291,8 +6374,11 @@ const Mine=(()=>{
 
   /* ---------- panels ---------- */
   const panel=root=>document.getElementById("mPanel"),card=()=>document.getElementById("mCard");
-  function openPanel(html){paused=true;input.dig=false;input.jx=input.jy=0;card().innerHTML=html;panel().classList.add("on");}
-  function closePanel(){panel().classList.remove("on");paused=false;hud();}
+  // mode: the reading ("read") and writing ("write") panels are modes of their own inside the Mine
+  function openPanel(html,mode){paused=true;input.dig=false;input.jx=input.jy=0;card().innerHTML=html;panel().classList.add("on");panelMode(mode);}
+  function closePanel(){panel().classList.remove("on");panelMode(null);paused=false;hud();}
+  let pMode=null;
+  function panelMode(m){m=m||null;if(m===pMode)return;if(pMode)Modes.close(pMode,panel());pMode=m;if(m)Modes.open(m,panel());}
 
   // word stone: match the word to its picture
   function wordStone(tx,ty){
@@ -6306,7 +6392,7 @@ const Mine=(()=>{
     const opts=[w,...others].sort(()=>Math.random()-.5);let misses=0,t0=performance.now(),fin=false;
     openPanel(`<h2>A word stone! 🔮</h2><p class="sub">Read the word, then tap its picture to crack it open.</p>
       <div class="mword">${w.w}</div><div class="mpics">${opts.map(o=>`<button class="mpic" data-w="${o.w}">${drawWord(o.w,"mine")}</button>`).join("")}</div>
-      <div class="mrow"><button class="btn soft" id="mHear" style="visibility:hidden">🔊 Hear it</button></div>`);
+      <div class="mrow"><button class="btn soft" id="mHear" style="visibility:hidden">🔊 Hear it</button></div>`,"read");
     card().querySelector("#mHear").onclick=()=>Sound.say("word:"+w.w,w.w,.85);
     if(Skills.slow){const mp=card().querySelector(".mpics");mp.classList.add("locked-by-shield");
       soundShield(card(),w,()=>{mp.classList.remove("locked-by-shield");t0=performance.now();});}
@@ -6572,7 +6658,7 @@ const Mine=(()=>{
     const b=BOSSES[i];battle={i,hp:b.hp,hearts:3,round:0,right:0,lock:false};input.dig=false;
     openPanel(`<div class="mboss">${bossArt(b,"enter")}<h2>${b.name}!</h2><p class="mtaunt">“${b.taunt}”</p>
       <p class="sub">Read to power up your pickaxe. Every right answer is a hit! ${b.hp} hits wins.</p>
-      <div class="mrow"><button class="btn soft" id="mRun">Run away</button><button class="btn primary" id="mFight">Fight! ⚔️</button></div></div>`);
+      <div class="mrow"><button class="btn soft" id="mRun">Run away</button><button class="btn primary" id="mFight">Fight! ⚔️</button></div></div>`,"read");
     Sound.sfx.rumble();setTimeout(()=>Sound.speak(b.taunt,.95),400);
     card().querySelector("#mFight").onclick=()=>bossRound();
     card().querySelector("#mRun").onclick=()=>{battle=null;bossCool=time+4;closePanel();toSurface();};
@@ -6589,7 +6675,7 @@ const Mine=(()=>{
       body=`<p class="sub">Which word is this? Look closely!</p><div class="mpic big">${drawWord(w.w,"boss")}</div>
         <div class="mwords">${opts.map(o=>`<button class="mwopt" data-w="${o}">${o}</button>`).join("")}</div>`;}
     openPanel(`<div class="mboss fight">${bossArt(b,"small")}
-      <div class="mbars"><div><b>${b.name}</b> ${"🖤".repeat(battle.hp)}</div><div><b>You</b> ${"❤️".repeat(battle.hearts)}${"🤍".repeat(3-battle.hearts)}</div></div>${body}</div>`);
+      <div class="mbars"><div><b>${b.name}</b> ${"🖤".repeat(battle.hp)}</div><div><b>You</b> ${"❤️".repeat(battle.hearts)}${"🤍".repeat(3-battle.hearts)}</div></div>${body}</div>`,"read");
     card().querySelectorAll("[data-w]").forEach(el=>el.onclick=()=>answer(el,el.dataset.w===w.w,w));
     if(Skills.slow&&!pictureFirst){const mp=card().querySelector(".mpics");mp.classList.add("locked-by-shield");
       soundShield(card().querySelector(".mboss"),w,()=>{mp.classList.remove("locked-by-shield");battle.t0=performance.now();});}
@@ -6600,7 +6686,7 @@ const Mine=(()=>{
     openPanel(`<div class="mboss fight">${bossArt(b,"small")}
       <div class="mbars"><div><b>${b.name}</b> ${"🖤".repeat(battle.hp)}</div><div><b>You</b> ${"❤️".repeat(battle.hearts)}${"🤍".repeat(3-battle.hearts)}</div></div>
       <p class="sub">Boss riddle! Read it all, then tap the picture that matches.</p><div class="mps">${ps.text}</div>
-      <div class="mpics">${ps.opts.map((o,i)=>`<button class="psopt" data-w="${o.ok?"#ps":"#no"+i}">${PicSentence.draw(o,"cave")}</button>`).join("")}</div></div>`);
+      <div class="mpics">${ps.opts.map((o,i)=>`<button class="psopt" data-w="${o.ok?"#ps":"#no"+i}">${PicSentence.draw(o,"cave")}</button>`).join("")}</div></div>`,"read");
     card().querySelectorAll("[data-w]").forEach(el=>el.onclick=()=>answer(el,el.dataset.w==="#ps",w));
   }
   function answer(el,ok,w){
@@ -6808,7 +6894,7 @@ const Mine=(()=>{
         <div class="msignline">${words.length?words.map((w,k)=>`<button class="msw" data-k="${k}">${w}</button>`).join(" "):`<span class="sub">…</span>`}</div>
         <div class="mrow"><button class="btn soft" data-p=".">.</button><button class="btn soft" data-p="!">!</button><button class="btn soft" id="mSHear">🔊</button><button class="btn soft" id="mSUndo">⌫</button></div>
         <div class="msignbank">${bank.map(w=>`<button class="mswb" data-w="${w}">${w}</button>`).join("")}</div>
-        <div class="mrow"><button class="btn soft" id="mSNo">No sign</button><button class="btn primary" id="mSOk" ${words.length?"":"disabled"}>Put it up 🪧</button></div>`);
+        <div class="mrow"><button class="btn soft" id="mSNo">No sign</button><button class="btn primary" id="mSOk" ${words.length?"":"disabled"}>Put it up 🪧</button></div>`,"write");
       const text=()=>words.join(" ").replace(/ ([.!?])/g,"$1");
       card().querySelectorAll(".mswb").forEach(b=>b.onclick=()=>{if(words.length>=8)return;let w=b.dataset.w;if(!words.length)w=w[0].toUpperCase()+w.slice(1);words.push(w);Sound.say("word:"+b.dataset.w.toLowerCase(),b.dataset.w.toLowerCase(),.9);draw();});
       card().querySelectorAll(".msw").forEach(b=>b.onclick=()=>{words.splice(+b.dataset.k,1);draw();});
@@ -6825,7 +6911,7 @@ const Mine=(()=>{
   // ---------- vaults ----------
   function openVault(V){
     const lvl=V.n,kind=["pic","wordPick","sentence","build"][lvl]||"pic";
-    openPanel(`<h2>🔐 A word vault!</h2><p class="sub">Only a reader can open this door.</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`);
+    openPanel(`<h2>🔐 A word vault!</h2><p class="sub">Only a reader can open this door.</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`,"read");
     card().querySelector("#mClose").onclick=closePanel;
     const host=card().querySelector(".mq");
     const done=()=>{const m=M();m.vaults[V.k]=1;tiles[idx(V.door[0],V.door[1])]=T.AIR;bump("vaults");state.wordsRead+=3;dirty=true;save();
@@ -6887,7 +6973,7 @@ const Mine=(()=>{
   }
   const moleNear=()=>ENT.find(e=>e.type==="mole"&&e.life>0&&Math.abs(e.x-(P.x+P.w/2))<2&&Math.abs(e.y-(P.y+.5))<1.5);
   function moleRiddle(e){
-    e.life=99;openPanel(`<h2>🐹 A mole's riddle!</h2><p class="sub">“Read my word, and I'll give you my treasure!”</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Bye, mole!</button></div>`);
+    e.life=99;openPanel(`<h2>🐹 A mole's riddle!</h2><p class="sub">“Read my word, and I'll give you my treasure!”</p><div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Bye, mole!</button></div>`,"read");
     card().querySelector("#mClose").onclick=()=>{e.life=.3;closePanel();};
     Read[Math.random()<.5?"pic":"wordPick"](card().querySelector(".mq"),ok=>{const m=M(),c=ok?15+Math.floor(Math.random()*10):8;m.coins+=c;bump("moles");
       const gift=Math.random()<.35;if(gift)m.blocks.torch=(m.blocks.torch||0)+2;
@@ -6896,7 +6982,7 @@ const Mine=(()=>{
   function rescue(){
     const L=M().lost,c=CRIT(L.id),name=c.name.toLowerCase();
     openPanel(`<div class="mlost"><div class="art">${drawThing(L.id,5)}</div><div><h2>A lost ${name}!</h2><p class="sub">“Help! I'm lost in the mine. Read with me, and I can find my way home.”</p></div></div>
-      <div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`);
+      <div class="mq"></div><div class="mrow"><button class="btn soft" id="mClose">Later</button></div>`,"read");
     card().querySelector("#mClose").onclick=closePanel;Sound.sfx.cry(c.cry);
     const host=card().querySelector(".mq"),fn=currentTier()>=2?Read.sentence:Read.pic;
     fn(host,()=>{L.rescued=true;bump("rescued");const m=M();m.coins+=25;state.gems+=4;
@@ -7199,7 +7285,7 @@ const Books=(()=>{
   function build(){
     if(ov)return;ov=document.createElement("div");ov.id="ovStory";ov.className="overlay sbook";document.body.appendChild(ov);
   }
-  function close(){ov.classList.remove("on");stopAudio();try{booksBadge();}catch(e){}}
+  function close(){Modes.shut(ov);stopAudio();try{booksBadge();}catch(e){}}
   // ---------- shelf ----------
   function shelf(){
     build();stopAudio();try{MyBook.inject();}catch(e){}
@@ -7211,7 +7297,7 @@ const Books=(()=>{
     ov.innerHTML=`<div class="bpage"><div class="bhead"><h2>📚 My books</h2><button class="bx" id="bClose">✕</button></div>
       <p class="sub">Read a book to earn stars. Read it to your pet and it becomes your own audiobook! 🎧</p>
       <div class="bshelf">${cards}</div></div>`;
-    ov.classList.add("on");
+    ov.classList.add("on");Modes.open("book",ov);
     ov.querySelector("#bClose").onclick=close;
     ov.querySelectorAll(".bcov:not(.locked):not(.maker)").forEach(c=>c.onclick=()=>openBook(c.dataset.id));
     const mk=ov.querySelector("#bMake");if(mk)mk.onclick=()=>{close();MyBook.create();};
@@ -7225,7 +7311,7 @@ const Books=(()=>{
       <h1 class="btitle">${book.title.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</h1>
       <div class="mrow"><button class="btn primary big" id="bStart">Read it! 📖</button>
       ${p.rec?`<button class="btn soft big" id="bListen">🎧 Listen to me read it</button>`:""}</div></div>`;
-    ov.classList.add("on");
+    ov.classList.add("on");Modes.open("book",ov);
     wireWords(ov.querySelector(".btitle"));
     ov.querySelector("#bBack").onclick=shelf;ov.querySelector("#bClose").onclick=close;
     ov.querySelector("#bStart").onclick=()=>showPage();
@@ -7419,13 +7505,13 @@ function openPicIt(){
     <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg)}</button>`).join("")}</div>
     <div style="text-align:center;margin-top:12px"><button class="btn ghost" id="psLater">Later</button></div></div>`;
   Books.wireWords(picOv.querySelector(".btext"));
-  picOv.querySelector("#psLater").onclick=()=>picOv.classList.remove("on");
+  picOv.querySelector("#psLater").onclick=()=>Modes.shut(picOv);
   const comp=()=>state.comp||(state.comp={right:0,wrong:0});
   picOv.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
     if(fin)return;const o=ps.opts[+b.dataset.i];tries++;
     if(o.ok){fin=true;b.classList.add("right");comp().right++;const won=tries===1?2:1;state.gems+=won;state.wordsRead+=1;
       Quests.hit("read");Sound.sfx.win();confetti();Sound.say("sent:"+ps.text,ps.text,.9);floater("+"+won+" 💎","#FFE9A8");
-      renderHUD();save();setTimeout(()=>picOv.classList.remove("on"),1400);}
+      renderHUD();save();setTimeout(()=>Modes.shut(picOv),1400);}
     else{comp().wrong++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
       if(performance.now()-t0<2500){state.rushes=state.rushes||{};state.rushes[today()]=(state.rushes[today()]||0)+1;}
       // point at the word that makes the difference
@@ -7435,7 +7521,7 @@ function openPicIt(){
       if(tries>=2)picOv.querySelector(`.psopt[data-i="${ps.opts.findIndex(x=>x.ok)}"]`).classList.add("hint");
       save();}
   });
-  picOv.classList.add("on");
+  picOv.classList.add("on");Modes.open("pic",picOv);
   setTimeout(()=>Sound.speak("Read it, then find the picture.",.95),300);
 }
 
@@ -7499,14 +7585,14 @@ function openReport(){
     <h3>Adventure</h3><p class="rnote">${Object.values((state.adv||{}).dex||{}).filter(d=>d.caught).length} wild friends in the Word-Dex · ${(state.adv||{}).hunts||0} treasure hunts solved. Each friend takes 3–5 reading answers; each hunt is three notes to read.</p>
     <h3>Mine</h3><p class="rnote">${m.bossWins||0} bosses beaten · ${m.dugCount||0} blocks dug · ${m.coins||0} coins. Every boss hit and word stone is a word read.</p>
     <div class="mrow rbtns"><button class="btn soft" id="rPrint">🖨️ Print</button><button class="btn primary" id="rClose">Done</button></div></div>`;
-  repOv.querySelector("#rClose").onclick=()=>{Books.stopAudio();repOv.classList.remove("on");};
+  repOv.querySelector("#rClose").onclick=()=>{Books.stopAudio();Modes.shut(repOv);};
   repOv.querySelector("#rPrint").onclick=()=>{document.body.classList.add("printing");window.print();setTimeout(()=>document.body.classList.remove("printing"),500);};
   repOv.querySelectorAll(".rplay").forEach(b=>b.onclick=async()=>{
     if(b.classList.contains("on")){b.classList.remove("on");Books.stopAudio();return;}
     b.classList.add("on");b.textContent="⏹ Stop";const bk=BOOKS.find(x=>x.id===b.dataset.id);
     for(let k=0;k<bk.pages.length&&b.classList.contains("on");k++){const blob=await DB.get("blobs",`story:${bk.id}:${k}`);if(blob)await Books.playBlob(blob);}
     b.classList.remove("on");b.textContent="🎧 Hear him read";});
-  repOv.classList.add("on");
+  repOv.classList.add("on");Modes.open("report",repOv);
 }
 document.getElementById("reportBtn").onclick=openReport;
 setTimeout(booksBadge,300);
@@ -7705,7 +7791,7 @@ const Adv=(()=>{
   function enter(){
     if(!hud)buildHud();
     if(state.selected){state.selected=null;renderDock();}
-    on=true;document.body.classList.add("exploring");hud.classList.add("on");
+    on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);
     // start where he is looking, at the front of the valley
     const W=worldW(),t=((cam+viewW()/2)/W-EDGE)/(1-EDGE*2);
     P.c=Math.max(0,Math.min(COLS-1,t*(COLS-1)));P.r=ROWS_MAX-1;P.pc=P.c-.9;P.pr=P.r;
@@ -7717,7 +7803,7 @@ const Adv=(()=>{
     try{if(Quest.available())setTimeout(()=>toast("❗ Gloom the ghost is up to something! Find the ❗"),a.seenIntro?700:4000);}catch(e){}
   }
   function exit(){
-    on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");
+    on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");Modes.close("adventure",hud);
     input.jx=input.jy=0;[...grassEls,...landEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];ash=petEl=null;
     Sound.sfx.soft();
   }
@@ -7836,8 +7922,8 @@ const Dex={
         return`<button class="dexc ${st}${d.shiny?" shiny":""}" data-id="${c.id}"><i>#${String(i+1).padStart(2,"0")}</i>
           <div class="dart">${st==="none"?"?":drawThing(c.id,5)}</div><b>${st==="got"?c.name:st==="seen"?"???":"&nbsp;"}</b>
           ${d.shiny?`<span class="spk">✨</span>`:""}${c.rar===3?`<span class="leg">★</span>`:""}</button>`;}).join("")}</div></div>`;
-    ov.classList.add("on");
-    ov.querySelector("#dexX").onclick=()=>ov.classList.remove("on");
+    ov.classList.add("on");Modes.open("dex",ov);
+    ov.querySelector("#dexX").onclick=()=>Modes.shut(ov);
     ov.querySelectorAll(".dexc.got").forEach(b=>b.onclick=()=>{const c=CRIT(b.dataset.id);const s=`The ${c.name.toLowerCase()}. ${Dex.facts[c.kind]||""}`;
       Sound.sfx.cry(c.cry);setTimeout(()=>Sound.say("sent:"+s,s,.9),350);b.classList.add("pop");setTimeout(()=>b.classList.remove("pop"),600);});
     ov.querySelectorAll(".dexc.seen").forEach(b=>b.onclick=()=>{Sound.sfx.soft();toast("You met this one! Find it in the grass again.");});
@@ -7863,13 +7949,13 @@ const Wild=(()=>{
         <div class="wcrit${shiny?" shiny":""}"><div class="wbody">${drawThing(c.id,W.seed=Math.floor(Math.random()*999))}</div><div class="wpad"></div></div></div>
       <div class="whead"><b id="wTitle">A wild ${shiny?"✨shiny✨ ":""}${c.name.toLowerCase()} appeared!</b><span class="whearts" id="wHearts"></span></div>
       <div id="wQ"></div><div class="wfoot"><button class="btn ghost" id="wRun">🏃 Run away</button></div></div>`;
-    ov.classList.add("on");hearts();
+    ov.classList.add("on");Modes.open("wild",ov);hearts();
     Sound.sfx.cry(c.cry);setTimeout(()=>Sound.speak(`A wild ${shiny?"shiny ":""}${c.name}! Read to make friends!`,.95),450);
     ov.querySelector("#wRun").onclick=()=>{Sound.sfx.soft();close();};
     setTimeout(round,1300);
   }
   function hearts(){ov.querySelector("#wHearts").textContent="💗".repeat(W.hearts)+"🤍".repeat(W.need-W.hearts);}
-  function close(){ov.classList.remove("on");W=null;Adv.refreshHud();}
+  function close(){Modes.shut(ov);W=null;Adv.refreshHud();}
   const shuffle=a=>a.sort(()=>Math.random()-.5);
   function wordFor(){
     const tier=currentTier();let w=null;
@@ -8120,7 +8206,7 @@ const Notes=(()=>{
         <button class="btn soft" id="nLater">I'll look later</button><button class="btn primary big" id="nFound">🎁 I found it!</button></div></div>`;
     Books.wireWords(ov.querySelector(".btext"));
     ov.querySelectorAll(".bw").forEach(b=>b.addEventListener("click",()=>tries++));
-    ov.classList.add("on");Sound.sfx.chime();
+    ov.classList.add("on");Modes.open("note",ov);Sound.sfx.chime();
     const hear=ov.querySelector("#nHear");
     // his own try first: the voice unlocks after he says he read it
     const playVoice=async()=>{const b=await DB.get("blobs","note:"+n.id);if(b)await Books.playBlob(b);else Sound.say("sent:"+n.text,n.text,.9);};
@@ -8129,9 +8215,9 @@ const Notes=(()=>{
       Sound.sfx.pop();if(hear)hear.disabled=false;ov.querySelector("#nRead").style.display="none";ov.querySelector(".nfound").style.display="";
       if(!n.read){n.read=true;state.wordsRead+=Decode.words(n.text).length;state.gems+=3;floater("+3 💎","#FFE9A8");renderHUD();save();}
       setTimeout(()=>Sound.speak(`Go and find it!`,.95),300);};
-    ov.querySelector("#nLater").onclick=()=>ov.classList.remove("on");
+    ov.querySelector("#nLater").onclick=()=>Modes.shut(ov);
     ov.querySelector("#nFound").onclick=()=>{n.found=true;n.foundAt=Date.now();state.gems+=5;save();badge();
-      confetti();Sound.sfx.fanfare();ov.classList.remove("on");try{Quests.hit("read",2);}catch(e){}
+      confetti();Sound.sfx.fanfare();Modes.shut(ov);try{Quests.hit("read",2);}catch(e){}
       document.getElementById("rewardArt").innerHTML=`<div style="font-size:110px;line-height:1">🎁</div>`;
       document.getElementById("rewardName").textContent="You found it!";
       document.getElementById("rewardWord").textContent=`You read ${n.from}'s note all by yourself. +5 💎`;show("ovReward");};
@@ -8261,9 +8347,9 @@ const Quest=(()=>{
   let ov=null;
   function sheet(html,cls){
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovQuest";document.body.appendChild(ov);}
-    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet qsheet ${cls||""}${again?" noanim":""}">${html}</div>`;ov.classList.add("on");return ov.querySelector(".sheet");
+    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet qsheet ${cls||""}${again?" noanim":""}">${html}</div>`;ov.classList.add("on");Modes.open("story",ov);return ov.querySelector(".sheet");
   }
-  const close=()=>ov&&ov.classList.remove("on");
+  const close=()=>ov&&Modes.shut(ov);
   function story(title,pages,after){
     let i=0;
     const show=()=>{
@@ -8423,7 +8509,7 @@ const MyBook=(()=>{
   }
   let ov=null,book=null,page=0,title=false;
   const sheet=html=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovMaker";document.body.appendChild(ov);}
-    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet maker${again?" noanim":""}">${html}</div>`;ov.classList.add("on");return ov.querySelector(".sheet");};
+    const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet maker${again?" noanim":""}">${html}</div>`;ov.classList.add("on");Modes.open("maker",ov);return ov.querySelector(".sheet");};
   function create(){
     book={id:"my_"+Date.now().toString(36),title:"",pages:[{a:null,words:[]}],bg:["meadow","pond","farm","town","night","sea"][S().length%6],at:Date.now()};
     page=0;title=false;edit();
@@ -8461,7 +8547,7 @@ const MyBook=(()=>{
     s.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{if(!p.words.length)return;if(/[.!?]$/.test(p.words[p.words.length-1]||""))p.words.pop();p.words.push(b.dataset.p);edit();});
     s.querySelector("#mkUndo").onclick=()=>{p.words.pop();edit();};
     s.querySelector("#mkHear").onclick=()=>Sound.say("sent:"+text,text,.9);
-    s.querySelector("#mkX").onclick=()=>{ov.classList.remove("on");};
+    s.querySelector("#mkX").onclick=()=>{Modes.shut(ov);};
     const add=s.querySelector("#mkAdd");if(add)add.onclick=()=>{if(book.pages.length>=8){toast("8 pages is a big book!");return;}
       endStop(p);book.pages.splice(page+1,0,{a:null,words:[]});page++;edit();};
     const prev=s.querySelector("#mkPrev");if(prev)prev.onclick=()=>{page--;edit();};
@@ -8480,8 +8566,8 @@ const MyBook=(()=>{
       ${first?`<p class="mpaid">+${5+book.pages.length} 💎</p>`:""}
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="mkShelf">📚 My shelf</button>
       <button class="btn primary big" id="mkRead">🎤 Read it to my ${Books.petWord(1)}</button></div></div>`);
-    s.querySelector("#mkShelf").onclick=()=>{ov.classList.remove("on");Books.shelf();};
-    s.querySelector("#mkRead").onclick=()=>{ov.classList.remove("on");Books.openBook(book.id);};
+    s.querySelector("#mkShelf").onclick=()=>{Modes.shut(ov);Books.shelf();};
+    s.querySelector("#mkRead").onclick=()=>{Modes.shut(ov);Books.openBook(book.id);};
   }
   function card(){return`<button class="bcov maker" id="bMake"><div class="bart">✏️</div><b>Make my own book</b><span>${S().length?S().length+" made":"NEW!"}</span></button>`;}
   function editBook(id){const b=S().find(x=>x.id===id);if(!b)return;book=JSON.parse(JSON.stringify(b));page=0;title=false;edit();}
@@ -8523,8 +8609,8 @@ const Write=(()=>{
       <div class="wrmsg" id="wrMsg"></div>
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="wrHear">👂 Hear it</button><button class="btn soft" id="wrClear">🧽 Clear</button>
         <button class="btn primary big" id="wrOk">✓ Done</button></div></div>`;
-    ov.classList.add("on");
-    ov.querySelector("#wrX").onclick=()=>ov.classList.remove("on");
+    ov.classList.add("on");Modes.open("write",ov);
+    ov.querySelector("#wrX").onclick=()=>Modes.shut(ov);
     ov.querySelector("#wrHear").onclick=()=>hear();
     ov.querySelector("#wrClear").onclick=()=>{ink=[];paint();};
     ov.querySelector("#wrOk").onclick=check;
@@ -8603,7 +8689,7 @@ const Write=(()=>{
     ov.querySelector(".wrpad").innerHTML=`<div class="wrdone">${word.w}<div class="wrart">${WORD_ART[word.w]?drawWord(word.w,"w"):""}</div></div>`;
     ov.querySelector("#wrMsg").textContent=`You wrote “${word.w}”! +${gems} 💎`;
     ov.querySelector(".mrow").innerHTML=`<button class="btn soft" id="wrMore">✍️ Another word</button><button class="btn primary big" id="wrOk2">Done</button>`;
-    ov.querySelector("#wrMore").onclick=()=>start();ov.querySelector("#wrOk2").onclick=()=>ov.classList.remove("on");
+    ov.querySelector("#wrMore").onclick=()=>start();ov.querySelector("#wrOk2").onclick=()=>Modes.shut(ov);
   }
   // for the report: letters he writes from memory
   const report=()=>Object.entries(S()).map(([c,s])=>({c,lv:level(c),n:s.n})).sort((a,b)=>a.c<b.c?-1:1);
@@ -8635,7 +8721,7 @@ const Care=(()=>{
     ov.innerHTML=`<div class="sheet caresheet"><div class="bhead"><h2>🍓 Snack time</h2><button class="bx" id="cX">✕</button></div>
       <div class="cwho"><div class="cart">${cr.img?`<img src="${cr.img}">`:drawThing(cr.id,cr.seed)}</div>
         <div class="cbub">I want <b>${w.w}</b>!</div></div><div class="cq"></div></div>`;
-    ov.classList.add("on");ov.querySelector("#cX").onclick=()=>ov.classList.remove("on");
+    ov.classList.add("on");Modes.open("care",ov);ov.querySelector("#cX").onclick=()=>Modes.shut(ov);
     Sound.sfx.cry((CRIT(cr.id)||{}).cry);
     // pictures of foods, so reading the word is the only way to know
     const host=ov.querySelector(".cq");
@@ -8644,7 +8730,7 @@ const Care=(()=>{
       const a=ov.querySelector(".cart");a.classList.add("yum");Sound.sfx.gulp();
       host.innerHTML=`<div class="wdone"><h2>Yum! The ${name.toLowerCase()} loves you. 💕</h2><p class="mpaid">+${ok?2:1} 💎</p>
         <button class="btn primary big" id="cOk">OK</button></div>`;
-      host.querySelector("#cOk").onclick=()=>{ov.classList.remove("on");renderCritters();Adv.redraw();};
+      host.querySelector("#cOk").onclick=()=>{Modes.shut(ov);renderCritters();Adv.redraw();};
     },w);
     host.querySelector(".wp").textContent=`Which one is ${w.w}?`;
     // the food choices are other foods, not random things
@@ -8675,8 +8761,8 @@ const Race=(()=>{
       <div class="track">${R.cars.map((c,i)=>`<div class="lane${c.me?" me":""}"><div class="rcar" id="rc${i}">${drawThing(c.id,1)}</div><span class="rname">${c.name}</span></div>`).join("")}
         ${R.gates.map(gx=>`<div class="gate" style="left:${gx}%"></div>`).join("")}<div class="finish"></div></div>
       <div class="rq" id="rQ"><p class="wp">Read at the gates for a turbo boost! 🚀</p><button class="btn primary big" id="rGo">Go! 🏁</button></div></div>`;
-    ov.classList.add("on");
-    ov.querySelector("#rX").onclick=()=>{cancelAnimationFrame(raf);ov.classList.remove("on");R=null;};
+    ov.classList.add("on");Modes.open("race",ov);
+    ov.querySelector("#rX").onclick=()=>{cancelAnimationFrame(raf);Modes.shut(ov);R=null;};
     ov.querySelector("#rGo").onclick=()=>{ov.querySelector("#rQ").innerHTML="";Sound.sfx.veh&&Sound.sfx.veh("honk");run();};
   }
   function run(){
@@ -8715,7 +8801,7 @@ const Race=(()=>{
     ov.querySelector("#rQ").innerHTML=`<div class="wdone"><div class="podium">${order.map((o,i)=>`<div class="pod p${i+1}${o.c.me?" me":""}"><div>${drawThing(o.c.id,1)}</div><b>${["🥇","🥈","🥉"][i]}</b></div>`).join("")}</div>
       <h2>${place===1?"You won!":place===2?"Second place!":"Third place!"}</h2><p class="mpaid">+${gems} 💎 · ${R.right} of 3 gates read</p>
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="rAgain">🔁 Race again</button><button class="btn primary big" id="rOk">Done</button></div></div>`;
-    ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{ov.classList.remove("on");R=null;};
+    ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{Modes.shut(ov);R=null;};
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
   return{start,_R:()=>R};
@@ -8790,13 +8876,13 @@ const Sync=(()=>{
   // played on another device? offer to carry on from there
   async function checkOther(){
     try{const h=await call("/api/head");if(!h||!h.file||h.file===C().seenHead||h.device===myId||(h.words||0)<=state.wordsRead)return;
-      const ov=document.createElement("div");ov.className="overlay on";ov.innerHTML=`<div class="sheet" style="max-width:520px;text-align:center">
+      const ov=document.createElement("div");ov.className="overlay on";ov.id="ovSync";ov.innerHTML=`<div class="sheet" style="max-width:520px;text-align:center">
         <div style="font-size:64px">📲</div><h2>You played on another device!</h2><p class="sub">There you have read <b>${h.words}</b> words (here: ${state.wordsRead}). Carry on from there?</p>
         <div class="mrow" style="justify-content:center;display:flex;gap:10px"><button class="btn soft" id="soNo">Not now</button><button class="btn primary big" id="soYes">Yes, load it</button></div></div>`;
-      document.body.appendChild(ov);
-      ov.querySelector("#soNo").onclick=()=>{C().seenHead=h.file;save();ov.remove();};
+      document.body.appendChild(ov);Modes.open("other",ov);
+      ov.querySelector("#soNo").onclick=()=>{C().seenHead=h.file;save();ov.remove();Modes.close("other",ov);};
       ov.querySelector("#soYes").onclick=async()=>{ov.querySelector("#soYes").textContent="Loading…";
-        try{const j=await call("/api/latest",{long:true});await restoreBackup(j);C().seenHead=h.file;C().last=Date.now();save();toast("Welcome back! ✓");}catch(e){toast("Couldn't load: "+e.message);}ov.remove();};
+        try{const j=await call("/api/latest",{long:true});await restoreBackup(j);C().seenHead=h.file;C().last=Date.now();save();toast("Welcome back! ✓");}catch(e){toast("Couldn't load: "+e.message);}ov.remove();Modes.close("other",ov);};
     }catch(e){}
   }
   setTimeout(()=>{ping().then(async ok=>{renderRow();if(ok){await checkOther();tick(false);}});},4000);
@@ -9722,7 +9808,7 @@ function startUpgrade(u){
   const t=upgradeTarget(u);if(!t||t.lv>=MAX_LV)return;
   if(state.gems<t.cost){toast(`You need ${t.cost} gems to upgrade the ${t.name.toLowerCase()}`);Sound.sfx.nope();return;}
   pendingUpgrade=u;
-  document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+  document.querySelectorAll(".overlay.on").forEach(o=>Modes.shut(o));
   const tier=currentTier();
   if(t.lv===1){
     const pool=allWords().filter(w=>w.t<=tier&&w.p.length>=2&&w.p.length<=5);
