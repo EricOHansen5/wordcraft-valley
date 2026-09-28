@@ -62,7 +62,7 @@ It drops the cost curves, kaizen tracks, bores, relay hubs, gates, priority merg
 - **When.** It opens after F12. It's a larger board of about 16×12 with every machine he has unlocked.
 - **His factory stays.** It is saved and there to come back to.
 - **Pieces are free.** No cost curves.
-- **Orders** appear as optional side goals, with the same counting and adding.
+- **Orders** appear as optional side goals, with the same counting and adding. **Only a finished order pays** (3–6 💎 each, up to 5 orders a day). Deliveries alone pay nothing, so a big factory can't flood the game with gems.
 - **Stops when he leaves.** It only runs while open, so there's no idle pay and no pull to "collect".
 
 ### Engine (ported from Lean Mine)
@@ -456,7 +456,7 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 | Creations | Placed in the valley; contraptions saved in the Lab |
 | Balance | Daily quests mix the modes; no hard gates |
 | Build order | Store → Jobs → Geometry → Physics → reading 13+ |
-| Factory (v9.3) | Valley building; counting and adding; mixer, splitter, sorter, stamper, tunnel; order levels then sandbox; glow and kind tips; drag belts; stops when closed; pays 💎 (⚙️ after v10) |
+| Factory (v9.3) | Colour gem factory theme (primary colours mix, toys stamped at the end); valley building; sandbox pays for orders only, 5 a day; counting and adding; mixer, splitter, sorter, stamper, tunnel; order levels then sandbox; glow and kind tips; drag belts; stops when closed; pays 💎 (⚙️ after v10) |
 | Hero name | Set by a parent, default "Asher" |
 | Hero look | Build-a-hero avatar; outfits drawn on top |
 | Launch catalog | About 15 items per shelf |
