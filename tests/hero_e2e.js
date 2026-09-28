@@ -59,7 +59,14 @@ const srv=http.createServer((q,r)=>{let f=decodeURIComponent(q.url.split("?")[0]
   await E(`document.getElementById("bStart").click()`);
   for(let i=0;i<6;i++)await E(`(()=>{const r=document.getElementById("bRead");r.disabled=false;r.click();document.getElementById("bNext").click();})()`);
   ok(await E(`document.querySelector("#ovStory .bq").textContent`)==="What did D'Angelo catch?","question: "+await E(`document.querySelector("#ovStory .bq").textContent`));
+  for(let k=0;k<2;k++){await E(`(()=>{const h=document.querySelector("#ovStory .bopts");h.querySelector('.bopt[data-v="'+h.dataset.ans+'"]').click();})()`);await p.waitForTimeout(1100);}
+  ok(await E("!!(state.library.ash_fish||{}).done"),"the book is finished");
   await E("Books.close()");
+  // the grown-up report lists the finished book with the name
+  await E("openReport()");await p.waitForTimeout(300);
+  const rep=await E(`[...document.querySelectorAll(".rbook b")].map(x=>x.textContent)`);
+  ok(rep.includes("D'Angelo Gets a Fish")&&!rep.some(x=>/\{hero\}/.test(x)),"the report says D'Angelo Gets a Fish: "+JSON.stringify(rep));
+  await E(`document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"))`);
 
   // Decode passes every book with any name, and reads the name (and Name's) as level 1
   const names=["Asher","D'Angelo","Mary Jane","Zoë","Maximilian","Kwabena"];
