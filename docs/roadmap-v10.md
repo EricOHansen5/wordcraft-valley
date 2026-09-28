@@ -37,6 +37,8 @@ What was actually observed at home, and what this plan does about it:
 
 ## v9.3 — Measure and pace (small; ships first)
 
+**Status (28 Sept 2026): built.** Per-mode minutes and opens, the daily reading goal and the retention reads are all in `main`, along with the audit's fixes and refactors. The two-week baseline starts when the NAS copy is updated.
+
 Nothing new to play. It makes the next decisions measurable and fixes the pacing problem.
 
 ### Per-mode minutes and opens
