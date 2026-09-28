@@ -225,6 +225,7 @@ wallet:{shapes:0, gears:0}, owned:{}, placed:[], hero:"Asher"
 
 ### The Trading Post
 - **Where it is.** A building in the valley that he walks into (an `Adv.provide` spot near the Job board), plus a HUD button with the four balances.
+- **Launch catalog:** about **15 items per shelf** (roughly 60 in total, plus the existing hats), priced from 5 to 80. The art comes from OpenMoji and Fluent Emoji, which are already embedded, plus the game's own drawings.
 - **Four shelves,** one per currency (table above). A **"New!"** badge marks items added in each release.
 - **Folded in:**
   - The **wardrobe hats**: the same `state.hats`, now shown on the 💎 shelf.
@@ -313,6 +314,18 @@ A separate mode opened from a **Lab** building. The contraptions he's proudest o
 - **Voice.** Clips are generated for the default "Asher" lines. If a parent types a different name, those lines fall back to the device voice, and a note in Settings says so.
 - **Tests:** a book page shows the name; changing the name updates the page; the decode check passes with any name.
 
+## Part G2 — Build-a-hero avatar
+- **Replaces the fox fallback.** An uploaded photo can still be used as the face on a badge, but the hero on screen is a drawn character.
+- **He designs it** in a first-run screen, and can change it any time for free from the Trading Post's outfit shelf:
+  - Skin tone (6)
+  - Hair style (6) and hair colour (6)
+  - Eye colour (4)
+  - Shirt and trousers colour
+- **Drawing.** It's layered SVG using the same inline approach as the buddy art. The body parts are separate groups so the walking animation keeps working. Outfits (hat, cape, shirt, uniform) are layers on top, with the same anchor points as the hats.
+- **Where it appears:** Adventure, storybook pages (it replaces `avatar()` / the fox), Races, and the Jobs uniform preview.
+- **Saves.** Stored as `state.heroLook`, for example `{skin:2, hair:1, hairC:3, eyes:0, shirt:"#3A7BD5", pants:"#2A2A2A"}`. Old saves get a default look, and their photo is kept.
+- **Tests:** every combination renders without errors, and the chosen look shows in Adventure and on a book page.
+
 ## Part H — Balancing modes
 - The daily quests draw from every unlocked mode ("serve 3 customers", "build a triangle roof", "make the ball bounce over the wall"). Trying 3 different modes in a day earns a bonus.
 - There are no hard gates. Reading stays the core because it unlocks the jobs and pays for outfits.
@@ -325,7 +338,7 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 
 | Phase | Ships |
 |---|---|
-| **v10.0** | Hero name setting; the four currencies and `wallet`; exchange booth; Trading Post with the four shelves (hats and Mine hats moved in); placing decorations; renaming "Mine jobs" to "Mine tasks" |
+| **v10.0** | Hero name setting; build-a-hero avatar; the four currencies and `wallet`; exchange booth; Trading Post with the four shelves (hats and Mine hats moved in); placing decorations; renaming "Mine jobs" to "Mine tasks" |
 | **v10.1** | Jobs engine and the 6 kits; Shopkeeper (level 2) and Lawn mower (level 4); math track K–1; the content-file loader |
 | **v10.2** | Janitor, Mail carrier, Baker, Construction; math grade 2; daily quests across modes |
 | **v11.0** | Geometry block builder, G1–G6 (K–2); builds become decorations |
@@ -362,3 +375,5 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 | Balance | Daily quests mix the modes; no hard gates |
 | Build order | Store → Jobs → Geometry → Physics → reading 13+ |
 | Hero name | Set by a parent, default "Asher" |
+| Hero look | Build-a-hero avatar; outfits drawn on top |
+| Launch catalog | About 15 items per shelf |
