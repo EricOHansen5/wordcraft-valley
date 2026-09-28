@@ -209,6 +209,7 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
 .crate svg{width:66px;height:66px}
 .crate .w{font-size:27px;font-weight:800;letter-spacing:.05em;margin-top:2px}
 .crate.lost{background:#F2DDC2;border-style:dashed}
+.crate.keep,.crate.keep.spell{background:linear-gradient(160deg,#FFEAF2,#FAD6E4);border-color:#B8457E}
 .lt.heart,.wslot.heart{border-color:#D14C8E;background:linear-gradient(160deg,#FFE3F0,#FFD1E6);position:relative}
 .lt.heart::after,.wslot.heart::after{content:"♥";position:absolute;top:-14px;left:50%;transform:translateX(-50%);
   font-size:18px;color:#D14C8E;text-shadow:0 1px 0 #fff}
@@ -3676,6 +3677,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   voiceCached:0,
   // CRATE LOOP: the last word he read (the parrot repeats it; the buddy's evolution may ask for it)
   lastWord:null,
+  // CRATE LOOP: the checks still to come for mastered tricky words, [{word,dueAt,stage}] (see Retain)
+  retain:[],
   // SIGNATURE MOVES and the word bubbles: when each small gem gift was last given
   treats:{},
   // LEVELS, UPGRADES: upgrades done
@@ -4634,8 +4637,53 @@ document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>Modes.shut(b.
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");
   setTimeout(()=>t.classList.remove("on"),2400);}
 
+/* ---- retention reads: heart words are checked again after mastery ----
+   A tricky (heart) word used to leave the review queue for good the moment it was
+   mastered, so a word learned by heart was never checked again. Now it gets two more
+   checks, spaced further apart each time (counted in crates, like the review queue):
+     mastered                    -> a check 30 crates later         (stage 1)
+     stage-1 check read clean    -> one more, 90 crates after that   (stage 2)
+     stage-2 check read clean    -> kept for good: no more checks    (stats[word].kept)
+     a check that is not clean   -> the ordinary review queue in 3 crates (a lost crate);
+                                    it stays mastered. Read clean there -> stage 1 again.
+   A check is a Build-it read (hear the word, put its sounds in order), never "I read it!";
+   clean means first try with no 👂, as everywhere else. A check comes up as a ♥ crate;
+   a miss on it gets the same kind feedback as any miss and costs nothing. A word is
+   never on state.retain and state.review at once. Regular words are not affected. */
+const Retain={
+  GAP:{1:30,2:90},
+  onReview:w=>state.review.some(r=>r.word===w),
+  // drop checks for words no longer mastered or back on review; mastered heart words from
+  // before retention reads get their first check (a few crates apart, so they don't bunch up)
+  sync(){
+    state.retain=state.retain.filter(r=>{const s=state.stats[r.word];return !!(s&&s.mastered)&&!Retain.onReview(r.word);});
+    let k=0;
+    allWords().forEach(w=>{const s=state.stats[w.w];
+      if(w.tricky&&s&&s.mastered&&!s.kept&&!Retain.onReview(w.w)&&!state.retain.some(r=>r.word===w.w))
+        state.retain.push({word:w.w,dueAt:state.crateCount+Retain.GAP[1]+5*k++,stage:1});});
+  },
+  due:()=>state.retain.filter(r=>r.dueAt<=state.crateCount).sort((a,b)=>a.dueAt-b.dueAt),
+  // after succeed() has counted a read of heart word w that is mastered now.
+  // o.fresh: mastered by this read; o.check: the stage of the check that was due (0 if none);
+  // o.relearn: it was on the review queue; o.clean: first try, no hint
+  after(w,st,o){
+    const put=stage=>{state.retain=state.retain.filter(r=>r.word!==w);
+      state.retain.push({word:w,dueAt:state.crateCount+Retain.GAP[stage],stage});};
+    const back=()=>{state.retain=state.retain.filter(r=>r.word!==w);
+      state.review=state.review.filter(r=>r.word!==w);state.review.push({word:w,dueAt:state.crateCount+3});};
+    if(o.fresh){delete st.kept;put(1);return;}
+    if(o.check){
+      if(!o.clean){back();return;}
+      if(o.check===1)put(2);else{state.retain=state.retain.filter(r=>r.word!==w);st.kept=true;}
+      setTimeout(()=>toast(`♥ You remembered “${w}”!`),1600);
+      return;
+    }
+    if(o.relearn){if(o.clean)put(1);else back();}
+  }
+};
 function pickCrates(){
   const tier=currentTier(), out=[];
+  Retain.sync();
   // one crate in four is a sound-swap once he is past the first tier
   if(tier>=2&&Math.random()<.25){const ps=swapPairs();if(ps.length)out.push({swapPair:ps[Math.floor(Math.random()*ps.length)]});}
   // story crates from tier 3: put a sign's words back in order
@@ -4648,6 +4696,10 @@ function pickCrates(){
   const tg=Skills.target(tier);if(tg&&Math.random()<.75)out.push({...tg.w,target:tg.skill.n});
   const due=state.review.filter(r=>r.dueAt<=state.crateCount).map(r=>r.word);
   if(due.length){const w=allWords().find(x=>x.w===due[0]);if(w)out.push({...w,lost:true});}
+  // a heart word due for its retention check (one at a time, and not beside another heart word)
+  if(out.length<3&&!out.some(o=>o.tricky)){
+    const kw=Retain.due().map(r=>allWords().find(x=>x.w===r.word)).find(w=>w&&!out.some(o=>o.w===w.w));
+    if(kw)out.push({...kw,keep:true});}
   const vw=allWords().filter(w=>w.t<=tier&&VEH_WORD[w.w]&&!hasVeh(VEH_WORD[w.w])&&!out.some(o=>o.w===w.w));
   if(vw.length&&out.length<3&&state.wordsRead>1&&Math.random()<.45)out.push({...vw[Math.floor(Math.random()*vw.length)]});
   // fast track: words he has mastered, and words from a tier he already reads fluently, come last
@@ -4656,7 +4708,9 @@ function pickCrates(){
     .sort((a,b)=>stale(a)-stale(b)||((state.stats[a.w]||{}).seen||0)-((state.stats[b.w]||{}).seen||0)||Math.random()-.5)
     // at most one heart word per set, so the checklist words come round steadily without crowding out sounding-out
     .forEach(w=>{if(out.length<3&&!out.some(o=>o.w===w.w)&&!(w.tricky&&out.some(o=>o.tricky)))out.push({...w});});
-  out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=chooseRung(o);});
+  // a retention check always opens at Build it: he hears the word and puts its sounds in order
+  // (the heart part still marked), so it can't pass on "I read it!" alone
+  out.forEach(o=>{if(o.w&&o.p&&!o.swapPair&&!o.scramble)o.rung=o.keep?1:chooseRung(o);});
   return out.sort(()=>Math.random()-.5);
 }
 document.getElementById("crateIcon").innerHTML=ART.crate();
@@ -4682,15 +4736,16 @@ document.getElementById("crateBtn").onclick=()=>{
       b.onclick=()=>{Sound.sfx.pop();hide("ovCrates");openSwap(w.swapPair);};
     }else{
       const inSeason=seasonWords().includes(w.w);
-      b.className="crate"+(w.lost?" lost":"")+(inSeason?" season":"")+(w.target?" target":"");
+      b.className="crate"+(w.lost?" lost":"")+(w.keep?" keep":"")+(inSeason?" season":"")+(w.target?" target":"");
+      if(w.keep)b.title="A heart word you learned. Listen and build it.";
       const spell=w.rung===1;
       if(spell)b.classList.add("spell");
-      const tag=w.target?"🎯 "+w.target+" practice":w.tricky?"♥ tricky word":w.lost?"lost crate · bonus gems"
+      const tag=w.keep?"♥ remember this one? Listen and build it.":w.target?"🎯 "+w.target+" practice":w.tricky?"♥ tricky word":w.lost?"lost crate · bonus gems"
           :(VEH_WORD[w.w]&&!hasVeh(VEH_WORD[w.w])&&state.wordsRead>1)?"🚗 unlocks a vehicle!"
           :inSeason?`${season().ic} double gems`:"";
       b.innerHTML=ART.crate()+
         (spell?`<div class="w">${w.p.map(()=>'<span class="sb"></span>').join("")}</div>`:`<div class="w">${w.w}</div>`)+
-        (spell?`<div class="tagline">🧩 spell it${tag?" · "+tag:" · +1 gem"}</div>`:tag?`<div class="tagline">${tag}</div>`:"");
+        (spell&&!w.keep?`<div class="tagline">🧩 spell it${tag?" · "+tag:" · +1 gem"}</div>`:tag?`<div class="tagline">${tag}</div>`:"");
       b.onclick=()=>{Sound.sfx.pop();hide("ovCrates");openWord(w);};
     }
     row.appendChild(b);
@@ -4942,6 +4997,12 @@ function succeed(){
   const st=state.stats[cur.w]||(state.stats[cur.w]={seen:0,first:0,miss:0,mastered:false,rung:0,rungClean:0});
   st.seen++;
   const clean0=misses===0&&!usedEar, wasMastered=st.mastered;
+  // retention reads (Retain): was a check due for this heart word, or was it on review?
+  // Only a read at Build it is a check (a ♥ crate always opens there); a due word that comes
+  // up at another rung (a target, bonus or ordinary crate) leaves its check waiting
+  const rt=cur.tricky?state.retain.find(r=>r.word===cur.w):null,
+    rtDue=rt&&rt.dueAt<=state.crateCount&&cur.shownRung===1?rt.stage:0,
+    wasReview=Retain.onReview(cur.w);
   if(clean0){
     st.first++;st.rungClean=(st.rungClean||0)+(quick?2:1);   // a quick clean read counts double
     const need=(st.rung||0)===2?1:2;
@@ -4972,6 +5033,7 @@ function succeed(){
   if(streak>0&&streak%5===0){toast(streak+" in a row — on fire!");shake();}
   state.review=state.review.filter(r=>r.word!==cur.w);
   if(!st.mastered)state.review.push({word:cur.w,dueAt:state.crateCount+(st.seen===1?3:st.seen===2?10:30)});
+  else if(cur.tricky)Retain.after(cur.w,st,{fresh:!wasMastered,check:rtDue,relearn:wasReview,clean});
   const before=stageIdx();
   hide("ovRead");
   if(pendingUpgrade&&cur.upgrade)finishUpgrade();else giveReward();
@@ -7659,6 +7721,8 @@ function openReport(){
   if(!repOv){repOv=document.createElement("div");repOv.className="overlay";repOv.id="ovReport";document.body.appendChild(repOv);}
   const words=allWords(),tier=currentTier(),days=lastDays(7);
   const mastered=words.filter(w=>(state.stats[w.w]||{}).mastered).length;
+  // retention reads: mastered heart words, and those back on review after a missed check
+  const hearts=words.filter(w=>w.tricky&&(state.stats[w.w]||{}).mastered),slipped=hearts.filter(w=>Retain.onReview(w.w)).map(w=>w.w);
   const ans=state.answers||{},wk=days.map(d=>ans[d]||{n:0,ok:0,ms:0});
   const n=wk.reduce((a,x)=>a+x.n,0),ok=wk.reduce((a,x)=>a+x.ok,0),ms=wk.reduce((a,x)=>a+x.ms,0);
   const gDays=state.goalDays||{},gN=days.filter(d=>gDays[d]).length,gT=Goal.target();
@@ -7687,6 +7751,7 @@ function openReport(){
       <div><b>${tier}</b><span>level</span></div><div><b>${mins}</b><span>minutes this week</span></div>
       <div><b>${n?Math.round(ok/n*100)+"%":"—"}</b><span>right this week</span></div><div><b>${done.length}/${BOOKS.filter(b=>!b.mine).length}</b><span>books read</span></div>
     </div>
+    ${hearts.length?`<p class="rnote" id="rKept">♥ Tricky words kept: <b>${hearts.length-slipped.length} of ${hearts.length}</b>. Each mastered heart word is checked again after 30 and then 90 more crates.${slipped.length?` Checking again soon: <b>${slipped.join(", ")}</b>.`:""}</p>`:""}
     <h3>Next steps</h3><ul class="rtips">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>
     <h3>Sound skills</h3><p class="rnote">Every answer in the game is traced to the sound patterns in the word. Bars show how reliably he reads each one.</p>
     <div class="rskills">${sk.map(s=>{const st=ST[s.status],p=s.s?Math.round(s.s.p*100):0;
