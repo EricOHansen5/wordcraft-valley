@@ -14,7 +14,7 @@ done=0
 for i,key in enumerate(keys):
     if i%nparts!=part:continue
     f=hashlib.sha1(key.encode()).hexdigest()[:12]+".mp3"
-    if os.path.exists(f"{OUT}/{f}"):continue
+    if os.path.exists(f"{OUT}/{f}") or os.path.exists(f"../../app/voice/{f}"):continue   # already generated, here or in the app
     text,speed=items[key]
     # a lone word reads more naturally with a full stop
     say=text if re.search(r"[.!?]$",text) else text+("." if speed<.9 else "")
