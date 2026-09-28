@@ -831,7 +831,7 @@ body.exploring .slot-empty{display:none}
 .qsheet .btext{font-size:32px}
 .qdots{display:flex;gap:6px;justify-content:center;margin-top:10px}.qdots i{width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);background:#fff}.qdots i.on{background:#7B5BE0}
 .qwin{text-align:center}.qprize{font-size:96px;font-weight:900;color:#7B5BE0;line-height:1.1;text-shadow:0 4px 0 #F5D46B;animation:pop .5s}
-.qprize.small{font-size:64px}
+.qprize.small{font-size:64px}.qprize svg{width:130px;height:130px}.qgift{margin:2px 0 6px}
 .qletters{display:flex;gap:8px;justify-content:center;margin:8px 0}.qletters span{width:52px;height:60px;display:grid;place-items:center;font-size:30px;font-weight:900;
   border:3px dashed #BDB3A3;border-radius:12px;color:#BDB3A3}.qletters span.got{border:3px solid #7B5BE0;color:#7B5BE0;background:#F3EEFF}
 .qchest{font-size:110px;animation:mhappy 1s infinite}.qgot{text-align:center}
@@ -3709,6 +3709,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   notes:[],noteFrom:"Dad",
   // VALLEY QUEST: chapter of "The Letter Thief"
   quest:{ch:0,day:null,active:null,done:false},
+  // VALLEY QUEST arc 2, "The Sleepy Volcano": same shape; got = chapters whose prize was paid
+  quest2:{ch:0,day:null,active:null,done:false,got:[]},
   // MY OWN BOOK: the books he wrote
   mybooks:[],
   // STORYBOOKS: the hero's name, where the books say {hero} (Grown-up settings)
@@ -4570,7 +4572,7 @@ const Modes=(()=>{
     pic:{name:"Picture it",reading:true},
     sign:{name:"Signs",reading:true},
     note:{name:"Notes from home",reading:true},
-    story:{name:"The Letter Thief",reading:true},
+    story:{name:"Story quests",reading:true},        // The Letter Thief, The Sleepy Volcano
     wild:{name:"Word Wilds",reading:true},
     care:{name:"Animal care",reading:true},
     write:{name:"Writing",reading:true},               // Write it, and signs he writes in the Mine
@@ -7848,7 +7850,7 @@ function openReport(){
     ${whereTime(days,mins)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
-    <h3>Story and extras</h3><p class="rnote">The Letter Thief: ${Math.min(6,(state.quest||{}).ch||0)} of 6 chapters. Notes from home found: ${(state.notes||[]).filter(n=>n.found).length}. Races won: ${(state.vehicles||[]).reduce((a,v)=>a+(v.wins||0),0)}.</p>
+    <h3>Story and extras</h3><p class="rnote">The Letter Thief: ${Math.min(6,(state.quest||{}).ch||0)} of 6 chapters. ${Quest2.TITLE}: ${Math.min(Quest2.CH.length,(state.quest2||{}).ch||0)} of ${Quest2.CH.length} chapters (more to come). ${Quest2.note()}Notes from home found: ${(state.notes||[]).filter(n=>n.found).length}. Races won: ${(state.vehicles||[]).reduce((a,v)=>a+(v.wins||0),0)}.</p>
     <h3>Adventure</h3><p class="rnote">${Object.values((state.adv||{}).dex||{}).filter(d=>d.caught).length} wild friends in the Word-Dex · ${(state.adv||{}).hunts||0} treasure hunts solved. Each friend takes 3–5 reading answers; each hunt is three notes to read.</p>
     <h3>Mine</h3><p class="rnote">${m.bossWins||0} bosses beaten · ${m.dugCount||0} blocks dug · ${m.coins||0} coins. Every boss hit and word stone is a word read.</p>
     <div class="mrow rbtns"><button class="btn soft" id="rPrint">🖨️ Print</button><button class="btn primary" id="rClose">Done</button></div></div>`;
@@ -8067,7 +8069,7 @@ const Adv=(()=>{
     const a=A();
     if(!a.seenIntro){a.seenIntro=1;save();setTimeout(()=>{buddySay("Walk into the tall grass to find wild animals!");Sound.speak("Walk into the tall grass to find wild animals!",.95);},500);}
     if(a.hunt)setTimeout(()=>showNote(false),400);
-    try{if(Quest.available())setTimeout(()=>toast("❗ Gloom the ghost is up to something! Find the ❗"),a.seenIntro?700:4000);}catch(e){}
+    try{const qa=[Quest,Quest2].filter(x=>x.available())[0];if(qa)setTimeout(()=>toast(qa.hello),a.seenIntro?700:4000);}catch(e){}
   }
   function exit(){
     on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");Modes.close("adventure",hud);
@@ -8346,7 +8348,7 @@ const Wild=(()=>{
   return{start,_W:()=>W,_close:()=>close()};
 })();
 function advBadge(){const b=document.getElementById("advBadge");if(!b)return;const n=!(state.adv&&state.adv.seenIntro),note=(state.notes||[]).some(x=>!x.found);
-  let q=false;try{q=Quest.available();}catch(e){}
+  let q=false;try{q=Quest.available()||Quest2.available();}catch(e){}
   b.textContent=note?"💌":q&&!n?"❗":n?"NEW":"";b.classList.toggle("on",note||n||q);}
 document.getElementById("advBtn").onclick=()=>{Sound.sfx.pop();Adv.enter();advBadge();};
 setTimeout(advBadge,1500);
@@ -8590,43 +8592,40 @@ const Read=(()=>{
 })();
 
 /* ================================================================
-   VALLEY QUEST — "The Letter Thief"
+   VALLEY QUEST — "The Letter Thief", then "The Sleepy Volcano"
    A story told one chapter a day. Gloom the ghost took the valley's
    magic letters. Each chapter is a reading job: unlock hidden letters,
    pick the right doors in the Reading Temple, break a spell by building
    words, and finally face Gloom — who turns out to be lonely, and stays
    as a friend. New chapters open the next day, which is the point:
    "what happens next?" is the best reason to come back.
+   Each story arc is questArc({...}) over its own save (state.quest,
+   state.quest2), so the chapter kinds are shared: "letters" (three
+   locks hidden around Adventure, opened with Read.pic / sentence / build),
+   "temple" (rooms of doors), "spell" (build words from their sounds, one
+   after another) and "boss" (Gloom only).
    ================================================================ */
-const Quest=(()=>{
-  const Q=()=>state.quest;
-  const CH=[
-    {title:"The Letter Thief",prize:"R",type:"letters",lock:"pic",
-     story:["Oh no! A ghost named Gloom came in the night.","Gloom took the magic letters from the valley.","The signs are blank. The books are blank!","Can you get the letters back? Find them and read to unlock them."]},
-    {title:"The Reading Temple",prize:"E",type:"temple",rooms:3,
-     story:["Gloom hid a magic letter in the Reading Temple.","The temple has lots of doors, and only one is right.","Read the clue on the wall to pick the door."]},
-    {title:"Gloom Comes Back",prize:"A",type:"letters",lock:"sent",
-     story:["Gloom is back! Gloom hid three more letters.","This time the locks need a whole line.","Read every word, then pick the picture."]},
-    {title:"Deep in the Temple",prize:"D",type:"temple",rooms:4,
-     story:["The last letter is deep in the temple.","The doors are trickier now.","Slow down and read with care!"]},
-    {title:"The Spell",prize:"🔑",type:"letters",lock:"build",
-     story:["Gloom put a spell on three words.","Now nobody can say them!","Build each word from its sounds to break the spell."]},
-    {title:"Gloom's Castle",prize:"👑",type:"boss",
-     story:["You have R, E, A and D, and the key to Gloom's castle.","It is time to face Gloom.","Read your best. You can do it!"]}];
-  const END=["Gloom was not a bad ghost. Gloom was a sad ghost.","Gloom took the letters because Gloom had no one to read with.","Now Gloom has a friend: you!","The letters spell READ. The valley is safe!"];
-  const available=()=>{const q=Q();return !q.done&&q.ch<CH.length&&(q.active||q.day!==today());};
-  // ---------- story pages ----------
+// one story sheet (#ovQuest) for every arc
+const QuestSheet=(()=>{
   let ov=null;
   function sheet(html,cls){
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovQuest";document.body.appendChild(ov);}
     const again=ov.classList.contains("on");ov.innerHTML=`<div class="sheet qsheet ${cls||""}${again?" noanim":""}">${html}</div>`;ov.classList.add("on");Modes.open("story",ov);return ov.querySelector(".sheet");
   }
   const close=()=>ov&&Modes.shut(ov);
+  return{sheet,close};
+})();
+function questArc(A){
+  const Q=()=>state[A.key];
+  const CH=A.CH,END=A.END||[],TOTAL=A.total||CH.length,sheet=QuestSheet.sheet,close=QuestSheet.close;
+  // an arc can wait for something else (arc 2 waits for arc 1 and for his level); a chapter he started always resumes
+  const available=()=>{const q=Q();return !q.done&&q.ch<CH.length&&(!!q.active||(q.day!==today()&&(!A.ready||A.ready(q,CH[q.ch]))));};
+  // ---------- story pages ----------
   function story(title,pages,after){
     let i=0;
     const show=()=>{
       const s=sheet(`<div class="qhead"><span class="qbook">📖</span><b>${title}</b><button class="bx" id="qX">✕</button></div>
-        <div class="qart">${i===pages.length-1&&title.startsWith("The End")?drawThing("x_ghost",2)+`<div class="qread">READ</div>`:drawThing("x_ghost",2)}</div>
+        <div class="qart">${A.art(i===pages.length-1&&title.startsWith("The End"))}</div>
         <div class="btext">${pages[i].split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
         <div class="mrow" style="justify-content:center"><button class="btn soft" id="qHear">🔊 Read it to me</button>
           <button class="btn primary big" id="qNext">${i<pages.length-1?"Next ▶":after?"Let's go! 🧭":"The end"}</button></div>
@@ -8643,52 +8642,56 @@ const Quest=(()=>{
     if(q.active){resume();return;}
     story(`Chapter ${q.ch+1}: ${c.title}`,c.story,()=>{
       q.active={type:c.type,found:[],spots:null};save();
-      if(c.type==="temple")temple();else if(c.type==="boss")boss();else{placeLetters();Adv.redraw();toast("Find the glowing letters! ✨");}
+      if(c.type==="letters"){placeLetters();Adv.redraw();toast(A.find);}else play(c);
     });
   }
-  function resume(){const c=CH[Q().ch];if(c.type==="temple")temple();else if(c.type==="boss")boss();else toast("Find the glowing letters! ✨");}
+  const play=c=>c.type==="temple"?temple():c.type==="spell"?spell():c.type==="boss"?boss():toast(A.find);
+  function resume(){play(CH[Q().ch]);}
   function placeLetters(){
     const q=Q();q.active.spots=[0,1,2].map(()=>Adv.freePos(3));save();
   }
   function finishChapter(){
-    const q=Q(),c=CH[q.ch];q.active=null;q.ch++;q.day=today();q.letters=(q.letters||[]).concat(c.prize);
-    const gems=10+q.ch*2;state.gems+=gems;save();renderHUD();Adv.redraw();try{Quests.hit("quest");}catch(e){}
+    const q=Q(),c=CH[q.ch];if(!c||!q.active)return;   // a second tap on the chest pays nothing
+    q.active=null;q.ch++;q.day=today();const won=A.grant(q,c,q.ch-1);
+    const gems=(A.gems||10)+q.ch*2;state.gems+=gems;save();renderHUD();Adv.redraw();try{Quests.hit("quest");}catch(e){}
     Sound.sfx.fanfare();confetti();
-    const last=q.ch>=CH.length;
-    const s=sheet(`<div class="qwin"><div class="qprize">${c.prize}</div><h2>${last?"You saved the valley!":"Chapter "+q.ch+" done!"}</h2>
-      <div class="qletters">${["R","E","A","D","🔑","👑"].map((l,i)=>`<span class="${i<q.ch?"got":""}">${l}</span>`).join("")}</div>
-      <p class="mpaid">+${gems} 💎</p><p class="sub">${last?"":"The next chapter opens tomorrow. What will Gloom do next? 👻"}</p>
+    const last=q.ch>=TOTAL,soon=!last&&q.ch>=CH.length,row=CH.map(x=>x.icon||x.prize);while(row.length<TOTAL)row.push("❔");
+    const s=sheet(`<div class="qwin"><div class="qprize">${won.art}</div><h2>${last?A.won:"Chapter "+q.ch+" done!"}</h2>${won.sub?`<p class="sub qgift">${won.sub}</p>`:""}
+      <div class="qletters">${row.map((l,i)=>`<span class="${i<q.ch?"got":""}">${l}</span>`).join("")}</div>
+      <p class="mpaid">+${gems} 💎</p><p class="sub">${last?"":soon?A.soon:A.next}</p>
       <div class="mrow" style="justify-content:center"><button class="btn primary big" id="qOk">${last?"The end ▶":"Hooray!"}</button></div></div>`,"win");
     s.querySelector("#qOk").onclick=()=>{close();if(last){q.done=true;save();story("The End",END,null);Adv.redraw();}};
   }
   // ---------- letter locks in Adventure ----------
   Adv.provide(()=>{
     const q=Q(),out=[];
-    if(!q.active&&available()){const c=CH[q.ch];if(q.giver==null||q.giverDay!==today()){const p=Adv.freePos(2);q.giver=p;q.giverDay=today();save();}
-      out.push({c:q.giver.c,r:q.giver.r,size:.7,cls:"qgiver",html:`<div class="qg">${drawThing("x_ghost",2)}<b>❗</b></div>`,
+    if(!q.active&&available()){if(q.giver==null||q.giverDay!==today()){const p=Adv.freePos(2);q.giver=p;q.giverDay=today();save();}
+      out.push({c:q.giver.c,r:q.giver.r,size:.7,cls:"qgiver",html:`<div class="qg">${A.art(false)}<b>❗</b></div>`,
         label:`❗ Chapter ${q.ch+1}`,act:()=>start()});}
-    if(q.active&&q.active.spots)q.active.spots.forEach((p,i)=>{if(q.active.found.includes(i))return;
-      out.push({c:p.c,r:p.r,size:.5,cls:"qletter",html:`<div class="qlt">${CH[q.ch].prize==="🔑"?"🔒":"?"}</div>`,label:"✨ Unlock it",act:()=>lock(i)});});
-    if(q.done)out.push({c:COLS-3,r:ROWS_MAX-1.5,size:.6,cls:"qgiver",html:`<div class="qg friend">${drawThing("x_ghost",2)}</div>`,label:"👻 Gloom",act:()=>joke()});
+    if(q.active&&q.active.spots){const c=CH[q.ch];q.active.spots.forEach((p,i)=>{if(q.active.found.includes(i))return;
+      out.push({c:p.c,r:p.r,size:.5,cls:"qletter",html:`<div class="qlt">${c.spot||(c.prize==="🔑"?"🔒":"?")}</div>`,label:c.spotLabel||"✨ Unlock it",act:()=>lock(i)});});}
+    if(q.done&&A.jokes)out.push({c:COLS-3,r:ROWS_MAX-1.5,size:.6,cls:"qgiver",html:`<div class="qg friend">${A.art(false)}</div>`,label:A.friend,act:()=>joke()});
     return out;
   });
   function lock(i){
     const q=Q(),c=CH[q.ch];
-    const s=sheet(`<div class="qhead"><span class="qbook">🔒</span><b>${c.lock==="build"?"Break the spell!":"A magic lock"}</b><button class="bx" id="qX">✕</button></div><div class="qbody"></div>`);
+    const s=sheet(`<div class="qhead"><span class="qbook">🔒</span><b>${c.lockTitle||(c.lock==="build"?"Break the spell!":"A magic lock")}</b><button class="bx" id="qX">✕</button></div><div class="qbody"></div>`);
     s.querySelector("#qX").onclick=close;const host=s.querySelector(".qbody");
-    const done=()=>{q.active.found.push(i);state.wordsRead+=c.lock==="sent"?5:1;save();Adv.redraw();
+    const done=()=>{if(!q.active||q.active.found.includes(i))return;q.active.found.push(i);state.wordsRead+=c.lock==="sent"?5:1;save();Adv.redraw();
       const left=3-q.active.found.length;
-      host.innerHTML=`<div class="qgot"><div class="qprize small">${c.prize==="🔑"?"✨":c.prize}</div><h2>${left?"Got one!":"That's all three!"}</h2>
+      host.innerHTML=`<div class="qgot"><div class="qprize small">${c.got||(c.prize==="🔑"?"✨":c.prize)}</div><h2>${left?"Got one!":"That's all three!"}</h2>
         <p class="sub">${left?`${left} more to find.`:""}</p><button class="btn primary big" id="qOk">OK</button></div>`;
       Sound.sfx.chime();host.querySelector("#qOk").onclick=()=>{close();if(!left)finishChapter();};};
-    if(c.lock==="sent")Read.sentence(host,done);else if(c.lock==="build")Read.build(host,done,null,"Gloom's spell hid this word. Listen, then build it!");else Read.pic(host,done);
+    if(c.lock==="sent")Read.sentence(host,done);else if(c.lock==="build")Read.build(host,done,null,c.prompt||"Gloom's spell hid this word. Listen, then build it!");else Read.pic(host,done);
   }
   // ---------- the Reading Temple ----------
+  const chest=c=>{const s=sheet(`<div class="qwin"><div class="qchest">${c.chestIc||"🧰"}</div><h2>${c.chest||"The temple chest!"}</h2><button class="btn primary big" id="qOpen">${c.open||"Open it!"}</button></div>`,"temple");
+    s.querySelector("#qOpen").onclick=()=>finishChapter();};
   function temple(){
-    const q=Q(),c=CH[q.ch];let room=0;
+    const q=Q(),c=CH[q.ch];let room=0;const hard=c.hard!=null?c.hard:q.ch>2;
     const next=()=>{
-      if(room>=c.rooms){treasure();return;}
-      const kind=[["picword","wordpic","sent"],["wordpic","sent","picword","sent"]][q.ch>2?1:0][room%(q.ch>2?4:3)];
+      if(room>=c.rooms){chest(c);return;}
+      const kind=[["picword","wordpic","sent"],["wordpic","sent","picword","sent"]][hard?1:0][room%(hard?4:3)];
       const tier=currentTier(),useSent=kind==="sent"&&tier>=2;
       let clue,doors,right;
       if(useSent){const ps=PicSentence.make();clue=`The key is behind the door that shows: <b>${ps.text}</b>`;doors=ps.opts.map((o,k)=>({k,html:PicSentence.draw(o,"cave"),ok:!!o.ok}));}
@@ -8696,7 +8699,7 @@ const Quest=(()=>{
         doors=Read.shuffle([w,...Read.others(w)]).map((o,k)=>({k,html:drawWord(o.w,"door"),ok:o.w===w.w,w:o.w}));right=w;}
       else{const w=Read.word();clue=`The key word is the name of this: <span class="qpic">${drawWord(w.w,"clue")}</span>`;
         doors=Read.shuffle([w.w,...lookalikes(w).map(x=>x.w)]).map((o,k)=>({k,html:`<b class="dword">${o}</b>`,ok:o===w.w,w:o}));right=w;}
-      const s=sheet(`<div class="qhead"><span class="qbook">🏛️</span><b>Reading Temple · room ${room+1} of ${c.rooms}</b><button class="bx" id="qX">✕</button></div>
+      const s=sheet(`<div class="qhead"><span class="qbook">${c.placeIc||"🏛️"}</span><b>${c.place||"Reading Temple"} · room ${room+1} of ${c.rooms}</b><button class="bx" id="qX">✕</button></div>
         <div class="tclue">${clue}</div><div class="tdoors">${doors.map(d=>`<button class="tdoor" data-k="${d.k}" data-ok="${d.ok?1:0}"><div class="tsign">${d.html}</div><div class="tarch"></div></button>`).join("")}</div>`,"temple");
       s.querySelector("#qX").onclick=close;const t0=performance.now();let miss=0,fin=false;
       const tc=s.querySelector(".tclue");if(tc.querySelector("b")&&useSent){const bb=tc.querySelector("b");bb.innerHTML=bb.textContent.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ");Books.wireWords(bb);}
@@ -8709,8 +8712,19 @@ const Quest=(()=>{
           toast(["Creak! Just dust. Read the clue again!","A bat flew out! Not this one.","Locked! Try another door."][miss%3]);
           if(miss>=2)s.querySelector(`.tdoor[data-k="${doors.find(x=>x.ok).k}"]`).classList.add("hint");}});
     };
-    const treasure=()=>{const s=sheet(`<div class="qwin"><div class="qchest">🧰</div><h2>The temple chest!</h2><button class="btn primary big" id="qOpen">Open it!</button></div>`,"temple");
-      s.querySelector("#qOpen").onclick=()=>finishChapter();};
+    next();
+  }
+  // ---------- a spell: build its words from their sounds, one after another ----------
+  function spell(){
+    const c=CH[Q().ch];let k=0;
+    const next=()=>{
+      if(k>=c.words.length){chest(c);return;}
+      const s=sheet(`<div class="qhead"><span class="qbook">${c.placeIc||"✨"}</span><b>${c.place||"The spell"} · ${k+1} of ${c.words.length}</b><button class="bx" id="qX">✕</button></div><div class="qbody"></div>`);
+      s.querySelector("#qX").onclick=close;const host=s.querySelector(".qbody");
+      const w=allWords().find(x=>x.w===c.words[k])||Read.word({max:5});
+      // Read.build calls back once the word is built right; a sheet closed meanwhile stops the spell
+      Read.build(host,()=>{if(!host.isConnected)return;state.wordsRead++;k++;save();next();},w,c.prompt);
+    };
     next();
   }
   // ---------- Gloom ----------
@@ -8743,10 +8757,79 @@ const Quest=(()=>{
       s.querySelector("#gOk").onclick=()=>boss();s.querySelector("#gLater").onclick=close;};
     setTimeout(round,1200);
   }
-  const JOKES=["Why did the ghost read a book? It was a boo-k!","What do ghosts eat? Boo-berries!","Gloom says: thank you for being my pal!","Gloom says: let's read a book!"];
+  const JOKES=A.jokes||[];
   function joke(){const j=JOKES[Math.floor(Math.random()*JOKES.length)];toast("👻 "+j);Sound.say("sent:"+j,j,.95);}
-  return{start,available,CH,END,JOKES,_Q:Q,_close:close,_finish:finishChapter};
-})();
+  // a line for the grown-up report: why no chapter is showing, when it is waiting for something
+  const note=()=>A.note?A.note(Q(),CH[Q().ch]):"";
+  return{start,available,note,CH,END,JOKES,TITLE:A.title,TOTAL,hello:A.hello,_Q:Q,_close:close,_finish:finishChapter};
+}
+const Quest=questArc({key:"quest",title:"The Letter Thief",
+  art:end=>drawThing("x_ghost",2)+(end?`<div class="qread">READ</div>`:""),
+  hello:"❗ Gloom the ghost is up to something! Find the ❗",find:"Find the glowing letters! ✨",
+  won:"You saved the valley!",next:"The next chapter opens tomorrow. What will Gloom do next? 👻",friend:"👻 Gloom",
+  grant:(q,c)=>{q.letters=(q.letters||[]).concat(c.prize);return{art:c.prize};},
+  CH:[
+    {title:"The Letter Thief",prize:"R",type:"letters",lock:"pic",
+     story:["Oh no! A ghost named Gloom came in the night.","Gloom took the magic letters from the valley.","The signs are blank. The books are blank!","Can you get the letters back? Find them and read to unlock them."]},
+    {title:"The Reading Temple",prize:"E",type:"temple",rooms:3,
+     story:["Gloom hid a magic letter in the Reading Temple.","The temple has lots of doors, and only one is right.","Read the clue on the wall to pick the door."]},
+    {title:"Gloom Comes Back",prize:"A",type:"letters",lock:"sent",
+     story:["Gloom is back! Gloom hid three more letters.","This time the locks need a whole line.","Read every word, then pick the picture."]},
+    {title:"Deep in the Temple",prize:"D",type:"temple",rooms:4,
+     story:["The last letter is deep in the temple.","The doors are trickier now.","Slow down and read with care!"]},
+    {title:"The Spell",prize:"🔑",type:"letters",lock:"build",
+     story:["Gloom put a spell on three words.","Now nobody can say them!","Build each word from its sounds to break the spell."]},
+    {title:"Gloom's Castle",prize:"👑",type:"boss",
+     story:["You have R, E, A and D, and the key to Gloom's castle.","It is time to face Gloom.","Read your best. You can do it!"]}],
+  END:["Gloom was not a bad ghost. Gloom was a sad ghost.","Gloom took the letters because Gloom had no one to read with.","Now Gloom has a friend: you!","The letters spell READ. The valley is safe!"],
+  jokes:["Why did the ghost read a book? It was a boo-k!","What do ghosts eat? Boo-berries!","Gloom says: thank you for being my pal!","Gloom says: let's read a book!"]});
+
+/* ---- arc 2: "The Sleepy Volcano" ----
+   Puff, a big green dragon, took the valley's eggs up to the hot hill (the
+   volcano). Puff is not bad, only sad: the hill fell asleep and went cold.
+   It opens the day after The Letter Thief ends, at reading level 3, and each
+   chapter waits for its own level (lvl), because every line he is shown is
+   checked with Decode.check at that level. Each chapter pays gems and one real
+   prize, once (q.got holds the chapters paid): a creature that hatches, or a
+   building plan. */
+const Quest2=questArc({key:"quest2",title:"The Sleepy Volcano",total:6,gems:16,
+  art:()=>drawThing("dragon",2),
+  hello:"❗ Puff the dragon is up to something! Find the ❗",find:"Find the eggs! 🥚",
+  won:"You woke the volcano!",next:"The next chapter opens tomorrow. What will Puff do next? 🐉",
+  soon:"More of Puff's story is on the way! 🐉",
+  ready:(q,c)=>!!(state.quest&&state.quest.done)&&(q.ch>0||state.quest.day!==today())&&currentTier()>=(c.lvl||3),
+  note:(q,c)=>!(state.quest&&state.quest.done)?"It starts after The Letter Thief, at level 3. ":c&&!q.active&&currentTier()<(c.lvl||3)?`Chapter ${q.ch+1} opens at reading level ${c.lvl}. `:"",
+  grant:(q,c,i)=>{
+    q.got=q.got||[];const first=q.got.indexOf(i)<0;if(first)q.got.push(i);
+    const g=c.gift||{};
+    if(g.crit){const k=CRIT(g.crit),res=first?addItem(g.crit):null;
+      return{art:drawThing(g.crit,7),sub:first?arrival(k,res,`A baby ${k.name.toLowerCase().replace("t. rex","T. rex")} hatched! It lives in your valley now.`):""};}
+    if(g.plan){const b=BUILDING(g.plan);let sub="";
+      if(first&&!state.blueprints.includes(b.id)){state.blueprints.push(b.id);sub=`The ${b.name.toLowerCase()} plan is yours! Build it with 📐.`;
+        try{document.getElementById("planBadge").classList.add("on");}catch(e){}}
+      else if(first){state.gems+=10;sub=`You have the ${b.name.toLowerCase()} plan already, so here are 10 more gems!`;}
+      return{art:drawThing(b.id,9),sub};}
+    return{art:c.icon,sub:""};},
+  CH:[
+    {title:"Puff and the Eggs",lvl:3,icon:"🥚",type:"letters",lock:"pic",gift:{crit:"lizard"},
+     spot:"🥚",spotLabel:"🥚 Get the egg",lockTitle:"A lost egg!",got:"🥚",
+     story:["Look up on the hot hill. Who is that? It is Puff!","Puff is big, and Puff can puff hot fog.",
+       "Puff got all the eggs of the pets and hid them in the mud.","Go to an egg and tap it. You can get them all back!"]},
+    {title:"The Big Egg",lvl:4,icon:"🌋",type:"temple",rooms:3,hard:false,gift:{plan:"volcano"},
+     place:"Puff's den",placeIc:"🐉",chest:"The big egg, and a plan!",chestIc:"🥚",open:"Get it!",
+     story:["You got the eggs back. But Puff still has one big egg!","Puff hid it in a den on the hill. The den has lots of paths.",
+       "Just one path gets to the egg. Stop at the hint, then pick the best path.","Do not rush. You can do it!"]},
+    {title:"Wake Up, Hot Hill!",lvl:5,icon:"🦖",type:"spell",words:["stone","bone","lake"],gift:{crit:"trex"},
+     place:"The wake-up spell",placeIc:"🌋",prompt:"A bit of the spell! Listen, then build it.",
+     chest:"The hot hill wakes up! The big egg cracks…",chestIc:"🌋",open:"Look! ▶",
+     story:["You got the big egg back, but it is cold. It will not hatch.","The egg must be hot to hatch. But the hot hill is not hot at all.",
+       "It is in a big, long nap, and Puff is sad as well.","The spell has three bits. Make them all, and the hill will wake up!"]}
+    // Chapters 4-6 go here. total:6 above already counts them, so the prize row shows ❔ for
+    // them and the last chapter here ends on "more is on the way" instead of the arc's end.
+    // Planned: the last eggs, Puff's own lost egg, and the volcano's gem rain, with Puff staying
+    // as a friend (a dragon to hatch). Each needs lvl, story lines that pass Decode.check at lvl,
+    // and a gift; when chapter 6 is in, give the arc an END.
+  ]});
 
 /* ================================================================
    MY OWN BOOK — he writes it
@@ -10545,7 +10628,7 @@ function defaults(t,d){
 // they were null (`state.x||(state.x=…)`, and the settings, animals and vehicles on load),
 // so for them a saved null means "not made yet" and gets the default.
 const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","buddy","daily","pace","badges","modeMin","modeOpens",
-  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","mybooks","write","sync",
+  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","quest2","mybooks","write","sync",
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
   "adv.dex"];
 function withDefaults(saved){
