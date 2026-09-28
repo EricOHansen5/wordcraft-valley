@@ -3752,9 +3752,10 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   seasonSeen:null,hats:[],hat:null,scrambles:0,
   vehicles:[],launched:false,vehStarter:false,
   // GAME VOICE adds the chosen device voice, the game-voice switch and the speaking rate;
-  // TODAY'S READING (7c) adds goal, the words a day (0 = off)
+  // TODAY'S READING (7c) adds goal, the words a day (0 = off);
+  // STORYBOOKS adds together, how "Read together" is played: "turns", "echo", or "" (ask the first time)
   settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true,
-    voice:null,voicePack:true,voiceRate:1,goal:12},customWords:[],pace:{},
+    voice:null,voicePack:true,voiceRate:1,goal:12,together:""},customWords:[],pace:{},
   modeMin:{},modeOpens:{},
   // BOOT: the block-era tidy-up has said "Tidied up!"
   tidied:false,
@@ -3782,6 +3783,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   minutes:{},comp:{right:0,wrong:0},
   // STORYBOOKS: how far he got in each book
   library:{},
+  // STORYBOOKS: the day of each book finished in "Read together" (the last 60), for the Grown-up report
+  togetherDays:[],
   // VALLEY ADVENTURE: the Word-Dex and the treasure hunt
   adv:{dex:{},hunt:null,huntDay:null,hunts:0,caught:0},
   // NOTES FROM HOME: the notes and who signs them
@@ -10824,7 +10827,7 @@ function defaults(t,d){
 // they were null (`state.x||(state.x=…)`, and the settings, animals and vehicles on load),
 // so for them a saved null means "not made yet" and gets the default.
 const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","buddy","daily","pace","badges","modeMin","modeOpens",
-  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","quest2","mybooks","write","sync",
+  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","quest2","mybooks","write","sync","togetherDays",
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
   "adv.dex"];
 function withDefaults(saved){
