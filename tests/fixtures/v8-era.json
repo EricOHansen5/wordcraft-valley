@@ -1,0 +1,636 @@
+{
+ "v": 5,
+ "wordsRead": 640,
+ "gems": 212,
+ "crateCount": 590,
+ "rows": 8,
+ "biome": 4,
+ "phase": 2,
+ "best": 14,
+ "cam": 310.5,
+ "grid": {
+  "4,6": {
+   "id": "lantern",
+   "seed": 11,
+   "lv": 2
+  },
+  "8,7": {
+   "id": "garage",
+   "seed": 12,
+   "lv": 1
+  },
+  "12,6": {
+   "id": "well",
+   "seed": 13,
+   "lv": 3
+  },
+  "16,7": {
+   "id": "cottage",
+   "seed": 14,
+   "lv": 1
+  },
+  "19,6": {
+   "id": "barn",
+   "seed": 15,
+   "lv": 1
+  },
+  "2,7": {
+   "id": "lighthouse",
+   "seed": 16,
+   "lv": 1
+  }
+ },
+ "inventory": {
+  "windmill": {
+   "n": 1,
+   "lv": 1
+  }
+ },
+ "selected": null,
+ "stats": {
+  "cat": {
+   "seen": 12,
+   "first": 11,
+   "miss": 1,
+   "mastered": true,
+   "rung": 3,
+   "rungClean": 0
+  },
+  "dog": {
+   "seen": 9,
+   "first": 9,
+   "miss": 0,
+   "mastered": true,
+   "rung": 3,
+   "rungClean": 0
+  },
+  "ship": {
+   "seen": 8,
+   "first": 7,
+   "miss": 1,
+   "mastered": true,
+   "rung": 3,
+   "rungClean": 0
+  },
+  "frog": {
+   "seen": 6,
+   "first": 5,
+   "miss": 1,
+   "mastered": true,
+   "rung": 3,
+   "rungClean": 0
+  },
+  "cake": {
+   "seen": 5,
+   "first": 4,
+   "miss": 1,
+   "mastered": true,
+   "rung": 3,
+   "rungClean": 0
+  },
+  "star": {
+   "seen": 4,
+   "first": 3,
+   "miss": 1,
+   "mastered": false,
+   "rung": 2,
+   "rungClean": 1
+  },
+  "rain": {
+   "seen": 3,
+   "first": 2,
+   "miss": 1,
+   "mastered": false,
+   "rung": 1,
+   "rungClean": 0
+  },
+  "night": {
+   "seen": 2,
+   "first": 1,
+   "miss": 1,
+   "mastered": false,
+   "rung": 0,
+   "rungClean": 1
+  },
+  "said": {
+   "seen": 6,
+   "first": 5,
+   "miss": 1,
+   "mastered": true,
+   "rung": 3,
+   "rungClean": 0
+  }
+ },
+ "review": [
+  {
+   "word": "star",
+   "dueAt": 600
+  },
+  {
+   "word": "rain",
+   "dueAt": 615
+  }
+ ],
+ "critters": [
+  {
+   "id": "fox",
+   "seed": 5,
+   "c": 5,
+   "r": 8,
+   "lv": 3,
+   "out": true,
+   "since": 0,
+   "fed": "2026-09-11"
+  },
+  {
+   "id": "dog",
+   "seed": 1,
+   "c": 14,
+   "r": 8,
+   "lv": 2,
+   "out": true,
+   "since": 1785632400000
+  },
+  {
+   "id": "wolf",
+   "seed": 4,
+   "c": 18,
+   "r": 7,
+   "lv": 1,
+   "out": false,
+   "since": 1786582800000,
+   "shiny": true
+  },
+  {
+   "id": "frog",
+   "seed": 6,
+   "c": 9,
+   "r": 7,
+   "lv": 1,
+   "out": true,
+   "since": 1787274000000
+  },
+  {
+   "id": "penguin",
+   "seed": 8,
+   "c": 11,
+   "r": 6,
+   "lv": 2,
+   "out": true,
+   "since": 1788397200000
+  }
+ ],
+ "creatures": [],
+ "blueprints": [
+  "lantern",
+  "garage",
+  "campfire",
+  "well",
+  "cottage",
+  "barn",
+  "windmill",
+  "lighthouse"
+ ],
+ "fed": 22,
+ "timers": {
+  "well:12,6": 1789174800000,
+  "garage:8,7": 1789174800000
+ },
+ "quests": {
+  "date": "2026-09-11",
+  "list": [
+   {
+    "id": "read8",
+    "ic": "📚",
+    "t": "Read 8 words",
+    "k": "read",
+    "n": 8,
+    "p": 8
+   },
+   {
+    "id": "feed",
+    "ic": "🌾",
+    "t": "Feed the animals",
+    "k": "feed",
+    "n": 1,
+    "p": 1
+   }
+  ],
+  "opened": true
+ },
+ "tour": 6,
+ "buddy": {
+  "c": 7,
+  "r": 7
+ },
+ "guardians": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "books": {
+  "0": {
+   "page": 3,
+   "read": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "done": true
+  },
+  "1": {
+   "page": 1,
+   "read": [
+    0
+   ],
+   "done": false
+  }
+ },
+ "badges": [
+  "first",
+  "ten",
+  "fifty",
+  "hundred",
+  "master1",
+  "master10",
+  "builder",
+  "village",
+  "friends",
+  "wheels",
+  "reader"
+ ],
+ "swaps": 12,
+ "daily": {
+  "2026-09-10": 35,
+  "2026-09-11": 42
+ },
+ "sawNight": true,
+ "seasonSeen": "summer",
+ "hats": [
+  "flower",
+  "cap",
+  "pirate"
+ ],
+ "hat": "pirate",
+ "scrambles": 7,
+ "vehicles": [
+  {
+   "u": "v1a",
+   "id": "v_car",
+   "c": 3,
+   "r": 8,
+   "face": "r",
+   "alt": 0,
+   "lv": 2,
+   "out": true,
+   "since": 1,
+   "wins": 3
+  },
+  {
+   "u": "v2b",
+   "id": "v_rocket",
+   "c": 9,
+   "r": 6,
+   "face": "l",
+   "alt": 0.2,
+   "lv": 1,
+   "out": true,
+   "since": 1786842000000,
+   "busy": 1,
+   "hold": 1
+  },
+  {
+   "u": "v3c",
+   "id": "v_train",
+   "c": 12,
+   "r": 8,
+   "face": "r",
+   "alt": 0,
+   "lv": 1,
+   "out": true,
+   "since": 1787706000000
+  },
+  {
+   "u": "v4d",
+   "id": "v_sled",
+   "c": 17,
+   "r": 7,
+   "face": "l",
+   "alt": 0,
+   "lv": 3,
+   "out": false,
+   "since": 1788310800000
+  }
+ ],
+ "launched": true,
+ "vehStarter": true,
+ "settings": {
+  "pics": true,
+  "tts": true,
+  "ambient": true,
+  "nature": false,
+  "speech": false,
+  "tierOverride": 0,
+  "timer": 20,
+  "spell": 0.4,
+  "voice": "Samantha",
+  "voicePack": true,
+  "voiceRate": 0.9
+ },
+ "customWords": [
+  {
+   "w": "zeb",
+   "p": [
+    "z",
+    "e",
+    "b"
+   ],
+   "t": 2,
+   "custom": true
+  }
+ ],
+ "pace": {
+  "1": [
+   1,
+   1,
+   0,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "2": [
+   1,
+   0,
+   1,
+   1
+  ]
+ },
+ "lastWord": "frog",
+ "upgrades": 5,
+ "voiceCached": 1788310800000,
+ "mine": {
+  "seed": 48151623,
+  "dug": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAACAAAAAAAAAAgAAAAAACAAAAAAAIAAAAAAAgAAAAAAAAAIAAAAAAAgAAAAAACAAAAAAAIAAAAAAAAACAAAAAPD/BwAAAAAgAAAAAACAAAAAAAAAAgAAAAAACAAAAAAAIAAAAAAAgAAAAAAAAAIAAAAAAAgAAAAAACAAAAAAAIAAAAAAAAACAAAAAAAIAAAAAAAgAAAAAACAAAAAAAAAAgAAAAAACAAAAAAAIAAAAAAAgP8fAAAAAAIAAAAAAAgAAAAAACAAAAAAAIAAAAAAAAACAAAAAAAIAAAAAAAgAAAAAACAAAAAAAAAAgAAAAAACAAAAAAAIAAAAAAAgAAAAAAAAAIAAAAAAAgAAAAAACAAAAAAAIAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "x": 31.4,
+  "y": 18.05,
+  "coins": 1375,
+  "bag": {
+   "1": 3,
+   "3": 1
+  },
+  "pick": 2,
+  "bagLv": 2,
+  "lamp": 1,
+  "boots": 1,
+  "shopLv": 1,
+  "look": {
+   "skin": 2,
+   "hair": 1,
+   "hairStyle": 2,
+   "shirt": 0,
+   "pants": 1,
+   "helmet": "knight"
+  },
+  "owned": {
+   "miner": 1,
+   "cap": 1,
+   "cowboy": 1,
+   "knight": 1
+  },
+  "made": true,
+  "deepest": 47,
+  "dugCount": 1840,
+  "orders": 96,
+  "ordersRight": 90,
+  "ordersWrong": 6,
+  "layers": [
+   "Dirt",
+   "Stone Cave",
+   "Deep Rock"
+  ],
+  "mineNo": 2,
+  "w": 50,
+  "found": {
+   "1": 1,
+   "2": 1,
+   "3": 1,
+   "4": 1,
+   "5": 1
+  },
+  "museum": {
+   "1": 1,
+   "3": 1
+  },
+  "bosses": {
+   "beetle": 1,
+   "golem": 1
+  },
+  "items": {
+   "tnt": 2
+  },
+  "eggs": [
+   {
+    "at": "2026-09-11"
+   }
+  ],
+  "pet": "dog",
+  "petHint": 1,
+  "bossWins": 2,
+  "crafted": 4
+ },
+ "skills": {
+  "a": {
+   "p": 0.86,
+   "n": 42.5,
+   "e": {
+    "a→o": 1
+   },
+   "last": 1789174800000
+  },
+  "o": {
+   "p": 0.8,
+   "n": 30,
+   "e": {},
+   "last": 1789174800000
+  },
+  "sh": {
+   "p": 0.55,
+   "n": 8,
+   "e": {
+    "sh→ch": 2
+   },
+   "last": 1789088400000
+  }
+ },
+ "skillMiss": {
+  "sh": 3,
+  "a": 2
+ },
+ "answers": {
+  "2026-09-10": {
+   "n": 40,
+   "ok": 35,
+   "ms": 120000
+  },
+  "2026-09-11": {
+   "n": 32,
+   "ok": 29,
+   "ms": 98000
+  }
+ },
+ "rushes": {
+  "2026-09-11": 2
+ },
+ "minutes": {
+  "2026-09-10": 14,
+  "2026-09-11": 18
+ },
+ "comp": {
+  "right": 30,
+  "wrong": 4
+ },
+ "library": {
+  "cat_hat": {
+   "done": true,
+   "stars": 3,
+   "reads": 2,
+   "last": 1788656400000,
+   "rec": false
+  },
+  "fox_box": {
+   "done": true,
+   "stars": 2,
+   "reads": 1,
+   "last": 1788915600000
+  },
+  "pig_mud": {
+   "done": true,
+   "stars": 3,
+   "reads": 1,
+   "last": 1789174800000,
+   "rec": false
+  }
+ },
+ "adv": {
+  "dex": {
+   "fox": {
+    "seen": 1,
+    "caught": 2,
+    "at": 1788483600000
+   },
+   "frog": {
+    "seen": 1
+   }
+  },
+  "hunt": null,
+  "huntDay": "2026-09-11",
+  "hunts": 4,
+  "caught": 6,
+  "seenIntro": 1
+ },
+ "notes": [
+  {
+   "id": "n1",
+   "text": "Good job reading today!",
+   "from": "Mom",
+   "at": 1789002000000,
+   "voice": false,
+   "read": true,
+   "found": true
+  },
+  {
+   "id": "n2",
+   "text": "Look by the big well.",
+   "from": "Mom",
+   "at": 1789174800000,
+   "voice": false,
+   "read": false,
+   "found": false,
+   "c": 9,
+   "r": 7.4
+  }
+ ],
+ "noteFrom": "Mom",
+ "quest": {
+  "ch": 3,
+  "day": "2026-09-11",
+  "active": null,
+  "done": false,
+  "letters": [
+   "R",
+   "E",
+   "A"
+  ]
+ },
+ "mybooks": [
+  {
+   "id": "my_k2x9",
+   "title": "Ash and the big dog",
+   "titleWords": [
+    "Ash",
+    "and",
+    "the",
+    "big",
+    "dog"
+   ],
+   "pages": [
+    {
+     "a": "dog",
+     "words": [
+      "Ash",
+      "has",
+      "a",
+      "big",
+      "dog",
+      "."
+     ]
+    },
+    {
+     "a": null,
+     "words": [
+      "The",
+      "dog",
+      "can",
+      "run",
+      "."
+     ]
+    }
+   ]
+  }
+ ],
+ "write": {
+  "a": {
+   "ok": 7,
+   "n": 9
+  },
+  "c": {
+   "ok": 3,
+   "n": 5
+  },
+  "t": {
+   "ok": 1,
+   "n": 2
+  }
+ },
+ "writes": 14,
+ "treats": {
+  "bubble": 1789174800000
+ },
+ "sync": {
+  "url": "",
+  "token": "",
+  "last": 1789174800000,
+  "auto": true,
+  "lastFile": "2026-09-11T19-02-11.json",
+  "seenHead": "2026-09-11T19-02-11.json"
+ },
+ "deviceId": "k3v9x2qa",
+ "tidied": true
+}

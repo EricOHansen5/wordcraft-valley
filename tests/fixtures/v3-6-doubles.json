@@ -1,0 +1,325 @@
+{
+ "v": 3,
+ "wordsRead": 212,
+ "gems": 57,
+ "crateCount": 230,
+ "rows": 4,
+ "biome": 2,
+ "phase": 1,
+ "best": 11,
+ "cam": 88.5,
+ "grid": {
+  "3,8": {
+   "id": "lantern",
+   "seed": 201
+  },
+  "6,8": {
+   "id": "garage",
+   "seed": 202
+  },
+  "9,7": {
+   "id": "lantern",
+   "seed": 203
+  },
+  "12,8": {
+   "id": "lantern",
+   "seed": 204
+  },
+  "15,7": {
+   "id": "well",
+   "seed": 205
+  },
+  "18,8": {
+   "id": "lantern",
+   "seed": 206
+  },
+  "20,7": {
+   "id": "garage",
+   "seed": 207
+  }
+ },
+ "inventory": {
+  "windmill": {
+   "n": 2
+  },
+  "well": {
+   "n": 1
+  },
+  "bell": {
+   "n": 1
+  }
+ },
+ "selected": "bell",
+ "stats": {
+  "cat": {
+   "seen": 9,
+   "first": 8,
+   "miss": 1,
+   "mastered": true,
+   "rung": 3
+  },
+  "dog": {
+   "seen": 7,
+   "first": 7,
+   "miss": 0,
+   "mastered": true,
+   "rung": 3
+  },
+  "ship": {
+   "seen": 5,
+   "first": 3,
+   "miss": 2,
+   "mastered": false,
+   "rung": 1
+  },
+  "frog": {
+   "seen": 4,
+   "first": 4,
+   "miss": 0,
+   "mastered": true,
+   "rung": 3
+  },
+  "fish": {
+   "seen": 3,
+   "first": 2,
+   "miss": 1,
+   "mastered": false,
+   "rung": 2
+  }
+ },
+ "review": [
+  {
+   "word": "ship",
+   "dueAt": 240
+  }
+ ],
+ "critters": [
+  {
+   "id": "fox",
+   "seed": 5,
+   "c": 5,
+   "r": 8
+  },
+  {
+   "id": "dog",
+   "seed": 7,
+   "c": 9,
+   "r": 8
+  },
+  {
+   "id": "fox",
+   "seed": 11,
+   "c": 12,
+   "r": 7
+  },
+  {
+   "id": "wolf",
+   "seed": 21,
+   "c": 2,
+   "r": 7
+  },
+  {
+   "id": "fox",
+   "seed": 13,
+   "c": 3,
+   "r": 7
+  },
+  {
+   "id": "bear",
+   "seed": 22,
+   "c": 16,
+   "r": 8
+  },
+  {
+   "id": "fox",
+   "seed": 14,
+   "c": 8,
+   "r": 6
+  },
+  {
+   "id": "hen",
+   "seed": 3,
+   "c": 14,
+   "r": 8
+  },
+  {
+   "id": "pig",
+   "seed": 9,
+   "c": 19,
+   "r": 8
+  },
+  {
+   "id": "duck",
+   "seed": 10,
+   "c": 11,
+   "r": 8
+  },
+  {
+   "id": "dog",
+   "seed": 8,
+   "c": 6,
+   "r": 8
+  },
+  {
+   "id": "frog",
+   "seed": 12,
+   "c": 17,
+   "r": 7
+  }
+ ],
+ "creatures": [],
+ "vehicles": [
+  {
+   "u": "v1",
+   "id": "v_car",
+   "c": 4,
+   "r": 8,
+   "face": "r",
+   "alt": 0
+  },
+  {
+   "u": "v2",
+   "id": "v_bus",
+   "c": 10,
+   "r": 8,
+   "face": "l",
+   "alt": 0
+  },
+  {
+   "u": "v3",
+   "id": "v_car",
+   "c": 13,
+   "r": 8,
+   "face": "l",
+   "alt": 0
+  },
+  {
+   "u": "v4",
+   "id": "v_rocket",
+   "c": 7,
+   "r": 7,
+   "face": "r",
+   "alt": 0.2,
+   "busy": 1,
+   "hold": 1
+  },
+  {
+   "u": "v5",
+   "id": "v_car",
+   "c": 17,
+   "r": 7,
+   "face": "r",
+   "alt": 0
+  },
+  {
+   "u": "v6",
+   "id": "v_tractor",
+   "c": 1,
+   "r": 8,
+   "face": "r",
+   "alt": 0
+  },
+  {
+   "u": "v7",
+   "id": "v_car",
+   "c": 20,
+   "r": 8,
+   "face": "l",
+   "alt": 0
+  },
+  {
+   "u": "v8",
+   "id": "v_taxi",
+   "c": 15,
+   "r": 8,
+   "face": "r",
+   "alt": 0
+  },
+  {
+   "u": "v9",
+   "id": "v_bike",
+   "c": 12,
+   "r": 7,
+   "face": "l",
+   "alt": 0
+  }
+ ],
+ "launched": false,
+ "vehStarter": true,
+ "blueprints": [
+  "lantern",
+  "garage",
+  "well",
+  "windmill",
+  "campfire"
+ ],
+ "fed": 9,
+ "timers": {
+  "well:15,7": 1788138000000
+ },
+ "quests": {
+  "date": "2026-08-30",
+  "list": [
+   {
+    "id": "read8",
+    "ic": "📚",
+    "t": "Read 8 words",
+    "k": "read",
+    "n": 8,
+    "p": 8
+   }
+  ],
+  "opened": true
+ },
+ "tour": 6,
+ "buddy": {
+  "c": 11,
+  "r": 8
+ },
+ "guardians": [
+  0,
+  1,
+  2
+ ],
+ "books": {
+  "0": {
+   "page": 3,
+   "read": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "done": true
+  }
+ },
+ "badges": [
+  "first",
+  "ten",
+  "fifty",
+  "hundred",
+  "wheels"
+ ],
+ "swaps": 4,
+ "daily": {
+  "2026-08-29": 22,
+  "2026-08-30": 31
+ },
+ "sawNight": true,
+ "seasonSeen": "summer",
+ "hats": [
+  "cap"
+ ],
+ "hat": "cap",
+ "scrambles": 2,
+ "customWords": [],
+ "settings": {
+  "pics": true,
+  "tts": true,
+  "ambient": true,
+  "nature": true,
+  "speech": false,
+  "tierOverride": 0,
+  "timer": 15
+ }
+}
