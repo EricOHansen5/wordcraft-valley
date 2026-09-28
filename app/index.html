@@ -872,6 +872,20 @@ body.exploring .slot-empty{display:none}
 .mkpicb{width:78px;height:78px;border:3px solid var(--ink);border-radius:14px;background:#fff;padding:4px}.mkpicb svg,.mkpicb img{width:100%;height:100%;object-fit:contain}
 .mkfoot{justify-content:flex-end}
 .bcov.maker{background:linear-gradient(160deg,#E9F4FF,#CFE6FF)}.bcov.maker .bart{font-size:54px}
+/* read with Dad */
+.bx.tgbtn{background:#FFE58A}.bx.tgbtn.on{background:var(--paper-deep)}
+.bshelf.tgpicking .bcov:not(.locked):not(.maker){animation:mglow 1.6s ease-in-out infinite}.bshelf.tgpicking .bcov.maker{opacity:.45}
+.bcov .tgst{position:absolute;top:4px;left:12px;font-style:normal;font-size:11px;font-weight:900;background:#FFE58A;border:2px solid var(--ink);border-radius:10px;padding:1px 6px;transform:rotate(-6deg);white-space:nowrap}
+.tgways{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.tgway{flex:1 1 240px;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px;border:4px solid var(--ink);border-radius:22px;background:#fff;box-shadow:0 5px 0 rgba(0,0,0,.2);font-family:inherit;text-align:center}
+.tgway:active{transform:translateY(3px);box-shadow:none}.tgway.on{background:#FFF3C4;border-color:#B7791F}
+.tgway i{font-style:normal;font-size:48px}.tgway b{font-size:26px}.tgway span{font-size:17px;font-weight:700;color:var(--ink-soft)}
+.tgnote{text-align:center;font-weight:800;color:var(--ink-soft);margin:8px 0}
+.tglink{border:0;background:none;padding:6px 8px;font:inherit;font-weight:900;color:#3C6FD1;text-decoration:underline;cursor:pointer}
+.tgwho{text-align:center;font-weight:900;font-size:22px;margin:12px 0 -6px;color:var(--ink-soft)}.tgwho.kid{color:#2F7D32}
+.btext.tgbig{font-size:52px;line-height:1.4}
+.tgend{font-size:20px;font-weight:900;margin:4px 0}
+@media (max-width:700px){.btext.tgbig{font-size:38px}}
 /* write it */
 .writesheet{max-width:560px;text-align:center}
 .wrword{display:flex;gap:6px;justify-content:center;margin:4px 0 10px}
@@ -3752,9 +3766,10 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   seasonSeen:null,hats:[],hat:null,scrambles:0,
   vehicles:[],launched:false,vehStarter:false,
   // GAME VOICE adds the chosen device voice, the game-voice switch and the speaking rate;
-  // TODAY'S READING (7c) adds goal, the words a day (0 = off)
+  // TODAY'S READING (7c) adds goal, the words a day (0 = off);
+  // STORYBOOKS adds together, how "Read together" is played: "turns", "echo", or "" (ask the first time)
   settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true,
-    voice:null,voicePack:true,voiceRate:1,goal:12},customWords:[],pace:{},
+    voice:null,voicePack:true,voiceRate:1,goal:12,together:""},customWords:[],pace:{},
   modeMin:{},modeOpens:{},
   // BOOT: the block-era tidy-up has said "Tidied up!"
   tidied:false,
@@ -3782,6 +3797,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   minutes:{},comp:{right:0,wrong:0},
   // STORYBOOKS: how far he got in each book
   library:{},
+  // STORYBOOKS: the day of each book finished in "Read together" (the last 60), for the Grown-up report
+  togetherDays:[],
   // VALLEY ADVENTURE: the Word-Dex and the treasure hunt
   adv:{dex:{},hunt:null,huntDay:null,hunts:0,caught:0},
   // NOTES FROM HOME: the notes and who signs them
@@ -7705,7 +7722,7 @@ const Books=(()=>{
   function build(){
     if(ov)return;ov=document.createElement("div");ov.id="ovStory";ov.className="overlay sbook";document.body.appendChild(ov);
   }
-  function close(){Modes.shut(ov);stopAudio();try{booksBadge();}catch(e){}}
+  function close(){tg=null;Modes.shut(ov);stopAudio();try{booksBadge();}catch(e){}}
   // ---------- shelf ----------
   function shelf(){
     build();stopAudio();try{MyBook.inject();}catch(e){}
@@ -7721,6 +7738,92 @@ const Books=(()=>{
     ov.querySelector("#bClose").onclick=close;
     ov.querySelectorAll(".bcov:not(.locked):not(.maker)").forEach(c=>c.onclick=()=>openBook(c.dataset.id));
     const mk=ov.querySelector("#bMake");if(mk)mk.onclick=()=>{close();MyBook.create();};
+    tgShelf();
+  }
+  // ---------- reading together ----------
+  // "Read with Dad": a grown-up and Asher read a book as a pair. Take turns: his page, then the
+  // grown-up's, starting with his. Echo: the grown-up reads each page first, then he reads it.
+  // His pages are the ordinary page; the grown-up's page is the text shown large with one tap.
+  // Only his pages count (tgKidPages); the book pays as a solo read does. The way is kept in
+  // settings.together ("" asks); a finished book gets library[id].together and a day in
+  // state.togetherDays. tg is null for an ordinary read.
+  // the grown-up's name on screen, in one place so it can become a setting (the spoken lines are
+  // fixed recorded lines that say "Dad": a different name would need its own lines)
+  const GROWNUP="Dad",TG_IC="👨‍👦";
+  let tg=null,tgPicking=false;       // tg: {way:"turns"|"echo", echoed:{page:true}}
+  const tgWay=()=>{const w=state.settings.together;return w==="turns"||w==="echo"?w:"";};
+  function tgShelf(){
+    tg=null;tgPicking=false;
+    const head=ov.querySelector(".bhead"),sub=ov.querySelector(".sub"),grid=ov.querySelector(".bshelf"),said=sub.textContent;
+    const b=document.createElement("button");b.className="bx tgbtn";b.id="bTogether";b.textContent=TG_IC+" Read together";
+    head.insertBefore(b,head.querySelector("#bClose"));
+    ov.querySelectorAll(".bcov[data-id]").forEach(c=>{const p=L()[c.dataset.id];
+      if(p&&p.together)c.insertAdjacentHTML("beforeend",`<i class="tgst">${TG_IC} Read with ${GROWNUP}</i>`);
+      const solo=c.onclick;if(solo)c.onclick=()=>{if(tgPicking)tgPick(c.dataset.id);else solo();};});
+    b.onclick=()=>{tgPicking=!tgPicking;Sound.sfx.pop();
+      b.classList.toggle("on",tgPicking);grid.classList.toggle("tgpicking",tgPicking);
+      b.textContent=tgPicking?"✕ Cancel":TG_IC+" Read together";sub.textContent=tgPicking?`Pick a book to read with ${GROWNUP}.`:said;
+      if(tgPicking)Sound.speak("Pick a book to read with Dad.",.95);};
+  }
+  function tgPick(id){if(tgWay())tgStart(id);else tgChoose(id,false);}
+  function tgStart(id){tg={way:tgWay()||"turns",echoed:{}};tgPicking=false;openBook(id);}
+  // the first time (or from "change" on the cover): which way to read together
+  function tgChoose(id,fromCover){
+    const b=BOOKS.find(x=>x.id===id);if(!b)return;const cur=tgWay();build();
+    ov.innerHTML=`<div class="bpage tgask"><div class="bhead"><button class="bx" id="bBack">‹ Back</button><h2>${TG_IC} Read with ${GROWNUP}</h2><button class="bx" id="bClose">✕</button></div>
+      <p class="sub"><b>${esc(fill(b.title,b.t))}</b>: how shall we read it?</p>
+      <div class="tgways">
+        <button class="tgway${cur==="turns"?" on":""}" data-way="turns"><i>🔁</i><b>Take turns</b><span>You read a page, then ${GROWNUP} reads a page.</span></button>
+        <button class="tgway${cur==="echo"?" on":""}" data-way="echo"><i>🗣️</i><b>Echo</b><span>${GROWNUP} reads each page first, then you read it.</span></button>
+      </div>
+      <p class="tgnote">The game remembers this. Change it any time on the book's cover.</p></div>`;
+    ov.classList.add("on");Modes.open("book",ov);view="tgask";
+    ov.querySelector("#bBack").onclick=()=>{if(fromCover)openBook(id);else shelf();};
+    ov.querySelector("#bClose").onclick=close;
+    ov.querySelectorAll(".tgway").forEach(w=>w.onclick=()=>{state.settings.together=w.dataset.way;save();Sound.sfx.pop();tgStart(id);});
+  }
+  // the cover of a book read together: says how, with a small "change"
+  function tgCover(){
+    if(!tg)return;tg.echoed={};
+    ov.querySelector(".bpage").dataset.together=tg.way;
+    const st=ov.querySelector("#bStart");if(st)st.textContent=`Read it with ${GROWNUP}! 📖`;
+    ov.querySelector(".mrow").insertAdjacentHTML("beforebegin",`<p class="tgnote" id="bTgWay">${TG_IC} ${tg.way==="echo"?`Echo: ${GROWNUP} reads each page first, then you.`
+      :`Take turns: you read a page, then ${GROWNUP} reads one.`} <button class="tglink" id="bTgChange">change</button></p>`);
+    ov.querySelector("#bTgChange").onclick=()=>tgChoose(book.id,true);
+  }
+  // is this page (or this part of it) the grown-up's?
+  const tgDad=()=>!!tg&&!!book&&(tg.way==="turns"?page%2===1:!tg.echoed[page]);
+  // the pages he reads himself: all of them, or every other one when taking turns
+  const tgKidPages=()=>tg&&tg.way==="turns"?Math.ceil(book.pages.length/2):book.pages.length;
+  // the grown-up's page: the picture, the words large, one tap when they have read it
+  function tgDadPage(){
+    stopAudio();const [text,items]=book.pages[page],t=book.t,words=fill(text,t),echo=tg.way==="echo";
+    ov.innerHTML=`<div class="bpage tgdad" data-who="grownup"><div class="bhead"><button class="bx" id="bClose">✕</button><div class="bdots">${book.pages.map((_,i)=>`<i class="${i<page?"d":i===page?"c":""}"></i>`).join("")}</div></div>
+      ${scene(book.bg,items,t)}
+      <div class="tgwho">${TG_IC} ${echo?`${GROWNUP} reads it first`:`${GROWNUP} reads this page`}</div>
+      <div class="btext tgbig">${esc(words)}</div>
+      <div class="mrow bctl"><button class="btn primary big" id="bDad">✓ ${GROWNUP} read it</button></div></div>`;
+    view="page";ov.querySelector("#bClose").onclick=close;
+    let gone=false;
+    ov.querySelector("#bDad").onclick=()=>{if(gone||!tg)return;gone=true;Sound.sfx.pop();
+      if(echo){tg.echoed[page]=true;showPage();}
+      else{page++;if(page<book.pages.length)showPage();else quiz();}};
+    if(!echo)Sound.speak("Dad reads this page.",.95);else if(page===0)Sound.speak("Dad first, then you.",.95);
+  }
+  // his page when reading together: the ordinary page, marked as his turn
+  function tgKid(){
+    if(!tg)return;const tx=ov.querySelector(".btext");if(!tx)return;
+    ov.querySelector(".bpage").dataset.who="child";
+    tx.insertAdjacentHTML("beforebegin",`<div class="tgwho kid">🙋 Your turn!</div>`);
+    Sound.speak("Your turn!",.95);
+  }
+  // a book finished together: the sticker, the day for the Grown-up report, a line on the last page
+  function tgEnd(p){
+    if(!tg)return;p.together=true;
+    if(!Array.isArray(state.togetherDays))state.togetherDays=[];
+    state.togetherDays.push(today());if(state.togetherDays.length>60)state.togetherDays.splice(0,state.togetherDays.length-60);
+    save();
+    const why=ov.querySelector(".bwhy");if(why)why.insertAdjacentHTML("afterend",`<p class="tgend">${TG_IC} You read it with ${GROWNUP}!</p>`);
   }
   // ---------- reading ----------
   function openBook(id){
@@ -7737,6 +7840,7 @@ const Books=(()=>{
     ov.querySelector("#bStart").onclick=()=>showPage();
     const li=ov.querySelector("#bListen");if(li)li.onclick=()=>audiobook(0);
     Sound.sfx.chime();
+    if(tg)tgCover();
   }
   // tap a word: hear it sounded out, then the whole word
   function wireWords(el){
@@ -7752,6 +7856,7 @@ const Books=(()=>{
     });
   }
   function showPage(){
+    if(tgDad()){tgDadPage();return;}
     stopAudio();const [text,items]=book.pages[page],t=book.t,words=fill(text,t);
     const pet=petWord(t),minMs=Math.max(1200,words.split(" ").length*380);
     ov.innerHTML=`<div class="bpage"><div class="bhead"><button class="bx" id="bClose">✕</button><div class="bdots">${book.pages.map((_,i)=>`<i class="${i<page?"d":i===page?"c":""}"></i>`).join("")}</div></div>
@@ -7785,6 +7890,7 @@ const Books=(()=>{
     };
     ov.querySelector("#bHear").onclick=()=>Sound.say("sent:"+words,words,.9);
     ov.querySelector("#bNext").onclick=()=>{page++;if(page<book.pages.length)showPage();else quiz();};
+    tgKid();
   }
   // ---------- questions ----------
   function quiz(){
@@ -7819,18 +7925,20 @@ const Books=(()=>{
     });
   }
   function finish(){
-    const p=L()[book.id]||(L()[book.id]={}),first=!p.done;
-    const stars=1+(quizFirst===book.quiz.length?1:0)+((Rec.ok()?recs>=book.pages.length:helps<=1)?1:0);
+    if(view==="end")return;   // a second tap on the last answer or button pays nothing more
+    // n: the pages he read himself (all of them, unless he took turns reading with a grown-up)
+    const p=L()[book.id]||(L()[book.id]={}),first=!p.done,n=tgKidPages();
+    const stars=1+(quizFirst===book.quiz.length?1:0)+((Rec.ok()?recs>=n:helps<=1)?1:0);
     p.done=true;p.stars=Math.max(p.stars||0,stars);p.reads=(p.reads||0)+1;p.last=Date.now();if(recs)p.rec=true;
     const gems=first?6+stars*2:2,coins=first?15*book.t:0;
-    state.gems+=gems;if(coins&&state.mine)state.mine.coins+=coins;state.wordsRead+=book.pages.length;
-    try{Quests.hit("read",book.pages.length);Quests.hit("book");}catch(e){}
+    state.gems+=gems;if(coins&&state.mine)state.mine.coins+=coins;state.wordsRead+=n;
+    try{Quests.hit("read",n);Quests.hit("book");}catch(e){}
     save();try{renderHUD();}catch(e){}
     Sound.sfx.fanfare();try{confetti();}catch(e){}
     const next=nextNew();
     ov.innerHTML=`<div class="bpage end"><h2>The end! 🎉</h2><div class="bstars">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</div>
       <ul class="bwhy"><li>⭐ You read the whole book</li><li>${quizFirst===book.quiz.length?"⭐":"☆"} Every question right the first time</li>
-      <li>${(Rec.ok()?recs>=book.pages.length:helps<=1)?"⭐":"☆"} ${Rec.ok()?"You read every page to your pet":"You read it with almost no help"}</li></ul>
+      <li>${(Rec.ok()?recs>=n:helps<=1)?"⭐":"☆"} ${Rec.ok()?"You read every page to your pet":"You read it with almost no help"}</li></ul>
       <p class="mpaid">+${gems} 💎${coins?` &nbsp; +${coins} 🪙`:""}</p>
       <div class="mrow">${recs?`<button class="btn soft big" id="bListen">🎧 Listen to me read</button>`:""}
       ${next&&next.id!==book.id?`<button class="btn soft big" id="bNextBook">Next book: ${esc(fill(next.title,next.t))} ▶</button>`:""}
@@ -7839,6 +7947,7 @@ const Books=(()=>{
     const nb=ov.querySelector("#bNextBook");if(nb)nb.onclick=()=>openBook(next.id);
     const li=ov.querySelector("#bListen");if(li)li.onclick=()=>audiobook(0);
     setTimeout(()=>Sound.speak(`The end! You earned ${stars} star${stars>1?"s":""}!`,.95),600);
+    tgEnd(p);
   }
   // ---------- his audiobook ----------
   let audio=null,stopped=false,audioRes=null;
@@ -8011,6 +8120,7 @@ function openReport(){
   const mins=days.reduce((a,d)=>a+((state.minutes||{})[d]||0),0),rush=days.reduce((a,d)=>a+((state.rushes||{})[d]||0),0);
   const comp=state.comp||{right:0,wrong:0},compPct=comp.right+comp.wrong?Math.round(comp.right/(comp.right+comp.wrong)*100):null;
   const lib=state.library||{},done=BOOKS.filter(b=>!b.mine&&(lib[b.id]||{}).done);
+  const tgWeek=(Array.isArray(state.togetherDays)?state.togetherDays:[]).filter(d=>days.indexOf(d)>=0).length;
   const sk=Skills.all().filter(s=>s.t<=tier+1);
   const ST={new:["not yet","#BDB3A3"],learning:["learning","#E8B33D"],shaky:["needs practice","#D9674A"],strong:["strong","#5FB35B"]};
   const conf=Skills.confusions().slice(0,6);
@@ -8045,6 +8155,7 @@ function openReport(){
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
+    <p class="rnote" id="rTogether">${tgWeek} book${tgWeek===1?"":"s"} read together this week${tgWeek?"":" (👨‍👦 Read together is on the book shelf: take turns, or read each page first and he echoes it)"}.</p>
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
     <h3>Story and extras</h3><p class="rnote">The Letter Thief: ${Math.min(6,(state.quest||{}).ch||0)} of 6 chapters. ${Quest2.TITLE}: ${Math.min(Quest2.CH.length,(state.quest2||{}).ch||0)} of ${Quest2.CH.length} chapters (more to come). ${Quest2.note()}Notes from home found: ${(state.notes||[]).filter(n=>n.found).length}. Races won: ${(state.vehicles||[]).reduce((a,v)=>a+(v.wins||0),0)}.</p>
     <h3>Adventure</h3><p class="rnote">${Object.values((state.adv||{}).dex||{}).filter(d=>d.caught).length} wild friends in the Word-Dex · ${(state.adv||{}).hunts||0} treasure hunts solved. Each friend takes 3–5 reading answers; each hunt is three notes to read.</p>
@@ -10824,7 +10935,7 @@ function defaults(t,d){
 // they were null (`state.x||(state.x=…)`, and the settings, animals and vehicles on load),
 // so for them a saved null means "not made yet" and gets the default.
 const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","buddy","daily","pace","badges","modeMin","modeOpens",
-  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","quest2","mybooks","write","sync",
+  "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","adv","notes","quest","quest2","mybooks","write","sync","togetherDays",
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
   "adv.dex"];
 function withDefaults(saved){
