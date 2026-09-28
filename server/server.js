@@ -47,8 +47,12 @@ function rebuild(name){
   for(const[k,r]of Object.entries(s.refs||{})){const f=path.join(BLOB,r.hash);if(fs.existsSync(f))blobs[k]={type:r.type,data:fs.readFileSync(f).toString("base64")};}
   delete s.refs;s.blobs=blobs;return s;
 }
+// a handler bug or a bad request must never take the backup server down
+process.on("unhandledRejection",e=>console.error("unhandledRejection",e));
+process.on("uncaughtException",e=>console.error("uncaughtException",e));
 http.createServer(async(req,res)=>{
-  const url=new URL(req.url,"http://x"),p=decodeURIComponent(url.pathname);
+  const url=new URL(req.url,"http://x");let p;
+  try{p=decodeURIComponent(url.pathname);}catch(e){return send(res,400,{error:"bad url"});}
   res.gz=/\bgzip\b/.test(req.headers["accept-encoding"]||"");
   if(p.startsWith("/api/")){
     res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Headers","Content-Type,X-Token");

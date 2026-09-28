@@ -1391,7 +1391,9 @@ body.exploring .slot-empty{display:none}
 
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-09-28a"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-09-28b"; /* stamped by tools/release.js, matches sw.js VERSION */
+// escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* ================================================================
    1. ART — procedural hand-inked SVG
    Every drawing is built from wobbly paths with a per-tile seed, so
@@ -8062,7 +8064,7 @@ const Notes=(()=>{
     const from=state.noteFrom||"Dad";
     pane.innerHTML=`<p class="hint">Write a note for him to find in the valley. Hide a real surprise and tell him where in the note:
         <i>"Look in the red box by the bed."</i> Every word is checked against his reading level as you type.</p>
-      <div class="row"><div class="grow"><div class="lbl">From</div></div><input id="noteFrom" value="${from}" maxlength="16" style="width:140px"></div>
+      <div class="row"><div class="grow"><div class="lbl">From</div></div><input id="noteFrom" value="${esc(from)}" maxlength="16" style="width:140px"></div>
       <textarea id="noteText" rows="3" maxlength="160" placeholder="Look under the rug for a snack."></textarea>
       <div id="noteCheck" class="ncheck"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0">
@@ -8088,7 +8090,7 @@ const Notes=(()=>{
       L().push({id,text,from:state.noteFrom||"Dad",at:Date.now(),voice:!!(recBlob&&recBlob.size>800),read:false,found:false});recBlob=null;
       save();badge();toast("💌 Sent! It will be waiting in Adventure.");Sound.sfx.chime();renderPane();};
     const list=pane.querySelector("#noteList");
-    list.innerHTML=L().slice().reverse().map(n=>`<div class="row"><div class="grow"><div class="lbl">“${n.text}”</div>
+    list.innerHTML=L().slice().reverse().map(n=>`<div class="row"><div class="grow"><div class="lbl">“${esc(n.text)}”</div>
       <div class="meta">${new Date(n.at).toLocaleDateString()} · ${n.found?"found it ✓":n.read?"read, still looking":"waiting in the valley"}${n.voice?" · 🎤":""}</div></div>
       <button class="btn soft ndel" data-id="${n.id}" style="min-height:40px;padding:6px 12px">✕</button></div>`).join("")||`<p class="meta">No notes yet.</p>`;
     list.querySelectorAll(".ndel").forEach(b=>b.onclick=async()=>{state.notes=L().filter(n=>n.id!==b.dataset.id);try{await DB.del&&DB.del("blobs","note:"+b.dataset.id);}catch(e){}save();badge();renderPane();});
@@ -8102,17 +8104,17 @@ const Notes=(()=>{
   // envelopes in Adventure
   Adv.provide(()=>pending().map(n=>{
     if(n.c==null){const p=Adv.freePos(1.5);n.c=p.c;n.r=p.r;save();}
-    return{c:n.c,r:n.r,size:.55,cls:"note",html:`<div class="env">💌</div>`,label:`💌 Note from ${n.from}`,act:()=>open(n)};}));
+    return{c:n.c,r:n.r,size:.55,cls:"note",html:`<div class="env">💌</div>`,label:`💌 Note from ${esc(n.from)}`,act:()=>open(n)};}));
   let ov=null;
   function open(n){
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovNote";document.body.appendChild(ov);}
     let tries=0;
     ov.innerHTML=`<div class="sheet notesheet"><div class="nenv">💌</div><div class="npaper">
-        <div class="nfrom">A note from ${n.from}!</div>
-        <div class="btext">${n.text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
-        <div class="nsig">Love, ${n.from}</div></div>
+        <div class="nfrom">A note from ${esc(n.from)}!</div>
+        <div class="btext">${n.text.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</div>
+        <div class="nsig">Love, ${esc(n.from)}</div></div>
       <div class="mrow" style="justify-content:center;margin-top:12px">
-        ${n.voice?`<button class="btn soft" id="nHear" disabled>🔊 Hear ${n.from}</button>`:""}
+        ${n.voice?`<button class="btn soft" id="nHear" disabled>🔊 Hear ${esc(n.from)}</button>`:""}
         <button class="btn primary big" id="nRead">✓ I read it!</button></div>
       <div class="mrow nfound" style="justify-content:center;margin-top:10px;display:none">
         <button class="btn soft" id="nLater">I'll look later</button><button class="btn primary big" id="nFound">🎁 I found it!</button></div></div>`;
@@ -8763,11 +8765,11 @@ const Sync=(()=>{
   function renderRow(){
     const el=document.getElementById("syncRow");if(!el)return;const c=C();
     el.innerHTML=`<div class="grow"><div class="lbl">Home server backup</div>
-      <div class="meta">${found===false?"Not found at "+base()+". Set the address of your NAS below.":found?"Connected to "+base()+".":"Checking…"}
+      <div class="meta">${found===false?"Not found at "+esc(base())+". Set the address of your NAS below.":found?"Connected to "+esc(base())+".":"Checking…"}
         ${c.last?` Last backup: ${new Date(c.last).toLocaleString()}.`:""}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <input id="syncUrl" placeholder="${location.origin}" value="${c.url||""}" style="flex:1;min-width:200px">
-        <input id="syncTok" placeholder="token (optional)" value="${c.token||""}" style="width:150px"></div>
+        <input id="syncUrl" placeholder="${location.origin}" value="${esc(c.url||"")}" style="flex:1;min-width:200px">
+        <input id="syncTok" placeholder="token (optional)" value="${esc(c.token||"")}" style="width:150px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
         <button class="btn soft" id="syncNow">⬆️ Back up now</button><button class="btn soft" id="syncGet">⬇️ Restore</button>
         <label class="meta" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="syncAuto" ${c.auto?"checked":""}> daily</label></div></div>`;

@@ -18,4 +18,9 @@ const {chromium}=require("playwright");
   await p.evaluate(()=>{openParent();document.querySelector('.tab[data-tab="set"]').click();});await p.click("#syncGet");await p.waitForTimeout(2000);
   const r=await p.evaluate(async()=>{const bl=await DB.get("blobs","story:cat_hat:0");return{g:state.gems,w:state.wordsRead,size:bl&&bl.size};});
   ok(r.g===4321&&r.w===777&&r.size===8,"restored from server: "+JSON.stringify(r));
+  // a malformed URL (bad percent-encoding) must be rejected, not crash the server
+  const bad=await fetch("http://localhost:8799/%");
+  ok(bad.status===400,"malformed url rejected with 400: "+bad.status);
+  const pingAfter=await fetch("http://localhost:8799/api/ping");
+  ok(pingAfter.status===200,"server still answers after malformed url: "+pingAfter.status);
   console.log("errors:",errs.length?errs:"none");await b.close();})();

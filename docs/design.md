@@ -620,6 +620,11 @@ The kindergarten tricky word checklist from his class is now part of level 1, hi
 - `npm run release` stamps both `sw.js` and `APP_VERSION` in `index.html`; `tests/version_check.js` fails if they differ.
 - Treasure-hunt marks (and anything placed with `freePos`) are rounded before the "keep clear of notes" check, not after. Rounding could nudge a mark back onto a note (about 1 hunt in 60 near a note), where the note took the button and the mark couldn't be dug.
 
+### v9.2.2 — small fixes
+- The home server no longer crashes on a malformed request URL (e.g. `/%`); it answers 400 instead, and top-level error handlers keep it serving even if a future handler has a bug. **This is a `server/` change, so the NAS container needs a restart after `git pull`** — an `app/`-only change doesn't need one.
+- Text a grown-up types — a note's message and "From", and the home-server address/token — is now escaped before it's shown, so it can never be read as live markup. Only the display changes: the reading-level check and the voice lookup still see the exact words typed.
+- `.gitattributes` now normalizes line endings to LF, and `tests/version_check.js` accepts either ending, so `npm test` passes on a Windows checkout with `core.autocrlf=true` too, not just on Linux CI.
+
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 
 ### Still on the list (v4 roadmap, in build order)
