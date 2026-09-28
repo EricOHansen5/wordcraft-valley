@@ -3353,19 +3353,30 @@ function makePhonics(){
     }
     return dur;
   }
-  function render(ctx,dest,t0,ph,level){
+  // stretch: held sounds (vowels, m, n, s, f, h...) can be drawn out for a connected
+  // blend ("mmmaaat"); stops, ch/j and the glides w/y can't, so they never stretch
+  const HOLD={vowel:1,nasal:1,fric:1,breath:1};
+  const held=(p,stretch)=>stretch&&stretch!==1&&HOLD[p.k]&&!p.glide?Object.assign({},p,{dur:p.dur*stretch}):p;
+  function render(ctx,dest,t0,ph,level,stretch){
     level=level==null?1:level;
     const key=resolve(ph);if(!key)return 0;
-    const p=T[key];
-    if(p.k==="seq"){let t=t0;p.parts.forEach((q,i)=>{const d=render(ctx,dest,t,q,level);t+=d*(i===0?.78:1);});return t-t0;}
+    const p=held(T[key],stretch);
+    if(p.k==="seq"){let t=t0;p.parts.forEach((q,i)=>{const d=render(ctx,dest,t,q,level,stretch);t+=d*(i===0?.78:1);});return t-t0;}
     return ({vowel,nasal,fric,breath,stop,affr})[p.k](ctx,dest,t0,p,level*(NORM[key]||.3));
   }
   // length without rendering, for timing the blend
-  function duration(ph){
-    const key=resolve(ph);if(!key)return 0;const p=T[key];
-    if(p.k==="seq")return p.parts.reduce((a,q,i)=>a+duration(q)*(i===0?.78:1),0);
+  function duration(ph,stretch){
+    const key=resolve(ph);if(!key)return 0;const p=held(T[key],stretch);
+    if(p.k==="seq")return p.parts.reduce((a,q,i)=>a+duration(q,stretch)*(i===0?.78:1),0);
     if(p.k==="stop")return p.voiced?.142:.11;
     return p.dur;
+  }
+  // how a sound joins the next one in a blend: "stop" (p, t, k, b, d, g, ch, j: a burst,
+  // can't be held), "glide" (w, y) or "held"; a pair like x (k+s) goes by its last part
+  function kind(ph){
+    const key=resolve(ph);if(!key)return null;const p=T[key];
+    if(p.k==="seq")return kind(p.parts[p.parts.length-1]);
+    return p.k==="stop"||p.k==="affr"?"stop":p.glide?"glide":"held";
   }
   // one output stage per audio context. No compressor: Web Audio's adds
   // automatic make-up gain, which pushed these into clipping. The sounds are
@@ -3384,7 +3395,7 @@ function makePhonics(){
       return Promise.resolve(false);
     }
   }
-  return{play,render,duration,known:ph=>!!resolve(ph),resolve,table:T};
+  return{play,render,duration,kind,known:ph=>!!resolve(ph),resolve,table:T};
 }
 const Phonics=makePhonics();
 // tile notation: "sh" plain; "e:uh" shows e, says uh; "e:" shows e, silent
@@ -3557,7 +3568,71 @@ const Sound=(()=>{
       setTimeout(res,Math.min(8000,600+t.length*90));
     });
   }
-  async function say(key,fallback,rate=.75){
+  /* Connected phonation (Gonzalez-Frey & Ehri 2021): Blend it runs the sounds together
+     as one stretched stream, "mmmaaat" rather than "m – a – t", so the first sound is
+     still in his ear when the last one arrives. Each sound starts part-way through the
+     one before (held sounds at 72 %, stops at 85 %: a burst can't be held, so it only
+     overlaps its tail) and fades out across the overlap; held synth sounds are drawn out
+     by a third. A parent's recording is trimmed of its silence and used in the same way.
+     blend() feeds the stream one tile at a time through say(), so each tile lights as its
+     sound begins; anything that fails drops back to the old one-sound-at-a-time blend. */
+  const JOIN={held:.72,glide:.72,stop:.85},LOOK=.1,STRETCH=1.33;
+  function decode(c,ab){return new Promise((ok,no)=>{const r=c.decodeAudioData(ab,ok,no);if(r&&r.then)r.then(ok,no);});}
+  async function clipFor(c,ph){
+    let u=await url("sound:"+ph);if(!u){const k=Phonics.resolve(ph);if(k&&k!==ph)u=await url("sound:"+k);}
+    if(!u)return null;
+    const buf=await decode(c,await (await fetch(u)).arrayBuffer()),d=buf.getChannelData(0);
+    let peak=0;for(let i=0;i<d.length;i++){const a=Math.abs(d[i]);if(a>peak)peak=a;}
+    const thr=Math.max(.01,peak*.08);let a=0,b=d.length-1;
+    while(a<b&&Math.abs(d[a])<thr)a++;while(b>a&&Math.abs(d[b])<thr)b--;
+    const off=Math.max(0,a/buf.sampleRate-.01),dur=Math.min(buf.duration-off,(b-a)/buf.sampleRate+.03);
+    return dur>.03?{buf,off,dur}:null;
+  }
+  function stream(phs){
+    const c=actx();
+    if(c.state==="suspended"&&c.resume){const r=c.resume();if(r&&r.catch)r.catch(()=>{});}
+    const out=c.createGain();out.gain.value=1;out.connect(c.destination);
+    // a suspended context's clock stands still, so time the tiles by the wall clock then
+    const a0=c.currentTime,w0=performance.now();
+    const now=()=>c.state==="running"?c.currentTime:a0+(performance.now()-w0)/1000;
+    const clips=new Map(),S={broken:false,stopped:false,t:0,t0:null,end:0,log:[]};
+    const want=[...new Set(phs.map(soundOf).filter(Boolean))];
+    S.ready=Promise.all(want.map(ph=>clipFor(c,ph).then(k=>{if(k)clips.set(ph,k);})))
+      .catch(()=>{S.broken=true;});
+    S.add=ph=>{
+      if(S.broken||S.stopped)return null;
+      const snd=soundOf(ph),t=Math.max(S.t,now()+.04);
+      if(S.t0==null)S.t0=t;
+      if(snd===""){S.log.push({ph,at:+(t-S.t0).toFixed(3),dur:0});return Promise.resolve();}   // a silent letter takes no time
+      const clip=clips.get(snd),kd=Phonics.kind(snd);
+      if(!clip&&!kd)throw new Error("no sound for "+snd);
+      const g=c.createGain();g.connect(out);let dur;
+      if(clip){
+        const src=c.createBufferSource();src.buffer=clip.buf;src.connect(g);src.start(t,clip.off,clip.dur);dur=clip.dur;
+        g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+.02);
+      }else{
+        const m=c.createGain();m.gain.value=1.25;m.connect(g);   // the synth's own output level (as in Phonics.play)
+        dur=Phonics.render(c,m,t,snd,1,kd==="held"?STRETCH:1);
+        if(!(dur>0))throw new Error("synth made no sound for "+snd);
+        g.gain.setValueAtTime(1,t);
+      }
+      const next=t+dur*(JOIN[kd||"held"]);
+      g.gain.setValueAtTime(1,next);g.gain.linearRampToValueAtTime(0,t+dur);
+      S.t=next;S.end=Math.max(S.end,t+dur);
+      S.log.push({ph:snd,at:+(t-S.t0).toFixed(3),dur:+dur.toFixed(3),next:+(next-S.t0).toFixed(3),src:clip?"clip":"synth",kind:kd||"held"});
+      return new Promise(r=>setTimeout(r,Math.max(0,Math.round((next-LOOK-now())*1000))));
+    };
+    S.done=()=>new Promise(r=>setTimeout(r,Math.max(0,Math.round((S.end-now())*1000))+40))
+      .then(()=>{setTimeout(()=>{try{out.disconnect();}catch(e){}},200);});
+    S.stop=()=>{S.stopped=true;try{out.gain.cancelScheduledValues(0);out.gain.value=0;out.disconnect();}catch(e){}};
+    return S;
+  }
+  async function say(key,fallback,rate=.75,opt){
+    // Blend it: this sound joins the connected stream; if that fails, play it on its own
+    if(opt&&opt.stream&&key.startsWith("sound:")){
+      try{const p=opt.stream.add(key.slice(6));if(p)return p;}
+      catch(e){opt.stream.broken=true;if(typeof console!=="undefined")console.warn("Connected blend fell back:",e&&e.message);}
+    }
     // a tile like "e:uh" is recorded in the Voice Studio under the sound it makes ("uh")
     let u=null;
     if(key.startsWith("sound:")){const ph=soundOf(key.slice(6));
@@ -3572,7 +3647,7 @@ const Sound=(()=>{
       if(Phonics.known(ph))return Phonics.play(actx(),ph);
       return speak(fallback,.8);}
     return speak(fallback,rate>=.9?rate:.82);}
-  return{say,sfx,speak,ctx:()=>actx(),stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
+  return{say,sfx,speak,stream,ctx:()=>actx(),stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
     has:k=>DB.get("blobs","aud:"+k).then(b=>!!b),
     invalidate:k=>{const u=cache.get(k);if(u)URL.revokeObjectURL(u);cache.delete(k);}};
 })();
@@ -4894,20 +4969,41 @@ function checkBuild(){
 /* The two helper buttons always follow the screen that is open now (they used
    to be rewired by each mode, so a story crate left them reading its sentence).
    Blend sounds out exactly the tiles on screen, then says the word they spell:
-   the word's own tiles, what he has built so far, or the word in a sound swap. */
+   the word's own tiles, what he has built so far, or the word in a sound swap.
+   The sounds run together as one stretched stream before the word (Sound.stream);
+   tapping a single tile still plays just that sound. A newer blend cuts off an older one. */
+let blendRun=0,blendStream=null;
 async function blend(){
   if(!cur)return;
   if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  const run=++blendRun;
+  if(blendStream){blendStream.stop();blendStream=null;}
   const L=document.getElementById("letters"),building=L.style.display==="none";
   const tiles=building?[...document.querySelectorAll("#slotsRow .wslot")].filter(x=>x.dataset.ph):[...L.querySelectorAll(".lt")];
   const ph=tiles.map(t=>t.dataset.ph);
+  tiles.forEach(t=>t.classList.remove("blend"));
+  let S=null;
+  try{S=Sound.stream(ph);blendStream=S;await S.ready;}catch(e){S=null;}
+  if(run!==blendRun)return;
+  const log={mode:S&&!S.broken?"connected":"sequential",sounds:S?S.log:[],word:null,done:false};
+  try{window._lastBlend=log;}catch(e){}
   for(let i=0;i<tiles.length;i++){tiles[i].classList.add("blend");
-    await Sound.say("sound:"+ph[i],ph[i]);await new Promise(r=>setTimeout(r,90));}
+    const joined=!!(S&&!S.broken);
+    await Sound.say("sound:"+ph[i],ph[i],undefined,joined?{stream:S}:undefined);
+    if(run!==blendRun)return;
+    if(!S||S.broken)await new Promise(r=>setTimeout(r,90));}   // one at a time, as before
+  if(S&&S.broken)log.mode="sequential";
+  if(S&&!S.broken)await S.done();
+  if(run!==blendRun)return;
+  if(blendStream===S)blendStream=null;
   await new Promise(r=>setTimeout(r,180));
+  if(run!==blendRun)return;
   tiles.forEach(t=>t.classList.remove("blend"));
   const spells=a=>a&&a.length===ph.length&&a.every((x,i)=>x===ph[i]);
   const word=spells(cur.p)?cur.w:cur.from&&spells(cur.from.p)?cur.from.w:null;
+  log.word=word;
   if(word)await Sound.say("word:"+word,word,.82);
+  log.done=true;
 }
 document.getElementById("blendBtn").onclick=blend;
 
