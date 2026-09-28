@@ -675,6 +675,12 @@ button.mpill{cursor:pointer}
 .rst{font-weight:800;font-size:13px;text-align:right}
 .rconf{display:flex;gap:8px;flex-wrap:wrap}.rconf span{padding:6px 12px;border:2px solid var(--ink);border-radius:14px;background:#FFF0E6}
 .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.rchart{height:90px}
+.rsplit{height:18px;margin:2px 0 10px}
+.rmodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px 16px}
+.rmode h4{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 4px;font-size:16px}
+.rmode h4 span{font-size:13px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+/* numbers in a row along the top, so every bar is to scale in a short chart */
+.rmode .rchart{height:96px}.rmode .rchart .col{padding-top:17px}.rmode .rchart .col b{position:absolute;top:0;margin:0}
 .rbooks{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
 .rbook{display:flex;flex-direction:column;gap:4px;padding:10px;border:2px solid var(--ink);border-radius:14px;background:var(--paper-deep)}
 .rbook .btn{min-height:40px;padding:6px 12px;font-size:15px;align-self:flex-start}
@@ -3633,7 +3639,8 @@ const def=()=>({v:5,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0,phas
   guardians:[],books:{},badges:[],swaps:0,daily:{},sawNight:false,
   seasonSeen:null,hats:[],hat:null,scrambles:0,
   vehicles:[],launched:false,vehStarter:false,
-  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true},customWords:[],pace:{}});
+  settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true},customWords:[],pace:{},
+  modeMin:{},modeOpens:{}});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
 let state=def(), sessionStart=Date.now(), packCreatures=[];
 const saveNow=()=>{
@@ -4463,6 +4470,11 @@ setInterval(()=>{
    Seam for later: Modes.guard(fn) registers fn(id); when it returns
    false, open() refuses and returns false. No guard is set and no entry
    point checks the return value yet, so nothing is gated today.
+   For the Grown-up report ("Where the time goes"), each open is counted
+   in state.modeOpens, and the minutes tick credits Modes.top() in
+   state.modeMin; both are {"YYYY-MM-DD": {mode: n}}, last 60 days kept.
+   A mode that closes and opens again within 2 s (the crates, then the
+   word he picked; a chapter's story, then its game) is one visit, not two.
    ================================================================ */
 const Modes=(()=>{
   // reading:true is what the Grown-up report adds up as reading time
@@ -4500,10 +4512,11 @@ const Modes=(()=>{
     ovStory:"book",ovPic:"pic",ovReport:"report",ovDex:"dex",ovWild:"wild",ovNote:"note",ovQuest:"story",ovMaker:"maker",
     ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine"};
   const stack=[];            // {id, el}, innermost last
+  const SAME_VISIT=2000,lastClose={};
   let guardFn=null,mo=null;
   const of=el=>(el&&(OV[el.id]||el.dataset.mode))||"other";
   const alive=e=>!e.el||(document.documentElement.contains(e.el)&&e.el.classList.contains("on"));
-  function drop(i){stack.splice(i,1);}
+  function drop(i){const e=stack.splice(i,1)[0];if(e)lastClose[e.id]=Date.now();}
   function reconcile(){for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i]))drop(i);}
   function watch(el){
     if(!mo&&typeof MutationObserver!=="undefined"){mo=new MutationObserver(reconcile);mo.observe(document.body,{childList:true});}
@@ -4518,8 +4531,19 @@ const Modes=(()=>{
     if(guardFn){let ok=true;try{ok=guardFn(id)!==false;}catch(e){}if(!ok)return false;}
     if(i>=0)drop(i);                                   // the same element, now as another mode
     if(el){el.dataset.mode=id;watch(el);}
+    const visit=!stack.some(e=>e.id===id)&&Date.now()-(lastClose[id]||0)>SAME_VISIT;
     stack.push({id,el:el||null});
+    if(visit)bump("modeOpens",id);
     return true;
+  }
+  // one more for this mode today; days older than 60 are dropped as it writes
+  function bump(key,id){
+    try{
+      const all=state[key]&&typeof state[key]==="object"?state[key]:(state[key]={});
+      const cut=new Date();cut.setDate(cut.getDate()-59);const oldest=ymd(cut);
+      Object.keys(all).forEach(k=>{if(k<oldest)delete all[k];});
+      const d=today(),day=all[d]||(all[d]={});day[id]=(day[id]||0)+1;save();
+    }catch(e){}
   }
   // by element when there is one, otherwise the innermost open mode with that id
   function close(id,el){
@@ -4527,7 +4551,9 @@ const Modes=(()=>{
   }
   function shut(el){if(!el)return;el.classList.remove("on");close(null,el);}
   function top(){reconcile();return stack.length?stack[stack.length-1].id:"valley";}
-  return{open,close,shut,top,of,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
+  // the minutes tick: this minute goes to whatever is on top
+  const credit=()=>bump("modeMin",top());
+  return{open,close,shut,top,of,credit,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
 })();
 
 /* ================================================================
@@ -7525,13 +7551,17 @@ function openPicIt(){
   setTimeout(()=>Sound.speak("Read it, then find the picture.",.95),300);
 }
 
-/* ---- minutes played: counted only while visible and touched recently ---- */
+/* ---- minutes played: counted only while visible and touched recently ----
+   Each minute also goes to the mode on top (Modes.credit), for the
+   report's "Where the time goes". Named so a test can fire it. */
 let lastTouch=Date.now();
 document.addEventListener("pointerdown",()=>{lastTouch=Date.now();},true);
-setInterval(()=>{
+function minuteTick(){
   if(document.visibilityState!=="visible"||Date.now()-lastTouch>90000)return;
-  state.minutes=state.minutes||{};state.minutes[today()]=(state.minutes[today()]||0)+1;save();
-},60000);
+  state.minutes=state.minutes||{};state.minutes[today()]=(state.minutes[today()]||0)+1;
+  Modes.credit();save();
+}
+setInterval(minuteTick,60000);
 
 /* ---- the grown-up reading report ---- */
 let repOv=null;
@@ -7539,6 +7569,26 @@ function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.s
 function bars(days,get,fmt){
   const vals=days.map(get),max=Math.max(1,...vals);
   return`<div class="chart rchart">${days.map((d,i)=>`<div class="col"><b>${vals[i]?fmt?fmt(vals[i]):vals[i]:""}</b><i style="height:${vals[i]/max*100}%"></i><span>${"SMTWTFS"[new Date(d+"T12:00").getDay()]}</span></div>`).join("")}</div>`;
+}
+/* "Where the time goes": the week's minutes by mode (Modes, state.modeMin),
+   how often each was opened (state.modeOpens), and reading against the rest. */
+function whereTime(days,mins){
+  const MM=Modes.list(),mMin=state.modeMin||{},mOpen=state.modeOpens||{};
+  const week=(src,id)=>days.reduce((a,d)=>a+((src[d]||{})[id]||0),0);
+  const ids=Object.create(null);days.forEach(d=>{Object.keys(mMin[d]||{}).concat(Object.keys(mOpen[d]||{})).forEach(k=>{ids[k]=1;});});
+  // a mode this version doesn't know (from a newer backup) shows by its id, and counts as everything else
+  const known=id=>Object.prototype.hasOwnProperty.call(MM,id);
+  const rows=Object.keys(ids).map(id=>({key:id,id:esc(id),name:known(id)?MM[id].name:esc(id),reading:known(id)&&!!MM[id].reading,m:week(mMin,id),o:week(mOpen,id)}));
+  const used=rows.filter(x=>x.m>0).sort((a,b)=>b.m-a.m),brief=rows.filter(x=>!x.m&&x.o>0).sort((a,b)=>b.o-a.o);
+  const total=used.reduce((a,x)=>a+x.m,0),rd=used.filter(x=>x.reading).reduce((a,x)=>a+x.m,0),pct=total?Math.round(rd/total*100):0;
+  const kinds=Object.keys(MM).filter(id=>MM[id].reading).map(id=>MM[id].name).join(", ");
+  if(!used.length&&!brief.length)return`<h3>Where the time goes</h3><p class="rnote">Nothing counted yet. From now on, each minute he plays is noted against what he was doing.</p>`;
+  return`<h3>Where the time goes</h3>
+    <p class="rnote rwhere">This week: <b>${rd} min</b> reading and writing, <b>${total-rd} min</b> everything else${total?` — ${pct}% reading`:""}.</p>
+    ${total?`<div class="rbar rsplit"><i style="width:${pct}%;background:var(--meadow)"></i></div>`:""}
+    <div class="rmodes">${used.map(x=>`<div class="rmode" data-id="${x.id}"><h4>${x.name}<span>${x.m} min${x.key==="valley"?"":` · opened ${x.o}×`}</span></h4>${bars(days,d=>(mMin[d]||{})[x.key]||0)}</div>`).join("")}</div>
+    ${brief.length?`<p class="rnote">Also opened, too briefly to count a minute: ${brief.map(x=>`${x.name} ${x.o}×`).join(", ")}.</p>`:""}
+    <p class="rnote">Reading and writing: ${kinds}. Each minute goes to whatever was on screen when it was counted, so the reading inside the Mine (word stones, vaults, bosses) counts as reading and the digging does not.${total<mins?" Counting by activity began with this update, so this week it adds up to less than the minutes above.":""}</p>`;
 }
 function openReport(){
   if(!repOv){repOv=document.createElement("div");repOv.className="overlay";repOv.id="ovReport";document.body.appendChild(repOv);}
@@ -7579,6 +7629,7 @@ function openReport(){
     <div class="rgrid"><div><h3>Minutes a day</h3>${bars(days,d=>(state.minutes||{})[d]||0)}</div>
       <div><h3>Quick guesses a day</h3>${bars(days,d=>(state.rushes||{})[d]||0)}</div></div>
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
+    ${whereTime(days,mins)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${b.title}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
     <h3>Story and extras</h3><p class="rnote">The Letter Thief: ${Math.min(6,(state.quest||{}).ch||0)} of 6 chapters. Notes from home found: ${(state.notes||[]).filter(n=>n.found).length}. Races won: ${(state.vehicles||[]).reduce((a,v)=>a+(v.wins||0),0)}.</p>
