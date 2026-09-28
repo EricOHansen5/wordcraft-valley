@@ -9,6 +9,87 @@ Status: **plan only, nothing built yet.** Decisions made so far are listed at th
 
 ---
 
+## v9.3 — Factory mode (from Lean Mine), built before v10
+
+Based on the concepts in **Lean Mine**, a separate React game (`LeanMine.jsx`). The kid version keeps its best ideas:
+- Drills on ore, belts to a hub, and machines that combine things into something worth more.
+- Its deterministic fixed-step simulation.
+- The lean-manufacturing lesson that **jams and piles of waiting stuff are the problem to fix**.
+
+It drops the cost curves, kaizen tracks, bores, relay hubs, gates, priority mergers and idle pay. Lean Mine is not copied in; its tick logic is ported to plain JS (no React or Vite, offline, IndexedDB saves).
+
+### How it plays
+- **Getting there.** A **Factory** building in the valley (an `Adv.provide` spot) opens a top-down board of about 12×9 cells, sized for the iPad in landscape.
+- **Ore.** Ore spots come in three colours: 🔴 red, 🔵 blue, 🟡 yellow (primary colours).
+- **Mixer.** Two different colours go in and the mixed colour comes out: red + blue = purple, blue + yellow = green, red + yellow = orange. This is Lean Mine's furnace, where two different metals make an alloy.
+- **Delivery.** A delivery truck at the hub tallies what arrives.
+- **Belts.** He **drags to paint** belts: they follow his finger and turn at corners, and tapping a belt rotates it. On a keyboard, arrows move a cursor, space places, and R rotates. It uses touch events with a mouse fallback for the older iPad.
+- **Jams glow** orange, then red, the longer a belt is backed up (Lean Mine's heat). The buddy gives a spoken tip, held for 2 s so it doesn't flicker, and phrased as kid-sized lean ideas:
+
+| What's wrong | Buddy's tip | Lean idea |
+|---|---|---|
+| Drills blocked | "The drills are waiting. The belt is full! Try a splitter." | Overproduction |
+| Lots on the belts, little moving | "Lots of rocks waiting in line!" | Inventory |
+| Very long belts | "That's a long trip! Can the belt be shorter?" | Transportation |
+
+### Counting and adding (the learning goal)
+- **Order cards use numbers,** for example "Send 3 🟣 and 2 🟠". Every order is read aloud, so reading never blocks the factory.
+- **The hub's tally board** fills ten-frames as items arrive, so counting is visible.
+- **At the end of each level he adds it up:** "3 purple + 2 orange = ?" on a big number pad. Help is the tally board again; a wrong answer takes nothing away.
+- **Numbers grow with the levels:** counting to 5, then to 10, then adding two groups within 10, then within 20. The stamper doubles, which previews multiplication.
+- Uses the same `Tracks` math levels planned for v10, so this factory becomes the first user of the math track.
+
+### Machines, one per level (unlocked by finishing the level that teaches it)
+| Level | Teaches | Order (math) |
+|---|---|---|
+| F1 | Drill + belt to the truck | Send 5 🔴 (count to 5) |
+| F2 | Belts that turn around rocks | Send 8 🔵 |
+| F3 | Two drills, two belts, one truck | 4 🔴 + 3 🟡 = ? |
+| F4 | **Mixer**: red + blue → purple | Send 3 🟣 |
+| F5 | Mixer for all three new colours | 2 🟣 + 2 🟢 + 2 🟠 = ? |
+| F6 | **Splitter**: a jam is fixed by splitting to two mixers | Send 6 🟣 (3 + 3) |
+| F7 | Splitter practice | 5 + 5 = ? |
+| F8 | **Colour sorter**: pull blue out of a mixed belt | Send 4 🔵, the rest to the mixer |
+| F9 | Sorter + mixer together | 6 + 4 = ? |
+| F10 | **Stamper**: a bar becomes a toy part worth 2× | 4 toys = ? gems (doubling) |
+| F11 | **Tunnel**: carry a belt under another | 7 + 6 = ? |
+| F12 | The big order: everything | Totals to 20 |
+
+- **Stars.** 1–3 stars per level for fewer pieces or less jam time. Stars only add; he never loses any.
+- **Pay.** Each level pays 💎. When the v10 currencies arrive, the factory pays ⚙️ gears instead. Existing gems are kept.
+
+### Sandbox
+- **When.** It opens after F12. It's a larger board of about 16×12 with every machine he has unlocked.
+- **His factory stays.** It is saved and there to come back to.
+- **Pieces are free.** No cost curves.
+- **Orders** appear as optional side goals, with the same counting and adding.
+- **Stops when he leaves.** It only runs while open, so there's no idle pay and no pull to "collect".
+
+### Engine (ported from Lean Mine)
+- **State.** A grid in typed arrays: `type`, `dir`, `item`, `prog`, `timer`, `mask`, `heat`.
+- **Tick.** A fixed step at **30 Hz** with no `Date` or `Math.random`, so a layout always does the same thing on the iPad and in the tests.
+- **Movement.** A single `deposit()` hand-off, and the receiver decides which belt it takes from, as in Lean Mine, which makes merging fair.
+- **Items:**
+  - 1–3: ores
+  - 16 + a 3-bit colour mask: bars (two bits = a mixed colour)
+  - 64 + mask: stamped toys
+- **Tunnels** link automatically within 4 tiles.
+- **Drawing.** Rendered on one `<canvas>` with rAF only while the overlay is open, and paused when the app is hidden.
+- **About 600 lines** in a new `FACTORY` section of `app/index.html`. It avoids `.at()`, `structuredClone` and `:has()`.
+- **Saves:** `state.factory = {lvl:0, stars:{}, sandbox:null}`, added in `def()` and `migrate()`. The sandbox grid is stored as compact strings (for example base-36 cell codes), not arrays of objects, so saves stay small.
+
+### Tests (`factory_e2e.js`)
+- Every level has a stored **known solution**. Run headless, it finishes the order within its time limit, and the result is the same on 3 runs in a row.
+- Checks for jams, mixing, splitting, the sorter, the stamper and tunnels: a jammed layout shows the right tip, and each machine's output is correct.
+- Double taps and double finishes pay once. A wrong sum takes nothing away.
+- The sandbox survives a save and reload.
+- The whole order can be played on a keyboard.
+
+### Voice
+About 60 new clips: level intros, machine names, tips, "How many altogether?", and numbers 1–40 if they aren't indexed already.
+
+---
+
 ## Part A — Reading levels 13–24 (grades 2–4)
 
 | Lvl | Skill | Examples | Grade |
@@ -338,6 +419,7 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 
 | Phase | Ships |
 |---|---|
+| **v9.3** | Factory mode: levels F1–F12, the sandbox, jam tips, counting and adding orders |
 | **v10.0** | Hero name setting; build-a-hero avatar; the four currencies and `wallet`; exchange booth; Trading Post with the four shelves (hats and Mine hats moved in); placing decorations; renaming "Mine jobs" to "Mine tasks" |
 | **v10.1** | Jobs engine and the 6 kits; Shopkeeper (level 2) and Lawn mower (level 4); math track K–1; the content-file loader |
 | **v10.2** | Janitor, Mail carrier, Baker, Construction; math grade 2; daily quests across modes |
@@ -374,6 +456,7 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 | Creations | Placed in the valley; contraptions saved in the Lab |
 | Balance | Daily quests mix the modes; no hard gates |
 | Build order | Store → Jobs → Geometry → Physics → reading 13+ |
+| Factory (v9.3) | Valley building; counting and adding; mixer, splitter, sorter, stamper, tunnel; order levels then sandbox; glow and kind tips; drag belts; stops when closed; pays 💎 (⚙️ after v10) |
 | Hero name | Set by a parent, default "Asher" |
 | Hero look | Build-a-hero avatar; outfits drawn on top |
 | Launch catalog | About 15 items per shelf |
