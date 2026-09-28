@@ -7526,10 +7526,10 @@ const Books=(()=>{
   function wireWords(el){
     el.querySelectorAll(".bw").forEach(sp=>sp.onclick=async()=>{
       if(sp.classList.contains("on"))return;sp.classList.add("on");helps++;
-      const w=sp.textContent.replace(/[^A-Za-z']/g,"").toLowerCase();if(!w){sp.classList.remove("on");return;}
+      const w=sp.textContent.replace(/[^A-Za-z\u00C0-\u024F']/g,"").toLowerCase();if(!w){sp.classList.remove("on");return;}
       const known=allWords().find(x=>x.w===w);
       // his own name is read as a whole, like a tricky word
-      const own=(heroName().toLowerCase().match(/[a-z']+/g)||[]).indexOf(w.replace(/'s$/,""))>=0;
+      const own=(heroName().toLowerCase().match(/[a-z\u00C0-\u024F']+/g)||[]).indexOf(w.replace(/'s$/,""))>=0;
       if(!(known&&known.tricky)&&!own&&w.length>1){let ph;try{ph=known?known.p:splitPhonemes(w);}catch(e){ph=null;}
         if(ph)for(const x of ph){if(soundOf(x)==="")continue;await Sound.say("sound:"+x,x);await new Promise(r=>setTimeout(r,70));}}
       await Sound.say("word:"+w,w,.85);sp.classList.remove("on");
@@ -8351,7 +8351,7 @@ const Decode=(()=>{
   let LIST=null,SRC=null,HN=null,HSET=null;
   // the hero's name, each part of it, and the whole name run together (My Own Book strips spaces)
   const heroSet=()=>{const n=heroName();if(HN!==n){HN=n;const lw=n.toLowerCase();
-    HSET=new Set([lw,lw.replace(/[^a-z']/g,"")].concat((lw.match(/[a-z']+/g)||[])));}return HSET;};
+    HSET=new Set([lw,lw.replace(/[^a-z\u00C0-\u024F']/g,"")].concat((lw.match(/[a-z\u00C0-\u024F']+/g)||[])));}return HSET;};
   const list=()=>{if(!LIST||SRC!==state.customWords){SRC=state.customWords;LIST={};allWords().forEach(w=>{LIST[w.w.toLowerCase()]=w.t;});}return LIST;};
   function tier(w){
     const lw=w.toLowerCase(),L=list(),H=heroSet();
@@ -8380,7 +8380,8 @@ const Decode=(()=>{
     if(lw.length>9)t=Math.max(t,12);
     return t;
   }
-  const words=text=>(text.match(/[A-Za-z']+/g)||[]);
+  // a word is its letters, accented ones too (a name like Zoë is one word), and apostrophes
+  const words=text=>(text.match(/[A-Za-z\u00C0-\u024F']+/g)||[]);
   // every word with the level it needs
   function check(text,lvl){lvl=lvl||currentTier();return words(text).map(w=>({w,t:tier(w),ok:tier(w)<=lvl}));}
   return{tier,check,words,reset:()=>{LIST=null;}};
