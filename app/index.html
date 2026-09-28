@@ -1346,6 +1346,9 @@ body.exploring .slot-empty{display:none}
 
   <div class="pane" id="pane-notes"></div>
   <div class="pane" id="pane-set">
+    <div class="row"><div class="grow"><div class="lbl">Hero name</div>
+      <div class="meta">The name in the storybooks and in My Own Book. The game voice knows the name Asher; other names use the iPad voice.</div></div>
+      <input id="optHero" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:140px"></div>
     <div class="row"><div class="grow"><div class="lbl">Show picture choices</div>
       <div class="meta">Turn off when he can read without pictures.</div></div>
       <label class="switch"><input type="checkbox" id="optPics" checked></label></div>
@@ -3562,7 +3565,7 @@ const Sound=(()=>{
     let u=null;
     if(key.startsWith("sound:")){const ph=soundOf(key.slice(6));
       u=await url("sound:"+ph);if(!u){const c=Phonics.resolve&&Phonics.resolve(ph);if(c&&c!==ph)u=await url("sound:"+c);}}
-    else u=await url(key);
+    else{u=await url(key);if(!u){const k2=heroLegacy(key);if(k2)u=await url(k2);}}
     if(u)return new Promise(res=>{const a=new Audio(u);a.onended=res;a.onerror=res;a.play().catch(res);});
     if(key.startsWith("sound:")){
       // Letter sounds come from the phonics synthesizer. Device voices can only
@@ -3611,7 +3614,7 @@ const VoicePack=(()=>{
   function stop(){token++;if(src){try{src.stop();}catch(e){}src=null;}}
   async function play(text){
     if(state.settings.voicePack===false)return false;
-    await load();const p=plan(text);if(!p)return false;
+    await load();let p=plan(text);if(!p){const t2=heroLegacy(text);if(t2)p=plan(t2);}if(!p)return false;
     const my=++token;if(src){try{src.stop();}catch(e){}src=null;}
     let list;try{list=await Promise.all(p.map(clip));}catch(e){return false;}
     try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
@@ -3629,7 +3632,7 @@ const VoicePack=(()=>{
     for(let i=0;i<files.length;i+=8){await Promise.all(files.slice(i,i+8).map(f=>fetch("voice/"+f).catch(()=>{})));n=Math.min(files.length,i+8);onProgress&&onProgress(n,files.length);}
     return files.length;
   }
-  const has=t=>!!plan(t);
+  const has=t=>{if(plan(t))return true;const t2=heroLegacy(t);return !!(t2&&plan(t2));};
   return{play,stop,load,prefetch,has,norm,get ready(){return !!index;}};
 })();
 // start loading the index early; it's small
@@ -3705,6 +3708,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   quest:{ch:0,day:null,active:null,done:false},
   // MY OWN BOOK: the books he wrote
   mybooks:[],
+  // STORYBOOKS: the hero's name, where the books say {hero} (Grown-up settings)
+  hero:"Asher",
   // WRITE IT: each letter's practice, and words written
   write:{},writes:0,
   // TODAY'S READING (7c): words read today toward the goal (a finished book completes it),
@@ -3726,6 +3731,12 @@ const saveIdle=(()=>{let last=0;return()=>{if(Date.now()-last>=30000){last=Date.
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveNow();});
 window.addEventListener("pagehide",saveNow);
 const allWords=()=>state.customWords.length?WORDS.concat(state.customWords):WORDS;
+// The hero of the storybooks and My Own Book. The recorded game voice says "Ash" in the
+// lines it has, so for the default name a line with no clip of its own is tried with "Ash"
+// (heroLegacy); any other name goes to the device voice.
+const HERO="Asher";
+const heroName=()=>String(state.hero||"").trim()||HERO;
+const heroLegacy=t=>heroName().toLowerCase()===HERO.toLowerCase()&&/\basher\b/i.test(t)?t.replace(/\basher\b/gi,m=>m[0]==="a"?"ash":"Ash"):null;
 
 function currentTier(){
   if(state.settings.tierOverride)return state.settings.tierOverride;
@@ -7281,26 +7292,26 @@ const BOOKS=[
   {"id":"fox_box","t":1,"title":"The Fox and the Box","bg":"meadow","cover":"fox","pages":[["A fox had a box.",[["fox",35,1],["box",68,1.1]]],["The fox sat on top.",[["box",50,1.1],["fox",50,0.7,30]]],["Hop! The box can hop! Hop, hop, hop.",[["box",45,1.1,10],["fox",45,0.7,38]]],["Bop! The fox is on the mat.",[["box",68,1.1],["fox",30,0.9]]],["A cat sat on the box. Ha, ha!",[["box",60,1.1],["cat",60,0.7,30],["fox",25,0.9]]]],"quiz":[{"q":"What did the fox have?","pics":["box","log","pot"],"a":"box"},{"q":"Who sat on the box at the end?","pics":["cat","dog","hen"],"a":"cat"}]},
   {"id":"pig_mud","t":2,"title":"The Pig in the Mud","bg":"farm","cover":"pig","pages":[["A big pig is in the mud.",[["mud",50,1.5],["pig",50,1.1,4]]],["The sun is hot. The pig is hot.",[["sun",80,0.7,62],["pig",40,1.1]]],["A hen sat on the pig.",[["pig",50,1.1],["hen",52,0.6,28]]],["The pig got up. The hen hit the mud!",[["mud",45,1.5],["hen",45,0.6,4],["pig",78,1]]],["Yes! The hen is wet. The pig is not hot.",[["hen",30,0.8],["pig",68,1.1]]]],"quiz":[{"q":"Did the hen get wet?","yes":true},{"q":"Who sat on the pig?","pics":["hen","duck","cat"],"a":"hen"}]},
   {"id":"red_bus","t":2,"title":"The Red Bus","bg":"town","cover":"bus","pages":[["Get on the bus!",[["bus",50,1.4]]],["Ten pigs get on.",[["bus",45,1.4],["pig",82,0.6],["pig",90,0.6]]],["A hen gets on, and a big cat!",[["bus",45,1.4],["hen",82,0.6],["cat",93,0.6]]],["The bus can go. It is fun!",[["bus",60,1.4]]],["Bop! The bus hit a rock. Up, up, up go the pigs!",[["bus",40,1.4],["rock",70,0.6],["pig",62,0.5,50],["pig",78,0.5,62]]]],"quiz":[{"q":"How many pigs got on the bus?","words":["ten","six","two"],"a":"ten"},{"q":"What did the bus hit?","pics":["rock","log","box"],"a":"rock"}]},
-  {"id":"ash_fish","t":3,"title":"Ash Gets a Fish","bg":"pond","cover":"fish","pages":[["This is Ash.",[["ash",50,1.2]]],["Ash has a {pet}.",[["ash",38,1.2],["pet",66,0.8]]],["Ash and the {pet} sit on the dock.",[["ash",40,1.1],["pet",62,0.75]]],["Ash can fish. Can he get a fish?",[["ash",40,1.1],["fish",78,0.6,-4]]],["Tug, tug, tug. Ash got a fish!",[["ash",40,1.1],["fish",60,0.7,30]]],["The fish is big! Ash and the {pet} did it!",[["ash",35,1.1],["fish",55,0.8,24],["pet",75,0.75]]]],"quiz":[{"q":"What did Ash catch?","pics":["fish","hat","box"],"a":"fish"},{"q":"Who went with Ash?","pics":["pet","pig","hen"],"a":"pet"}]},
-  {"id":"ash_shop","t":3,"title":"Ash Has a Shop","bg":"shop","cover":"shop","pages":[["Ash has a shop.",[["shop",50,1.5]]],["A hen gets a hat at the shop.",[["ash",30,1],["hen",68,0.8],["hat",68,0.4,32]]],["A fox gets a big dish.",[["ash",30,1],["fox",66,0.9],["dish",66,0.5,40]]],["A duck has no cash. No cash!",[["ash",30,1],["duck",68,0.9]]],["Ash gets the duck a chip.",[["ash",30,1],["chip",50,0.5,30],["duck",70,0.9]]],["The duck said, \"Quack!\"",[["ash",30,1],["duck",68,1]]]],"quiz":[{"q":"What did the hen get?","pics":["hat","dish","chip"],"a":"hat"},{"q":"Did the duck have cash?","yes":false}]},
-  {"id":"ash_frog","t":4,"title":"The Frog Jump","bg":"pond","cover":"frog","pages":[["Ash and the {pet} went to the pond.",[["ash",35,1.1],["pet",60,0.75]]],["A frog sat on a log.",[["log",55,1.1],["frog",55,0.6,20]]],["The frog can jump!",[["frog",55,0.7,40]]],["Jump, jump, splash! The frog is in the pond.",[["frog",60,0.7,-2]]],["The {pet} jumps in, and Ash grins.",[["ash",30,1.1],["pet",65,0.75,-2]]],["The frog swims up to the {pet}. Best pals!",[["pet",45,0.8,-2],["frog",65,0.6,-2]]]],"quiz":[{"q":"Where did the frog sit first?","pics":["log","rock","box"],"a":"log"},{"q":"Did the {pet} jump in the pond?","yes":true}]},
-  {"id":"big_truck","t":4,"title":"The Big Truck","bg":"town","cover":"truck","pages":[["Ash has a red truck.",[["ash",28,1],["truck",64,1.3]]],["The truck can dump sand.",[["truck",50,1.3]]],["Crash! It hit a stump.",[["truck",45,1.3],["log",75,0.6]]],["Ash and a crab help.",[["ash",30,1],["crab",55,0.6],["truck",80,1.1]]],["Tug and lift! The truck is up.",[["truck",55,1.3,6],["crab",25,0.6]]],["Ash and the crab clap.",[["ash",40,1.1],["crab",66,0.7]]]],"quiz":[{"q":"Who helped Ash?","pics":["crab","frog","pig"],"a":"crab"},{"q":"Did the truck crash?","yes":true}]},
-  {"id":"ash_kite","t":5,"title":"The Kite","bg":"meadow","cover":"kite","pages":[["Ash has a kite.",[["ash",40,1.1],["kite",65,0.7,40]]],["It is red and white.",[["kite",50,1,30]]],["The wind takes the kite up.",[["ash",30,1],["kite",65,0.6,60]]],["Up and up it rides.",[["kite",60,0.5,70]]],["No! The kite is stuck in a tree.",[["tree",60,1.6],["kite",60,0.4,62]]],["Ash can not get it. The {pet} can!",[["ash",25,1],["tree",62,1.6],["pet",62,0.5,40]]],["The {pet} gets the kite. It is time to hug!",[["ash",40,1.1],["pet",58,0.75],["kite",75,0.5]]]],"quiz":[{"q":"Where did the kite get stuck?","pics":["tree","lake","cake"],"a":"tree"},{"q":"Who got the kite down?","pics":["pet","hawk","cake"],"a":"pet"}]},
-  {"id":"lake_whale","t":5,"title":"The Wave","bg":"sea","cover":"whale","pages":[["Ash rode a bike to the lake.",[["ash",35,1],["bike",60,0.9]]],["At the lake, Ash got in a boat.",[["boat",50,1.3,-2],["ash",50,0.6,20]]],["The {pet} got in with him.",[["boat",50,1.3,-2],["ash",44,0.6,20],["pet",58,0.45,20]]],["Then a whale came up!",[["boat",30,1,-2],["whale",70,1.5,-4]]],["The whale made a big wave.",[["whale",70,1.4,-4],["boat",35,1,10]]],["Ash and the {pet} rode the wave home.",[["boat",50,1.2,14],["ash",46,0.55,32],["pet",58,0.4,32]]]],"quiz":[{"q":"What came up by the boat?","pics":["whale","shark","fish"],"a":"whale"},{"q":"How did Ash get to the lake?","pics":["bike","car","bus"],"a":"bike"}]},
-  {"id":"dark_cave","t":6,"title":"The Dark Cave","bg":"cave","cover":"star","pages":[["Ash and the {pet} dig in the dark.",[["ash",40,1.1],["pet",62,0.7]]],["Far in the dark, the rocks are hard.",[["rock",30,0.7],["rock",70,0.8]]],["Ash spots a spark!",[["ash",30,1],["star",70,0.5,40]]],["It is a star in the rock!",[["star",50,0.9,20]]],["But a big bat is on the star.",[["star",50,0.7],["bat",50,0.9,40]]],["Ash hands the bat a corn chip. Crunch!",[["ash",30,1],["corn",50,0.5,30],["bat",72,0.8,30]]],["The bat lets Ash get the star!",[["ash",40,1.1],["star",62,0.6,30],["bat",80,0.6,55]]]],"quiz":[{"q":"What did Ash find?","pics":["star","moon","fish"],"a":"star"},{"q":"What did Ash give the bat?","pics":["corn","cake","fish"],"a":"corn"}]},
-  {"id":"farm_horse","t":6,"title":"The Horse and the Bird","bg":"farm","cover":"horse","pages":[["Ash has a horse on the farm.",[["ash",28,1],["horse",62,1.4]]],["The horse is big, and it is strong.",[["horse",50,1.5]]],["It likes to munch corn.",[["horse",45,1.4],["corn",75,0.5]]],["A bird sat on the horse.",[["horse",50,1.4],["bird",52,0.4,52]]],["The horse let the bird ride!",[["horse",55,1.4],["bird",57,0.45,52]]],["The bird and the horse are best pals.",[["horse",40,1.4],["bird",70,0.5,30]]]],"quiz":[{"q":"What does the horse munch?","pics":["corn","cake","nut"],"a":"corn"},{"q":"Who rode on the horse?","pics":["bird","girl","fox"],"a":"bird"}]},
-  {"id":"night_sea","t":7,"title":"A Goat in a Coat","bg":"night","cover":"goat","pages":[["At night, Ash and the {pet} go to the sea.",[["ash",35,1],["pet",58,0.7]]],["The moon is out. It is so bright.",[["moon",70,0.7,62],["ash",30,1]]],["They see a boat with a light.",[["boat",60,1.2,-2],["light",60,0.4,30]]],["It is a goat in a coat!",[["boat",55,1.2,-2],["goat",55,0.6,22],["coat",78,0.4,40]]],["The goat waves, and the boat floats on.",[["boat",75,1,-2],["goat",75,0.5,20]]],["Ash and the {pet} wave back. What a treat!",[["ash",40,1.1],["pet",62,0.7]]]],"quiz":[{"q":"Who was in the boat?","pics":["goat","cow","sheep"],"a":"goat"},{"q":"What did the goat have on?","pics":["coat","boot","shirt"],"a":"coat"}]},
-  {"id":"rain_book","t":7,"title":"The Rain Day","bg":"rain","cover":"rain","pages":[["Rain, rain! Ash stays in.",[["house",50,1.5]]],["Ash reads a book to the {pet}.",[["ash",38,1.1],["pet",64,0.7]]],["The book has a cow in it.",[["cow",50,1.2]]],["The cow meets a mouse.",[["cow",38,1.2],["mouse",70,0.5]]],["The mouse needs a home.",[["mouse",50,0.7]]],["The mouse gets a room in the barn with the cow.",[["barn",50,1.6],["cow",30,0.8],["mouse",70,0.4]]],["The rain stops. Ash and the {pet} run out to play!",[["ash",40,1.1],["pet",62,0.7]]]],"quiz":[{"q":"Who needed a home?","pics":["mouse","cow","goat"],"a":"mouse"},{"q":"Did it rain in the story?","yes":true}]},
-  {"id":"robot_zip","t":8,"title":"Zip the Robot","bg":"meadow","cover":"robot","pages":[["Ash made a robot. Its name is Zip.",[["ash",35,1],["robot",65,1]]],["Zip can pick up a pumpkin.",[["robot",45,1],["pumpkin",70,0.6]]],["Zip can make a sandwich.",[["robot",45,1],["sandwich",70,0.5,20]]],["At the picnic, Zip sets out cupcakes.",[["picnic",45,0.9],["cupcake",70,0.4,20],["robot",20,0.8]]],["Then a rabbit hops in and grabs a cupcake!",[["rabbit",55,0.7],["cupcake",72,0.35,20]]],["Zip beeps. Beep, beep!",[["robot",50,1.1]]],["Ash hands the rabbit a cupcake. Yum!",[["ash",30,1],["cupcake",50,0.35,30],["rabbit",70,0.7]]]],"quiz":[{"q":"What is the robot's name?","words":["Zip","Bolt","Max"],"a":"Zip"},{"q":"Who grabbed a cupcake?","pics":["rabbit","turtle","dragon"],"a":"rabbit"}]},
-  {"id":"dragon_picnic","t":8,"title":"The Dragon Picnic","bg":"meadow","cover":"dragon","pages":[["A dragon lands in the garden.",[["dragon",60,1.4]]],["Ash and the {pet} run to hide.",[["ash",25,1],["pet",40,0.7],["dragon",78,1]]],["But the dragon has a picnic basket.",[["dragon",45,1.2],["picnic",75,0.7]]],["In it are hotdogs and lemons.",[["hotdog",40,0.6],["lemon",65,0.5]]],["The dragon needs a pal.",[["dragon",50,1.3]]],["Ash sits down. They munch and chat till sunset.",[["ash",30,1],["dragon",70,1.1],["sunset",50,0.8,55]]]],"quiz":[{"q":"Who came to the picnic?","pics":["dragon","turtle","robot"],"a":"dragon"},{"q":"When did the picnic end?","pics":["sunset","night","rain"],"a":"sunset"}]},
-  {"id":"ash_fishing","t":9,"title":"Ash Goes Fishing","bg":"pond","cover":"fishing","pages":[["Ash and his {pet} went fishing at the pond.",[["ash",30,1],["pet",55,0.7],["fishing",78,0.8]]],["Ash sat on a rock. The {pet} was resting.",[["rock",30,0.9],["ash",30,0.9,30],["pet",68,0.7]]],["A big fish jumped up!",[["water",50,1.6,-14],["fish",55,0.8,30]]],["Splash! The fish landed in the pond.",[["water",50,1.6,-14],["fish",50,0.7]]],["Ash wished and wished. Then he got a fish!",[["ash",35,1],["fish",65,0.8]]],["Ash and the {pet} are resting in the sun.",[["ash",35,1],["pet",60,0.7],["sun",80,0.6,50]]]],"quiz":[{"q":"What did Ash do at the pond?","pics":["fishing","camping","swimming"],"a":"fishing"},{"q":"Did a fish jump up?","yes":true},{"q":"Who was resting with Ash?","pics":["pet","cow","bee"],"a":"pet"}]},
-  {"id":"camp_night","t":9,"title":"Camping at Night","bg":"night","cover":"camping","pages":[["Ash and Max went camping.",[["ash",30,1],["camping",68,1]]],["They set up a tent by the pond.",[["tent",45,1.1],["water",80,1,-12]]],["Max was singing, and Ash was painting.",[["singing",30,0.8],["painting",70,0.8]]],["Then the sun went down. Ash yelled, Look!",[["ash",40,1],["moon",70,0.6,50]]],["A bat was zipping past the moon!",[["bat",45,0.7,40],["moon",65,0.7,52]]],["They went to sleep in the tent. Sleeping in a tent is fun!",[["tent",45,1.1],["sleeping",75,0.6,20]]]],"quiz":[{"q":"What was Max doing?","pics":["singing","painting","fishing"],"a":"singing"},{"q":"What went past the moon?","pics":["bat","bee","bird"],"a":"bat"},{"q":"Did they sleep in a house?","yes":false}]},
-  {"id":"happy_puppy","t":10,"title":"The Happy Puppy","bg":"town","cover":"puppy","pages":[["Ash got a puppy. The puppy is happy.",[["ash",30,1],["puppy",65,0.8]]],["The puppy likes to run in the city.",[["city",50,1.4,10],["puppy",60,0.7]]],["It sees mice by the gate.",[["gate",40,1],["mice",70,0.6]]],["The mice run and hide in a box.",[["box",55,1],["mice",35,0.5]]],["The puppy is sad. It starts to cry.",[["puppy",45,0.9],["cry",70,0.5,40]]],["Ash gives it a snack. Now it is happy!",[["ash",30,1],["puppy",60,0.8],["happy",80,0.5,45]]]],"quiz":[{"q":"What did the puppy see?","pics":["mice","fly","baby"],"a":"mice"},{"q":"Where did the mice hide?","pics":["box","cup","hat"],"a":"box"},{"q":"Was the puppy happy at the end?","yes":true}]},
-  {"id":"rice_shop","t":10,"title":"Rice and Candy","bg":"shop","cover":"rice","pages":[["Ash has a shop in the city.",[["ash",35,1],["shop",68,1.1]]],["A baby bunny comes in.",[["bunny",55,0.8]]],["It wants rice and candy.",[["rice",35,0.8],["candy",65,0.7]]],["Ash gets the rice. Then a fly lands on it!",[["ash",30,1],["rice",60,0.7],["fly",62,0.4,32]]],["The fly zips up to the sky.",[["fly",55,0.5,45],["cloud",35,0.8,55]]],["The bunny is happy. It gives Ash a big hug.",[["bunny",60,0.8],["ash",35,1]]]],"quiz":[{"q":"Who came in to the shop?","pics":["bunny","puppy","baby"],"a":"bunny"},{"q":"What did the bunny want?","pics":["rice","cake","fish"],"a":"rice"},{"q":"What landed on the rice?","pics":["fly","bee","bird"],"a":"fly"}]},
-  {"id":"snowman","t":11,"title":"The Snowman","bg":"meadow","cover":"snowman","pages":[["It is a cold day. Ash puts on his coat.",[["ash",45,1],["coat",72,0.6,20]]],["Ash and his {pet} make a snowman.",[["ash",30,1],["snowman",60,1],["pet",82,0.6]]],["The snowman has a teapot for a hat!",[["snowman",50,1.1],["teapot",50,0.5,52]]],["Then the sun comes out. A rainbow!",[["rainbow",50,1.4,30],["sun",80,0.5,55]]],["Oh no! The snowman is melting.",[["snowman",50,0.9],["water",50,1.2,-14]]],["Ash could not stop it, but he had popcorn and fun.",[["ash",35,1],["popcorn",65,0.6]]]],"quiz":[{"q":"What did the snowman have for a hat?","pics":["teapot","hat","pot"],"a":"teapot"},{"q":"What came out with the sun?","pics":["rainbow","moon","fly"],"a":"rainbow"},{"q":"Did the snowman melt?","yes":true}]},
-  {"id":"sailboat","t":11,"title":"The Sailboat","bg":"sea","cover":"sailboat","pages":[["Ash and Zip set sail in a sailboat.",[["sailboat",50,1.3]]],["They see a sunfish and a seashell.",[["sunfish",35,0.7],["seashell",68,0.6]]],["Zip gets a pancake from the lunchbox.",[["pancake",50,0.8]]],["The wind is strong. The sailboat rocks and rocks.",[["sailboat",50,1.2,6],["cloud",25,0.7,55]]],["Then they land on the sand. Would you like to go on a sailboat?",[["sand",50,1.6,-10],["sailboat",75,0.8]]]],"quiz":[{"q":"What did they see in the sea?","pics":["sunfish","crab","whale"],"a":"sunfish"},{"q":"What did Zip eat?","pics":["pancake","cupcake","popcorn"],"a":"pancake"}]},
-  {"id":"lost_phone","t":12,"title":"Ash Can't Find the Phone","bg":"town","cover":"phone","pages":[["Oh no! Ash can't find his phone!",[["ash",45,1]]],["Is it by the teapot? No, it is not.",[["teapot",50,0.8]]],["Is it in the mailbox? Don't be silly!",[["mailbox",50,1]]],["His {pet} has it. The {pet} is chewing on it!",[["pet",45,0.8],["phone",62,0.4]]],["Ash gets his phone back. I'm so glad! he said.",[["ash",40,1],["phone",60,0.4,30],["happy",78,0.5,45]]]],"quiz":[{"q":"What did Ash lose?","pics":["phone","knife","wrench"],"a":"phone"},{"q":"Was the phone in the mailbox?","yes":false}]},
-  {"id":"ash_writes","t":12,"title":"Ash Writes a Book","bg":"meadow","cover":"write","pages":[["Ash wants to write a book.",[["ash",40,1],["write",70,0.6]]],["He gets a pen and a page.",[["pen",40,0.6],["page",65,0.7]]],["He writes about a lamb and a knight.",[["lamb",50,0.9]]],["The lamb hurt its knee. The knight fixed it with a wrench!",[["lamb",40,0.9],["wrench",70,0.5]]],["It's a good book! Ash said.",[["ash",40,1],["page",68,0.6]]],["Now it's your turn. Write a book!",[["write",50,0.8]]]],"quiz":[{"q":"Who hurt a knee?","pics":["lamb","puppy","bunny"],"a":"lamb"},{"q":"What did Ash write with?","pics":["pen","phone","knife"],"a":"pen"}]}
+  {"id":"ash_fish","t":3,"title":"{hero} Gets a Fish","bg":"pond","cover":"fish","pages":[["This is {hero}.",[["ash",50,1.2]]],["{hero} has a {pet}.",[["ash",38,1.2],["pet",66,0.8]]],["{hero} and the {pet} sit on the dock.",[["ash",40,1.1],["pet",62,0.75]]],["{hero} can fish. Can he get a fish?",[["ash",40,1.1],["fish",78,0.6,-4]]],["Tug, tug, tug. {hero} got a fish!",[["ash",40,1.1],["fish",60,0.7,30]]],["The fish is big! {hero} and the {pet} did it!",[["ash",35,1.1],["fish",55,0.8,24],["pet",75,0.75]]]],"quiz":[{"q":"What did {hero} catch?","pics":["fish","hat","box"],"a":"fish"},{"q":"Who went with {hero}?","pics":["pet","pig","hen"],"a":"pet"}]},
+  {"id":"ash_shop","t":3,"title":"{hero} Has a Shop","bg":"shop","cover":"shop","pages":[["{hero} has a shop.",[["shop",50,1.5]]],["A hen gets a hat at the shop.",[["ash",30,1],["hen",68,0.8],["hat",68,0.4,32]]],["A fox gets a big dish.",[["ash",30,1],["fox",66,0.9],["dish",66,0.5,40]]],["A duck has no cash. No cash!",[["ash",30,1],["duck",68,0.9]]],["{hero} gets the duck a chip.",[["ash",30,1],["chip",50,0.5,30],["duck",70,0.9]]],["The duck said, \"Quack!\"",[["ash",30,1],["duck",68,1]]]],"quiz":[{"q":"What did the hen get?","pics":["hat","dish","chip"],"a":"hat"},{"q":"Did the duck have cash?","yes":false}]},
+  {"id":"ash_frog","t":4,"title":"The Frog Jump","bg":"pond","cover":"frog","pages":[["{hero} and the {pet} went to the pond.",[["ash",35,1.1],["pet",60,0.75]]],["A frog sat on a log.",[["log",55,1.1],["frog",55,0.6,20]]],["The frog can jump!",[["frog",55,0.7,40]]],["Jump, jump, splash! The frog is in the pond.",[["frog",60,0.7,-2]]],["The {pet} jumps in, and {hero} grins.",[["ash",30,1.1],["pet",65,0.75,-2]]],["The frog swims up to the {pet}. Best pals!",[["pet",45,0.8,-2],["frog",65,0.6,-2]]]],"quiz":[{"q":"Where did the frog sit first?","pics":["log","rock","box"],"a":"log"},{"q":"Did the {pet} jump in the pond?","yes":true}]},
+  {"id":"big_truck","t":4,"title":"The Big Truck","bg":"town","cover":"truck","pages":[["{hero} has a red truck.",[["ash",28,1],["truck",64,1.3]]],["The truck can dump sand.",[["truck",50,1.3]]],["Crash! It hit a stump.",[["truck",45,1.3],["log",75,0.6]]],["{hero} and a crab help.",[["ash",30,1],["crab",55,0.6],["truck",80,1.1]]],["Tug and lift! The truck is up.",[["truck",55,1.3,6],["crab",25,0.6]]],["{hero} and the crab clap.",[["ash",40,1.1],["crab",66,0.7]]]],"quiz":[{"q":"Who helped {hero}?","pics":["crab","frog","pig"],"a":"crab"},{"q":"Did the truck crash?","yes":true}]},
+  {"id":"ash_kite","t":5,"title":"The Kite","bg":"meadow","cover":"kite","pages":[["{hero} has a kite.",[["ash",40,1.1],["kite",65,0.7,40]]],["It is red and white.",[["kite",50,1,30]]],["The wind takes the kite up.",[["ash",30,1],["kite",65,0.6,60]]],["Up and up it rides.",[["kite",60,0.5,70]]],["No! The kite is stuck in a tree.",[["tree",60,1.6],["kite",60,0.4,62]]],["{hero} can not get it. The {pet} can!",[["ash",25,1],["tree",62,1.6],["pet",62,0.5,40]]],["The {pet} gets the kite. It is time to hug!",[["ash",40,1.1],["pet",58,0.75],["kite",75,0.5]]]],"quiz":[{"q":"Where did the kite get stuck?","pics":["tree","lake","cake"],"a":"tree"},{"q":"Who got the kite down?","pics":["pet","hawk","cake"],"a":"pet"}]},
+  {"id":"lake_whale","t":5,"title":"The Wave","bg":"sea","cover":"whale","pages":[["{hero} rode a bike to the lake.",[["ash",35,1],["bike",60,0.9]]],["At the lake, {hero} got in a boat.",[["boat",50,1.3,-2],["ash",50,0.6,20]]],["The {pet} got in with him.",[["boat",50,1.3,-2],["ash",44,0.6,20],["pet",58,0.45,20]]],["Then a whale came up!",[["boat",30,1,-2],["whale",70,1.5,-4]]],["The whale made a big wave.",[["whale",70,1.4,-4],["boat",35,1,10]]],["{hero} and the {pet} rode the wave home.",[["boat",50,1.2,14],["ash",46,0.55,32],["pet",58,0.4,32]]]],"quiz":[{"q":"What came up by the boat?","pics":["whale","shark","fish"],"a":"whale"},{"q":"How did {hero} get to the lake?","pics":["bike","car","bus"],"a":"bike"}]},
+  {"id":"dark_cave","t":6,"title":"The Dark Cave","bg":"cave","cover":"star","pages":[["{hero} and the {pet} dig in the dark.",[["ash",40,1.1],["pet",62,0.7]]],["Far in the dark, the rocks are hard.",[["rock",30,0.7],["rock",70,0.8]]],["{hero} spots a spark!",[["ash",30,1],["star",70,0.5,40]]],["It is a star in the rock!",[["star",50,0.9,20]]],["But a big bat is on the star.",[["star",50,0.7],["bat",50,0.9,40]]],["{hero} hands the bat a corn chip. Crunch!",[["ash",30,1],["corn",50,0.5,30],["bat",72,0.8,30]]],["The bat lets {hero} get the star!",[["ash",40,1.1],["star",62,0.6,30],["bat",80,0.6,55]]]],"quiz":[{"q":"What did {hero} find?","pics":["star","moon","fish"],"a":"star"},{"q":"What did {hero} give the bat?","pics":["corn","cake","fish"],"a":"corn"}]},
+  {"id":"farm_horse","t":6,"title":"The Horse and the Bird","bg":"farm","cover":"horse","pages":[["{hero} has a horse on the farm.",[["ash",28,1],["horse",62,1.4]]],["The horse is big, and it is strong.",[["horse",50,1.5]]],["It likes to munch corn.",[["horse",45,1.4],["corn",75,0.5]]],["A bird sat on the horse.",[["horse",50,1.4],["bird",52,0.4,52]]],["The horse let the bird ride!",[["horse",55,1.4],["bird",57,0.45,52]]],["The bird and the horse are best pals.",[["horse",40,1.4],["bird",70,0.5,30]]]],"quiz":[{"q":"What does the horse munch?","pics":["corn","cake","nut"],"a":"corn"},{"q":"Who rode on the horse?","pics":["bird","girl","fox"],"a":"bird"}]},
+  {"id":"night_sea","t":7,"title":"A Goat in a Coat","bg":"night","cover":"goat","pages":[["At night, {hero} and the {pet} go to the sea.",[["ash",35,1],["pet",58,0.7]]],["The moon is out. It is so bright.",[["moon",70,0.7,62],["ash",30,1]]],["They see a boat with a light.",[["boat",60,1.2,-2],["light",60,0.4,30]]],["It is a goat in a coat!",[["boat",55,1.2,-2],["goat",55,0.6,22],["coat",78,0.4,40]]],["The goat waves, and the boat floats on.",[["boat",75,1,-2],["goat",75,0.5,20]]],["{hero} and the {pet} wave back. What a treat!",[["ash",40,1.1],["pet",62,0.7]]]],"quiz":[{"q":"Who was in the boat?","pics":["goat","cow","sheep"],"a":"goat"},{"q":"What did the goat have on?","pics":["coat","boot","shirt"],"a":"coat"}]},
+  {"id":"rain_book","t":7,"title":"The Rain Day","bg":"rain","cover":"rain","pages":[["Rain, rain! {hero} stays in.",[["house",50,1.5]]],["{hero} reads a book to the {pet}.",[["ash",38,1.1],["pet",64,0.7]]],["The book has a cow in it.",[["cow",50,1.2]]],["The cow meets a mouse.",[["cow",38,1.2],["mouse",70,0.5]]],["The mouse needs a home.",[["mouse",50,0.7]]],["The mouse gets a room in the barn with the cow.",[["barn",50,1.6],["cow",30,0.8],["mouse",70,0.4]]],["The rain stops. {hero} and the {pet} run out to play!",[["ash",40,1.1],["pet",62,0.7]]]],"quiz":[{"q":"Who needed a home?","pics":["mouse","cow","goat"],"a":"mouse"},{"q":"Did it rain in the story?","yes":true}]},
+  {"id":"robot_zip","t":8,"title":"Zip the Robot","bg":"meadow","cover":"robot","pages":[["{hero} made a robot. Its name is Zip.",[["ash",35,1],["robot",65,1]]],["Zip can pick up a pumpkin.",[["robot",45,1],["pumpkin",70,0.6]]],["Zip can make a sandwich.",[["robot",45,1],["sandwich",70,0.5,20]]],["At the picnic, Zip sets out cupcakes.",[["picnic",45,0.9],["cupcake",70,0.4,20],["robot",20,0.8]]],["Then a rabbit hops in and grabs a cupcake!",[["rabbit",55,0.7],["cupcake",72,0.35,20]]],["Zip beeps. Beep, beep!",[["robot",50,1.1]]],["{hero} hands the rabbit a cupcake. Yum!",[["ash",30,1],["cupcake",50,0.35,30],["rabbit",70,0.7]]]],"quiz":[{"q":"What is the robot's name?","words":["Zip","Bolt","Max"],"a":"Zip"},{"q":"Who grabbed a cupcake?","pics":["rabbit","turtle","dragon"],"a":"rabbit"}]},
+  {"id":"dragon_picnic","t":8,"title":"The Dragon Picnic","bg":"meadow","cover":"dragon","pages":[["A dragon lands in the garden.",[["dragon",60,1.4]]],["{hero} and the {pet} run to hide.",[["ash",25,1],["pet",40,0.7],["dragon",78,1]]],["But the dragon has a picnic basket.",[["dragon",45,1.2],["picnic",75,0.7]]],["In it are hotdogs and lemons.",[["hotdog",40,0.6],["lemon",65,0.5]]],["The dragon needs a pal.",[["dragon",50,1.3]]],["{hero} sits down. They munch and chat till sunset.",[["ash",30,1],["dragon",70,1.1],["sunset",50,0.8,55]]]],"quiz":[{"q":"Who came to the picnic?","pics":["dragon","turtle","robot"],"a":"dragon"},{"q":"When did the picnic end?","pics":["sunset","night","rain"],"a":"sunset"}]},
+  {"id":"ash_fishing","t":9,"title":"{hero} Goes Fishing","bg":"pond","cover":"fishing","pages":[["{hero} and his {pet} went fishing at the pond.",[["ash",30,1],["pet",55,0.7],["fishing",78,0.8]]],["{hero} sat on a rock. The {pet} was resting.",[["rock",30,0.9],["ash",30,0.9,30],["pet",68,0.7]]],["A big fish jumped up!",[["water",50,1.6,-14],["fish",55,0.8,30]]],["Splash! The fish landed in the pond.",[["water",50,1.6,-14],["fish",50,0.7]]],["{hero} wished and wished. Then he got a fish!",[["ash",35,1],["fish",65,0.8]]],["{hero} and the {pet} are resting in the sun.",[["ash",35,1],["pet",60,0.7],["sun",80,0.6,50]]]],"quiz":[{"q":"What did {hero} do at the pond?","pics":["fishing","camping","swimming"],"a":"fishing"},{"q":"Did a fish jump up?","yes":true},{"q":"Who was resting with {hero}?","pics":["pet","cow","bee"],"a":"pet"}]},
+  {"id":"camp_night","t":9,"title":"Camping at Night","bg":"night","cover":"camping","pages":[["{hero} and Max went camping.",[["ash",30,1],["camping",68,1]]],["They set up a tent by the pond.",[["tent",45,1.1],["water",80,1,-12]]],["Max was singing, and {hero} was painting.",[["singing",30,0.8],["painting",70,0.8]]],["Then the sun went down. {hero} yelled, Look!",[["ash",40,1],["moon",70,0.6,50]]],["A bat was zipping past the moon!",[["bat",45,0.7,40],["moon",65,0.7,52]]],["They went to sleep in the tent. Sleeping in a tent is fun!",[["tent",45,1.1],["sleeping",75,0.6,20]]]],"quiz":[{"q":"What was Max doing?","pics":["singing","painting","fishing"],"a":"singing"},{"q":"What went past the moon?","pics":["bat","bee","bird"],"a":"bat"},{"q":"Did they sleep in a house?","yes":false}]},
+  {"id":"happy_puppy","t":10,"title":"The Happy Puppy","bg":"town","cover":"puppy","pages":[["{hero} got a puppy. The puppy is happy.",[["ash",30,1],["puppy",65,0.8]]],["The puppy likes to run in the city.",[["city",50,1.4,10],["puppy",60,0.7]]],["It sees mice by the gate.",[["gate",40,1],["mice",70,0.6]]],["The mice run and hide in a box.",[["box",55,1],["mice",35,0.5]]],["The puppy is sad. It starts to cry.",[["puppy",45,0.9],["cry",70,0.5,40]]],["{hero} gives it a snack. Now it is happy!",[["ash",30,1],["puppy",60,0.8],["happy",80,0.5,45]]]],"quiz":[{"q":"What did the puppy see?","pics":["mice","fly","baby"],"a":"mice"},{"q":"Where did the mice hide?","pics":["box","cup","hat"],"a":"box"},{"q":"Was the puppy happy at the end?","yes":true}]},
+  {"id":"rice_shop","t":10,"title":"Rice and Candy","bg":"shop","cover":"rice","pages":[["{hero} has a shop in the city.",[["ash",35,1],["shop",68,1.1]]],["A baby bunny comes in.",[["bunny",55,0.8]]],["It wants rice and candy.",[["rice",35,0.8],["candy",65,0.7]]],["{hero} gets the rice. Then a fly lands on it!",[["ash",30,1],["rice",60,0.7],["fly",62,0.4,32]]],["The fly zips up to the sky.",[["fly",55,0.5,45],["cloud",35,0.8,55]]],["The bunny is happy. It gives {hero} a big hug.",[["bunny",60,0.8],["ash",35,1]]]],"quiz":[{"q":"Who came in to the shop?","pics":["bunny","puppy","baby"],"a":"bunny"},{"q":"What did the bunny want?","pics":["rice","cake","fish"],"a":"rice"},{"q":"What landed on the rice?","pics":["fly","bee","bird"],"a":"fly"}]},
+  {"id":"snowman","t":11,"title":"The Snowman","bg":"meadow","cover":"snowman","pages":[["It is a cold day. {hero} puts on his coat.",[["ash",45,1],["coat",72,0.6,20]]],["{hero} and his {pet} make a snowman.",[["ash",30,1],["snowman",60,1],["pet",82,0.6]]],["The snowman has a teapot for a hat!",[["snowman",50,1.1],["teapot",50,0.5,52]]],["Then the sun comes out. A rainbow!",[["rainbow",50,1.4,30],["sun",80,0.5,55]]],["Oh no! The snowman is melting.",[["snowman",50,0.9],["water",50,1.2,-14]]],["{hero} could not stop it, but he had popcorn and fun.",[["ash",35,1],["popcorn",65,0.6]]]],"quiz":[{"q":"What did the snowman have for a hat?","pics":["teapot","hat","pot"],"a":"teapot"},{"q":"What came out with the sun?","pics":["rainbow","moon","fly"],"a":"rainbow"},{"q":"Did the snowman melt?","yes":true}]},
+  {"id":"sailboat","t":11,"title":"The Sailboat","bg":"sea","cover":"sailboat","pages":[["{hero} and Zip set sail in a sailboat.",[["sailboat",50,1.3]]],["They see a sunfish and a seashell.",[["sunfish",35,0.7],["seashell",68,0.6]]],["Zip gets a pancake from the lunchbox.",[["pancake",50,0.8]]],["The wind is strong. The sailboat rocks and rocks.",[["sailboat",50,1.2,6],["cloud",25,0.7,55]]],["Then they land on the sand. Would you like to go on a sailboat?",[["sand",50,1.6,-10],["sailboat",75,0.8]]]],"quiz":[{"q":"What did they see in the sea?","pics":["sunfish","crab","whale"],"a":"sunfish"},{"q":"What did Zip eat?","pics":["pancake","cupcake","popcorn"],"a":"pancake"}]},
+  {"id":"lost_phone","t":12,"title":"{hero} Can't Find the Phone","bg":"town","cover":"phone","pages":[["Oh no! {hero} can't find his phone!",[["ash",45,1]]],["Is it by the teapot? No, it is not.",[["teapot",50,0.8]]],["Is it in the mailbox? Don't be silly!",[["mailbox",50,1]]],["His {pet} has it. The {pet} is chewing on it!",[["pet",45,0.8],["phone",62,0.4]]],["{hero} gets his phone back. I'm so glad! he said.",[["ash",40,1],["phone",60,0.4,30],["happy",78,0.5,45]]]],"quiz":[{"q":"What did {hero} lose?","pics":["phone","knife","wrench"],"a":"phone"},{"q":"Was the phone in the mailbox?","yes":false}]},
+  {"id":"ash_writes","t":12,"title":"{hero} Writes a Book","bg":"meadow","cover":"write","pages":[["{hero} wants to write a book.",[["ash",40,1],["write",70,0.6]]],["He gets a pen and a page.",[["pen",40,0.6],["page",65,0.7]]],["He writes about a lamb and a knight.",[["lamb",50,0.9]]],["The lamb hurt its knee. The knight fixed it with a wrench!",[["lamb",40,0.9],["wrench",70,0.5]]],["It's a good book! {hero} said.",[["ash",40,1],["page",68,0.6]]],["Now it's your turn. Write a book!",[["write",50,0.8]]]],"quiz":[{"q":"Who hurt a knee?","pics":["lamb","puppy","bunny"],"a":"lamb"},{"q":"What did {hero} write with?","pics":["pen","phone","knife"],"a":"pen"}]}
 ];
 
 /* ================================================================
@@ -7445,11 +7456,12 @@ const Books=(()=>{
   let ov=null,book=null,page=0,helps=0,recs=0,quizFirst=0,quizIdx=0,reading=false;
   function petId(){try{return state.mine&&state.mine.pet&&CRIT(state.mine.pet)?state.mine.pet:null;}catch(e){return null;}}
   function petWord(t){const id=petId();const w=id&&allWords().find(x=>x.w===id&&!x.tricky);return w&&w.t<=t?id:"dog";}
-  const fill=(s,t)=>s.replace(/\{pet\}/g,petWord(t));
+  const fill=(s,t)=>s.replace(/\{pet\}/g,petWord(t)).replace(/\{hero\}/g,()=>heroName());
+  let view=null;   // what the book overlay shows now: "shelf", "cover", "page", "quiz", "end", "listen"
   function avatar(){try{return Mine.avatar();}catch(e){return null;}}
   // one picture in a scene
   function art(a,t){
-    if(a==="ash"){const src=avatar();return src?`<img src="${src}" alt="Ash">`:drawThing("fox",1);}
+    if(a==="ash"){const src=avatar();return src?`<img src="${src}" alt="${esc(heroName())}">`:drawThing("fox",1);}
     if(a==="pet")a=petWord(t);
     if(a==="mud")return`<svg viewBox="0 0 100 40"><ellipse cx="50" cy="26" rx="48" ry="13" fill="#7A5230"/><ellipse cx="40" cy="22" rx="16" ry="4" fill="#9C6B3C"/></svg>`;
     if(WORD_ART[a]&&ART[WORD_ART[a]])return drawWord(a,"book");
@@ -7477,13 +7489,13 @@ const Books=(()=>{
     build();stopAudio();try{MyBook.inject();}catch(e){}
     const L0=L(),cards=(typeof MyBook!=="undefined"?MyBook.card():"")+BOOKS.map(b=>{const p=L0[b.id]||{},lock=!unlocked(b);
       return`<button class="bcov${lock?" locked":""}${p.done?" done":""}" data-id="${b.id}" ${lock?"disabled":""}>
-        <div class="bart">${lock?"🔒":art(b.cover,b.t)}</div><b>${b.title}</b>
+        <div class="bart">${lock?"🔒":art(b.cover,b.t)}</div><b>${esc(fill(b.title,b.t))}</b>
         <span>${b.mine?"✏️ by me":lock?`Level ${b.t}`:p.done?"⭐".repeat(p.stars||1)+"☆".repeat(3-(p.stars||1)):"NEW!"}</span>
         ${p.rec?`<i class="audio">🎧</i>`:""}</button>`;}).join("");
     ov.innerHTML=`<div class="bpage"><div class="bhead"><h2>📚 My books</h2><button class="bx" id="bClose">✕</button></div>
       <p class="sub">Read a book to earn stars. Read it to your pet and it becomes your own audiobook! 🎧</p>
       <div class="bshelf">${cards}</div></div>`;
-    ov.classList.add("on");Modes.open("book",ov);
+    ov.classList.add("on");Modes.open("book",ov);view="shelf";
     ov.querySelector("#bClose").onclick=close;
     ov.querySelectorAll(".bcov:not(.locked):not(.maker)").forEach(c=>c.onclick=()=>openBook(c.dataset.id));
     const mk=ov.querySelector("#bMake");if(mk)mk.onclick=()=>{close();MyBook.create();};
@@ -7494,10 +7506,10 @@ const Books=(()=>{
     const p=L()[book.id]||{};
     ov.innerHTML=`<div class="bpage cover"><div class="bhead"><button class="bx" id="bBack">‹ Books</button><button class="bx" id="bClose">✕</button></div>
       <div class="bcoverart">${scene(book.bg,[["ash",30,1.1],[book.cover,66,1.1]],book.t)}</div>
-      <h1 class="btitle">${book.title.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</h1>
+      <h1 class="btitle">${fill(book.title,book.t).split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</h1>
       <div class="mrow"><button class="btn primary big" id="bStart">Read it! 📖</button>
       ${p.rec?`<button class="btn soft big" id="bListen">🎧 Listen to me read it</button>`:""}</div></div>`;
-    ov.classList.add("on");Modes.open("book",ov);
+    ov.classList.add("on");Modes.open("book",ov);view="cover";
     wireWords(ov.querySelector(".btitle"));
     ov.querySelector("#bBack").onclick=shelf;ov.querySelector("#bClose").onclick=close;
     ov.querySelector("#bStart").onclick=()=>showPage();
@@ -7510,7 +7522,9 @@ const Books=(()=>{
       if(sp.classList.contains("on"))return;sp.classList.add("on");helps++;
       const w=sp.textContent.replace(/[^A-Za-z']/g,"").toLowerCase();if(!w){sp.classList.remove("on");return;}
       const known=allWords().find(x=>x.w===w);
-      if(!(known&&known.tricky)&&w.length>1){let ph;try{ph=known?known.p:splitPhonemes(w);}catch(e){ph=null;}
+      // his own name is read as a whole, like a tricky word
+      const own=(heroName().toLowerCase().match(/[a-z']+/g)||[]).indexOf(w.replace(/'s$/,""))>=0;
+      if(!(known&&known.tricky)&&!own&&w.length>1){let ph;try{ph=known?known.p:splitPhonemes(w);}catch(e){ph=null;}
         if(ph)for(const x of ph){if(soundOf(x)==="")continue;await Sound.say("sound:"+x,x);await new Promise(r=>setTimeout(r,70));}}
       await Sound.say("word:"+w,w,.85);sp.classList.remove("on");
     });
@@ -7520,14 +7534,14 @@ const Books=(()=>{
     const pet=petWord(t),minMs=Math.max(1200,words.split(" ").length*380);
     ov.innerHTML=`<div class="bpage"><div class="bhead"><button class="bx" id="bClose">✕</button><div class="bdots">${book.pages.map((_,i)=>`<i class="${i<page?"d":i===page?"c":""}"></i>`).join("")}</div></div>
       ${scene(book.bg,items,t)}
-      <div class="btext">${words.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
+      <div class="btext">${words.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</div>
       <div class="mrow bctl">
         ${Rec.ok()?`<button class="btn big rec" id="bRec">🎤 Read it to the ${pet}</button>`:""}
         <button class="btn primary big" id="bRead" disabled><span class="fill"></span><span class="lab">✓ I read it</span></button>
       </div>
       <div class="mrow bafter" style="display:none"><button class="btn soft" id="bHear">🔊 Hear it</button><button class="btn primary big" id="bNext">${page<book.pages.length-1?"Next page ▶":"Questions ▶"}</button></div>
       <div class="blisten">${art(pet,t)}</div></div>`;
-    wireWords(ov.querySelector(".btext"));
+    wireWords(ov.querySelector(".btext"));view="page";
     ov.querySelector("#bClose").onclick=close;
     // "I read it" unlocks after enough time to actually read the page
     const rb=ov.querySelector("#bRead"),fillEl=rb.querySelector(".fill");
@@ -7559,8 +7573,8 @@ const Books=(()=>{
       :[{v:"yes",h:`<b class="qword">👍 yes</b>`},{v:"no",h:`<b class="qword">👎 no</b>`}];
     const ans=q.pics||q.words?q.a:(q.yes?"yes":"no");
     ov.innerHTML=`<div class="bpage"><div class="bhead"><button class="bx" id="bClose">✕</button><div class="bdots">🧠 Question ${quizIdx+1} of ${book.quiz.length}</div></div>
-      <div class="bq">${text}</div><div class="bopts">${opts.map(o=>`<button class="bopt" data-v="${o.v}">${o.h}</button>`).join("")}</div></div>`;
-    ov.querySelector("#bClose").onclick=close;
+      <div class="bq">${esc(text)}</div><div class="bopts">${opts.map(o=>`<button class="bopt" data-v="${o.v}">${o.h}</button>`).join("")}</div></div>`;
+    ov.querySelector("#bClose").onclick=close;view="quiz";
     setTimeout(()=>Sound.say("sent:"+text,text,.9),250);
     ov.querySelectorAll(".bopt").forEach(b=>b.onclick=()=>{
       if(fin)return;tries++;
@@ -7587,9 +7601,9 @@ const Books=(()=>{
       <li>${(Rec.ok()?recs>=book.pages.length:helps<=1)?"⭐":"☆"} ${Rec.ok()?"You read every page to your pet":"You read it with almost no help"}</li></ul>
       <p class="mpaid">+${gems} 💎${coins?` &nbsp; +${coins} 🪙`:""}</p>
       <div class="mrow">${recs?`<button class="btn soft big" id="bListen">🎧 Listen to me read</button>`:""}
-      ${next&&next.id!==book.id?`<button class="btn soft big" id="bNextBook">Next book: ${next.title} ▶</button>`:""}
+      ${next&&next.id!==book.id?`<button class="btn soft big" id="bNextBook">Next book: ${esc(fill(next.title,next.t))} ▶</button>`:""}
       <button class="btn primary big" id="bShelf">📚 My books</button></div></div>`;
-    ov.querySelector("#bShelf").onclick=shelf;
+    view="end";ov.querySelector("#bShelf").onclick=shelf;
     const nb=ov.querySelector("#bNextBook");if(nb)nb.onclick=()=>openBook(next.id);
     const li=ov.querySelector("#bListen");if(li)li.onclick=()=>audiobook(0);
     setTimeout(()=>Sound.speak(`The end! You earned ${stars} star${stars>1?"s":""}!`,.95),600);
@@ -7603,8 +7617,8 @@ const Books=(()=>{
     stopped=false;
     for(let k=i;k<book.pages.length&&!stopped;k++){
       const [text,items]=book.pages[k],words=fill(text,book.t);
-      ov.innerHTML=`<div class="bpage"><div class="bhead"><button class="bx" id="bStop">⏹ Stop</button><div class="bdots">🎧 ${book.title}</div></div>
-        ${scene(book.bg,items,book.t)}<div class="btext">${words}</div></div>`;
+      ov.innerHTML=`<div class="bpage"><div class="bhead"><button class="bx" id="bStop">⏹ Stop</button><div class="bdots">🎧 ${esc(fill(book.title,book.t))}</div></div>
+        ${scene(book.bg,items,book.t)}<div class="btext">${esc(words)}</div></div>`;view="listen";
       ov.querySelector("#bStop").onclick=()=>{stopAudio();openBook(book.id);};
       const b=await DB.get("blobs",`story:${book.id}:${k}`);
       if(b)await playBlob(b);else await Sound.say("sent:"+words,words,.9);
@@ -7612,7 +7626,10 @@ const Books=(()=>{
     }
     if(!stopped)openBook(book.id);
   }
-  return{playBlob,stopAudio,shelf,openBook,scene,art,nextNew,wireWords,close,petWord,count:()=>BOOKS.filter(b=>(L()[b.id]||{}).done).length,
+  // the hero's name changed in Settings: show the open shelf, cover or page again with it
+  function refresh(){if(!ov||!ov.classList.contains("on"))return;
+    if(view==="shelf")shelf();else if(view==="cover"&&book)openBook(book.id);else if(view==="page"&&book)showPage();}
+  return{playBlob,stopAudio,shelf,openBook,scene,art,nextNew,wireWords,close,petWord,fill,refresh,count:()=>BOOKS.filter(b=>(L()[b.id]||{}).done).length,
     _state:()=>({book:book&&book.id,page,helps,recs,quizIdx})};
 })();
 
@@ -8315,10 +8332,14 @@ const Decode=(()=>{
   const DIG=["igh","sh","ch","th","wh","ck","ng","qu","ee","ea","ai","ay","oa","ow","oo","ou","ar","or","er","ir","ur","ll","ss","ff","zz","le"];
   const TEAM=new Set(["ee","ea","ai","ay","oa","ow","oo","ou","igh"]),RC=new Set(["ar","or","er","ir","ur"]),DG=new Set(["sh","ch","th","wh","ng","qu","ll","ss","ff","zz"]);
   const V="aeiou";
-  let LIST=null,SRC=null;
+  let LIST=null,SRC=null,HN=null,HSET=null;
+  // the hero's name, each part of it, and the whole name run together (My Own Book strips spaces)
+  const heroSet=()=>{const n=heroName();if(HN!==n){HN=n;const lw=n.toLowerCase();
+    HSET=new Set([lw,lw.replace(/[^a-z']/g,"")].concat((lw.match(/[a-z']+/g)||[])));}return HSET;};
   const list=()=>{if(!LIST||SRC!==state.customWords){SRC=state.customWords;LIST={};allWords().forEach(w=>{LIST[w.w.toLowerCase()]=w.t;});}return LIST;};
   function tier(w){
-    const lw=w.toLowerCase(),L=list();
+    const lw=w.toLowerCase(),L=list(),H=heroSet();
+    if(H.has(lw)||(lw.endsWith("'s")&&H.has(lw.slice(0,-2))))return 1;
     if(lw in EXTRA)return EXTRA[lw];
     if(lw in L)return L[lw];
     if(lw.includes("'"))return 12;
@@ -8713,9 +8734,9 @@ const MyBook=(()=>{
     const set=new Set();
     (state.critters||[]).forEach(c=>{const n=(CRIT(c.id)||{}).name;if(n&&okWord(n.toLowerCase())&&!n.includes(" "))set.add(n.toLowerCase());});
     allWords().filter(w=>!w.tricky&&WORD_ART[w.w]&&w.t<=tier()).sort((a,b)=>((state.stats[b.w]||{}).seen||0)-((state.stats[a.w]||{}).seen||0)).slice(0,40).forEach(w=>set.add(w.w));
-    return["Ash",...set];
+    set.delete(heroName().toLowerCase());return[heroName(),...set];
   }
-  const artFor=w=>w==="Ash"?"ash":(WORD_ART[w]?w:(CRITTERS.find(c=>c.name.toLowerCase()===w)||{}).id)||null;
+  const artFor=w=>w===heroName()||w==="Ash"?"ash":(WORD_ART[w]?w:(CRITTERS.find(c=>c.name.toLowerCase()===w)||{}).id)||null;
   // turn his books into shelf books
   function inject(){
     for(let i=BOOKS.length-1;i>=0;i--)if(BOOKS[i].mine)BOOKS.splice(i,1);
@@ -8736,7 +8757,7 @@ const MyBook=(()=>{
     const noun=nouns(),cats={who:noun,...GROUPS};let tab=edit.tab||"who";
     const s=sheet(`<div class="bhead"><h2>✏️ ${title?"Name your book":"My book · page "+(page+1)}</h2><button class="bx" id="mkX">✕</button></div>
       <div class="mkwrap"><div class="mkpic">${title?`<div class="mktitle">📕</div>`:p.a?Books.art(p.a,9):`<div class="mkpick">Pick a picture ⬇</div>`}</div>
-        <div class="mkline">${p.words.length?p.words.map((w,i)=>`<button class="mkw" data-i="${i}">${w}</button>`).join(""):`<span class="mkhint">Tap words below to ${title?"name your book":"write a sentence"}.</span>`}</div></div>
+        <div class="mkline">${p.words.length?p.words.map((w,i)=>`<button class="mkw" data-i="${i}">${esc(w)}</button>`).join(""):`<span class="mkhint">Tap words below to ${title?"name your book":"write a sentence"}.</span>`}</div></div>
       <div class="mkrow"><button class="btn soft" id="mkHear" ${p.words.length?"":"disabled"}>🔊 Hear it</button>
         <button class="btn soft" data-p=".">.</button><button class="btn soft" data-p="!">!</button><button class="btn soft" data-p="?">?</button>
         <button class="btn soft" id="mkUndo" ${p.words.length?"":"disabled"}>⌫</button></div>
@@ -8751,7 +8772,7 @@ const MyBook=(()=>{
         bank.innerHTML=[...new Set(pics)].map(a=>`<button class="mkpicb" data-a="${a}">${Books.art(a,9)}</button>`).join("");
         bank.querySelectorAll(".mkpicb").forEach(b=>b.onclick=()=>{p.a=b.dataset.a;Sound.sfx.pop();edit.tab="who";edit();});return;}
       const list=(cats[t]||[]).filter(w=>okWord(w.toLowerCase().replace(/[^a-z']/g,"")));
-      bank.innerHTML=list.map(w=>`<button class="mkb${artFor(w)&&t==="who"?" n":""}" data-w="${w}">${w}</button>`).join("")||`<span class="mkhint">Read more words to unlock these!</span>`;
+      bank.innerHTML=list.map(w=>`<button class="mkb${artFor(w)&&t==="who"?" n":""}" data-w="${esc(w)}">${esc(w)}</button>`).join("")||`<span class="mkhint">Read more words to unlock these!</span>`;
       bank.querySelectorAll(".mkb").forEach(b=>b.onclick=()=>{
         let w=b.dataset.w;if(!p.words.length&&!title)w=w[0].toUpperCase()+w.slice(1);
         if(title)w=w[0].toUpperCase()+w.slice(1);
@@ -8778,7 +8799,7 @@ const MyBook=(()=>{
     state.wordsRead+=words;const first=i<0;if(first){state.gems+=5+book.pages.length;}
     save();inject();renderHUD();try{Quests.hit("mybook");}catch(e){}
     confetti();Sound.sfx.fanfare();
-    const s=sheet(`<div class="qwin"><div class="qprize">📕</div><h2>“${book.title}”</h2><p class="sub">by me! · ${book.pages.length} page${book.pages.length>1?"s":""}</p>
+    const s=sheet(`<div class="qwin"><div class="qprize">📕</div><h2>“${esc(book.title)}”</h2><p class="sub">by me! · ${book.pages.length} page${book.pages.length>1?"s":""}</p>
       ${first?`<p class="mpaid">+${5+book.pages.length} 💎</p>`:""}
       <div class="mrow" style="justify-content:center"><button class="btn soft" id="mkShelf">📚 My shelf</button>
       <button class="btn primary big" id="mkRead">🎤 Read it to my ${Books.petWord(1)}</button></div></div>`);
@@ -10373,6 +10394,7 @@ function renderSettings(){
   document.getElementById("optTier").value=state.settings.tierOverride;
   document.getElementById("optTimer").value=state.settings.timer;
   document.getElementById("optGoal").value=String(Goal.target());
+  document.getElementById("optHero").value=heroName();
 }
 document.getElementById("optPics").onchange=e=>{state.settings.pics=e.target.checked;save();};
 document.getElementById("optTTS").onchange=e=>{state.settings.tts=e.target.checked;save();};
@@ -10405,6 +10427,9 @@ document.getElementById("optNature").onchange=e=>{state.settings.nature=e.target
 document.getElementById("optSpeech").onchange=e=>{state.settings.speech=e.target.checked;save();};
 document.getElementById("optFast").onchange=e=>{state.settings.fastTrack=e.target.checked;save();};
 document.getElementById("optGoal").onchange=e=>{state.settings.goal=+e.target.value;Goal.render();save();};
+// the name is kept as typed (it is escaped wherever it is shown); empty means the default
+document.getElementById("optHero").onchange=e=>{state.hero=String(e.target.value).replace(/\s+/g," ").trim().slice(0,16)||HERO;
+  e.target.value=state.hero;save();try{Books.refresh();}catch(err){}};
 document.getElementById("optTimer").onchange=e=>{state.settings.timer=+e.target.value;sessionStart=Date.now();
   delete document.body.dataset.yawned;save();};
 /* A full backup is the save plus every Voice Studio recording and creature-pack
