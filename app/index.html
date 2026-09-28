@@ -5174,12 +5174,15 @@ function miss(btn){
     setTimeout(()=>t.classList.remove("wobble"),520);});
   if(misses>=2)document.querySelectorAll("#picks .pick").forEach(p=>{
     if(p.dataset.w===cur.w)p.classList.add("hint");});
-  const w=cur,talking=!!w._fb;
-  const tok=w._fb=(w._fb||0)+1;           // a newer miss cuts off the help still being spoken
-  if(talking){try{VoicePack.stop();Sound.stopVoice();}catch(e){}}
+  const w=cur,tok=w._fb=(w._fb||0)+1;     // a newer miss cuts off the help still being spoken
+  if(w._helping){w._helping=false;try{VoicePack.stop();Sound.stopVoice();}catch(e){}}
   let help=null;
   if(misses===1){try{help=missHelp(w,btn.dataset.w);}catch(e){help=null;}}
-  setTimeout(()=>{if(help)help(tok).catch(()=>{if(helpLive(w,tok))blend();});else blend();},560);
+  setTimeout(()=>{
+    if(!help)return blend();
+    w._helping=true;
+    help(tok).catch(()=>{if(helpLive(w,tok))blend();}).then(()=>{if(w._fb===tok)w._helping=false;});
+  },560);
 }
 function succeed(){
   if(!cur||cur._paid)return;cur._paid=true;cur._lock=true;
