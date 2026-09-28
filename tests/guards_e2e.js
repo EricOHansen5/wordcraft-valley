@@ -94,6 +94,14 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
      const bad=Adv._A().hunt.marks.filter(m=>Math.abs(m.c-9)<1.6&&Math.abs(m.r-r0)<1).length;
      state.notes=[];Adv._A().hunt=null;Adv.redraw();return bad;})()`);
    ok(edge===0,"treasure mark on the rounding edge of a note is kept clear ("+edge+" on it)");
+   // nothing placed with freePos (quest giver, notes) or as a treasure mark lands where it would take a building's button
+   const shade=await E(`(()=>{const g0=state.grid;state.grid={"9,7":{id:"cottage",lv:1}};Adv.redraw();
+     const by=p=>Math.abs(p.c-9)<2.2&&Math.abs(p.r-7)<1.5;let n=0,m=0;
+     for(let k=0;k<200;k++)if(by(Adv.freePos(1)))n++;
+     for(let k=0;k<60;k++){Adv._A().hunt=null;Adv.newHunt();document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+       if(Adv._A().hunt.marks.some(by))m++;}
+     state.grid=g0;Adv._A().hunt=null;Adv.redraw();return n+"/"+m;})()`);
+   ok(shade==="0/0","free spots and treasure marks keep clear of buildings (spots/hunts on one: "+shade+")");
    await E("Adv.exit()");}
 
   // mine: shop counter and a full backpack

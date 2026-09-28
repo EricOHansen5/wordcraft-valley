@@ -7596,11 +7596,15 @@ const Adv=(()=>{
   }
   // after the valley redraws (placing, levels, weather) put everything back
   function mount(){if(!on){grassEls=[];landEls=[];spotEls=[];ash=null;petEl=null;return;}drawGrass();drawLand();drawSpots();drawAsh();}
+  // a spot this close to a building would win the "use" button wherever he stands by it
+  // (spots reach 1.05 × .75 from him, buildings 1.1 × .7), so the building could never be used
+  const byBuilding=(c,r)=>{for(const key in state.grid){const[bc,br]=key.split(",").map(Number);
+    if(Math.abs(bc-c)<2.2&&Math.abs(br-r)<1.5)return true;}return false;};
   // a free spot a few steps from Ash, for things that arrive while he explores
   function freePos(minD=2.5){
     for(let k=0;k<60;k++){const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
       if(Math.abs(c-P.c)<minD&&k<50)continue;if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.6&&Math.abs(p.r-r)<1))continue;
-      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
+      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1)||(k<50&&byBuilding(c,r)))continue;
       // not on a treasure mark either: the spot would take the "use" button and the mark could never be dug
       if(A().hunt&&A().hunt.marks.some(m=>!m.dug&&Math.abs(m.c-c)<1.6&&Math.abs(m.r-r)<1))continue;
       return{c,r};}
@@ -7748,6 +7752,7 @@ const Adv=(()=>{
       // keep clear of notes and the quest giver, which win the "use" button over a mark
       if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
+      if(k<150&&byBuilding(c,r))continue;
       spots.push({c,r});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
     const order=[0,1,2].sort(()=>Math.random()-.5);
