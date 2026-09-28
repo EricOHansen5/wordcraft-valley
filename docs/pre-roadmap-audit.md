@@ -2,7 +2,7 @@
 
 Date: 27 Sept 2026, against v9.2.1. Companion to [roadmap-v10.md](roadmap-v10.md).
 
-**Status:** items #1, #2 and #16 are on branch `fix/audit-fix-now` (wcv-2026-09-28b); #3 is on `refactor/modes` (wcv-2026-09-28c); #4 is on `refactor/save-schema` (wcv-2026-09-28d). Each branch stacks on the previous one and each passed the full suite. All await review and merge. Items #5–#8 are open, to be done with the features that need them.
+**Status:** items #1, #2 and #16 are on branch `fix/audit-fix-now` (wcv-2026-09-28b); #3 is on `refactor/modes` (wcv-2026-09-28c); #4 is on `refactor/save-schema` (wcv-2026-09-28d). Each branch stacks on the previous one and each passed the full suite. All await review and merge. Items #5–#7 landed in wcv-2026-09-28g (`tests/lib.js`, `tools/voice/extract.js`, one book per line). #8 is open, to be done with the Jobs kits.
 
 **How this was made.** A read of `app/index.html` (sections, storage, state, boot, the `Read`, `Sync`, `Adv`, `Notes` and `Quests` modules), `app/sw.js`, `server/server.js`, the test runner and every test file's structure, the voice tools, CI and deploy config. One bug was reproduced by running the server. The full test suite was run locally after installing its dependencies (see the last section).
 

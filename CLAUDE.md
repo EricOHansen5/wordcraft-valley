@@ -60,8 +60,8 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 - **Older iPad Safari.** Avoid `.at()`, `structuredClone`, top-level await and CSS `:has()`. Test touch as well as keyboard (WASD/arrows and space).
 - **Audience is a 6-year-old.** Feedback is always kind; a wrong answer never takes anything away (e.g. "no boost this time"). Sentences in books must be decodable at their level: run the decode check in the DECODE section.
 - **Voice.** Spoken lines are played from `app/voice/` when the exact text (or a few whole indexed pieces) exists; otherwise the device voice is used. A new fixed line should get a clip:
-  1. Add it to `tools/voice/voice_texts.json`.
-  2. Run `gen.py` and then `index.py`.
+  1. Run `npm run voice:extract`. It reads the game and adds every missing fixed line to `tools/voice/voice_texts.json`; a line built at run time from a variable has to be added by hand.
+  2. In `tools/voice`, run `python gen.py 0 1` and then `python index.py`.
 - Art: OpenMoji (CC BY-SA) and Fluent Emoji (MIT) are embedded inline. Keep the attributions in Parent mode → About.
 
 ## Workflow for any change
@@ -87,5 +87,5 @@ HTTPS (needed for the home-screen app, offline play and the microphone) comes fr
 ```
 cd tools/voice && pip install kokoro-onnx soundfile
 # download kokoro-v1.0.onnx and voices-v1.0.bin from github.com/thewh1teagle/kokoro-onnx releases into this folder
-python gen.py && python index.py   # needs ffmpeg on PATH for mp3
+python gen.py 0 1 && python index.py   # gen.py takes <part> <parts> to split the work across machines; needs ffmpeg on PATH for mp3
 ```

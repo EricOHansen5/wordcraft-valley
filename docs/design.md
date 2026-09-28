@@ -6,6 +6,8 @@
 
 ---
 
+> **Reading this doc:** sections 1–10 are the original v0.1 plan (JSON packs, TypeScript, Vite, Phaser, React overlays, Dexie). None of that was built. The game is one self-contained `app/index.html`; the build as it actually stands starts at section 11, and every version since has its own section below it.
+
 ## 1. The Fantasy
 
 He arrives in an empty valley with a small companion creature (his "Grub"). Everything in the valley — blocks, trees, animals, tools, doors, new lands — is sleeping inside **Word Crates**. Reading the word on a crate wakes it up and puts it in his hands. Build enough, and new areas of the valley open up to explore.
