@@ -7287,7 +7287,8 @@ const Mine=(()=>{
      · Cave life: bats flit, slimes bounce him high, moles pop out with a
        word riddle, and one lost animal a day needs reading to get home.
      · Word vaults: locked rooms deep down that open with a reading key.
-     · Mine jobs: three small goals a day, paid in coins.
+     · Mine tasks: three small goals a day, paid in coins (the panel was
+       "Mine jobs" until v10.1 brought Jobs; the save keeps mine.jobs).
      ================================================================ */
   const BLK=[{k:"dirt",t:T.DIRT,n:"dirt"},{k:"stone",t:T.STONE,n:"stone"},{k:"sand",t:T.SAND,n:"sand"},
     {k:"ladder",t:T.LADDER,n:"ladder"},{k:"torch",t:T.TORCH,n:"torch"},{k:"sign",t:T.SIGN,n:"sign"}];
@@ -7504,14 +7505,14 @@ const Mine=(()=>{
   const jobProg=j=>Math.min(jobDef(j.id).n,(ST()[jobDef(j.id).s]||0)-j.base);
   function openJobs(){
     const J=jobs(),m=M();
-    openPanel(`<h2>📋 Mine jobs</h2><p class="sub">Three jobs a day. Finish one, then tap to get paid!</p>
+    openPanel(`<h2>📋 Mine tasks</h2><p class="sub">Three tasks a day. Finish one, then tap to get paid!</p>
       <div class="mjobs">${J.list.map((j,k)=>{const d=jobDef(j.id),p=jobProg(j),done=p>=d.n;
         return`<div class="mjob${j.paid?" paid":done?" done":""}"><b>${d.t}</b><div class="mjbar"><i style="width:${p/d.n*100}%"></i></div><span>${p}/${d.n}</span>
           ${j.paid?`<em>✓ paid</em>`:done?`<button class="btn primary mini" data-k="${k}">Get ${d.pay} 🪙</button>`:`<em>${d.pay} 🪙</em>`}</div>`;}).join("")}</div>
       <div class="mrow"><button class="btn primary" id="mClose">OK</button></div>`);
     card().querySelector("#mClose").onclick=closePanel;
     card().querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const j=J.list[+b.dataset.k];j.paid=true;m.coins+=jobDef(j.id).pay;Sound.sfx.win();
-      if(J.list.every(x=>x.paid)){state.gems+=3;toast("All three jobs done! +3 💎",3000);try{confetti();}catch(e){}}
+      if(J.list.every(x=>x.paid)){state.gems+=3;toast("All three tasks done! +3 💎",3000);try{confetti();}catch(e){}}
       save();hud();openJobs();});
   }
   function jobsBadge(){const J=jobs(),n=J.list.filter(j=>!j.paid&&jobProg(j)>=jobDef(j.id).n).length,el=root.querySelector("#mJobs");
