@@ -12,8 +12,9 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 // this test's server answers every path with the game, so the service worker can't register (not a save problem)
 const SW_NOISE=/unsupported MIME type/;
-// in September the season's free plan (Pumpkin patch) is added to the plans when the valley loads
-const SEASON_PLAN="pumpkinpatch";
+// in September the season's free plan (Pumpkin patch) is added to the plans when the valley loads,
+// after the Factory's free plan (given once, in bootFixups, to every save that doesn't have it)
+const SEASON_PLAN="pumpkinpatch",FACTORY_PLAN="factory";
 const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});
   // a page on the same origin with no game on it, for writing a save before the game starts
   if(q.url.startsWith("/blank")){r.end("<!doctype html><title>blank</title>");return;}
@@ -105,7 +106,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
     ok(same(s.grid,{"3,8":{id:"lantern",seed:102,lv:3},"7,7":{id:"well",seed:104},"13,8":{id:"campfire",seed:107,lv:2}}),"block era: scenery gone, doubles folded "+J(s.grid));
     ok(same(s.inventory,{birdhouse:{n:1,lv:3}}),"block era: three bird houses in the bag became one at gold "+J(s.inventory));
     ok(s.selected===null,"block era: dirt is no longer selected");
-    ok(same(s.blueprints,["lantern","well","campfire",SEASON_PLAN]),"block era: what stands in the valley counts as owned plans "+J(s.blueprints));
+    ok(same(s.blueprints,["lantern","well","campfire",FACTORY_PLAN,SEASON_PLAN]),"block era: what stands in the valley counts as owned plans "+J(s.blueprints));
     // foxes: 1+1+1 = gold; since is each one's place in the saved list
     ok(lv(s.critters)==="fox:3 dog:1 hen:1"&&J(s.critters.map(c=>c.since))==="[0,1,3]"&&outs(s.critters)==="fox dog hen","block era: three foxes became one at gold "+lv(s.critters));
     ok(s.tidied===true,"block era: tidied is set");
@@ -131,7 +132,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
     ok(lv(s.vehicles)==="v_car:3 v_bus:1 v_rocket:1 v_tractor:1 v_taxi:1 v_bike:1","v3.6: vehicles folded "+lv(s.vehicles));
     ok(outs(s.vehicles)==="v_rocket v_tractor v_taxi v_bike","v3.6: the four newest vehicles are out "+outs(s.vehicles));
     const rk=s.vehicles.find(v=>v.id==="v_rocket");ok(!("busy" in rk)&&!("hold" in rk),"v3.6: the rocket is not frozen mid-launch");
-    ok(same(s.blueprints,["lantern","garage","well","windmill","campfire",SEASON_PLAN]),"v3.6: plans kept "+J(s.blueprints));
+    ok(same(s.blueprints,["lantern","garage","well","windmill","campfire",FACTORY_PLAN,SEASON_PLAN]),"v3.6: plans kept "+J(s.blueprints));
     ok(t.includes(OLD_BLOCKS(13))&&t.includes(TIDIED),"v3.6: both tidy-up toasts on the first load "+J(t));
     ok(s.settings.timer===15&&s.settings.nature===true&&s.settings.spell===.6&&s.settings.fastTrack===true,"v3.6: timer kept, spelling share and fast track defaulted "+J(s.settings));
     ok(same(s.hats,["cap"])&&s.hat==="cap"&&mastered(s)===3&&s.wordsRead===212&&booksDone(s)===0&&same(s.customWords,[])&&same(s.notes,[])&&s.mine.coins===0,
@@ -158,7 +159,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
     ok(same(s.modeMin,{})&&same(s.modeOpens,{}),`${label}: time-by-mode starts empty`);
     ok(!t.includes(TIDIED)&&!t.some(x=>/^Your old blocks became/.test(x)),`${label}: no tidy-up toasts (${J(t)})`);
   };
-  await twice("v8-era.json",(s,t)=>v8checks(s,t,"v8",V8.blueprints.concat(SEASON_PLAN)));
+  await twice("v8-era.json",(s,t)=>v8checks(s,t,"v8",V8.blueprints.concat(FACTORY_PLAN,SEASON_PLAN)));
 
   // 4. the v9.2 test seed: no version, nothing to convert
   await twice("v9-2-seed.json",async(s,t)=>{
@@ -176,7 +177,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
    ok(s.v===await E("SAVE_V"),"restore v8: state.v is SAVE_V");
    const miss=await missing(p);ok(!miss.length,"restore v8: every key of def() is on the save "+miss.join(", "));
    // (the season's free plan is given when the game starts, not on a restore)
-   await v8checks(s,t,"restore v8",V8.blueprints);
+   await v8checks(s,t,"restore v8",V8.blueprints.concat(FACTORY_PLAN));
    ok((await stored(p)).v===s.v,"restore v8: stored");
    // an older export was just the save: the block-era one is converted, with its toasts
    await p.evaluate(o=>restoreBackup(o),FX("block-era.json"));await p.clock.runFor(8000);
