@@ -794,23 +794,23 @@ body.exploring .slot-empty{display:none}
 .advash .ashshadow{position:absolute;left:50%;bottom:-3%;width:70%;height:10%;transform:translateX(-50%);border-radius:50%;background:rgba(40,52,30,.3);z-index:-1}
 .advpet .hop{width:100%;height:100%}.advpet svg{width:100%;height:100%}
 #advHud{display:none}#advHud.on{display:block}
-.advtop{position:fixed;top:92px;left:22px;right:22px;display:flex;gap:10px;z-index:30;pointer-events:none;flex-wrap:wrap}
+.advtop{position:fixed;top:var(--advTop,calc(env(safe-area-inset-top) + 92px));left:22px;right:22px;display:flex;gap:10px;z-index:30;pointer-events:none;flex-wrap:wrap}
 .advtop>*{pointer-events:auto}#advHunt{margin-left:auto}
 .advpill{border:3px solid var(--ink);border-radius:18px;background:var(--paper);font-weight:900;font-size:17px;
   padding:8px 14px;min-height:54px;box-shadow:0 4px 0 rgba(46,38,32,.35);font-family:inherit}
 .advpill.gold{background:linear-gradient(160deg,#FFE58A,#F5C23C);}
-#advJoy{position:fixed;left:24px;bottom:24px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.28);border:4px solid rgba(46,38,32,.35);z-index:30;touch-action:none}
+#advJoy{position:fixed;left:14px;bottom:calc(env(safe-area-inset-bottom) + 10px);width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.28);border:4px solid rgba(46,38,32,.35);z-index:30;touch-action:none}
 #advKnob{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;background:#fff;border:4px solid var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
-#advAct{position:fixed;right:24px;bottom:30px;z-index:30;min-width:130px;height:96px;padding:0 18px;border-radius:48px;border:4px solid var(--ink);
+#advAct{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:30;min-width:130px;height:96px;padding:0 18px;border-radius:48px;border:4px solid var(--ink);
   background:linear-gradient(160deg,#FFD36B,#F2A93B);font-weight:900;font-size:20px;box-shadow:0 6px 0 rgba(46,38,32,.45);font-family:inherit;
   opacity:0;transform:scale(.6);pointer-events:none;transition:all .18s}
 #advAct.on{opacity:1;transform:none;pointer-events:auto}
-#advNote{position:fixed;left:50%;top:150px;transform:translateX(-50%);z-index:31;width:min(560px,90vw)}
+#advNote{position:fixed;left:50%;top:calc(var(--advTop,calc(env(safe-area-inset-top) + 92px)) + 64px);transform:translateX(-50%);z-index:31;width:min(560px,90vw)}
 #advNote:empty{display:none}
 #advNote .paper{background:linear-gradient(170deg,#FFF7DE,#F3E2B6);border:3px solid #8A6A3A;border-radius:14px 18px 16px 12px;padding:10px 16px;box-shadow:0 6px 0 rgba(46,38,32,.3);text-align:center}
 #advNote .nh{font-weight:900;color:#8A6A3A;font-size:15px}
 #advNote .btext{font-size:30px;margin:4px 0}
-#advNote.small{top:150px;cursor:pointer}#advNote.small .btext{font-size:24px}
+#advNote.small{cursor:pointer}#advNote.small .btext{font-size:24px}
 #advNote.big{top:50%;transform:translate(-50%,-50%);z-index:45}
 #advNote.big .paper{padding:22px;animation:pop .3s cubic-bezier(.2,1.3,.4,1)}#advNote.big .btext{font-size:44px}
 #advNote .btn{margin:6px 4px 0}
@@ -8801,7 +8801,7 @@ const Adv=(()=>{
   function enter(){
     if(!hud)buildHud();
     if(state.selected){state.selected=null;renderDock();}
-    on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);
+    on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
     // start where he is looking, at the front of the valley
     const W=worldW(),t=((cam+viewW()/2)/W-EDGE)/(1-EDGE*2);
     P.c=Math.max(0,Math.min(COLS-1,t*(COLS-1)));P.r=ROWS_MAX-1;P.pc=P.c-.9;P.pr=P.r;
@@ -8817,6 +8817,9 @@ const Adv=(()=>{
     input.jx=input.jy=0;[...grassEls,...landEls,...spotEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];spotEls=[];ash=petEl=null;
     Sound.sfx.soft();
   }
+  // the top bar and the note follow the top of the stage (the HUD is taller under a status bar or on a phone)
+  function placeTop(){if(!hud)return;try{const t=stage.getBoundingClientRect().top;if(t>0)hud.style.setProperty("--advTop",Math.round(t+10)+"px");}catch(e){}}
+  addEventListener("resize",()=>{if(on)placeTop();});
   function refreshHud(){
     if(!hud)return;const a=A(),n=Object.values(a.dex).filter(d=>d.caught).length;
     hud.querySelector("#advDexN").textContent=n+"/"+CRITTERS.length;
