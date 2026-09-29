@@ -10056,10 +10056,12 @@ const Jobs=(()=>{
   setTimeout(()=>{try{badge();}catch(e){}},1500);
   // the Job board in Adventure: a signpost at the first of these places with no building next to it
   const BOARD_AT=[{c:1.6,r:ROWS_MAX-1.35},{c:5.6,r:ROWS_MAX-2.4},{c:COLS-6.5,r:ROWS_MAX-1.35}];
-  Adv.provide(()=>{
-    if(!REG.length)return[];
+  function boardAt(){
     const free=p=>!Object.keys(state.grid||{}).some(k=>{const b=k.split(",").map(Number);return Math.abs(b[0]-p.c)<2.2&&Math.abs(b[1]-p.r)<1.5;});
-    const p=BOARD_AT.find(free)||BOARD_AT[0];
+    return BOARD_AT.find(free)||BOARD_AT[0];
+  }
+  Adv.provide(()=>{
+    if(!REG.length)return[];const p=boardAt();
     return[{c:p.c,r:p.r,size:.75,cls:"jboard",html:`<div class="jbd"><span>💼</span><b>JOBS</b></div>`,label:"💼 Job board",act:()=>open()}];
   });
 
@@ -10074,7 +10076,7 @@ const Jobs=(()=>{
   }
 
   return{register,get:id=>BY[id]||null,list:()=>REG.slice(),kit:(name,fn)=>{KITS[name]=fn;},kits:()=>Object.keys(KITS),KITS,
-    gen,level:levelOf,xp:xpOf,LEVELS,isOpen,open,close,clockIn,clockOut,canClockIn,talk,voiceLines,art:artHtml,
+    gen,level:levelOf,xp:xpOf,LEVELS,isOpen,open,close,clockIn,clockOut,canClockIn,talk,voiceLines,art:artHtml,boardAt,
     _S:()=>S&&{job:S.job.id,n:S.n,coins:S.coins,tips:S.tips,task:S.task&&{type:S.task.type.id,i:S.task.i,steps:S.task.steps.length,miss:S.task.miss,seed:S.task.seed}},
     _next:id=>next(id)};
 })();
