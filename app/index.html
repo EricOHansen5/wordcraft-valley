@@ -9833,7 +9833,8 @@ const Jobs=(()=>{
     if(opt.hint)right.classList.add("hint");
     btns.forEach(b=>b.onclick=()=>{
       if(fin)return;
-      if(b===right){fin=true;b.classList.add("right");Sound.sfx.win();setTimeout(()=>done(!miss),800);return;}
+      // a word he read is said back to him once he has found it, as in Read.pic
+      if(b===right){fin=true;b.classList.add("right");Sound.sfx.win();if(q.word){hush();Sound.say("word:"+q.word,q.word,.9);}setTimeout(()=>done(!miss),800);return;}
       miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
       if(miss>=2)right.classList.add("hint");
       if(opt.onMiss)opt.onMiss(miss);});
