@@ -10074,6 +10074,40 @@ const Jobs=(()=>{
     _next:id=>next(id)};
 })();
 
+/* ---- the math track, K–1 ----
+   Seven levels, every question generated from a seed and read aloud, so his reading level
+   never holds his math back. The shown text is only numbers and signs (3 + 4 = ?); the words
+   are spoken. opt.thing sets what is counted (the Shopkeeper counts what was ordered) and
+   opt.max the size of each group. math:{op,...} is what the answer is worked out from, so the
+   tests can check it. Spoken lines are short fixed pieces plus numbers, which have clips. */
+(()=>{
+  const {rnd,int,pick,near}=Seeded;
+  const THINGS=["plum","nut","fish","star","bell","shell","leaf","seed","egg","spoon","jar","boot","gem","lemon"].filter(w=>WORD_ART[w]);
+  const thing=(r,o)=>o&&o.thing||pick(r,THINGS);
+  const add=(a,b)=>[a,"and",b+".","How many in all?"];
+  Tracks.register({id:"math",name:"Numbers",icon:"🔢",levels:[
+    {id:"count10",grade:"K",name:"Count to 10",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),n=int(r,1,10);
+      return{kit:"pad",say:["How many are there?"],art:{kind:"things",thing:t,n},choices:near(r,n,4,1,10),ans:n,math:{op:"count",n}};}},
+    {id:"count20",grade:"K",name:"Count to 20",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),n=int(r,11,20);
+      return{kit:"pad",say:["How many are there?"],art:{kind:"things",thing:t,n},choices:near(r,n,4,1,20),ans:n,math:{op:"count",n}};}},
+    // the two groups are never the same size; tap the one with more (or fewer)
+    {id:"compare",grade:"K",name:"More or fewer",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),a=int(r,1,10);let b=int(r,1,9);if(b>=a)b++;
+      const more=r()<.5,ans=more?Math.max(a,b):Math.min(a,b);
+      return{kit:"pick",say:[more?"Which has more?":"Which has fewer?"],choices:[a,b].map(n=>({v:n,art:{kind:"things",thing:t,n}})),ans,math:{op:more?"more":"fewer",a,b}};}},
+    {id:"add10",grade:"K",name:"Add within 10",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),m=Math.min(9,o&&o.max||9),a=int(r,1,m),b=int(r,1,Math.min(m,10-a));
+      return{kit:"pad",say:add(a,b),text:`${a} + ${b} = ?`,art:{kind:"groups",groups:[{thing:t,n:a},{thing:t,n:b}],op:"+"},choices:near(r,a+b,4,0,10),ans:a+b,math:{op:"+",a,b}};}},
+    {id:"sub10",grade:"K",name:"Take away within 10",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),a=int(r,2,10),b=int(r,1,a-1);
+      return{kit:"pad",say:[a,"take away",b+".","How many are left?"],text:`${a} − ${b} = ?`,art:{kind:"take",thing:t,n:a,gone:b},choices:near(r,a-b,4,0,10),ans:a-b,math:{op:"-",a,b}};}},
+    {id:"add20",grade:"1",name:"Add within 20",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),a=int(r,2,10),b=int(r,Math.max(1,11-a),10);
+      return{kit:"pad",say:add(a,b),text:`${a} + ${b} = ?`,art:{kind:"groups",groups:[{thing:t,n:a},{thing:t,n:b}],op:"+"},choices:near(r,a+b,4,0,20),ans:a+b,math:{op:"+",a,b}};}},
+    // 1¢, 5¢ and 10¢ coins, biggest first, never more than four pennies
+    {id:"coins20",grade:"1",name:"Coins to 20¢",gen:(seed)=>{const r=rnd(seed),T=int(r,2,20),d=int(r,0,Math.min(2,Math.floor(T/10))),left=T-10*d,
+        n=int(r,Math.max(0,Math.ceil((left-4)/5)),Math.floor(left/5)),p=left-5*n,coins=[];
+      for(let i=0;i<d;i++)coins.push(10);for(let i=0;i<n;i++)coins.push(5);for(let i=0;i<p;i++)coins.push(1);
+      return{kit:"pad",say:["How much money is this?"],text:"? ¢",art:{kind:"coins",coins},choices:near(r,T,4,1,20),ans:T,math:{op:"coins",coins}};}}
+  ]});
+})();
+
 /* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
