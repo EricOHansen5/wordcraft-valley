@@ -452,6 +452,10 @@ select{width:auto}
 .stmsg{min-height:26px;text-align:center;font-weight:900;font-size:19px;margin:-6px 0 10px}
 .storemore{grid-column:1/-1;text-align:center;padding:6px 0}.storemore p{margin:0 0 8px;font-weight:800;color:var(--ink-soft)}
 .mmore{margin-top:8px;font-weight:800;font-size:14px;color:#6B5E52}
+.stswap{border:3px solid var(--ink);border-radius:18px;background:var(--paper-deep);padding:12px 14px;margin:0 0 12px;text-align:center}
+.stswap .sthead{font-weight:900;font-size:18px;margin-bottom:8px}
+.strow{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.strow .stpm{min-width:56px;font-size:24px;padding:6px 14px}.strow .stsum{font-size:26px;min-width:170px;white-space:nowrap}
 /* vehicles: body flips to face travel, act carries tap stunts, hop idles */
 .vehicle{position:absolute;transform:translate(-50%,-100%);cursor:pointer}
 .vehicle .body,.vehicle .act,.vehicle .hop{width:100%;height:100%;transform-origin:50% 100%}
@@ -3846,6 +3850,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   goal:{date:"",words:0,book:false,done:false},goalDays:{},
   // TRADING POST: what he bought there that has no older home (hats stay in hats, the Mine's helmets in mine.owned)
   owned:{},
+  // TRADING POST: he has held gems and coins at the same time, so the Swap tab shows (and stays)
+  exchangeSeen:false,
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -9600,7 +9606,7 @@ const Race=(()=>{
 })();
 
 /* ================================================================
-   TRADING POST — one shop, two shelves
+   TRADING POST — one shop, two shelves and a swap
    Everything he can wear or use is bought here, from the 🏪 button in
    the tool bar (it shows both purses) or the stall in Adventure. Each
    shelf is paid from its own purse:
@@ -9623,6 +9629,11 @@ const Race=(()=>{
    more ("Almost! 3 more 💎."). Prices never change and nothing is sold
    back. The Wardrobe tab of the sticker book and the Mine's clothes
    tent only put on what he owns, with a line pointing here.
+   Swap: 1 💎 = 5 🪙 both ways, in whole bundles of 5 🪙, and every swap
+   shows its sum ("10 🪙 → 2 💎") and says it ("10 coins make" "2 gems").
+   The Swap tab appears once he has held gems and coins at the same
+   time (state.exchangeSeen: set then and kept; an older save that
+   already holds both has it from the start).
    ================================================================ */
 const Store=(()=>{
   const PURSE={
@@ -9694,6 +9705,28 @@ const Store=(()=>{
   }
   const count=(n,P)=>n+" "+(n===1?P.one:P.many);
 
+  // ---------- the swap: 1 💎 = 5 🪙, both ways, in whole bundles of 5 🪙 ----------
+  const RATE=5;
+  // the Swap tab opens once he holds gems and coins at the same time, and stays open
+  function note(){if(!state.exchangeSeen&&PURSE.gems.get()>0&&PURSE.coins.get()>0){state.exchangeSeen=true;save();}}
+  const other=from=>from==="coins"?"gems":"coins";
+  const worth=(from,n)=>from==="coins"?n/RATE:n*RATE;
+  // {ok:true, from, to, give, get}, or {ok:false, why:"bundle"|"short"|"none", need}
+  function exchange(from,n){
+    n=+n;
+    if(!PURSE[from]||!(n>0)||Math.floor(n)!==n)return{ok:false,why:"none"};
+    if(from==="coins"&&n%RATE)return{ok:false,why:"bundle"};
+    const have=PURSE[from].get();
+    if(have<n)return{ok:false,why:"short",need:n-have};
+    const to=other(from),get=worth(from,n);
+    PURSE[from].set(have-n);PURSE[to].set(PURSE[to].get()+get);
+    save();try{renderHUD();}catch(e){}
+    return{ok:true,from,to,give:n,get};
+  }
+  const sum=(from,n)=>`${n} ${PURSE[from].ic} → ${worth(from,n)} ${PURSE[other(from)].ic}`;
+  // said as two pieces each, a number and fixed words: "10 coins make" "2 gems", "2 gems make" "10 coins"
+  const sumWords=(from,n)=>from==="coins"?[n+" coins make",count(worth(from,n),PURSE.gems)]:[n+(n===1?" gem makes":" gems make"),count(worth(from,n),PURSE.coins)];
+
   // ---------- the Trading Post ----------
   let el=null,shelf="outfit",lockUntil=0,greeted=false;
   // one tap at a time: a double tap lands once (the second would take off what the first put on)
@@ -9703,7 +9736,8 @@ const Store=(()=>{
     el=document.createElement("div");el.className="overlay";el.id="ovStore";
     el.innerHTML=`<div class="sheet stsheet"><h2>🏪 Trading Post</h2>
       <div class="stpurse"><span id="stGems"></span><span id="stCoins"></span></div>
-      <div class="tabs" id="stTabs"><button class="tab" data-shelf="outfit">💎 Outfits</button><button class="tab" data-shelf="gear">🪙 Gear</button></div>
+      <div class="tabs" id="stTabs"><button class="tab" data-shelf="outfit">💎 Outfits</button><button class="tab" data-shelf="gear">🪙 Gear</button>
+        <button class="tab" data-shelf="swap" id="stSwapTab">🔄 Swap</button></div>
       <p class="sub" id="stSub"></p><p class="stmsg" id="stMsg" aria-live="polite"></p>
       <div class="gridcards" id="stGrid"></div><div id="stSwap"></div>
       <div style="text-align:center;margin-top:18px"><button class="btn soft" id="stClose">Done</button></div></div>`;
@@ -9713,6 +9747,7 @@ const Store=(()=>{
   }
   function open(sh){
     if(!el)build();
+    note();
     if(sh)shelf=sh;
     msg("");render();
     el.classList.add("on");Modes.open("store",el);Sound.sfx.soft();
@@ -9723,8 +9758,11 @@ const Store=(()=>{
     if(!el)return;
     const $=s=>el.querySelector(s);
     $("#stGems").textContent="💎 "+PURSE.gems.get();$("#stCoins").textContent="🪙 "+PURSE.coins.get();
+    if(shelf==="swap"&&!state.exchangeSeen)shelf="outfit";
+    $("#stSwapTab").style.display=state.exchangeSeen?"":"none";
     el.querySelectorAll("[data-shelf]").forEach(b=>b.classList.toggle("on",b.dataset.shelf===shelf));
     const g=$("#stGrid");g.innerHTML="";$("#stSwap").innerHTML="";
+    if(shelf==="swap"){$("#stSub").textContent="5 🪙 make 1 💎. 1 💎 makes 5 🪙.";renderSwap($("#stSwap"));return;}
     $("#stSub").textContent=shelf==="outfit"?"Outfits for your buddy. Pay with 💎 from reading.":"Gear for your miner and your jobs. Pay with 🪙 coins.";
     list(shelf).filter(shown).forEach(it=>g.appendChild(card(it)));
   }
@@ -9766,6 +9804,29 @@ const Store=(()=>{
   function almost(need,P){msg(`Almost! ${need} more ${P.ic}.`);Sound.sfx.soft();sayParts(["Almost!",need+" more "+(need===1?P.one:P.many)]);}
   function locked(it){const j=JOBS[it.unlock.job]||{name:"your job",ic:"🔒"};
     msg(`🔒 ${j.ic} ${j.name} level ${it.unlock.level} opens it.`);Sound.sfx.soft();Sound.speak("Keep working at your job to unlock it!",.95);}
+  // the swap counter: one row each way, − and + move a whole bundle, the sum is always on show
+  const step={coins:1,gems:1};
+  function renderSwap(host){
+    host.innerHTML=["coins","gems"].map(f=>`<div class="stswap" data-from="${f}">
+      <div class="sthead">${PURSE[f].ic} → ${PURSE[other(f)].ic}</div>
+      <div class="strow"><button class="btn soft stpm" data-d="-1" aria-label="Less">−</button><b class="stsum" data-sum></b>
+      <button class="btn soft stpm" data-d="1" aria-label="More">+</button><button class="btn primary" data-go>Swap!</button></div></div>`).join("");
+    host.querySelectorAll(".stswap").forEach(row=>{
+      const f=row.dataset.from,unit=f==="coins"?RATE:1,max=()=>Math.max(1,Math.floor(PURSE[f].get()/unit));
+      const upd=()=>{step[f]=Math.max(1,Math.min(max(),step[f]));const n=step[f]*unit;
+        row.dataset.n=n;row.querySelector("[data-sum]").textContent=sum(f,n);
+        row.querySelector('[data-d="-1"]').disabled=step[f]<=1;row.querySelector('[data-d="1"]').disabled=step[f]>=max();};
+      row.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{step[f]+=+b.dataset.d;Sound.sfx.pop();upd();});
+      row.querySelector("[data-go]").onclick=()=>tap(()=>swap(f,step[f]*unit));
+      upd();});
+  }
+  function swap(from,n){
+    const r=exchange(from,n);
+    if(r.ok){Sound.sfx.chime();msg("✓ "+sum(from,n));sayParts(sumWords(from,n));}
+    else if(r.why==="short")almost(r.need,PURSE[from]);
+    else if(r.why==="bundle"){msg("Coins swap in fives: 5 🪙 → 1 💎.");Sound.sfx.soft();Sound.speak("Coins swap in fives.",.95);}
+    render();return r;
+  }
   function wear(it,on){const ok=put(it,on);if(ok){Sound.sfx.pop();if(on&&it.wear==="hat")buddyCheer();}render();return ok;}
 
   // ---------- the stall in Adventure ----------
@@ -9790,11 +9851,12 @@ const Store=(()=>{
 
   // ---------- the tool bar ----------
   function hud(){
+    note();
     const p=document.getElementById("storePurse");if(p)p.textContent=`💎 ${PURSE.gems.get()} · 🪙 ${PURSE.coins.get()}`;
   }
   document.getElementById("storeBtn").onclick=()=>open();
 
-  return{item,get,list,owns,has,unlocked,worn,outfits,helmets,purchase,put,buy,wear,open,close,hud,tasksForLevel,jobLevel,JOBS,
+  return{item,get,list,owns,has,unlocked,worn,outfits,helmets,purchase,put,buy,wear,open,close,hud,tasksForLevel,jobLevel,JOBS,exchange,swap,RATE,
     get shelf(){return shelf;},_spot:spot};
 })();
 // the wardrobe hats, as they were (ids, prices, and kept in state.hats)
@@ -11424,6 +11486,8 @@ function bootFixups(){
   const trim=(list,max)=>{const on=list.filter(x=>x.out!==false).sort((a,b)=>(a.since||0)-(b.since||0));
     while(on.length>max){on.shift().out=false;}};
   trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
+  // TRADING POST: a save that already holds gems and coins has the Swap tab
+  if(!state.exchangeSeen&&state.gems>0&&state.mine&&state.mine.coins>0)state.exchangeSeen=true;
 }
 
 /* Load a save: fill in its defaults, run the one-time conversions it has not had, then
