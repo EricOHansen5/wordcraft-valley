@@ -8414,7 +8414,7 @@ const Adv=(()=>{
   /* ---------- what is he standing next to? ---------- */
   function findNear(){
     const close=(c,r,dc=1.15,dr=.8)=>Math.abs(c-P.c)<=dc&&Math.abs(r-P.r)<=dr;
-    for(const sp of spotList)if(close(sp.c,sp.r,1.05,.75))return{k:"spot",sp,label:sp.label};
+    for(const sp of spotList)if(!sp.low&&close(sp.c,sp.r,1.05,.75))return{k:"spot",sp,label:sp.label};
     const h=A().hunt;
     if(h){const m=h.marks.find(m=>!m.dug&&close(m.c,m.r,1,.7));if(m)return{k:"dig",m,label:"⛏️ Dig here"};}
     const cr=state.critters.find(x=>x.out!==false&&close(x.c,x.r));
@@ -8426,6 +8426,8 @@ const Adv=(()=>{
     const gRow=Math.max(firstRow(),ROWS_MAX-2);
     const gb=(state.guardians||[]).find(b=>GUARDIANS[b]&&close(GUARDIANS[b].c,gRow));
     if(gb!=null)return{k:"guard",b:gb,label:"📖 "+GUARDIANS[gb].name.split(" ")[0]};
+    // a spot that stands like a building (low: true, the Trading Post) gives way to the animals and vehicles passing it
+    for(const sp of spotList)if(sp.low&&close(sp.c,sp.r,1.05,.75))return{k:"spot",sp,label:sp.label};
     for(const key in state.grid){const[c,r]=key.split(",").map(Number);
       if(close(c,r,1.1,.7))return{k:"build",key,id:state.grid[key].id,label:"🚪 "+(NAMES[state.grid[key].id]||"Use")};}
     return null;
@@ -9851,7 +9853,7 @@ const Store=(()=>{
     return{c:5.5,r:ROWS_MAX-1};
   }
   Adv.provide(()=>{const p=spot();if(!stall)stall=STALL();
-    return[{c:p.c,r:p.r,size:1.15,cls:"tpost",html:stall,label:"🏪 Trading Post",act:()=>open()}];});
+    return[{c:p.c,r:p.r,size:1.15,low:true,cls:"tpost",html:stall,label:"🏪 Trading Post",act:()=>open()}];});
 
   // ---------- the tool bar ----------
   function hud(){

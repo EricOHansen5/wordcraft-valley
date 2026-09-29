@@ -203,7 +203,10 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await E(()=>Adv.enter());await wait(500);
   const sp=await E(()=>Store._spot());
   ok(await E(()=>!!document.querySelector(".advland.tpost svg")),"Adventure: the Trading Post stall is in the valley at "+J(sp));
-  await E(s=>{Adv._P.c=s.c+.3;Adv._P.r=s.r;},sp);
+  // it stands like a building: a car parked at it keeps its race, and the stall is there once the car has gone
+  await E(s=>{state.critters.forEach(c=>{c.out=false;});const v=state.vehicles.find(x=>x.id==="v_car");v.out=true;v.c=s.c;v.r=s.r;Adv._P.c=s.c+.3;Adv._P.r=s.r;},sp);
+  ok(await waitFor(p,()=>/Race/.test(document.getElementById("advAct").textContent)),"a car parked at the stall still offers its race: "+await E(()=>document.getElementById("advAct").textContent));
+  await E(()=>{state.vehicles.forEach(v=>{v.out=false;});});
   ok(await waitFor(p,()=>document.getElementById("advAct").textContent==="🏪 Trading Post"),"walking up to it: 🏪 Trading Post");
   await p.keyboard.press("Space");
   ok(await waitFor(p,()=>Modes.stack().join(">")==="adventure>store"),"Space opens it on top of Adventure: "+await E(()=>Modes.stack().join(">")));
