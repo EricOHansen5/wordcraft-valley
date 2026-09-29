@@ -1179,8 +1179,8 @@ body.exploring .slot-empty{display:none}
 .jlawn.small i{width:30px;height:30px}
 .jlawn .cut{background:repeating-linear-gradient(90deg,#9ED67A 0 6px,#8BC766 6px 12px)}
 .jlawn .cut2{background:repeating-linear-gradient(0deg,#C9E89E 0 6px,#B5DD86 6px 12px)}
-.jlawn .start::before{content:"🏁";position:absolute;inset:0;display:grid;place-items:center;font-size:18px}
-.jlawn .me::after{content:"🚜";position:absolute;inset:0;display:grid;place-items:center;font-size:30px}
+.jlawn .start::before{content:"🏁";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:18px}
+.jlawn .me::after{content:"🚜";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:30px}
 .jlawn .me.start::before{content:none}
 .jlawn .next{box-shadow:0 0 0 4px rgba(255,229,138,.95)}
 .jlawn.bump{animation:wobble .45s}
@@ -1200,9 +1200,12 @@ body.exploring .slot-empty{display:none}
 .jbd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%}
 .jbd span{font-size:34px;background:#C98F4E;border:3px solid var(--ink);border-radius:10px;padding:2px 8px}
 .jbd b{font-size:12px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 5px;margin-top:-3px}
-@media (max-width:700px){.jwork{flex-direction:column;align-items:center}.jcust{flex-basis:auto}.jface{width:80px;height:80px}
-  .jthings{grid-template-columns:repeat(5,32px)}.jthings img{width:32px;height:32px}.jlawn i,.jcell{width:38px;height:38px}.jtext{font-size:28px}
-  .jpad{grid-template-columns:repeat(6,46px);grid-auto-rows:54px;gap:6px}.jkey{font-size:24px}}
+@media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
+  .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
+  .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
+  .wpic.jopt{min-width:112px;min-height:112px;padding:6px}.jword{width:86px;height:86px}
+  .jthings{grid-template-columns:repeat(5,30px)}.jthings img{width:30px;height:30px}.jlawn i,.jcell{width:36px;height:36px}
+  .jpad{grid-template-columns:repeat(6,46px);grid-auto-rows:54px;gap:6px}.jkey{font-size:24px}.jarrows{grid-template-columns:repeat(3,62px);grid-auto-rows:56px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -10014,7 +10017,7 @@ const Jobs=(()=>{
     if(first){jb.streak=(+jb.streak||0)+1;if(jb.streak>=5){jb.streak=0;tip=+j.pay.streakTip||0;}}else jb.streak=0;
     const pay=+j.pay.perTask||0;purse(pay+tip);S.n++;S.coins+=pay+tip;if(tip)S.tips++;
     save();renderHUD();stat();
-    hush();Sound.sfx.win();Sound.speak("Thank you!",.95);
+    hush();Sound.sfx.chime();Sound.speak("Thank you!",.95);
     toast(tip?`+${pay} 🪙 and a tip! +${tip} 🪙`:`+${pay} 🪙`);
     const h=freshHost();h.innerHTML=`<div class="jmoment"><p class="mpaid jpaid">+${pay} 🪙</p>${tip?`<p class="mpaid jpaid">🎉 Tip! +${tip} 🪙</p>`:""}</div>`;
     if(tip)setTimeout(()=>{if(!S)return;Sound.sfx.fanfare();try{confetti();}catch(e){}hush();Sound.speak("Five in a row! Here is a tip!",.95);},700);
