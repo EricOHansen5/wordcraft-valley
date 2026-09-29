@@ -11614,6 +11614,181 @@ const Lights=(()=>{
     _q:()=>cur&&{n:cur.n,kind:cur.kind,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece};
 })();
 /* ================================================================
+   FACTORY — drills, belts and machines fill the truck's order (after Lean Mine)
+   A 🏭 Factory building in the valley (a free plan, "factory" in state.blueprints, given once
+   in bootFixups) opens a top-down board: 12 × 9 cells in a level, 16 × 12 in his own factory.
+     the board  coloured rock spots (🔴 red, 🔵 blue, 🟡 yellow), grey rocks, and the truck. He puts
+                a drill on a spot and drags to paint a belt from it: the belt follows his finger and
+                turns at corners, a tap on a belt turns it. The palette (56 px and up) has the pieces
+                the levels have taught: belt, drill, mixer (two colours in, the mixed one out: red +
+                blue purple, blue + yellow green, red + yellow orange), splitter (ahead, left and right
+                in turn), sorter (pulls its colour off to the side), stamper (a mixed bar becomes a
+                toy), tunnel (links by itself to the next tunnel ahead within 4 cells and carries its
+                belt under whatever is between), and 🗑 erase. ▶ runs, ⏸ pauses, ↺ goes back to the
+                start (a second ↺ within 3 s takes every piece off). Keyboard: arrows move a cursor,
+                Space puts the piece down (a line of belts follows the cursor), R turns, E erases,
+                Enter runs, 1–8 pick a piece, C changes a sorter's colour.
+     jams       a belt backed up glows orange, then red (heat). The buddy's three lean tips, each held
+                2 s so it doesn't flicker: a drill that can't put its rock down on a full belt ("The
+                drills are waiting…", once the splitter is his), lots on the belts and little moving,
+                and very long belts.
+     the order  "Send 3 🟣 and 2 🟠", read aloud from number and word clips. The tally board fills
+                ten-frames as the truck gets them. When the order is met he adds it up on the Jobs
+                number pad ("3 🟣 + 2 🟠 = ?", math levels count10/add10/add20, recorded in Tracks so
+                the Grown-up report's math block has it). A miss: "The tally board can help!" and the
+                board glows; the same question stays, and after a second miss the answer shows faintly.
+     levels     F1–F12, one machine taught at a time (it is his for later levels and his own factory).
+                The first finish pays 5 💎, and each star pays 1 💎 the first time it is earned: ⭐ the
+                order, ⭐⭐ no belt went red, ⭐⭐⭐ that and no more pieces than the level's budget. Stars
+                only add; playing again pays nothing new and says so. There is no clock he can lose to:
+                a level's time limit is what its stored known solution (sol) has to beat in the tests.
+     his own    after F12: a bigger board with every machine, saved as he builds. Side orders come one
+     factory    at a time and pay 3–6 💎 when finished, 5 a day at most; after that they are for fun.
+                Deliveries alone pay nothing, and nothing runs while the Factory is closed.
+   The engine is Lean Mine's tick in plain JS (FactoryEngine, no DOM), one <canvas>, and a
+   requestAnimationFrame loop that runs only while the board is on screen and the app is visible.
+   Save: state.factory = {lvl (levels finished, 0–12), stars {"F3": 2}, sandbox (his factory as a
+   short string, null until he builds), orders {day, paid}}.
+   ================================================================ */
+/* ---- the engine (ported from Lean Mine's tick): no DOM, no Date, no Math.random ----
+   A board is rows of text: . floor, # rock, r b y an ore spot, T the truck. The pieces sit in typed arrays,
+   one cell each: type, ore (the spot under a drill), dir (0 N, 1 E, 2 S, 3 W), item (what it holds), prog (a
+   belt's item on its way across, 0 to BELT_T), timer, mask (the colours inside a mixer), heat (how long a belt
+   has been backed up), filt (a sorter's colour), buf (a splitter's or sorter's next way out), intake (which side a
+   receiver takes from next) and stall. Everything counts in ticks, 30 a second, so a layout always does the same.
+   Items: 1-3 ores (red, blue, yellow); 16 + a colour mask a mixed bar (red 1, blue 2, yellow 4: purple 3,
+   orange 5, green 6); 64 + mask a stamped toy. deposit() is the one hand-off: a machine pushes into the cell in
+   front of it, and every receiver pulls from the belts pointing at it in turn, so two belts merging share fairly. */
+const FactoryEngine=(()=>{
+  const HZ=30,K={NONE:0,BELT:1,DRILL:2,MIXER:3,SPLIT:4,STAMP:5,TUNNEL:6,SORT:7,ROCK:8,TRUCK:9};
+  const DX=[0,1,0,-1],DY=[-1,0,1,0];
+  // ticks: a belt cell, a drill's rock, a mix, a stamp, a splitter or sorter passing one on, a tunnel per cell
+  const BELT_T=12,DRILL_T=40,MIX_T=36,STAMP_T=36,PASS_T=6,TUN_T=8;
+  // heat: orange from ORANGE, red from RED (2 and 4 seconds backed up)
+  const HEAT_MAX=240,ORANGE=60,RED=120,HEAT_UP=1,HEAT_MOVE=2,HEAT_EMPTY=3,CHAIN=40;
+  const BAR0=16,TOY0=64,TUNNEL_RANGE=4,ORE_BIT=[0,1,2,4],POP=[0,1,1,2,1,2,2,3];
+  const colorOf=it=>it>=TOY0?it-TOY0:it>=BAR0?it-BAR0:(ORE_BIT[it]||0);
+  function make(rows){
+    const H=rows.length,W=rows[0].length,N=W*H;
+    const w={W,H,N,rows:rows.slice(),type:new Int8Array(N),ore:new Int8Array(N),dir:new Int8Array(N),item:new Int8Array(N),
+      prog:new Int16Array(N),timer:new Int16Array(N),mask:new Int8Array(N),heat:new Int16Array(N),filt:new Int8Array(N),
+      buf:new Int8Array(N),intake:new Int8Array(N),stall:new Int8Array(N),t:0,got:new Int16Array(128),sent:0,hot:0,
+      stD:0,drills:0,wip:0,mov:0,belts:0};
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=rows[y].charAt(x),i=y*W+x;
+      if(c==="#")w.type[i]=K.ROCK;else if(c==="T")w.type[i]=K.TRUCK;else{const k="rby".indexOf(c);if(k>=0)w.ore[i]=k+1;}}
+    return w;
+  }
+  const nb=(w,i,d)=>{const x=i%w.W+DX[d],y=((i/w.W)|0)+DY[d];return x<0||y<0||x>=w.W||y>=w.H?-1:y*w.W+x;};
+  const next=(w,i)=>nb(w,i,w.dir[i]);
+  const isPiece=t=>t>=K.BELT&&t<=K.SORT;
+  // a tunnel's exit: the nearest tunnel ahead facing the same way, within TUNNEL_RANGE; a tunnel with one behind it is an exit
+  function tunnelExit(w,i){const d=w.dir[i];let j=i;
+    for(let n=1;n<=TUNNEL_RANGE;n++){j=nb(w,j,d);if(j<0)return -1;if(w.type[j]===K.TUNNEL&&w.dir[j]===d)return j;}return -1;}
+  function tunnelIsExit(w,i){const d=w.dir[i],back=(d+2)&3;let j=i;
+    for(let n=1;n<=TUNNEL_RANGE;n++){j=nb(w,j,back);if(j<0)return false;if(w.type[j]===K.TUNNEL&&w.dir[j]===d)return true;}return false;}
+  // the one hand-off. src is where it comes from: a belt never takes from the cell it points at, a splitter,
+  // sorter or tunnel only from behind, a mixer or stamper never from the front; the truck takes anything
+  function deposit(w,j,it,src){
+    if(j<0||!it)return false;const t=w.type[j];
+    if(t===K.BELT){if(w.item[j]||(src>=0&&next(w,j)===src))return false;w.item[j]=it;w.prog[j]=0;return true;}
+    if(t===K.SPLIT||t===K.SORT||t===K.TUNNEL){if(w.item[j]||(src>=0&&nb(w,j,(w.dir[j]+2)&3)!==src))return false;w.item[j]=it;w.timer[j]=0;return true;}
+    if(t===K.TRUCK){w.got[it]++;w.sent++;return true;}
+    if(t===K.MIXER){if(it<1||it>3||(src>=0&&next(w,j)===src))return false;
+      const b=ORE_BIT[it],m=w.mask[j];if((m&b)||POP[m]>=2)return false;w.mask[j]=m|b;if(POP[m|b]===2)w.timer[j]=0;return true;}
+    if(t===K.STAMP){if(it<BAR0||it>=TOY0||w.item[j]||(src>=0&&next(w,j)===src))return false;w.item[j]=it;w.timer[j]=0;return true;}
+    return false;
+  }
+  // a machine that just handed one over goes to the back of that receiver's queue
+  const bump=(w,j,d)=>{if(j>=0)w.intake[j]=(d+3)&3;};
+  // try the ways out in turn from buf, skipping any that can't take it
+  function share(w,i,outs){const n=outs.length;
+    for(let k=0;k<n;k++){const c=(w.buf[i]+k)%n,j=nb(w,i,outs[c]);if(deposit(w,j,w.item[i],i)){bump(w,j,outs[c]);w.buf[i]=(c+1)%n;return true;}}
+    return false;}
+  // a drill that can't put its rock down: the full belt in front of it, as far as it goes, warms up too
+  function warm(w,j){for(let n=0;n<CHAIN&&j>=0&&w.type[j]===K.BELT&&w.item[j];n++){
+    if(w.heat[j]<HEAT_MAX){w.heat[j]+=HEAT_UP;if(w.heat[j]>w.hot)w.hot=w.heat[j];}j=next(w,j);}}
+  function tick(w){
+    const N=w.N,type=w.type;let mov=0,wip=0,belts=0,stD=0,drills=0;
+    for(let i=0;i<N;i++){const t=type[i];
+      if(t===K.DRILL){drills++;
+        if(w.timer[i]<DRILL_T)w.timer[i]++;
+        if(w.timer[i]>=DRILL_T){const j=next(w,i);
+          if(deposit(w,j,w.ore[i],i)){w.timer[i]=0;w.stall[i]=0;bump(w,j,w.dir[i]);}else{w.stall[i]=1;stD++;warm(w,j);}}}
+      else if(t===K.MIXER){const m=w.mask[i];
+        if(m){wip+=POP[m];
+          if(POP[m]===2){if(w.timer[i]<MIX_T)w.timer[i]++;
+            else{const j=next(w,i);if(deposit(w,j,BAR0+m,i)){bump(w,j,w.dir[i]);w.mask[i]=0;w.timer[i]=0;w.stall[i]=0;mov++;}else w.stall[i]=1;}}}}
+      else if(t===K.STAMP){const it=w.item[i];
+        if(it){wip++;if(w.timer[i]<STAMP_T)w.timer[i]++;
+          else{const j=next(w,i);if(deposit(w,j,TOY0+(it-BAR0),i)){bump(w,j,w.dir[i]);w.item[i]=0;w.timer[i]=0;w.stall[i]=0;mov++;}else w.stall[i]=1;}}}
+      else if(t===K.SPLIT||t===K.SORT){const it=w.item[i];
+        if(it){wip++;if(w.timer[i]<PASS_T)w.timer[i]++;
+          else{const d=w.dir[i];let sent;
+            // the splitter: ahead, right and left in turn; the sorter: its colour to the sides, the rest straight on
+            if(t===K.SPLIT)sent=share(w,i,[d,(d+1)&3,(d+3)&3]);
+            else if(colorOf(it)===w.filt[i])sent=share(w,i,[(d+1)&3,(d+3)&3]);
+            else{const j=nb(w,i,d);sent=deposit(w,j,it,i);if(sent)bump(w,j,d);}
+            if(sent){w.item[i]=0;w.timer[i]=0;w.stall[i]=0;mov++;}else w.stall[i]=1;}}}
+      else if(t===K.TUNNEL){const it=w.item[i];
+        if(it){wip++;const d=w.dir[i],ex=tunnelIsExit(w,i)?-1:tunnelExit(w,i);
+          let far=0,from=i;if(ex>=0){far=Math.abs(ex%w.W-i%w.W)+Math.abs(((ex/w.W)|0)-((i/w.W)|0));from=ex;}
+          const need=ex>=0?TUN_T*(far+1):PASS_T;
+          if(w.timer[i]<need)w.timer[i]++;
+          else{const j=nb(w,from,d);if(deposit(w,j,it,from)){bump(w,j,d);w.item[i]=0;w.timer[i]=0;w.stall[i]=0;mov++;}else w.stall[i]=1;}}}
+    }
+    // belts move here; who hands over is the receiver's choice, below
+    for(let i=0;i<N;i++){if(type[i]!==K.BELT)continue;belts++;
+      if(!w.item[i]){if(w.heat[i])w.heat[i]=Math.max(0,w.heat[i]-HEAT_EMPTY);continue;}
+      wip++;
+      if(w.prog[i]<BELT_T){w.prog[i]++;mov++;if(w.heat[i])w.heat[i]=Math.max(0,w.heat[i]-HEAT_MOVE);}
+      else if(w.heat[i]<HEAT_MAX){w.heat[i]+=HEAT_UP;if(w.heat[i]>w.hot)w.hot=w.heat[i];}
+    }
+    // every receiver with room takes from the belts pointing at it, one side after another
+    for(let j=0;j<N;j++){const tj=type[j];
+      if(!tj||tj===K.DRILL||tj===K.ROCK)continue;
+      if((tj===K.BELT||tj===K.SPLIT||tj===K.SORT||tj===K.TUNNEL||tj===K.STAMP)&&w.item[j])continue;
+      if(tj===K.MIXER&&POP[w.mask[j]]>=2)continue;
+      for(let n=0;n<4;n++){const d=(w.intake[j]+n)&3,k=nb(w,j,d);
+        if(k<0||type[k]!==K.BELT||!w.item[k]||w.prog[k]<BELT_T||next(w,k)!==j)continue;
+        if(!deposit(w,j,w.item[k],k))continue;     // a mixer may still say no to a second of the same colour
+        w.item[k]=0;w.prog[k]=0;w.intake[j]=(d+1)&3;mov++;break;}
+    }
+    for(let i=0;i<N;i++)if(type[i]===K.BELT)w.stall[i]=w.item[i]&&w.prog[i]>=BELT_T?1:0;
+    w.mov=mov;w.wip=wip;w.belts=belts;w.stD=stD;w.drills=drills;w.t++;
+  }
+  /* ---- building ---- */
+  // a drill only on an ore spot; a belt anywhere open; the other pieces on the floor
+  function canPut(w,i,kind){
+    if(i<0||i>=w.N)return false;const t=w.type[i];if(t===K.ROCK||t===K.TRUCK)return false;
+    if(kind===K.DRILL)return !!w.ore[i];
+    return kind===K.BELT||!w.ore[i];
+  }
+  function clearCell(w,i){w.item[i]=0;w.prog[i]=0;w.timer[i]=0;w.mask[i]=0;w.heat[i]=0;w.buf[i]=0;w.intake[i]=0;w.stall[i]=0;}
+  function put(w,i,kind,dir,filt){
+    if(!isPiece(kind)||!canPut(w,i,kind))return false;
+    clearCell(w,i);w.type[i]=kind;w.dir[i]=dir&3;w.filt[i]=kind===K.SORT?(filt||1):0;return true;
+  }
+  function erase(w,i){if(i<0||i>=w.N||!isPiece(w.type[i]))return false;clearCell(w,i);w.type[i]=0;w.dir[i]=0;w.filt[i]=0;return true;}
+  function pieces(w){let n=0;for(let i=0;i<w.N;i++)if(isPiece(w.type[i]))n++;return n;}
+  // back to the start of a run: nothing on the belts, nothing sent, nothing hot; the pieces stay
+  function reset(w){for(let i=0;i<w.N;i++)clearCell(w,i);w.t=0;w.got.fill(0);w.sent=0;w.hot=0;w.stD=0;w.wip=0;w.mov=0;}
+  /* ---- a layout as a short string: one character a cell (a piece and its way, a sorter's colour too) ---- */
+  const ALPHA="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_",SORT_COLS=[1,2,4,3,6,5];
+  function encode(w){let s="";
+    for(let i=0;i<w.N;i++){const t=w.type[i];
+      s+=isPiece(t)?ALPHA[(t===K.SORT?7+Math.max(0,SORT_COLS.indexOf(w.filt[i])):t)*4+(w.dir[i]&3)]:"0";}
+    return s;}
+  // puts back what fits this board (a drill only on ore, and so on); returns how many pieces went down
+  function decode(w,s){
+    for(let i=0;i<w.N;i++)erase(w,i);
+    s=String(s||"");let n=0;
+    for(let i=0;i<w.N&&i<s.length;i++){const c=ALPHA.indexOf(s.charAt(i));if(c<4)continue;
+      const k=c>>2,kind=k>=7?K.SORT:k;if(put(w,i,kind,c&3,k>=7?SORT_COLS[k-7]:0))n++;}
+    return n;}
+  return{HZ,K,DX,DY,BELT_T,DRILL_T,MIX_T,STAMP_T,PASS_T,TUN_T,HEAT_MAX,ORANGE,RED,BAR0,TOY0,TUNNEL_RANGE,ORE_BIT,POP,
+    make,tick,deposit,nb,next,canPut,put,erase,pieces,reset,encode,decode,colorOf,tunnelExit,tunnelIsExit,isPiece,ALPHA,SORT_COLS};
+})();
+/* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
    the small server in wordcraft-server/ running on the home NAS. By
