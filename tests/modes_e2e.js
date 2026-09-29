@@ -4,6 +4,8 @@ const {launch,reload,waitFor,check}=require("./lib");
   const T=check("modes"),ok=T.ok;
   // an old save: no modeMin / modeOpens yet
   const {page:p,errs,close}=await launch({seed:{}});
+  // wait for the target before tapping it: on a slow CI runner an overlay can take longer than the fixed sleeps
+  const click=async sel=>{await p.waitForSelector(sel,{state:"visible",timeout:15000});await p.click(sel);};
   const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return ymd(d);};
   const E=(f,a)=>p.evaluate(f,a);
@@ -28,37 +30,37 @@ const {launch,reload,waitFor,check}=require("./lib");
 
   // 2. each mode through its real entry point
   await E(()=>{state.modeOpens={};});
-  await p.click("#crateBtn");await p.waitForTimeout(150);
+  await click("#crateBtn");await p.waitForTimeout(150);
   ok(await top()==="read","crates → read");
   const crate=await E(()=>{const c=[...document.querySelectorAll("#crateRow .crate")].find(x=>!x.classList.contains("swap")&&!x.classList.contains("write")&&!x.classList.contains("pic"));if(c){c.click();return true;}return false;});
   await p.waitForTimeout(200);
   ok(crate&&await top()==="read"&&await E(()=>document.getElementById("ovRead").classList.contains("on")),"a word crate opens the word, still read: "+await stack());
   ok(await E(()=>state.modeOpens[today()].read===1),"crates then its word is one visit: modeOpens.read = "+await E(()=>JSON.stringify(state.modeOpens[today()])));
-  await p.click("#ovRead [data-close]");await p.waitForTimeout(100);
+  await click("#ovRead [data-close]");await p.waitForTimeout(100);
   ok(await top()==="valley","closing the word → valley");
 
-  await p.click("#booksBtn");await atTop("book");ok(await top()==="book","Books → book");
+  await click("#booksBtn");await atTop("book");ok(await top()==="book","Books → book");
   await E(()=>{const c=document.querySelector("#ovStory .bcov:not(.locked):not(.maker)");if(c)c.click();});await p.waitForTimeout(200);
   await E(()=>{const x=document.querySelector("#ovStory #bBack");if(x)x.click();});await p.waitForTimeout(150);
   ok(await top()==="book"&&await E(()=>state.modeOpens[today()].book===1),"shelf → book → shelf is one open of book: "+await E(()=>state.modeOpens[today()].book));
-  await p.click("#ovStory #bClose");await p.waitForTimeout(100);ok(await top()==="valley","closing Books → valley");
+  await click("#ovStory #bClose");await p.waitForTimeout(100);ok(await top()==="valley","closing Books → valley");
 
   // these few keep their sleeps: they pace Books → Mine → Books past the 2 s "same visit" window, as before
   await E(()=>Write.start());await p.waitForTimeout(150);ok(await top()==="write","Write it → write");
-  await p.click("#ovWrite #wrX");await p.waitForTimeout(100);ok(await top()==="valley","closing Write it → valley");
+  await click("#ovWrite #wrX");await p.waitForTimeout(100);ok(await top()==="valley","closing Write it → valley");
 
   await E(()=>openPicIt());await p.waitForTimeout(150);ok(await top()==="pic","Picture it → pic");
-  await p.click("#ovPic #psLater");await p.waitForTimeout(100);ok(await top()==="valley","Picture it later → valley");
+  await click("#ovPic #psLater");await p.waitForTimeout(100);ok(await top()==="valley","Picture it later → valley");
 
   // 3. the Mine, and reading inside it
-  await p.click("#mineBtn");await p.waitForTimeout(900);
+  await click("#mineBtn");await p.waitForTimeout(900);
   ok(await top()==="mine","Mine → mine");
   await E(()=>Mine._openVault(0));await p.waitForTimeout(150);
   ok(await top()==="read"&&await stack()==="mine>read","a word vault inside the Mine → read, on top of mine: "+await stack());
-  await p.click("#mPanel.on #mClose");await p.waitForTimeout(100);
+  await click("#mPanel.on #mClose");await p.waitForTimeout(100);
   ok(await top()==="mine","closing the vault → back to mine");
-  await p.click("#mBooks");await p.waitForTimeout(200);ok(await stack()==="mine>book","Books from the Mine → book on top of mine");
-  await p.click("#ovStory #bClose");await atTop("mine");ok(await top()==="mine","closing Books → mine");
+  await click("#mBooks");await p.waitForTimeout(200);ok(await stack()==="mine>book","Books from the Mine → book on top of mine");
+  await click("#ovStory #bClose");await atTop("mine");ok(await top()==="mine","closing Books → mine");
 
   // 4. a minute while in the Mine (and two old days, to see the 60-day trim)
   await E(([a,b])=>{state.modeMin[a]={mine:5};state.modeMin[b]={mine:2};},[ago(90),ago(30)]);
@@ -68,7 +70,7 @@ const {launch,reload,waitFor,check}=require("./lib");
   ok(t1.mins===t0.mins+1&&t1.mine===t0.mine+1,`the minute tick credits the Mine (${t0.mine}→${t1.mine}) and still counts the minute (${t0.mins}→${t1.mins})`);
   await E(()=>{Mine._openVault(0);minuteTick();});
   ok(await E(()=>state.modeMin[today()].read===1),"a minute during a vault goes to read");
-  await p.click("#mPanel.on #mClose");await p.click("#mBack");await p.waitForTimeout(200);
+  await click("#mPanel.on #mClose");await click("#mBack");await p.waitForTimeout(200);
   ok(await top()==="valley","leaving the Mine → valley");
   await E(()=>minuteTick());
   ok(await E(()=>state.modeMin[today()].valley===1),"a minute with nothing open goes to the valley");
@@ -76,27 +78,27 @@ const {launch,reload,waitFor,check}=require("./lib");
   ok(!pruned.old&&pruned.kept,"writing keeps 60 days: a day 90 days ago is gone, 30 days ago stays");
 
   // Adventure, and what opens inside it
-  await p.click("#advBtn");await p.waitForTimeout(700);
+  await click("#advBtn");await p.waitForTimeout(700);
   ok(await top()==="adventure","Adventure → adventure");
   await E(()=>Wild.start());await atStack("adventure>wild");ok(await stack()==="adventure>wild","a wild animal → wild on top of adventure");
-  await p.click("#ovWild #wRun");await atTop("adventure");ok(await top()==="adventure","running away → adventure");
-  await p.click("#advDex");await atTop("dex");ok(await top()==="dex","Word-Dex → dex");
-  await p.click("#ovDex #dexX");await atTop("adventure");ok(await top()==="adventure","closing the Word-Dex → adventure");
+  await click("#ovWild #wRun");await atTop("adventure");ok(await top()==="adventure","running away → adventure");
+  await click("#advDex");await atTop("dex");ok(await top()==="dex","Word-Dex → dex");
+  await click("#ovDex #dexX");await atTop("adventure");ok(await top()==="adventure","closing the Word-Dex → adventure");
   // walk up to the car and race it
   await E(()=>{const f=Adv.freePos(0),v=state.vehicles[0];v.c=f.c;v.r=f.r;Adv._P.c=f.c+.3;Adv._P.r=f.r;});await p.waitForTimeout(250);
   const lab=await E(()=>document.getElementById("advAct").textContent);
-  if(/Race/.test(lab))await p.click("#advAct");else{console.log("   (the car wandered off; starting the race directly) label:",lab);await E(()=>Race.start(state.vehicles[0]));}
+  if(/Race/.test(lab))await click("#advAct");else{console.log("   (the car wandered off; starting the race directly) label:",lab);await E(()=>Race.start(state.vehicles[0]));}
   await p.waitForTimeout(200);
   ok(await stack()==="adventure>race","a race → race on top of adventure: "+await stack());
-  await p.click("#ovRace #rX");await atTop("adventure");ok(await top()==="adventure","leaving the race → adventure");
-  await p.click("#advDone");await atTop("valley");ok(await top()==="valley","done exploring → valley");
+  await click("#ovRace #rX");await atTop("adventure");ok(await top()==="adventure","leaving the race → adventure");
+  await click("#advDone");await atTop("valley");ok(await top()==="valley","done exploring → valley");
 
   // the grown-up side: gate, menu, report
-  await p.click("#parentBtn");await atTop("gate");ok(await top()==="gate","⚙️ → gate");
-  await E(()=>{document.getElementById("gateA").value=gateAnswer;});await p.click("#gateGo");await p.waitForTimeout(200);
+  await click("#parentBtn");await atTop("gate");ok(await top()==="gate","⚙️ → gate");
+  await E(()=>{document.getElementById("gateA").value=gateAnswer;});await click("#gateGo");await p.waitForTimeout(200);
   ok(await stack()==="parent","the right answer → parent (the gate closed)");
   await E(()=>minuteTick());
-  await p.click("#reportBtn");await atStack("parent>report");ok(await stack()==="parent>report","report → report on top of parent");
+  await click("#reportBtn");await atStack("parent>report");ok(await stack()==="parent>report","report → report on top of parent");
   ok(await E(()=>state.modeOpens[today()].report===1),"the report counts one open");
 
   // 5. the report block
@@ -111,13 +113,13 @@ const {launch,reload,waitFor,check}=require("./lib");
   ok(byId.mine&&byId.read&&byId.valley&&byId.parent&&R.cards.every(c=>c.bars===7),"a 7-day bar for each mode with minutes: "+R.cards.map(c=>c.id).join(", "));
   ok(byId.mine&&/1 min · opened 1×/.test(byId.mine.t),"the Mine card shows minutes and opens: "+(byId.mine&&byId.mine.t));
   await p.screenshot({path:"modes_report.png"});
-  await p.click("#ovReport #rClose");await atTop("parent");ok(await top()==="parent","closing the report → parent");
+  await click("#ovReport #rClose");await atTop("parent");ok(await top()==="parent","closing the report → parent");
   // a mode shown again while it is open is not a new open; a new visit after a pause is
   await E(()=>{show("ovParent");show("ovParent");});
   ok(await E(()=>state.modeOpens[today()].parent===1),"showing the open grown-up menu again does not count again");
-  await p.click("#ovParent [data-close]");
+  await click("#ovParent [data-close]");
   const nb=await E(()=>state.modeOpens[today()].book);await p.waitForTimeout(2200);
-  await p.click("#booksBtn");await p.waitForTimeout(150);await p.click("#ovStory #bClose");
+  await click("#booksBtn");await p.waitForTimeout(150);await click("#ovStory #bClose");
   const nb2=await E(()=>state.modeOpens[today()].book);
   ok(nb2===nb+1,`a new visit to Books after a pause counts again (${nb}→${nb2})`);
   // the seam for a later gate: a guard can refuse, nothing is gated otherwise

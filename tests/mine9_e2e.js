@@ -66,14 +66,14 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   await p.screenshot({path:"m9_mole.png"});
   const c0=await p.evaluate(()=>state.mine.coins);await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.screenshot({path:"m9_riddle.png"});
   // the challenge pays out about a second after the right answer: wait for it, not a fixed time
-  await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForFunction(c=>state.mine.coins>c&&state.mine.stat.moles===1,c0,{timeout:6000}).catch(()=>{});
+  await p.waitForSelector("#mCard .mq",{timeout:15000}).catch(()=>{});await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForFunction(c=>state.mine.coins>c&&state.mine.stat.moles===1,c0,{timeout:20000}).catch(()=>{});
   ok(await p.evaluate(c=>state.mine.coins>c&&state.mine.stat.moles===1,c0),"riddle pays coins");
   // 7 lost animal
   const L=await p.evaluate(()=>Mine._lost());console.log("   lost:",JSON.stringify(L));
   await tp(L.x,L.y);await p.waitForTimeout(400);const ll=await p.evaluate(()=>document.getElementById("mAct").textContent);ok(/lost/.test(ll),"found the lost animal: "+ll);
   await p.screenshot({path:"m9_lost.png"});
-  await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.evaluate(()=>__answer("#mCard .mq"));
-  await p.waitForFunction(id=>state.mine.lost.rescued&&state.critters.some(c=>c.id===id),L.id,{timeout:6000}).catch(()=>{});
+  await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.waitForSelector("#mCard .mq",{timeout:15000}).catch(()=>{});await p.evaluate(()=>__answer("#mCard .mq"));
+  await p.waitForFunction(id=>state.mine.lost.rescued&&state.critters.some(c=>c.id===id),L.id,{timeout:20000}).catch(()=>{});
   ok(await p.evaluate(id=>state.mine.lost.rescued&&state.critters.some(c=>c.id===id),L.id),"rescued: it moved into the valley");
   await p.screenshot({path:"m9_rescued.png"});await close();
   // 8 vault
@@ -82,7 +82,7 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   await tp(V.door[0]+side,V.door[1]);await p.waitForTimeout(400);
   ok(/vault/.test(await p.evaluate(()=>document.getElementById("mAct").textContent)),"standing at a vault door");
   await p.screenshot({path:"m9_vault.png"});
-  await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForTimeout(1500);
+  await p.evaluate(()=>document.getElementById("mAct").click());await p.waitForTimeout(400);await p.waitForSelector("#mCard .mq",{timeout:15000}).catch(()=>{});await p.evaluate(()=>__answer("#mCard .mq"));await p.waitForTimeout(1500);
   ok(await p.evaluate(V=>state.mine.vaults[0]===1&&Mine._tile(V.door[0],V.door[1])===0,V),"the vault opened");
   await p.screenshot({path:"m9_vault_open.png"});
   // 9 a sign he writes
