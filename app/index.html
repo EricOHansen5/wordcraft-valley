@@ -11612,7 +11612,7 @@ const Trick=(()=>{
     if(!b||!host.contains(b)||host.querySelector(".right"))return;
     const a=String(host.dataset.ans||""),sent=a[0]==="#";
     if(sent?(b.classList.contains("psopt")&&b.getAttribute("data-i")===a.slice(1)):b.getAttribute("data-w")===a)return;
-    q.miss++;msg("Ooh, try again!");Sound.sfx.soft();
+    q.miss++;msg("Ooh, try again!");
     clearTimeout(q.t);q.t=setTimeout(()=>{if(!q.paid&&cur===q&&isOpen())Sound.speak("Ooh, try again!",.95);},650);
     if(q.miss>=2){const r=sent?host.querySelector('.psopt[data-i="'+a.slice(1)+'"]'):host.querySelector('[data-w="'+a+'"]');if(r)r.classList.add("hint");}
   }
