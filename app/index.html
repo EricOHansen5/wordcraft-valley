@@ -449,6 +449,7 @@ select{width:auto}
 .stcard.locked .art{filter:grayscale(.85);opacity:.6}
 .stcard .rib{position:absolute;top:-9px;right:-6px;background:#DC5A4B;color:#fff;font-size:12px;padding:2px 8px;border:2px solid var(--ink);border-radius:10px;transform:rotate(8deg)}
 .stcard .job{font-size:12px;font-weight:800;color:var(--ink-soft)}
+.stcard .use{font-size:12px;font-weight:800;color:#2F8F3A}
 .stmsg{min-height:26px;text-align:center;font-weight:900;font-size:19px;margin:-6px 0 10px}
 .storemore{grid-column:1/-1;text-align:center;padding:6px 0}.storemore p{margin:0 0 8px;font-weight:800;color:var(--ink-soft)}
 .mmore{margin-top:8px;font-weight:800;font-size:14px;color:#6B5E52}
@@ -1196,6 +1197,9 @@ body.exploring .slot-empty{display:none}
 .jme img,.jme svg{width:100%;height:100%;object-fit:contain}
 .jme .juni{position:absolute;right:-10px;bottom:-6px;font-size:44px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
 .jme.small{width:52px;height:52px;margin:0}.jme.small .juni{font-size:24px;right:-8px;bottom:-4px}
+.jme .juni.art{width:62px;height:62px;right:-22px;bottom:-10px}.jme.small .juni.art{width:30px;height:30px;right:-12px;bottom:-6px}
+.jme .jtool{position:absolute;left:-14px;bottom:-6px;width:46px;height:46px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}.jme.small .jtool{width:28px;height:28px;left:-12px;bottom:-6px}
+.jready{margin:0 0 6px;font-weight:900;font-size:18px;color:#2F8F3A}
 .jwhat{list-style:none;padding:0;margin:8px 0;font-size:19px;font-weight:700;line-height:1.7}
 .jstat{display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;font-weight:800;margin:-2px 0 8px}
 .jtips{display:inline-flex;gap:4px}.jtips i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:#fff}.jtips i.on{background:var(--gold)}
@@ -9783,7 +9787,11 @@ const Race=(()=>{
              it must decode at his level. A step whose kit or track this
              version doesn't have is skipped with a console warning.
    A shift: he picks a job on the Job board (💼 in the dock, or the
-   signpost in Adventure), puts on its uniform and clocks in. Tasks keep
+   signpost in Adventure), puts on its uniform and clocks in. The job's
+   own uniform is free; once he owns the job's uniform from the Trading
+   Post (Store items tagged "uniform" with unlock.job) he wears that one
+   instead, and the job's tool from there ("tool") shows beside it and
+   makes the tip come one task sooner (four in a row, not five). Tasks keep
    coming until he clocks out; every 5 there is a small cheer and "keep
    going or clock out?". Each task pays pay.perTask 🪙 into
    state.mine.coins (the Mine's purse) at once, and five right first time
@@ -10017,7 +10025,22 @@ const Jobs=(()=>{
   const root=()=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovJob";document.body.appendChild(ov);}return ov;};
   const $=s=>ov&&ov.querySelector(s);
   function me(){let src=null;try{src=Mine.avatar();}catch(e){}return src?`<img src="${src}" alt="">`:drawThing("fox",1);}
-  const wearing=j=>`<span class="jme">${me()}<span class="juni" title="${esc(j.uniform.name)}">${j.uniform.ic}</span></span>`;
+  // the Trading Post's gear for a job that he owns ("uniform" or "tool"), or null
+  function gear(j,tag){try{const it=j&&Store.gearFor(j.id,tag);return it&&Store.owns(it)?it:null;}catch(e){return null;}}
+  const gearPic=it=>{try{return Store.pic(it)||"";}catch(e){return"";}};
+  // what he wears at a job: its own uniform (free, put on at clock-in), or the Trading Post's uniform for it once he owns that
+  function uniform(j){const it=gear(j,"uniform"),art=it?gearPic(it):"";
+    return art?{id:it.id,name:it.name.toLowerCase(),art,store:true}:{id:j.uniform.id,name:j.uniform.name,ic:j.uniform.ic,store:false};}
+  // the job's tool from the Trading Post makes the tip come one task sooner: four right first time in a row instead of five
+  const tipAt=j=>gear(j,"tool")?4:5;
+  const TIP_LINE={4:"Four in a row! Here is a tip!",5:"Five in a row! Here is a tip!"};
+  const readyLine=it=>"Your "+it.name.toLowerCase()+(/s$/.test(it.name)?" are":" is")+" ready!";
+  // him in his uniform; in the shift header (small) the tool he owns for the job is beside it
+  function wearing(j,small){
+    const u=uniform(j),tool=small?gear(j,"tool"):null,tp=tool?gearPic(tool):"";
+    return`<span class="jme${small?" small":""}">${me()}<span class="juni${u.art?" art":""}" data-uni="${esc(u.id)}" data-from="${u.store?"store":"job"}" title="${esc(u.name)}">${u.art||u.ic}</span>${
+      tp?`<span class="jtool" data-tool="${esc(tool.id)}" title="${esc(tool.name)}">${tp}</span>`:""}</span>`;
+  }
   function open(){
     const o=root();
     if(!o.classList.contains("on")){o.classList.add("on");Modes.open("job",o);}
@@ -10047,8 +10070,8 @@ const Jobs=(()=>{
   function intro(j){
     if(!j)return board();const o=root();
     o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2><button class="bx" id="jBack">‹ Jobs</button></div>
-      ${wearing(j)}<p class="sub">You put on your ${esc(j.uniform.name)}!</p>
-      <ul class="jwhat"><li>🪙 ${j.pay.perTask} for each task</li>${j.pay.streakTip?`<li>🎉 5 right in a row: a tip of ${j.pay.streakTip} 🪙</li>`:""}<li>⏰ Clock out when you are done</li></ul>
+      ${wearing(j)}<p class="sub">You put on your ${esc(uniform(j).name)}!</p>
+      <ul class="jwhat"><li>🪙 ${j.pay.perTask} for each task</li>${j.pay.streakTip?`<li>🎉 ${tipAt(j)} right in a row: a tip of ${j.pay.streakTip} 🪙</li>`:""}<li>⏰ Clock out when you are done</li></ul>
       <div class="mrow"><button class="btn primary big" id="jIn">⏰ Clock in</button></div></div>`;
     o.querySelector("#jBack").onclick=()=>{Sound.sfx.pop();board();};
     o.querySelector("#jIn").onclick=()=>clockIn(j);
@@ -10060,22 +10083,30 @@ const Jobs=(()=>{
   function clockIn(j){
     if(typeof j==="string")j=BY[j];
     if(!isOpen(j)||!canClockIn(j))return false;
-    J().current=j.id;save();badge();Sound.sfx.chime();shift(j,false);return true;
+    J().current=j.id;save();badge();Sound.sfx.chime();toolSaid=null;shift(j,false);return true;
   }
+  // the job whose tool has said "Your … is ready!" in this shift: once a shift (clocking in clears it)
+  let toolSaid=null;
   function shift(j){
     const o=root();S={job:j,n:0,coins:0,tips:0,task:null};
-    o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2>${wearing(j).replace('class="jme"','class="jme small"')}
+    const tool=gear(j,"tool"),ready=tool&&toolSaid!==j.id?readyLine(tool):"";
+    o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2>${wearing(j,true)}
         <span class="jpurse" id="jPurse">🪙 ${coins()}</span><button class="btn soft" id="jOut">⏰ Clock out</button></div>
-      <div class="jstat"><span id="jLv"></span><span class="jtips" id="jTips" title="Five right in a row: a tip!"></span><span id="jN"></span></div>
+      ${ready?`<p class="jready" id="jReady">${esc(ready)} Tips come sooner.</p>`:""}
+      <div class="jstat"><span id="jLv"></span><span class="jtips" id="jTips" title="${tipAt(j)===4?"Four":"Five"} right in a row: a tip!"></span><span id="jN"></span></div>
       <div class="jwork"><div class="jcust" id="jCust"></div><div class="jq" id="jQ"></div></div>
       <p class="jmsg" id="jMsg"></p></div>`;
     o.querySelector("#jOut").onclick=clockOut;
-    stat();next();
+    stat();
+    if(!ready){next();return;}
+    // the tool's line first; the first customer would talk over it
+    toolSaid=j.id;const mine=S;let go=false;const start=()=>{if(go||S!==mine)return;go=true;next();};
+    Promise.resolve(talk(ready)).then(start,start);setTimeout(start,2600);
   }
   function stat(){
-    if(!S||!ov)return;const lv=levelOf(S.job.id),st=Math.min(5,+J().streak||0);
+    if(!S||!ov)return;const lv=levelOf(S.job.id),at=tipAt(S.job),st=Math.min(at,+J().streak||0);
     if($("#jLv"))$("#jLv").textContent="⭐ Level "+lv;
-    if($("#jTips"))$("#jTips").innerHTML=[0,1,2,3,4].map(i=>`<i class="${i<st?"on":""}"></i>`).join("");
+    if($("#jTips"))$("#jTips").innerHTML=Array.from({length:at},(x,i)=>`<i class="${i<st?"on":""}"></i>`).join("");
     if($("#jN"))$("#jN").textContent="✅ "+S.n;
     if($("#jPurse"))$("#jPurse").textContent="🪙 "+coins();
   }
@@ -10118,19 +10149,20 @@ const Jobs=(()=>{
     msg("");T.i++;save();
     if(T.i<T.steps.length)step();else taskDone();
   }
-  // paid at once; five right first time in a row add a tip
+  // paid at once; five right first time in a row add a tip (four with the job's tool)
   function taskDone(){
-    const T=S.task,j=S.job,jb=J(),first=!T.miss,before=levelOf(j.id);S.task=null;
+    const T=S.task,j=S.job,jb=J(),first=!T.miss,before=levelOf(j.id),at=tipAt(j);S.task=null;
+    const rd=$("#jReady");if(rd)rd.remove();
     if(!jb.xp||typeof jb.xp!=="object")jb.xp={};
     jb.xp[j.id]=xpOf(j.id)+1;jb.tasks=(+jb.tasks||0)+1;
     let tip=0;
-    if(first){jb.streak=(+jb.streak||0)+1;if(jb.streak>=5){jb.streak=0;tip=+j.pay.streakTip||0;}}else jb.streak=0;
+    if(first){jb.streak=(+jb.streak||0)+1;if(jb.streak>=at){jb.streak=0;tip=+j.pay.streakTip||0;}}else jb.streak=0;
     const pay=+j.pay.perTask||0;purse(pay+tip);S.n++;S.coins+=pay+tip;if(tip)S.tips++;
     save();renderHUD();stat();
     hush();Sound.sfx.chime();Sound.speak("Thank you!",.95);
     toast(tip?`+${pay} 🪙 and a tip! +${tip} 🪙`:`+${pay} 🪙`);
     const h=freshHost();h.innerHTML=`<div class="jmoment"><p class="mpaid jpaid">+${pay} 🪙</p>${tip?`<p class="mpaid jpaid">🎉 Tip! +${tip} 🪙</p>`:""}</div>`;
-    if(tip)setTimeout(()=>{if(!S)return;Sound.sfx.fanfare();try{confetti();}catch(e){}hush();Sound.speak("Five in a row! Here is a tip!",.95);},700);
+    if(tip)setTimeout(()=>{if(!S)return;Sound.sfx.fanfare();try{confetti();}catch(e){}hush();Sound.speak(TIP_LINE[at]||TIP_LINE[5],.95);},700);
     const after=levelOf(j.id),pause=tip?2400:1200,mine=S;
     setTimeout(()=>{if(S!==mine)return;
       if(after>before)levelUp(j,after);else if(S.n%5===0)five();else next();},pause);
@@ -10183,6 +10215,8 @@ const Jobs=(()=>{
   function voiceLines(){
     const out={},add=q=>{if(q)[].concat(q.say||[]).forEach(p=>{p=String(p).trim();if(p&&!/\d/.test(p))out[p]=1;});};
     Tracks.list().forEach(id=>(Tracks.get(id).levels||[]).forEach(L=>{for(let s=0;s<40;s++){try{add(L.gen(s,{}));}catch(e){}}}));
+    Object.keys(TIP_LINE).forEach(k=>{out[TIP_LINE[k]]=1;});
+    try{Store.list("gear").forEach(it=>{if(it.tag==="tool"&&it.unlock&&BY[it.unlock.job])out[readyLine(it)]=1;});}catch(e){}
     REG.forEach(j=>{[].concat(j.hello||[]).forEach(t=>{if(t)out[t]=1;});
       j.tasks.forEach(t=>{for(let tier=(j.unlock&&j.unlock.tier)||1;tier<=MAX_TIER;tier++)for(let s=0;s<20;s++)gen(j.id,t.id,s,{tier,lv:t.lv||1}).forEach(add);});});
     return Object.keys(out).sort();
@@ -10190,6 +10224,7 @@ const Jobs=(()=>{
 
   return{register,get:id=>BY[id]||null,list:()=>REG.slice(),kit:(name,fn)=>{KITS[name]=fn;},kits:()=>Object.keys(KITS),KITS,
     gen,level:levelOf,xp:xpOf,LEVELS,isOpen,open,close,clockIn,clockOut,canClockIn,talk,voiceLines,art:artHtml,boardAt,
+    uniform:j=>uniform(typeof j==="string"?BY[j]:j),tipAt:j=>tipAt(typeof j==="string"?BY[j]:j),
     _S:()=>S&&{job:S.job.id,n:S.n,coins:S.coins,tips:S.tips,task:S.task&&{type:S.task.type.id,i:S.task.i,steps:S.task.steps.length,miss:S.task.miss,seed:S.task.seed}},
     _next:id=>next(id)};
 })();
@@ -10332,7 +10367,9 @@ const Jobs=(()=>{
    Items are data: Store.item({id, shelf:"outfit"|"gear", name,
    cost:{gems:n}|{coins:n}, art, tag, unlock, wear, keep}).
      art    the ART drawing (a hat_ drawing is shown on its wearer)
-     tag    "new" puts a ribbon on it; "uniform" / "tool" name job gear
+     tag    "new" puts a ribbon on it; "uniform" / "tool" name job gear:
+            the Job board puts the uniform on him instead of the job's
+            own, and the tool beside it makes tips come sooner (Jobs)
      unlock {job, level}: shown locked until that job level
      wear   "hat" (the buddy, state.hat) or "helmet" (the miner,
             state.mine.look.helmet); nothing for job gear
@@ -10372,6 +10409,8 @@ const Store=(()=>{
   const owns=it=>!!it&&!!KEEP[it.keep]&&KEEP[it.keep].has(it.id);
   // does he own a thing with this id (on this shelf, or on any)? for other modes, e.g. a job's uniform
   const has=(id,shelf)=>items.some(it=>it.id===id&&(!shelf||it.shelf===shelf)&&owns(it));
+  // a job's gear: its "uniform" or its "tool" (the item with that tag that opens at that job), owned or not
+  const gearFor=(job,tag)=>items.find(it=>it.tag===tag&&!!it.unlock&&it.unlock.job===job)||null;
   // job gear waits for its job level. A job's level comes from the tasks done in it (state.jobs.xp[job]):
   // level 1 to start, 2 at 5 tasks, 3 at 15, 4 at 30, 5 at 50. With no jobs in the save yet it waits.
   const LEVELS=[0,5,15,30,50];
@@ -10489,11 +10528,13 @@ const Store=(()=>{
   }
   function card(it){
     const own=owns(it),on=worn(it),open_=own||unlocked(it),P=PURSE[it.purse],job=it.unlock&&JOBS[it.unlock.job];
+    // job gear: a tool says what it does; once his, the uniform and the tool say where they are used
+    const use=!job?"":it.tag==="tool"?(own?"Used at the Job board. Tips come sooner!":"Tips come sooner!"):it.tag==="uniform"&&own?"Worn at the Job board":"";
     const d=document.createElement("div");
     d.className="card2 stcard"+(on?" worn":"")+(own?" owned":"")+(open_?"":" locked");
     d.dataset.id=it.id;d.dataset.shelf=it.shelf;
     d.innerHTML=`${it.tag==="new"&&!own?`<b class="rib">New!</b>`:""}<div class="art">${art(it)}</div><div class="nm">${esc(it.name)}</div>
-      ${job?`<div class="job">${job.ic} ${job.name}${it.tag==="uniform"||it.tag==="tool"?" "+it.tag:""}</div>`:""}
+      ${job?`<div class="job">${job.ic} ${job.name}${it.tag==="uniform"||it.tag==="tool"?" "+it.tag:""}</div>`:""}${use?`<div class="use">${use}</div>`:""}
       <div class="cost">${!open_?`🔒 Job level ${it.unlock.level}`:own?(on?"Wearing it":"✓ Yours"):`<b>${it.price} ${P.ic}</b>`}</div>`;
     // tap the picture to hear what it is (and what it costs)
     d.querySelector(".art").onclick=()=>{Sound.sfx.pop();sayParts(own?[it.name]:[it.name,count(it.price,P)]);};
@@ -10575,7 +10616,7 @@ const Store=(()=>{
   }
   document.getElementById("storeBtn").onclick=()=>open();
 
-  return{item,get,list,owns,has,unlocked,worn,outfits,helmets,purchase,put,buy,wear,open,close,hud,tasksForLevel,jobLevel,JOBS,exchange,swap,RATE,
+  return{item,get,list,owns,has,gearFor,pic:art,unlocked,worn,outfits,helmets,purchase,put,buy,wear,open,close,hud,tasksForLevel,jobLevel,JOBS,exchange,swap,RATE,
     get shelf(){return shelf;},_spot:spot};
 })();
 // the wardrobe hats, as they were (ids, prices, and kept in state.hats)
