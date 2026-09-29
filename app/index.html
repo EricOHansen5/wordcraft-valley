@@ -11885,7 +11885,7 @@ const FactoryEngine=(()=>{
 })();
 const Factory=(()=>{
   const E=FactoryEngine,K=E.K,STEP=1000/E.HZ,HOLD=2*E.HZ,TIP_AGAIN=20*E.HZ;
-  const PAY_FIRST=5;
+  const PAY_FIRST=5,ORDERS_A_DAY=5;
   // the colours, by colour mask: the name said, the paint, a darker edge, the dot on the cards and the square for a toy
   const COL={1:{n:"red",c:"#E5484D",d:"#9E2A2F",e:"🔴",t:"🟥"},2:{n:"blue",c:"#3E7BFA",d:"#1F4DB0",e:"🔵",t:"🟦"},
     4:{n:"yellow",c:"#FFC93C",d:"#A87A12",e:"🟡",t:"🟨"},3:{n:"purple",c:"#9B59D0",d:"#5E2F8A",e:"🟣",t:"🟪"},
@@ -11960,6 +11960,9 @@ const Factory=(()=>{
   LEVELS.forEach((L,i)=>{L.n=i+1;L.id="F"+(i+1);
     // "a long trip": twice the belts of the known solution
     let belts=0;for(let k=0;k<L.sol.length;k++){const c=E.ALPHA.indexOf(L.sol.charAt(k));if(c>=4&&c<8)belts++;}L.long=Math.max(16,belts*2);});
+  // his own factory: every colour twice or three times, a few rocks, the truck in the middle
+  const SANDBOX=["................",".r.......#...y..","................","....b...........","..........#.....",".y.....T.....r..",
+    "................","....#...........","..r........b....",".........#......","...y............",".........b......"];
 
   /* ---------- the save (reading never writes) ---------- */
   const F0=()=>state.factory&&typeof state.factory==="object"?state.factory:null;
@@ -11972,6 +11975,8 @@ const Factory=(()=>{
     if(!f.orders||typeof f.orders!=="object"||Array.isArray(f.orders))f.orders={day:"",paid:0};
     f.lvl=done();return f;
   }
+  const paidToday=()=>{const f=F0(),o=f&&f.orders;return o&&o.day===today()?Math.max(0,Math.floor(+o.paid||0)):0;};
+  const sandboxOpen=()=>done()>=LEVELS.length;
   // pay for a finished level, once: 5 💎 the first time, and 1 💎 for each star the first time it is earned
   function award(n,stars){
     const f=FS(),id="F"+n,old=starsOf(n),first=f.lvl<n;let gems=0;
@@ -11981,6 +11986,15 @@ const Factory=(()=>{
     save();try{renderHUD();}catch(e){}
     return{first,old,stars,gems,newStars:Math.max(0,stars-old)};
   }
+  // a side order in his own factory: its pay, up to 5 a day; the same order never pays twice
+  function awardOrder(o){
+    if(!o||o.paid)return 0;o.paid=true;
+    const f=FS();if(f.orders.day!==today())f.orders={day:today(),paid:0};
+    if(f.orders.paid>=ORDERS_A_DAY)return 0;
+    f.orders.paid++;state.gems=(+state.gems||0)+o.pay;save();try{renderHUD();}catch(e){}
+    return o.pay;
+  }
+
   /* ---------- orders and their sums ---------- */
   // "Send 3 purple and 2 orange", as pieces with clips
   function orderSay(parts){const out=["Send"];
@@ -11998,19 +12012,31 @@ const Factory=(()=>{
     const terms=g.map(p=>p[1]);
     return{kit:"pad",track:"math",level:lv,say,text:g.map(p=>p[1]+" "+dot(p[0])).join(" + ")+" = ?",ans:terms.reduce((a,b)=>a+b,0),math:{op:"+",terms}};
   }
+  // his own factory's next side order: one or two things, seeded by the day and how many he has done
+  const KINDS=[R,B,Y,PUR,ORA,GRN,TPUR,E.TOY0+5,TGRN];
+  function sideOrder(k){
+    const r=mulberry(hashStr("factory:order:"+today()+":"+k)),pick=()=>KINDS[Math.floor(r()*KINDS.length)];
+    const a=pick();let parts;
+    if(r()<.4)parts=[[a,3+Math.floor(r()*8)]];
+    else{let b=pick();for(let t=0;t<9&&b===a;t++)b=pick();if(b===a)b=a===R?B:R;parts=[[a,2+Math.floor(r()*7)],[b,2+Math.floor(r()*7)]];}
+    const total=parts.reduce((s,p)=>s+p[1],0),toy=parts.some(p=>isToy(p[0]));
+    const math=parts.length===1?(total>10?"count20":"count10"):(total>10?"add20":"add10");
+    return{parts,k,math,pay:Math.min(6,3+(total>=8?1:0)+(total>=12?1:0)+(toy?1:0)),paid:false};
+  }
+
   /* ---------- the session ---------- */
   let ov=null,view="",w=null,cv=null,g=null,dpr=1,cell=40,raf=0,lastT=0,acc=0,S=null,stroke=null,armT=0,moTimer=0;
-  const layouts={};   // this visit's layout on each level
+  const layouts={};   // this visit's layout on each level (his own factory is in the save)
   const $=s=>ov&&ov.querySelector(s);
   const isOpen=()=>!!ov&&ov.classList.contains("on");
   const hidden=()=>typeof document!=="undefined"&&document.visibilityState==="hidden";
   function root(){if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFactory";document.body.appendChild(ov);}return ov;}
   function session(opt){
-    return Object.assign({n:0,level:null,tool:"belt",lastDir:1,sortCol:2,running:false,done:false,
+    return Object.assign({n:0,level:null,sandbox:false,tool:"belt",lastDir:1,sortCol:2,running:false,done:false,
       order:null,base:new Int16Array(128),full:0,hop:-99,tip:{cand:"",since:0,shown:"",said:{}},flow:1,jam:0,cur:0,kb:false,kbDir:1,kbLast:-1,
-      armed:false,result:null,q:null,sig:"",miss:0},opt||{});
+      armed:false,result:null,q:null,sig:"",miss:0,orders:0},opt||{});
   }
-  const tools=()=>TOOLS.filter(t=>S&&t.from<=S.n);
+  const tools=()=>TOOLS.filter(t=>S&&(S.sandbox||t.from<=S.n));
   const hasTool=id=>tools().some(t=>t.id===id);
   const got=it=>w.got[it]-(S.base[it]||0);
   const met=()=>!!S.order&&S.order.parts.every(p=>got(p[0])>=p[1]);
@@ -12029,10 +12055,11 @@ const Factory=(()=>{
     stop();stroke=null;try{Jobs.talk([]);}catch(e){}
     Modes.shut(ov);Sound.sfx.soft();
   }
-  // the layout is kept for this visit
+  // the layout is kept: his own factory in the save, a level for this visit
   function keep(){
     if(!S||!w)return;const code=E.encode(w);
-    layouts[S.n]=code;
+    if(S.sandbox){const f=FS();if(f.sandbox!==code){f.sandbox=code;save();}}
+    else layouts[S.n]=code;
   }
   // the sheet: a title (and stars beside it), 🗺️ back to the levels, ✕ to close
   function shell(title,sub){
@@ -12053,10 +12080,12 @@ const Factory=(()=>{
       return`<button class="fcl${st?" done":""}${next?" next":""}${open?"":" locked"}" data-n="${L.n}" aria-label="Level ${L.n}: ${esc(L.name)}${open?"":" (locked)"}">
         <b>${open?L.ic:"🔒"} ${L.n}</b><span>${esc(L.name)}</span><i>${"★".repeat(st)}${"☆".repeat(3-st)}</i></button>`;};
     $("#fcBody").innerHTML=`<div class="fcmap"><p class="sub">Fill the truck's order! New machines come as you go.</p>
-      <div class="fclv">${LEVELS.map(btn).join("")}</div></div>`;
+      <div class="fclv">${LEVELS.map(btn).join("")}</div>
+      <div class="mrow"><button class="btn big${sandboxOpen()?" primary":""}" id="fcSand"${sandboxOpen()?"":' aria-disabled="true"'}>${sandboxOpen()?"🏗️ My own factory":"🔒 My own factory: finish level 12"}</button></div></div>`;
     [].slice.call(ov.querySelectorAll(".fcl")).forEach(b=>{b.onclick=()=>{const n=+b.dataset.n;
       if(n>done()+1){Sound.sfx.soft();b.classList.remove("wig");void b.offsetWidth;b.classList.add("wig");Sound.speak("Finish the level before this one first!",.95);return;}
       play(n);};});
+    $("#fcSand").onclick=()=>{if(!sandboxOpen()){Sound.sfx.soft();Sound.speak("Finish all twelve levels to build your own factory!",.95);return;}sandbox();};
   }
   // a level: a fresh board, with the layout he left on it this visit
   function play(n){
@@ -12070,14 +12099,25 @@ const Factory=(()=>{
     const intro=L.intro;setTimeout(()=>{if(S&&S.n===n&&view==="board"&&isOpen())Promise.resolve(Sound.speak(intro,.95)).then(()=>{if(S&&S.n===n&&!S.done&&isOpen())hear();});},350);
     return true;
   }
+  // his own factory, from the save
+  function sandbox(){
+    if(!sandboxOpen())return false;
+    root();if(!isOpen()){ov.classList.add("on");Modes.open("factory",ov);}
+    S=session({sandbox:true,n:LEVELS.length+1});
+    w=E.make(SANDBOX);const f=F0();if(f&&typeof f.sandbox==="string")E.decode(w,f.sandbox);
+    S.cur=firstSpot();S.orders=paidToday();S.order=sideOrder(S.orders);
+    board();Sound.sfx.pop();
+    setTimeout(()=>{if(S&&S.sandbox&&isOpen())Promise.resolve(Sound.speak("Your own factory! Build anything you like.",.95)).then(()=>{if(S&&S.sandbox&&isOpen()&&!S.done)hear();});},350);
+    return true;
+  }
   const firstSpot=()=>{for(let i=0;i<w.N;i++)if(w.ore[i])return i;return 0;};
   const hear=()=>{try{Jobs.talk(orderSay(S.order.parts));}catch(e){Sound.speak(orderText(S.order.parts),.95);}};
 
   /* ---------- the board ---------- */
   function board(){
     view="board";root();
-    const L=S.level,st=starsOf(L.n);
-    shell(`🏭 ${L.n} · ${esc(L.name)}`,`<b class="fcstars" id="fcStars" aria-label="${st} stars">${"★".repeat(st)}${"☆".repeat(3-st)}</b>`);
+    const L=S.level,st=L?starsOf(L.n):0;
+    shell(S.sandbox?"🏗️ My own factory":`🏭 ${L.n} · ${esc(L.name)}`,S.sandbox?"":`<b class="fcstars" id="fcStars" aria-label="${st} stars">${"★".repeat(st)}${"☆".repeat(3-st)}</b>`);
     const teach=L&&L.teach?TOOL(L.teach):null;
     $("#fcBody").innerHTML=`<div class="fcwrap"><div class="fcmain">
         <div class="fcboard" id="fcBox"><canvas id="fcCv" aria-label="The factory board"></canvas><div class="fcdone" id="fcDone"></div></div>
@@ -12127,7 +12167,7 @@ const Factory=(()=>{
     const s=$("#fcSend");if(!s)return;
     s.textContent="📦 "+orderText(S.order.parts);
     const p=$("#fcPay");
-    if(p)p.textContent="";
+    if(p)p.textContent=S.sandbox?(paidToday()>=ORDERS_A_DAY?"For fun ⭐":`💎 ${S.order.pay} · order ${Math.min(ORDERS_A_DAY,paidToday()+1)} of ${ORDERS_A_DAY} today`):"";
   }
   // ten-frames: one row for each thing on the order, a dot in its colour for each one the truck got
   function tally(){
@@ -12140,7 +12180,7 @@ const Factory=(()=>{
   function runBtn(){const b=$("#fcRun");if(b){b.textContent=S.running?"⏸ Pause":"▶ Run";b.classList.toggle("primary",!S.running&&!S.done);b.classList.toggle("soft",S.running||S.done);b.disabled=!!S.done;}}
   function meta(){
     const m=$("#fcMeta");if(!m)return;const n=E.pieces(w);
-    m.textContent=`🧩 ${n} of ${S.level.budget} pieces for ⭐⭐⭐`;
+    m.textContent=S.sandbox?`🧩 ${n} pieces`:`🧩 ${n} of ${S.level.budget} pieces for ⭐⭐⭐`;
   }
   function tipShow(){const t=$("#fcTip");if(!t)return;const id=S.tip.shown;t.textContent=id?"💡 "+TIPS[id]:"";t.dataset.tip=id||"";}
   function say(t){const el=$("#fcTip");if(el){el.textContent=t;el.dataset.tip="";}}
@@ -12182,7 +12222,7 @@ const Factory=(()=>{
   }
   function loop(){if(!raf&&isOpen()&&view==="board"&&!hidden()&&typeof requestAnimationFrame==="function"){lastT=0;acc=0;raf=requestAnimationFrame(tick);}}
   function stop(){if(raf){try{cancelAnimationFrame(raf);}catch(e){}raf=0;}}
-  document.addEventListener("visibilitychange",()=>{if(hidden())stop();else loop();});
+  document.addEventListener("visibilitychange",()=>{if(hidden()){stop();if(S&&S.sandbox)keep();}else loop();});
   function toggle(){
     if(!S||S.done)return;
     if(!S.running&&!drills()){Sound.sfx.soft();say("💡 Put a drill on a rock first!");Sound.speak("Put a drill on a rock first!",.95);return;}
@@ -12211,7 +12251,7 @@ const Factory=(()=>{
     S.jam+=(blockedShare()-S.jam)*.05;
     if(S.jam>=.4)return hasTool("split")?"drills":"drills0";
     if(w.wip>=8&&S.flow<.4)return "wip";
-    if(w.belts>=S.level.long)return "long";
+    if(w.belts>=(S.sandbox?70:S.level.long))return "long";
     return "";
   }
   function tipCheck(){
@@ -12227,7 +12267,8 @@ const Factory=(()=>{
     if(!S||S.done)return;
     S.done=true;S.running=false;runBtn();keep();
     const pieces=E.pieces(w),hot=w.hot,L=S.level;
-    {const st=1+(hot<E.RED?1:0)+(hot<E.RED&&pieces<=L.budget?1:0);S.result=Object.assign(award(L.n,st),{hot,pieces,cool:hot<E.RED,small:pieces<=L.budget});}
+    if(S.sandbox){const paid=awardOrder(S.order);S.result={sandbox:true,gems:paid,pay:S.order.pay,capped:!paid};}
+    else{const st=1+(hot<E.RED?1:0)+(hot<E.RED&&pieces<=L.budget?1:0);S.result=Object.assign(award(L.n,st),{hot,pieces,cool:hot<E.RED,small:pieces<=L.budget});}
     Sound.sfx.fanfare();try{confetti();}catch(e){}
     Sound.speak("Order done!",.95);
     showDone();
@@ -12257,7 +12298,12 @@ const Factory=(()=>{
   function result(){
     const d=$("#fcDone"),r=S.result;if(!d||!r)return;
     let h="",line="",pay="";
-    {
+    if(r.sandbox){
+      pay=r.gems?`+${r.gems} 💎`:"";
+      line=r.gems?"":paidToday()>=ORDERS_A_DAY?"That was a for-fun order. Five paid orders a day!":"";
+      h=`<h2>📦 Order done!</h2>${pay?`<p class="mpaid">${pay}</p>`:""}${line?`<p class="sub">${esc(line)}</p>`:""}
+        <div class="mrow"><button class="btn primary big" id="fcNext">📦 Next order</button><button class="btn soft" id="fcKeep">🏗️ Keep building</button></div>`;
+    }else{
       const L=S.level,st=r.stars,teach=r.first&&L.teach?L.teach:"";
       pay=r.gems?`+${r.gems} 💎`:"";
       const star=(on,t)=>`<li class="${on?"on":""}">${on?"⭐":"☆"} ${t}</li>`;
@@ -12265,20 +12311,31 @@ const Factory=(()=>{
         <ul class="fcwhy">${star(true,"The order")}${star(r.cool,"No red belts")}${star(r.cool&&r.small,`${L.budget} pieces or fewer`)}</ul>
         ${pay?`<p class="mpaid">${pay}</p>`:`<p class="sub">You already have these stars! Great building.</p>`}
         ${teach?`<p class="fcteach">🔓 ${esc(UNLOCK[teach])}</p>`:""}
-        <div class="mrow">${L.n<LEVELS.length?'<button class="btn primary big" id="fcNextL">Next level ▶</button>':""}
+        <div class="mrow">${L.n<LEVELS.length?'<button class="btn primary big" id="fcNextL">Next level ▶</button>':'<button class="btn primary big" id="fcSandGo">🏗️ My own factory</button>'}
           <button class="btn soft" id="fcAgain">🔁 Build again</button></div>`;
     }
     d.innerHTML=`<div class="fcres">${h}</div>`;d.classList.add("on");
-    const hs=$("#fcStars");if(hs){const st=starsOf(S.n);hs.textContent="★".repeat(st)+"☆".repeat(3-st);hs.setAttribute("aria-label",st+" stars");}
+    const hs=$("#fcStars");if(hs&&!r.sandbox){const st=starsOf(S.n);hs.textContent="★".repeat(st)+"☆".repeat(3-st);hs.setAttribute("aria-label",st+" stars");}
     const on=(id,f)=>{const b=$("#"+id);if(b)b.onclick=()=>{Sound.sfx.pop();f();};};
-    on("fcAgain",again);on("fcNextL",()=>play(S.n+1));
+    on("fcNext",()=>nextOrder(true));on("fcKeep",()=>nextOrder(false));on("fcAgain",again);
+    on("fcNextL",()=>play(S.n+1));on("fcSandGo",sandbox);
     const first=d.querySelector(".btn.primary");if(first)try{first.focus();}catch(e){}
     if(!r.said){r.said=true;
-      if(r.gems){const t=r.first&&S.level.teach?UNLOCK[S.level.teach]:r.stars===3?"Three stars! Great building!":"Great building!";Sound.speak(t,.95);}
-      else Sound.speak("You already have these stars! Great building.",.95);}
+      if(r.sandbox)Sound.speak(r.gems?"Great building!":"Great building! More orders tomorrow.",.95);
+      else if(r.gems){const t=r.first&&S.level.teach?UNLOCK[S.level.teach]:r.stars===3?"Three stars! Great building!":"Great building!";Sound.speak(t,.95);}
+      else Sound.speak("You already have these stars! Great building.",.95);
+      if(!r.sandbox&&r.first&&S.level.n===LEVELS.length)setTimeout(()=>{if(isOpen())Sound.speak("You finished every level! Now build your own factory!",.95);},2600);}
   }
   // play the level again: back to the start, his pieces stay
-  function again(){if(!S)return;E.reset(w);S=Object.assign(session({n:S.n,level:S.level,order:S.order}),{tool:S.tool,cur:S.cur,sortCol:S.sortCol,kb:S.kb});board();}
+  function again(){if(!S)return;E.reset(w);S=Object.assign(session({n:S.n,level:S.level,order:S.order,sandbox:S.sandbox}),{tool:S.tool,cur:S.cur,sortCol:S.sortCol,kb:S.kb});board();}
+  // his own factory: the next side order; the factory keeps what is on its belts, and runs on (or waits while he builds)
+  function nextOrder(go){
+    if(!S||!S.sandbox)return;
+    const run=go!==false;S.orders=paidToday()>=ORDERS_A_DAY?S.orders+1:paidToday();
+    S.order=sideOrder(S.orders);S.base=new Int16Array(w.got);S.sig="";S.full=0;S.done=false;S.result=null;S.q=null;S.running=run;
+    board();hear();
+  }
+
   /* ---------- building on the board ---------- */
   const W=()=>w.W;
   const kindOf=id=>TOOL(id).k;
@@ -12554,11 +12611,11 @@ const Factory=(()=>{
     return{done:ok(),t:x.t,sec:+(x.t/E.HZ).toFixed(2),hot:x.hot,pieces,got,stars:ok()?1+(x.hot<E.RED?1:0)+(x.hot<E.RED&&pieces<=L.budget?1:0):0};
   }
 
-  return{open,close,play,map,LEVELS,TOOLS,TIPS,engine:E,sim,sumQ,orderSay,
+  return{open,close,play,sandbox,map,LEVELS,SANDBOX,TOOLS,TIPS,engine:E,sim,sumQ,orderSay,sideOrder,
     get done(){return done();},stars:starsOf,isOpen,
     // for the tests
-    _w:()=>w,_S:()=>S&&{n:S.n,tool:S.tool,running:S.running,done:S.done,tip:S.tip.shown,cur:S.cur,kb:S.kb,
-      order:S.order&&{parts:S.order.parts},result:S.result,q:S.q&&{ans:S.q.ans,level:S.q.level,text:S.q.text},miss:S.miss,
+    _w:()=>w,_S:()=>S&&{n:S.n,sandbox:S.sandbox,tool:S.tool,running:S.running,done:S.done,tip:S.tip.shown,cur:S.cur,kb:S.kb,
+      order:S.order&&{parts:S.order.parts,pay:S.order.pay,k:S.order.k},result:S.result,q:S.q&&{ans:S.q.ans,level:S.q.level,text:S.q.text},miss:S.miss,
       pieces:w?E.pieces(w):0,hot:w?w.hot:0,t:w?w.t:0,view},
     _load:code=>{if(!S||!w)return 0;const n=E.decode(w,code);changed();return n;},
     _run:ticks=>{if(!S||!w)return null;if(!S.done)S.running=true;for(let k=0;k<ticks&&!S.done;k++)step();runBtn();draw();return{done:S.done,t:w.t,hot:w.hot};},
