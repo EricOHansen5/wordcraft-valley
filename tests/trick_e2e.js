@@ -40,7 +40,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "Trick.inWindow: 14 October no, 15 October yes, 31 October yes, 1 November no");
   ok(await E(()=>Trick.inWindow(new Date(2027,9,15))&&!Trick.inWindow(new Date(2027,9,14))&&Trick.inWindow("2030-10-20")&&!Trick.inWindow("soon")),
     "...for a Date too, in any year; anything else is outside");
-  ok(await E(()=>typeof Looks==="undefined"&&Trick.live()===Trick.inWindow(today())),"without the Look system it goes by today's date");
+  ok(await E(()=>Trick.live()===Trick.inWindow(today())),"with no test date it goes by today's date (the Look system's window is the same one)");
 
   // ---- 2. outside the window: nothing shows and nothing is written ----
   await E(()=>Trick._setToday("2026-09-20"));
@@ -153,7 +153,10 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click("#tkNext");await wait(100);
 
   // ---- 8. the tenth door: a cheer, and a look piece from the Look system ----
-  await E(()=>{window.__g=[];window.Looks={inWindow:()=>true,grant:id=>{window.__g.push(id);return "pumpkins";}};});
+  // with the real Look system present (the merged game), wrap its grant to count calls; without it, stub one
+  await E(()=>{window.__g=[];window.__real=typeof Looks!=="undefined"&&!!Looks;
+    if(window.__real){window.__og=Looks.grant;Looks.grant=(id,o)=>{window.__g.push(id);return window.__og(id,o);};}
+    else window.Looks={inWindow:()=>true,grant:id=>{window.__g.push(id);return "pumpkins";}};});
   const c3=(await purse()).c;
   await listen();
   for(let i=0;i<7;i++){
@@ -170,7 +173,8 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   s=await said();
   ok(s.indexOf("Happy Halloween! Ten doors, ten treats!")>=0,"...and says it");
   ok(await waitFor(p,()=>JSON.stringify(window.__g)==='["halloween"]'),"Looks.grant(\"halloween\") is asked once for a look piece: "+J(await E(()=>window.__g)));
-  ok(await toasted(/You got the pumpkins! Look in your closet 🎨/),"a toast names the piece "+J(await E(()=>window.__toasts.slice(-3))));
+  ok(await toasted(/You got the pumpkins! Look in your closet|Happy Halloween! Your valley looks spooky and sweet/),"the Look system announces the first piece "+J(await E(()=>window.__toasts.slice(-3))));
+  ok(await E(()=>!window.__real||JSON.stringify(Looks.pieces("halloween").earned)===JSON.stringify(["pumpkins"])),"the real Look system earned exactly the first piece");
   ok(/You got the pumpkins!/.test(await E(()=>document.getElementById("tkPiece").textContent)),"...and so does the panel");
   ok(!s.some(x=>/pumpkins/.test(x)),"the piece is not said on top of the Look system's own line");
   await p.click("#tkNext");
@@ -181,7 +185,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click("#trickBtn");await wait(200);
   ok((await said()).indexOf("You got all the treats tonight! Come back tomorrow.")>=0&&await E(()=>!Adv.on),"🎃 after a finished night: come back tomorrow (one night a day)");
   ok((await tk()).nights===1&&await E(()=>window.__g.length===1),"...nothing more is paid or granted");
-  await E(()=>{delete window.Looks;state.settings.tierOverride=0;});
+  await E(()=>{if(window.__real)Looks.grant=window.__og;else delete window.Looks;state.settings.tierOverride=0;});
 
   // ---- 9. a new day: the doors open again ----
   await E(()=>Trick._setToday("2026-10-21"));
@@ -217,11 +221,11 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   t=await tk();ok(t.day==="2026-10-21"&&t.doors.length===3&&t.candy===26&&t.nights===1,"state.trick is saved "+J(t));
   ok((await shown("trickBtn"))===(await E(()=>Trick.inWindow(today()))),"after a reload the test date is gone: the real date ("+await E(()=>today())+") decides");
   // a night part-way through keeps its button even when the window says no (a Look system with other dates)
-  await E(()=>{window.Looks={inWindow:()=>false,grant:()=>null};window.__keep=state.trick;state.trick={day:today(),doors:["b:6,8"],candy:2,nights:0};Trick.hud();});
+  await E(()=>{if(window.__real){window.__oi=Looks.inWindow;Looks.inWindow=()=>false;}else window.Looks={inWindow:()=>false,grant:()=>null};window.__keep=state.trick;state.trick={day:today(),doors:["b:6,8"],candy:2,nights:0};Trick.hud();});
   ok(await shown("trickBtn")&&await E(()=>Trick.live()===false&&Trick.active()===true),"a night part-way through keeps its 🎃 button");
   await E(()=>{state.trick.doors=[];Trick.hud();});
   ok(!(await shown("trickBtn")),"...and without one, the Look system's window decides (no button)");
-  await E(()=>{delete window.Looks;state.trick=window.__keep;Trick.hud();});
+  await E(()=>{if(window.__real)Looks.inWindow=window.__oi;else delete window.Looks;state.trick=window.__keep;Trick.hud();});
   const V8=FX("v8-era.json");
   await seed(p,Object.assign({},V8,{guardians:[0,1,2,3,4,5,6].filter(b=>b<=V8.biome)}),{base:null});await listen();await tidy();
   ok(J(await tk())===J(DEF),"an old (v8) save loads, with the default trick field");

@@ -12013,9 +12013,10 @@ const Trick=(()=>{
     let p=null;const L=looks();
     if(L&&typeof L.grant==="function"){try{p=L.grant("halloween");}catch(e){p=null;}}
     lastPiece=p||null;if(!p)return;
-    const nm=typeof p==="string"?p:String(p.name||p.id||"");
+    let nm=typeof p==="string"?p:String(p.name||p.id||"");
+    try{const LK=L.get&&L.get("halloween");if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(e){}   // the piece's shown name ("witch hat")
     const line=(nm?"You got the "+nm+"! ":"")+"Look in your closet 🎨";
-    toast(line);
+    // the Look system toasts and speaks this line itself when it grants; the panel only repeats it
     const el=isOpen()&&ov.querySelector("#tkPiece");if(el)el.textContent="🎁 "+line;
   }
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){pending=false;piece();try{saveNow();}catch(e){}}});

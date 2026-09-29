@@ -168,6 +168,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   await openCloset();c=await cards();
   ok(c[1].text==="2 of 4 pieces"&&c[1].worn&&J(c[1].got)===J(["pumpkins","ghost"]),"the Closet shows 2 of 4 pieces "+J(c[1]));
   await shut();
+  await listen();   // start counting speech here: a delayed line from the boot (the season greeting) must not be blamed on the quiet grant
   ok(await E(()=>Looks.grant("halloween",{quiet:true}))==="bats"&&(await said()).length===0&&(await view()).bats>0,"grant({quiet}) gives the next piece and says nothing");
   await seed(p,Object.assign({},START,{look:null,looks:null}));await tidy();
   ok(await E(()=>state.look===""&&JSON.stringify(state.looks)==="{}")&&!(await view()).anyCls,"a save with look and looks null: \"\" and {}");
