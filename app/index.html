@@ -8516,7 +8516,7 @@ const Adv=(()=>{
   }
   function exit(){
     on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");Modes.close("adventure",hud);
-    input.jx=input.jy=0;[...grassEls,...landEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];ash=petEl=null;
+    input.jx=input.jy=0;[...grassEls,...landEls,...spotEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];spotEls=[];ash=petEl=null;
     Sound.sfx.soft();
   }
   function refreshHud(){
@@ -9795,7 +9795,7 @@ const Store=(()=>{
   function buy(shelf,id){
     const it=get(shelf,id),r=purchase(shelf,id);
     if(r.ok){
-      confetti();Sound.sfx.win();msg(`🎉 The ${it.name.toLowerCase()} is yours!`);
+      confetti();Sound.sfx.win();msg(`🎉 You got the ${it.name.toLowerCase()}!`);
       Sound.speak(it.wear==="hat"?"How do I look?":it.wear==="helmet"?"Your miner has a new hat!":"It's yours!",.95);
     }else if(r.why==="short")almost(r.need,PURSE[it.purse]);
     else if(r.why==="locked")locked(it);
@@ -9837,17 +9837,21 @@ const Store=(()=>{
     ${[0,1,2,3,4].map(k=>`<path d="M${10+k*16} 34 L${26+k*16} 34 L${26+k*16} 42 Q${18+k*16} 50 ${10+k*16} 42Z" fill="${k%2?"#FBF6EC":"#DC5A4B"}"/>`).join("")}
     <text x="30" y="73" font-size="12" stroke="none">💎</text><text x="54" y="73" font-size="12" stroke="none">🪙</text>`);
   let stall=null;
-  // the same place every visit: the front row near the left edge, clear of buildings and the land keepers
+  // the same place every visit while the valley stays the same: as far forward as it fits, near column
+  // 5.5, away from the edges (the joystick and the use button sit there), clear of buildings, of the
+  // land keepers who are awake and of the story friend's place (COLS-3, ROWS_MAX-1.5)
   function spot(){
     const first=ROWS_MAX-state.rows,gRow=Math.max(first,ROWS_MAX-2);
     const free=(c,r)=>!Object.keys(state.grid).some(k=>{const p=k.split(",").map(Number);return Math.abs(p[0]-c)<2.2&&Math.abs(p[1]-r)<1.5;})
-      &&!GUARDIANS.some(g=>Math.abs(g.c-c)<1.8&&Math.abs(gRow-r)<1.2);
-    for(let r=ROWS_MAX-1;r>=first;r--)for(const c of [.9,5.5,COLS-5.5])if(free(c,r))return{c,r};
-    for(let r=ROWS_MAX-1;r>=first;r--)for(let c=.9;c<COLS-1;c+=.5)if(free(c,r))return{c,r};
-    return{c:.9,r:ROWS_MAX-1};
+      &&!(state.guardians||[]).some(b=>GUARDIANS[b]&&Math.abs(GUARDIANS[b].c-c)<1.8&&Math.abs(gRow-r)<1.2)
+      &&!(Math.abs(c-(COLS-3))<1.8&&Math.abs(r-(ROWS_MAX-1.5))<1.2);
+    const cols=[];for(let c=2;c<=COLS-3;c+=.5)cols.push(c);
+    cols.sort((a,b)=>Math.abs(a-5.5)-Math.abs(b-5.5)||a-b);
+    for(let r=ROWS_MAX-1;r>=first;r--)for(let i=0;i<cols.length;i++)if(free(cols[i],r))return{c:cols[i],r};
+    return{c:5.5,r:ROWS_MAX-1};
   }
   Adv.provide(()=>{const p=spot();if(!stall)stall=STALL();
-    return[{c:p.c,r:p.r,size:.95,cls:"tpost",html:stall,label:"🏪 Trading Post",act:()=>open()}];});
+    return[{c:p.c,r:p.r,size:1.15,cls:"tpost",html:stall,label:"🏪 Trading Post",act:()=>open()}];});
 
   // ---------- the tool bar ----------
   function hud(){
