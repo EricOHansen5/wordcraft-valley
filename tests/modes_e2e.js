@@ -15,7 +15,8 @@ const {launch,reload,waitFor,check}=require("./lib");
   await p.waitForTimeout(100);
 
   // 1. the table
-  const IDS=["valley","read","book","pic","sign","note","story","wild","care","write","maker","mine","adventure","race","dex","craft","album","quests","reward","evo","scene","recap","photo","gate","parent","report","other"];
+  const IDS=["valley","read","book","pic","sign","note","story","wild","care","write","maker","mine","adventure","race","dex","craft","album","quests","reward","evo","scene","recap","photo","gate","parent","report","other",
+    "job"];
   const L=await E(()=>Modes.list());
   const missing=IDS.filter(id=>!L[id]||typeof L[id].reading!=="boolean"||!L[id].name);
   ok(!missing.length&&Object.keys(L).length===IDS.length,`Modes.list() has all ${IDS.length} modes, each with a name and a reading flag`+(missing.length?" — missing: "+missing:""));
@@ -49,6 +50,9 @@ const {launch,reload,waitFor,check}=require("./lib");
 
   await E(()=>openPicIt());await p.waitForTimeout(150);ok(await top()==="pic","Picture it → pic");
   await p.click("#ovPic #psLater");await p.waitForTimeout(100);ok(await top()==="valley","Picture it later → valley");
+
+  await p.click("#jobsBtn");await atTop("job");ok(await top()==="job","Jobs → job");
+  await p.click("#ovJob #jX");await atTop("valley");ok(await top()==="valley","closing the Job board → valley");
 
   // 3. the Mine, and reading inside it
   await p.click("#mineBtn");await p.waitForTimeout(900);
