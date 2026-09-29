@@ -1223,6 +1223,30 @@ body.exploring .slot-empty{display:none}
   .wpic.jopt{min-width:112px;min-height:112px;padding:6px}.jword{width:86px;height:86px}
   .jthings{grid-template-columns:repeat(5,30px)}.jthings img{width:30px;height:30px}.jlawn i,.jcell{width:36px;height:36px}
   .jpad{grid-template-columns:repeat(6,46px);grid-auto-rows:54px;gap:6px}.jkey{font-size:24px}.jarrows{grid-template-columns:repeat(3,62px);grid-auto-rows:56px}}
+/* ---- TRICK-OR-READ (Halloween): the 🎃 button, the doors in Adventure and the knock panel ---- */
+#trickBtn{background:linear-gradient(160deg,#FFC67A,#F28C28)}
+.advland.tkdoor.shut::before,.advland.tkdoor.shut::after{display:none}
+.advland.tkdoor.shut:not(.tkext) .lart,.advland.tkdoor.shut .tkd{opacity:.5;filter:grayscale(.85) brightness(.9)}
+.tkx{position:relative;width:100%;height:100%}.tkx .tkbase,.tkx .tkd{position:absolute}
+.tkx .tkbase{left:0;top:0;width:100%;height:100%}.tkx svg{width:100%;height:100%;display:block}
+.tkx.tree .tkd{left:28%;bottom:1%;width:44%;height:44%}.tkx.house .tkd{left:31%;bottom:18%;width:36%;height:36%}
+.tksheet{max-width:780px;border-color:#4A3570}.tksheet .bhead h2{color:#C4561C}
+.tkstat{font-size:19px;font-weight:900;white-space:nowrap}
+.tkwork{display:flex;gap:16px;align-items:flex-start}
+.tkwho{flex:0 0 170px;text-align:center}
+.tkcrit{position:relative;width:150px;height:150px;margin:22px auto 0;animation:ghostfloat 2.4s ease-in-out infinite}
+.tkcrit>svg,.tkcrit>.tkbody{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.tkbody svg{width:100%;height:100%;overflow:visible}
+.tkwho.happy .tkcrit{animation:mhappy .5s ease 2}
+.tkname{display:block;font-size:18px;margin-top:4px}
+.tksay{display:inline-block;margin-top:6px;padding:6px 12px;background:#fff;border:3px solid var(--ink);border-radius:16px;font-size:18px}
+.tkq{flex:1;min-width:0;text-align:center;min-height:260px}
+.tkmsg{min-height:26px;font-weight:800;color:#B0552F;margin:8px 0 0;text-align:center}
+.tkdone{padding:10px 0}.tkdone h2{font-size:30px}.tkcandy{font-size:64px;line-height:1.1;animation:pop .35s cubic-bezier(.2,1.3,.4,1)}
+.tkpiece{font-weight:900;font-size:20px;color:#7B5BE0;min-height:24px;margin:4px 0}
+@media (max-width:700px){.tksheet{padding:14px}.tksheet .bhead{flex-wrap:wrap}.tksheet .bhead h2{font-size:21px}
+  .tkwork{flex-direction:column;align-items:center;gap:4px}.tkwho{flex-basis:auto}
+  .tkcrit{width:84px;height:84px;margin-top:12px}.tkq{min-height:0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -11359,6 +11383,315 @@ function seedSeasonParticles(P){
   if(z.id==="summer")for(let i=0;i<10;i++){const d=document.createElement("div");d.className="seed";
     d.style.cssText=`left:${Math.random()*100}%;top:${40+Math.random()*50}%;animation-duration:${12+Math.random()*8}s;animation-delay:${-Math.random()*16}s`;P.appendChild(d);}
 }
+
+/* ================================================================
+   TRICK-OR-READ — Halloween doors in Adventure, 15 to 31 October (v10.3)
+   It exists only in its window: Looks.inWindow("halloween") when the
+   Look system is there, otherwise the same dates here. In the window a
+   🎃 button sits in the tool bar (and stays while a night is part-way
+   through); it opens Adventure, where ten doors wait: one on each of up
+   to ten buildings (a different ten each night when he has more), and
+   when he has fewer, on a little house and on trees. Walk up, press the
+   action button, and one of his animals in a costume (a witch hat, a
+   sheet ghost, a cape or a mask) asks one reading question at his level
+   (the shared Read builders): a word pick or a picture pick, and from
+   level 3 every third door a sentence that passes the decode check. The
+   asker never says the word or sentence first; tapping a word of a
+   sentence to hear it is the reading kit's own help.
+     right  "Trick or read? Read!", 2 🪙 as candy (the usual coin toast),
+            and the door closes (dims) for the night
+     miss   "Ooh, try again!": the same question stays, after the second
+            miss the answer glows, and it still pays when he gets there
+   Nothing is ever taken away. Ten doors finish the night: a cheer,
+   confetti and one look piece (Looks.grant("halloween")) when the Look
+   system is there. One finished night a day; the doors open again the
+   next day. A closed door on a building gives the building its own
+   button back.
+   Save: state.trick = {day, doors (the ids closed that night), candy
+   (all time), nights (finished)}. Nothing is written until a door
+   closes, so outside the window the save is untouched. Never a gate:
+   nothing else changes, and outside the window none of this shows.
+   ================================================================ */
+const Trick=(()=>{
+  const DOORS=10,PAY=2;
+  let fake=null,ov=null,cur=null,greeted="",lastKey="",pending=false,lastPiece=null,cache={key:"",list:null};
+  const day=()=>fake||today();
+  // pure: is this date ("YYYY-MM-DD" or a Date) from 15 to 31 October?
+  function inWindow(d){
+    let m,dd;
+    if(d instanceof Date){m=d.getMonth()+1;dd=d.getDate();}
+    else{const s=String(d==null?day():d);if(!/^\d{4}-\d{2}-\d{2}/.test(s))return false;m=+s.slice(5,7);dd=+s.slice(8,10);}
+    return m===10&&dd>=15&&dd<=31;
+  }
+  // the Look system (LOOKS), when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the Look system's windows, then the dates above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow("halloween");}catch(e){}}
+    return inWindow(today());
+  }
+  // reading the save never writes to it
+  const saved=()=>state.trick&&typeof state.trick==="object"?state.trick:{day:"",doors:[],candy:0,nights:0};
+  const closed=()=>{const t=saved();return t.day===day()&&Array.isArray(t.doors)?t.doors:[];};
+  const left=()=>Math.max(0,DOORS-closed().length);
+  const finished=()=>closed().length>=DOORS;
+  const going=()=>closed().length>0&&!finished();
+  const active=()=>live()||going();
+  // for writing, when a door closes: a new day starts a new night
+  function T(){
+    if(!state.trick||typeof state.trick!=="object")state.trick={day:"",doors:[],candy:0,nights:0};
+    const t=state.trick;if(!Array.isArray(t.doors))t.doors=[];
+    if(t.day!==day()){t.day=day();t.doors=[];}
+    return t;
+  }
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+
+  /* ---------- where the doors are ---------- */
+  // the same doors all night while the valley stays the same: the buildings first (ids "b:c,r"),
+  // then a little house and trees ("x:0", "x:1"…) in free places, so there are always ten. Worked out
+  // once per night and valley (things that arrive later find their own free place around the doors)
+  function doors(){
+    const keys=Object.keys(state.grid||{}).sort();
+    const key=[day(),state.rows,state.biome,keys.join(";"),(state.guardians||[]).join(",")].join("|");
+    if(cache.key===key&&cache.list)return cache.list;
+    const rnd=mulberry(hashStr("trick:"+day()));
+    let pick=keys;
+    if(keys.length>DOORS)pick=keys.map(k=>({k,o:rnd()})).sort((a,b)=>a.o-b.o).slice(0,DOORS).map(x=>x.k).sort();
+    const out=pick.map(k=>{const p=k.split(",").map(Number);return{id:"b:"+k,kind:"build",key:k,c:p[0],r:p[1]};});
+    if(out.length<DOORS)extras(DOORS-out.length,rnd).forEach((p,i)=>out.push({id:"x:"+i,kind:i===0?"house":"tree",c:p.c,r:p.r}));
+    cache={key,list:out};
+    return out;
+  }
+  // things other modes put out in Adventure that win the action button over a door: today's story-quest
+  // friends and their letters, and notes from home
+  function others(){
+    const out=[],add=p=>{if(p&&p.c!=null&&p.r!=null)out.push({c:+p.c,r:+p.r});};
+    [state.quest,state.quest2].forEach(q=>{if(!q)return;if(q.giverDay===today())add(q.giver);if(q.active&&q.active.spots)q.active.spots.forEach(add);});
+    (state.notes||[]).forEach(n=>{if(n&&!n.found)add(n);});
+    return out;
+  }
+  // clear of the buildings, the keepers, the story friend's place, the Trading Post, the Job board,
+  // the tall grass, treasure marks, the spots above and each other; near the front first, where a door is big enough to see
+  function extras(n,rnd){
+    const first=ROWS_MAX-state.rows,gRow=Math.max(first,ROWS_MAX-2),avoid=[],out=[];
+    const near=(a,c,r)=>Math.abs(a.c-c)<a.dc&&Math.abs(a.r-r)<a.dr;
+    others().forEach(p=>avoid.push({c:p.c,r:p.r,dc:1.8,dr:1.1}));
+    Object.keys(state.grid||{}).forEach(k=>{const p=k.split(",").map(Number);avoid.push({c:p[0],r:p[1],dc:2.2,dr:1.5});});
+    (state.guardians||[]).forEach(b=>{if(GUARDIANS[b])avoid.push({c:GUARDIANS[b].c,r:gRow,dc:1.8,dr:1.2});});
+    avoid.push({c:COLS-3,r:ROWS_MAX-1.5,dc:1.8,dr:1.2});
+    try{const s=Store._spot();avoid.push({c:s.c,r:s.r,dc:2.4,dr:1.4});}catch(e){}
+    try{const b=Jobs.boardAt();avoid.push({c:b.c,r:b.r,dc:2,dr:1.3});}catch(e){}
+    try{Adv._patches().forEach(p=>avoid.push({c:p.c,r:p.r,dc:p.w/2+.8,dr:1}));}catch(e){}
+    try{const h=state.adv&&state.adv.hunt;if(h)h.marks.forEach(m=>avoid.push({c:m.c,r:m.r,dc:1.6,dr:1}));}catch(e){}
+    for(let k=0;k<500&&out.length<n;k++){
+      const span=Math.max(0,state.rows-1.3),c=+(1.5+rnd()*(COLS-4)).toFixed(2),r=+(ROWS_MAX-1-rnd()*(k<250?Math.min(span,2.6):span)).toFixed(2);
+      if(k<400&&avoid.some(a=>near(a,c,r)))continue;
+      if(out.some(o=>Math.abs(o.c-c)<(k<400?2.4:1.3)&&Math.abs(o.r-r)<1.2))continue;
+      out.push({c,r});}
+    for(let i=out.length;i<n;i++)out.push({c:+(1.5+(i*2.3)%(COLS-4)).toFixed(2),r:ROWS_MAX-1});
+    return out;
+  }
+
+  /* ---------- art: the door, and the animals' costumes ---------- */
+  const art={};
+  function doorSvg(lit){
+    const k=lit?"on":"off";if(art[k])return art[k];
+    return art[k]=S(`<path d="M24 95 L24 42 Q24 18 50 18 Q76 18 76 42 L76 95Z" fill="${grad(lit?"#9A6A3E":"#7A6A5C","v",.2,.25)}"/>
+      <path d="M50 20 L50 95 M24 62 L76 62" fill="none" stroke-opacity=".3" stroke-width="2"/>
+      <path d="M40 36 Q50 27 60 36 L60 48 L40 48Z" fill="${lit?"#FFD86B":"#4E4A5E"}"/>
+      <circle cx="58" cy="72" r="3.2" fill="#FFC53D"/>
+      <ellipse cx="80" cy="85" rx="15" ry="11.5" fill="${dome(lit?"#F28C28":"#8C7560",38,30)}"/>
+      <path d="M80 73 Q80 67 85 66" fill="none" stroke="#3E7A42" stroke-width="3"/>
+      <path d="M72 82 L75.5 77 L79 82Z M81 82 L84.5 77 L88 82Z M72 88 Q80 94 88 88 Q80 91 72 88Z" fill="${lit?"#FFE39A":"#4A3524"}" stroke-width="1.4"/>`);
+  }
+  const treeKind=()=>{const dc=(biome()&&biome().decor)||[];return ["tree","pine","palm"].filter(t=>dc.indexOf(t)>=0)[0]||"tree";};
+  function doorArt(d,shut){
+    const door=doorSvg(!shut);
+    if(d.kind==="build")return door;
+    const base=d.kind==="house"?drawWord("house"):drawThing(treeKind(),hashStr(d.id+day())%999);
+    return `<div class="tkx ${d.kind}"><div class="tkbase">${base}</div><div class="tkd">${door}</div></div>`;
+  }
+  // drawn over (front) or behind (back) the animal; data-fit parts are moved onto its head once it is on screen
+  const COSTUMES=[
+    {id:"witch",ic:"🧙",front:`<g data-fit="hat"><path d="M20 30 Q48 20 80 28 Q84 33 78 35 Q48 28 22 36 Q16 34 20 30Z" fill="#4A3570"/>
+      <path d="M33 31 Q40 14 52 4 Q58 0 60 6 Q57 10 61 13 L67 29 Q50 25 33 31Z" fill="#5B418A"/>
+      <path d="M34 27 Q50 22 66 25 L67 30 Q50 26 34 31Z" fill="#F28C28"/><rect x="46" y="23" width="7" height="6" rx="1" fill="#FFC53D" stroke-width="1.4"/></g>`},
+    {id:"ghost",ic:"👻",front:`<path d="M18 92 Q14 34 50 12 Q86 34 82 92 Q76 85 70 92 Q64 85 58 92 Q52 85 46 92 Q40 85 34 92 Q28 85 24 92 Q21 88 18 92Z" fill="#FFFFFF" fill-opacity=".88"/>
+      <ellipse cx="40" cy="44" rx="5.5" ry="8" fill="${INK}"/><ellipse cx="60" cy="44" rx="5.5" ry="8" fill="${INK}"/><ellipse cx="50" cy="62" rx="6" ry="4" fill="${INK}" opacity=".7"/>`},
+    {id:"cape",ic:"🦸",back:`<path d="M30 30 Q50 24 70 30 L90 95 Q50 101 10 95Z" fill="#C8323C"/><path d="M30 30 Q50 38 70 30" fill="none" stroke="#8E1F2A" stroke-width="3"/>`,
+      front:`<g data-fit="neck"><circle cx="50" cy="52" r="4.5" fill="#FFC53D"/></g>`},
+    {id:"mask",ic:"🎭",front:`<g data-fit="mask"><path d="M24 36 Q36 28 50 35 Q64 28 76 36 Q78 46 66 47 Q56 47 50 41 Q44 47 34 47 Q22 46 24 36Z" fill="${INK}"/>
+      <ellipse cx="37" cy="39" rx="5.5" ry="3.6" fill="#FFFFFF" stroke="none"/><ellipse cx="63" cy="39" rx="5.5" ry="3.6" fill="#FFFFFF" stroke="none"/></g>`}];
+  // who opens a door: one of his own animals when he has a few (any from his lands otherwise), the same all night
+  function who(id){
+    const r=mulberry(hashStr("trick:"+day()+":"+id)),ids=[];
+    (state.critters||[]).forEach(c=>{if(c&&CRIT(c.id)&&ART[c.id]&&ids.indexOf(c.id)<0)ids.push(c.id);});
+    if(ids.length<3)CRITTERS.forEach(c=>{if(c.b<=Math.max(1,state.biome||0)&&ART[c.id]&&ids.indexOf(c.id)<0)ids.push(c.id);});
+    return{id:ids[Math.floor(r()*ids.length)]||"fox",seed:Math.floor(r()*999),cos:COSTUMES[Math.floor(r()*COSTUMES.length)]};
+  }
+  const inked=s=>`<g stroke="${INK}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">${s}</g>`;
+  function costumed(w){
+    const C=w.cos,m=CRIT(w.id);
+    return `<div class="tkcrit" data-cos="${C.id}" data-crit="${w.id}">${C.back?`<svg class="tkback" viewBox="0 0 100 100">${inked(C.back)}</svg>`:""}
+      <div class="tkbody">${drawThing(w.id,w.seed)}</div>${C.front?`<svg class="tkfront" viewBox="0 0 100 100">${inked(C.front)}</svg>`:""}</div>
+      <b class="tkname">${C.ic} ${esc(m?m.name:"")}</b>`;
+  }
+  // a hat sits on top of the animal, a mask across its eyes (near the middle of the head) and the cape's clasp under its chin
+  function fit(){try{
+    const root=ov.querySelector(".tkcrit"),svg=root&&root.querySelector(".tkbody svg");if(!svg)return;
+    const R=svg.getBoundingClientRect(),r=(svg.querySelector("g")||svg).getBoundingClientRect();if(!R.width||!r.width)return;
+    const top=(r.top-R.top)/R.height*100,h=r.height/R.height*100,cx=((r.left+r.right)/2-R.left)/R.width*100;
+    root.querySelectorAll("[data-fit]").forEach(el=>{const f=el.getAttribute("data-fit");
+      const x=f==="hat"?(cx-50)*.7:cx-50,y=f==="hat"?top-28:f==="neck"?top+h-54:top+h*.45-39;
+      el.setAttribute("transform","translate("+x.toFixed(1)+" "+y.toFixed(1)+")");});
+  }catch(e){}}
+
+  /* ---------- the doors in Adventure ---------- */
+  Adv.provide(()=>{
+    if(!active())return[];
+    const shut=closed();hello();
+    return doors().map(d=>{
+      const s=shut.indexOf(d.id)>=0,o={c:d.c,r:d.r,size:d.kind==="build"?0.42:d.kind==="house"?1.1:0.86,low:true,door:d.id,
+        cls:"tkdoor"+(d.kind==="build"?"":" tkext")+(s?" shut":""),html:doorArt(d,s)};
+      const b=d.kind==="build"&&state.grid[d.key];
+      if(!s){o.label="🚪 Knock knock!";o.act=()=>knock(d.id);}
+      else if(b){o.label="🚪 "+(NAMES[b.id]||"Use");o.act=()=>useBuilding(d.key,b.id);}
+      else{o.label="🍬 Yum!";o.act=()=>{Sound.sfx.soft();toast("You got candy here! 🍬");};}
+      return o;});
+  });
+  // the first time he walks out on a new night (not on his very first visit, which has its own hello)
+  function hello(){
+    if(!Adv.on||greeted===day()||closed().length||!(state.adv&&state.adv.seenIntro))return;
+    greeted=day();
+    setTimeout(()=>{if(Adv.on&&!isOpen())Sound.speak("It's Trick-or-Read night! Knock on the doors with pumpkins.",.95);},1600);
+  }
+  // the 🎃 button
+  function go(){
+    Sound.sfx.pop();
+    if(finished()){toast("🍬 You got all the treats tonight! Come back tomorrow 🎃");Sound.speak("You got all the treats tonight! Come back tomorrow.",.95);return;}
+    const first=!(state.adv&&state.adv.seenIntro);greeted=day();
+    if(Adv.on)Adv.redraw();else Adv.enter();
+    try{advBadge();}catch(e){}
+    if(!first)setTimeout(()=>{if(Adv.on&&!isOpen())Sound.speak("It's Trick-or-Read night! Knock on the doors with pumpkins.",.95);},900);
+  }
+
+  /* ---------- a knock ---------- */
+  function knock(id){
+    if(isOpen()||!active()||finished()||closed().indexOf(id)>=0)return false;
+    if(!doors().some(x=>x.id===id))return false;
+    Sound.sfx.thud();setTimeout(()=>Sound.sfx.thud(),190);
+    const q={id,miss:0,paid:false,kind:""};cur=q;
+    if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovTrick";document.body.appendChild(ov);}
+    ov.innerHTML=`<div class="sheet tksheet"><div class="bhead"><h2>🎃 Trick-or-Read!</h2><b class="tkstat" id="tkStat"></b><button class="bx" id="tkX" aria-label="Close">✕</button></div>
+      <div class="tkwork"><div class="tkwho">${costumed(who(id))}<b class="tksay">Trick or read?</b></div><div class="tkq" id="tkQ"></div></div>
+      <p class="tkmsg" id="tkMsg" aria-live="polite"></p></div>`;
+    ov.classList.add("on");Modes.open("trick",ov);
+    ov.querySelector("#tkX").onclick=close;
+    stat();fit();ask(q);
+    setTimeout(()=>{if(cur===q&&!q.paid&&isOpen())Sound.speak("Knock, knock! Trick or read?",.95);},300);
+    return true;
+  }
+  // mostly a word pick or a picture pick; from level 3 every third door of the night a sentence
+  function ask(q){
+    const host=ov.querySelector("#tkQ"),n=closed().length,tier=currentTier();
+    const kind=tier>=3&&n%3===2?"sentence":n%2?"pic":"wordPick";
+    const done=Read.once(()=>paid(q));
+    Read[kind](host,done);
+    const ans=()=>String(host.dataset.ans||"");
+    // a sentence has to pass the decode check at his level; if it doesn't, he gets a word instead
+    if(ans()[0]==="#"){const b=host.querySelector(".btext");if(!b||Decode.check(b.textContent,tier).some(x=>!x.ok))Read.wordPick(host,done);}
+    q.kind=ans()[0]==="#"?"sentence":host.querySelector(".wwopt")?"wordPick":"pic";
+    host.addEventListener("click",e=>missed(e,q,host));
+  }
+  // the builders mark a right tap .right and a wrong one .wrong; this runs after them
+  function missed(e,q,host){
+    if(q.paid||cur!==q)return;
+    const b=e.target&&e.target.closest?e.target.closest("[data-w],.psopt"):null;
+    if(!b||!host.contains(b)||host.querySelector(".right"))return;
+    const a=String(host.dataset.ans||""),sent=a[0]==="#";
+    if(sent?(b.classList.contains("psopt")&&b.getAttribute("data-i")===a.slice(1)):b.getAttribute("data-w")===a)return;
+    q.miss++;msg("Ooh, try again!");Sound.sfx.soft();
+    clearTimeout(q.t);q.t=setTimeout(()=>{if(!q.paid&&cur===q&&isOpen())Sound.speak("Ooh, try again!",.95);},650);
+    if(q.miss>=2){const r=sent?host.querySelector('.psopt[data-i="'+a.slice(1)+'"]'):host.querySelector('[data-w="'+a+'"]');if(r)r.classList.add("hint");}
+  }
+  // a right read, however many tries it took: candy (coins), and the door closes
+  function paid(q){
+    if(q.paid)return;q.paid=true;
+    const t=T();if(t.doors.length>=DOORS)return;
+    if(t.doors.indexOf(q.id)<0)t.doors.push(q.id);
+    t.candy=(+t.candy||0)+PAY;
+    if(!state.mine||typeof state.mine!=="object")state.mine=def().mine;
+    state.mine.coins=(+state.mine.coins||0)+PAY;
+    state.wordsRead=(+state.wordsRead||0)+1;
+    try{Quests.hit("read",1);}catch(e){}
+    const last=t.doors.length>=DOORS;if(last)t.nights=(+t.nights||0)+1;
+    save();try{renderHUD();}catch(e){}
+    toast("+"+PAY+" 🪙");
+    hud();try{Adv.redraw();}catch(e){}
+    if(last)finish(q);else treat(q);
+  }
+  function treat(q){
+    const n=closed().length;
+    Sound.sfx.chime();
+    Sound.speak(n%3===1?"Trick or read? Read! Here's your candy!":n%3===2?"You read it! Here's your candy!":"Spooky good reading! Have some candy!",.95);
+    if(cur!==q||!isOpen())return;
+    happy();msg("");stat();say("Here's your candy!");
+    ov.querySelector("#tkQ").innerHTML=`<div class="tkdone"><div class="tkcandy">🍬</div><p class="mpaid">+${PAY} 🪙 candy!</p>
+      <p class="sub tkleft">🚪 ${left()} ${left()===1?"door":"doors"} left tonight</p>
+      <div class="mrow"><button class="btn primary big" id="tkNext">More doors! 🎃</button></div></div>`;
+    ov.querySelector("#tkNext").onclick=close;
+  }
+  // the tenth door: the night is done
+  function finish(q){
+    Sound.sfx.fanfare();try{confetti();}catch(e){}
+    const said=Sound.speak("Happy Halloween! Ten doors, ten treats!",.95);
+    // the look piece comes after the cheer (the Look system may have a line of its own), or at once if the app is put away
+    pending=true;const give=()=>{if(pending){pending=false;piece();}};
+    Promise.resolve(said).then(give,give);setTimeout(give,5000);
+    if(cur!==q||!isOpen())return;
+    happy();msg("");stat();say("Happy Halloween!");
+    ov.querySelector("#tkQ").innerHTML=`<div class="tkdone"><div class="tkcandy">🎉🍬🎃</div><h2>Happy Halloween!</h2><p class="sub">Ten doors, ten treats!</p>
+      <p class="mpaid">🍬 ${DOORS*PAY} candy tonight</p><p class="tkpiece" id="tkPiece"></p>
+      <div class="mrow"><button class="btn primary big" id="tkNext">Done 🎃</button></div></div>`;
+    ov.querySelector("#tkNext").onclick=close;
+  }
+  function piece(){
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant("halloween");}catch(e){p=null;}}
+    lastPiece=p||null;if(!p)return;
+    const nm=typeof p==="string"?p:String(p.name||p.id||"");
+    const line=(nm?"You got the "+nm+"! ":"")+"Look in your closet 🎨";
+    toast(line);
+    const el=isOpen()&&ov.querySelector("#tkPiece");if(el)el.textContent="🎁 "+line;
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){pending=false;piece();try{saveNow();}catch(e){}}});
+  function happy(){const w=ov.querySelector(".tkwho");if(w){w.classList.remove("happy");void w.offsetWidth;w.classList.add("happy");}}
+  function msg(t){const m=ov&&ov.querySelector("#tkMsg");if(m)m.textContent=t||"";}
+  function say(t){const m=ov&&ov.querySelector(".tksay");if(m)m.textContent=t;}
+  function stat(){const s=ov&&ov.querySelector("#tkStat");if(s)s.textContent=`🍬 ${closed().length*PAY} · 🚪 ${left()} left`;}
+  function close(){if(!ov)return;Modes.shut(ov);cur=null;Sound.sfx.soft();}
+
+  /* ---------- the tool bar ---------- */
+  function hud(){
+    const b=document.getElementById("trickBtn");if(!b)return;
+    const on=active();b.style.display=on?"":"none";
+    const n=document.getElementById("trickBadge");if(n){const l=left();n.textContent=l;n.classList.toggle("on",on&&l>0);}
+  }
+  // the window opens and closes at midnight, and the doors open again each day (and the badge catches up with the loaded save)
+  function tick(){hud();const k=active()+"|"+day();if(k===lastKey)return;lastKey=k;try{Adv.redraw();}catch(e){}}
+  document.getElementById("trickBtn").onclick=go;
+  setInterval(tick,60000);setTimeout(tick,1500);setTimeout(tick,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
+  hud();
+
+  return{inWindow,live,active,open:go,knock,close,hud,DOORS,PAY,
+    doors:()=>active()?doors().map(d=>({id:d.id,kind:d.kind,c:d.c,r:d.r,shut:closed().indexOf(d.id)>=0})):[],
+    get left(){return left();},get finished(){return finished();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";hud();try{Adv.redraw();}catch(e){}},
+    _q:()=>cur&&{id:cur.id,kind:cur.kind,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece};
+})();
 
 /* ================================================================
    7m. LISTEN-AND-PICK  ("Hear it")
