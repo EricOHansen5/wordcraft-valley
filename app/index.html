@@ -8429,6 +8429,7 @@ function openReport(){
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}
     ${Reread.report(days)}
+    ${Tracks.report(days)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <p class="rnote" id="rTogether">${tgWeek} book${tgWeek===1?"":"s"} read together this week${tgWeek?"":" (👨‍👦 Read together is on the book shelf: take turns, or read each page first and he echoes it)"}.</p>
     <h3>Writing</h3><p class="rnote">${(()=>{const r=Write.report();return r.length?`Letters he writes from memory: <b>${r.filter(x=>x.lv===2).map(x=>x.c).join(" ")||"none yet"}</b>. Still tracing: ${r.filter(x=>x.lv===0).map(x=>x.c).join(" ")||"none"}. ${state.writes||0} words written, ${(state.mybooks||[]).length} books of his own.`:"No writing yet — ✍️ crates appear once he has read a few words.";})()}</p>
@@ -9818,7 +9819,10 @@ const Seeded={
    Tracks.register({id,name,icon,levels:[{id,grade,name,gen:(seed,opt)=>question}]}).
    Tracks.gen(track,level,seed,opt) stamps the question with its track and level.
    What he got right is kept per track and level in state.tracks[id].stats[level]
-   = {seen,right}, the same idea as the word stats, for the Grown-up side later. */
+   = {seen,right}, the same idea as the word stats, with days:{ymd:{seen,right}}
+   beside them for the last 60 days (stats kept before the days were added have
+   none: their week starts at zero). Tracks.report(days) is the Grown-up report's
+   "Math at the jobs" block. */
 const Tracks=(()=>{
   const all={};
   function register(t){
@@ -9834,8 +9838,31 @@ const Tracks=(()=>{
   function record(id,lv,ok){
     if(!id||!lv)return;const T=state.tracks||(state.tracks={}),t=T[id]||(T[id]={stats:{}});if(!t.stats)t.stats={};
     const s=t.stats[lv]||(t.stats[lv]={seen:0,right:0});s.seen++;if(ok)s.right++;
+    // and the same per day, for the report's week; days more than 60 back are let go
+    if(!s.days||typeof s.days!=="object"||Array.isArray(s.days))s.days={};
+    const d=today();let x=s.days[d];if(!x||typeof x!=="object")x=s.days[d]={seen:0,right:0};
+    x.seen=(+x.seen||0)+1;if(ok)x.right=(+x.right||0)+1;
+    const keep=new Date();keep.setDate(keep.getDate()-59);const cut=ymd(keep);
+    Object.keys(s.days).forEach(k=>{if(k<cut)delete s.days[k];});
   }
-  return{register,get,level,gen,record,list:()=>Object.keys(all)};
+  // a level's name for grown-ups: the track's own, or one for a level a job asks for itself (the mower's arrays)
+  const MORE={math:{array:"Rows and columns (arrays)"}};
+  const levelName=(id,lv)=>{const L=level(id,lv);return L&&L.name||(MORE[id]||{})[lv]||String(lv);};
+  // the Grown-up report's "Math at the jobs" (days: the report's week): one line per level with answers,
+  // right the first time out of answered this week and in all, in the track's order
+  function report(days){
+    const t=state.tracks&&state.tracks.math,st=t&&t.stats&&typeof t.stats==="object"?t.stats:{};
+    const order=((get("math")||{}).levels||[]).map(L=>L.id),at=k=>{const i=order.indexOf(k);return i<0?order.length:i;};
+    const rows=Object.keys(st).filter(k=>st[k]&&+st[k].seen>0).sort((a,b)=>at(a)-at(b)||(a<b?-1:a>b?1:0)).map(lv=>{
+      const s=st[lv],D=s.days&&typeof s.days==="object"?s.days:{},wk={seen:0,right:0};
+      (days||[]).forEach(d=>{const x=D[d];if(x&&typeof x==="object"){wk.seen+=+x.seen||0;wk.right+=+x.right||0;}});
+      return{lv,name:levelName("math",lv),seen:+s.seen||0,right:+s.right||0,wk};});
+    if(!rows.length)return`<h3>Math at the jobs</h3><p class="rnote" id="rMath">No math yet. It shows up when he takes a job shift.</p>`;
+    return`<h3>Math at the jobs</h3><div id="rMath"><p class="rnote">The math in his job shifts (💼 Job board): right the first time, out of the questions answered. Every question is read aloud to him.</p>
+      <table class="rspeed rmath"><tr><th>Math</th><th>This week</th><th>In all</th></tr>
+      ${rows.map(r=>`<tr data-lv="${esc(r.lv)}"><td>${esc(r.name)}</td><td>${r.wk.seen?`<b>${r.wk.right}</b> of ${r.wk.seen} right`:"—"}</td><td>${r.right} of ${r.seen} right</td></tr>`).join("")}</table></div>`;
+  }
+  return{register,get,level,gen,record,report,levelName,list:()=>Object.keys(all)};
 })();
 // reading steps come from each job's own generator (his word list, decode-checked), so this track has no levels
 Tracks.register({id:"reading",name:"Reading",icon:"📖",levels:[]});

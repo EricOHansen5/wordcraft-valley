@@ -143,6 +143,53 @@ const {launch,seed,waitFor,check}=require("./lib");
   ok(await E(()=>state.owned.gloves===1)&&c.gloves==="Worn at the Job board","buying the gloves: the card now says “"+c.gloves+"”");
   await E(()=>Store.close());await wait(200);
 
+  // ---- 5. the shifts above kept a tally per day beside each level's totals ----
+  const tally=await E(()=>{const st=state.tracks.math.stats,d=today(),out={};
+    Object.keys(st).forEach(k=>{const s=st[k],sum=Object.keys(s.days||{}).reduce((a,x)=>a+s.days[x].seen,0);out[k]={seen:s.seen,right:s.right,today:(s.days||{})[d],sum};});return out;});
+  ok(Object.keys(tally).length>0&&Object.keys(tally).every(k=>tally[k].today&&tally[k].today.seen===tally[k].seen&&tally[k].sum===tally[k].seen&&tally[k].today.right===tally[k].right),
+    "the job shifts' math is kept per level and per day (today's tally matches the totals of a new save) "+J(tally));
+
+  // ---- 6. the Grown-up report: Math at the jobs ----
+  const report=async()=>{await E(()=>openReport());await waitFor(p,"#ovReport.on #rMath");
+    const r=await E(()=>{const hs=[...document.querySelectorAll("#ovReport h3")].map(x=>x.textContent);
+      return{hs,text:document.getElementById("rMath").textContent.replace(/\s+/g," ").trim(),
+        rows:[...document.querySelectorAll("#rMath tr[data-lv]")].map(tr=>[tr.dataset.lv].concat([...tr.cells].map(c=>c.textContent.trim())))};});
+    await E(()=>document.getElementById("rClose").click());await waitFor(p,()=>!document.querySelector("#ovReport.on"));
+    return r;};
+  let r=await report();
+  ok(r.hs.indexOf("Reading speed")>=0&&r.hs.indexOf("Math at the jobs")===r.hs.indexOf("Reading speed")+1&&r.hs.indexOf("Books")===r.hs.indexOf("Math at the jobs")+1,
+    "the report has “Math at the jobs” after Reading speed and before Books: "+r.hs.join(" · "));
+  ok(r.rows.length===Object.keys(tally).length&&r.rows.every(x=>x[2]===`${tally[x[0]].right} of ${tally[x[0]].seen} right`&&x[3]===x[2]),
+    "after the shifts: one line per level, this week = in all "+J(r.rows));
+  // no math yet: a quiet line
+  await seed(p,Object.assign({},START,{tracks:{}}),{settle:600});
+  r=await report();
+  ok(r.text==="No math yet. It shows up when he takes a job shift."&&!r.rows.length,"no math yet: “"+r.text+"”");
+  // seeded stats: this week (the last 7 days) and in all, in the track's order; an old level with no days
+  const ago=n=>{const x=new Date();x.setDate(x.getDate()-n);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");};
+  const STATS={
+    count10:{seen:12,right:9,days:{[ago(0)]:{seen:3,right:2},[ago(3)]:{seen:2,right:2},[ago(20)]:{seen:7,right:5}}},
+    add10:{seen:4,right:3},
+    array:{seen:2,right:1,days:{[ago(0)]:{seen:2,right:1}}},
+    sub10:{seen:0,right:0},
+    coins20:{seen:5,right:5,days:{[ago(6)]:{seen:5,right:5}}},
+    compare:{seen:3,right:1,days:{[ago(7)]:{seen:3,right:1}}}};
+  await seed(p,Object.assign({},START,{tracks:{math:{stats:STATS}}}),{settle:600});
+  ok(await E(()=>JSON.stringify(state.tracks.math.stats.add10))==='{"seen":4,"right":3}',"an old save whose stats have no days loads as it was: "+await E(()=>JSON.stringify(state.tracks.math.stats.add10)));
+  r=await report();
+  const want=[["count10","Count to 10","4 of 5 right","9 of 12 right"],["compare","More or fewer","—","1 of 3 right"],["add10","Add within 10","—","3 of 4 right"],
+    ["coins20","Coins to 20¢","5 of 5 right","5 of 5 right"],["array","Rows and columns (arrays)","1 of 2 right","1 of 2 right"]];
+  ok(J(r.rows)===J(want),"seeded stats: a line per level with answers, right this week and in all, in the track's order "+J(r.rows));
+  ok(/right the first time/.test(r.text)&&!/No math yet/.test(r.text),"…with a line saying what the numbers are");
+  // the next answer starts the old level's tally; days more than 60 back are let go
+  await E(([a,b])=>{const d=state.tracks.math.stats.count10.days;d[a]={seen:1,right:1};d[b]={seen:1,right:0};},[ago(59),ago(60)]);
+  const rec=await E(([a,b])=>{Tracks.record("math","add10",true);Tracks.record("math","count10",false);const s=state.tracks.math.stats;
+    return{add10:s.add10,keep:!!s.count10.days[a],gone:!s.count10.days[b],c:s.count10.seen,today:s.count10.days[today()]};},[ago(59),ago(60)]);
+  ok(J(rec.add10)===J({seen:5,right:4,days:{[ago(0)]:{seen:1,right:1}}}),"an answer on an old level keeps its totals and starts its days "+J(rec.add10));
+  ok(rec.keep&&rec.gone&&rec.c===13&&J(rec.today)===J({seen:4,right:2}),"the days are kept for 60 days (59 back kept, 60 back let go) "+J(rec));
+  r=await report();
+  ok(J(r.rows.find(x=>x[0]==="add10"))===J(["add10","Add within 10","1 of 1 right","4 of 5 right"]),"the report then counts it this week: "+J(r.rows.find(x=>x[0]==="add10")));
+
   ok(!errs.length,"no page or console errors "+errs.slice(0,3).join(" | "));
   await close();T.done();
 })().catch(e=>{console.log("FAIL crashed: "+(e&&e.stack||e));process.exit(1);});
