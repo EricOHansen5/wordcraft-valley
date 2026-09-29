@@ -439,6 +439,23 @@ select{width:auto}
 .hatcard .art{width:84px;height:84px;margin:0 auto 4px}.hatcard .art svg{width:100%;height:100%}
 .hatcard .n{font-weight:900;font-size:15px}.hatcard .c{font-size:12px;color:var(--ink-soft);margin:2px 0 8px}
 .hatcard.worn{background:linear-gradient(160deg,#FFF3C4,#FFE39A);box-shadow:0 0 16px rgba(255,197,61,.5)}
+/* trading post */
+#storeBtn{width:auto;padding:0 12px 0 10px;display:flex;align-items:center;gap:6px}
+#storeBtn .purse{font-size:15px;font-weight:900;white-space:nowrap}
+.stpurse{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 12px}
+.stpurse span{padding:6px 16px;border:3px solid var(--ink);border-radius:999px;background:var(--paper-deep);font-weight:900;font-size:19px}
+.stcard{position:relative}.stcard .art{cursor:pointer}
+.stcard.worn{background:linear-gradient(160deg,#FFF3C4,#FFE39A);box-shadow:0 0 16px rgba(255,197,61,.5)}
+.stcard.locked .art{filter:grayscale(.85);opacity:.6}
+.stcard .rib{position:absolute;top:-9px;right:-6px;background:#DC5A4B;color:#fff;font-size:12px;padding:2px 8px;border:2px solid var(--ink);border-radius:10px;transform:rotate(8deg)}
+.stcard .job{font-size:12px;font-weight:800;color:var(--ink-soft)}
+.stmsg{min-height:26px;text-align:center;font-weight:900;font-size:19px;margin:-6px 0 10px}
+.storemore{grid-column:1/-1;text-align:center;padding:6px 0}.storemore p{margin:0 0 8px;font-weight:800;color:var(--ink-soft)}
+.mmore{margin-top:8px;font-weight:800;font-size:14px;color:#6B5E52}
+.stswap{border:3px solid var(--ink);border-radius:18px;background:var(--paper-deep);padding:12px 14px;margin:0 0 12px;text-align:center}
+.stswap .sthead{font-weight:900;font-size:18px;margin-bottom:8px}
+.strow{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.strow .stpm{min-width:56px;font-size:24px;padding:6px 14px}.strow .stsum{font-size:26px;min-width:170px;white-space:nowrap}
 /* vehicles: body flips to face travel, act carries tap stunts, hop idles */
 .vehicle{position:absolute;transform:translate(-50%,-100%);cursor:pointer}
 .vehicle .body,.vehicle .act,.vehicle .hop{width:100%;height:100%;transform-origin:50% 100%}
@@ -1247,6 +1264,7 @@ body.exploring .slot-empty{display:none}
     <button class="toolbtn" id="craftBtn" title="Building plans">📐<span class="badge" id="planBadge"></span></button>
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
     <button class="toolbtn" id="jobsBtn" title="Jobs">💼<span class="badge" id="jobsBadge"></span></button>
+    <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
   </div>
 </div>
 
@@ -3114,7 +3132,7 @@ const BADGES=[
   {id:"swap",    ic:"🔁", n:"Sound swapper",     d:"Changed one sound to make a new word.", t:s=>(s.swaps||0)>=1},
   {id:"night",   ic:"🌙", n:"Night owl",         d:"Saw the valley at night.",              t:s=>(s.phase||0)===2||s.sawNight},
   {id:"story",   ic:"📖", n:"Story teller",      d:"Put a whole sentence back in order.",   t:s=>(s.scrambles||0)>=1},
-  {id:"style",   ic:"🎩", n:"Dressed up",        d:"Gave your buddy a hat.",                t:s=>(s.hats||[]).length>=1},
+  {id:"style",   ic:"🎩", n:"Dressed up",        d:"Gave your buddy a hat.",                t:s=>(s.hats||[]).length>=1||!!s.hat},
   {id:"season",  ic:"🍂", n:"In season",         d:"Built the season's special.",           t:s=>SEASONS.some(z=>Object.values(s.grid).some(t=>t.id===z.plan.id))},
   {id:"wheels",  ic:"🚗", n:"First wheels",      d:"Got your first vehicle.",               t:s=>(s.vehicles||[]).length>=1},
   {id:"traffic", ic:"🚦", n:"Traffic jam",       d:"Ten different vehicles.",               t:s=>new Set((s.vehicles||[]).map(v=>v.id)).size>=10},
@@ -3904,6 +3922,10 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   jobs:{current:null,xp:{},tasks:0,streak:0},
   // JOBS, tracks: per subject, answers per level, {math:{stats:{add10:{seen,right}}}}
   tracks:{},
+  // TRADING POST: what he bought there that has no older home (hats stay in hats, the Mine's helmets in mine.owned)
+  owned:{},
+  // TRADING POST: he has held gems and coins at the same time, so the Swap tab shows (and stays)
+  exchangeSeen:false,
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -4620,6 +4642,7 @@ function renderHUD(){
   document.getElementById("timeBtn").style.display=state.settings.ambient?"grid":"none";
   try{booksBadge();}catch(e){}
   try{Goal.render();}catch(e){}
+  try{Store.hud();}catch(e){}
 }
 document.getElementById("buddyBtn").onclick=()=>{
   const el=document.getElementById("buddyBtn");el.classList.add("pulse");
@@ -4777,6 +4800,7 @@ const Modes=(()=>{
     gate:{name:"Grown-up gate",reading:false},
     parent:{name:"Grown-up menu",reading:false},
     report:{name:"Reading report",reading:false},
+    store:{name:"Trading Post",reading:false},         // TRADING POST: the two shelves
     other:{name:"Other",reading:false}};
   // overlays, by element id
   const OV={ovCrates:"read",ovRead:"read",ovReward:"reward",ovSign:"sign",ovCraft:"craft",ovQuests:"quests",ovPhoto:"photo",
@@ -6488,6 +6512,15 @@ const Mine=(()=>{
       g.fillStyle="#E0344B";g.beginPath();g.arc(0,-98*u,3*u,0,Math.PI*2);g.fill();}
     if(h==="space"){g.fillStyle="rgba(170,220,255,.28)";g.beginPath();g.arc(0,-76*u,31*u,0,Math.PI*2);g.fill();g.strokeStyle="#E8EEF4";g.lineWidth=4*u;g.stroke();
       g.strokeStyle="#FFFFFF";g.beginPath();g.arc(-6*u,-84*u,18*u,Math.PI*1.1,Math.PI*1.4);g.stroke();}
+    // from the Trading Post
+    if(h==="viking"){g.fillStyle="#FBF6EC";[-1,1].forEach(s=>{g.beginPath();g.moveTo(s*18*u,-90*u);g.quadraticCurveTo(s*36*u,-92*u,s*36*u,-112*u);
+        g.quadraticCurveTo(s*28*u,-100*u,s*12*u,-98*u);g.closePath();g.fill();g.stroke();});
+      g.fillStyle="#B8BEC6";g.beginPath();g.arc(0,-82*u,23*u,Math.PI,0);g.closePath();g.fill();g.stroke();
+      g.fillStyle="#C98C3E";g.beginPath();g.roundRect(-25*u,-86*u,50*u,8*u,3*u);g.fill();g.stroke();}
+    if(h==="diamond"){g.fillStyle="#7FE3F5";g.beginPath();g.moveTo(-26*u,-66*u);g.lineTo(-26*u,-96*u);g.lineTo(-18*u,-96*u);g.lineTo(-18*u,-106*u);
+      g.lineTo(18*u,-106*u);g.lineTo(18*u,-96*u);g.lineTo(26*u,-96*u);g.lineTo(26*u,-66*u);g.lineTo(17*u,-66*u);g.lineTo(17*u,-84*u);
+      g.lineTo(-17*u,-84*u);g.lineTo(-17*u,-66*u);g.closePath();g.fill();g.stroke();
+      g.fillStyle="rgba(255,255,255,.7)";g.fillRect(-12*u,-103*u,9*u,4*u);}
     g.restore();
   }
 
@@ -7027,14 +7060,15 @@ const Mine=(()=>{
       <div class="mline">${sw("hair",L.hair)}</div>
       <div class="mlabel">Shirt</div><div class="mline">${sw("shirt",L.shirt)}</div>
       <div class="mlabel">Pants</div><div class="mline">${sw("pants",L.pants)}</div>
-      <div class="mlabel">Hat</div><div class="mline">${L.helmets.filter(h=>!h.prize||m.owned[h.id]).map(h=>`<button class="mtag${lk.helmet===h.id?" on":""}" data-h="${h.id}">${h.name}${m.owned[h.id]?"":` · ${h.cost}🪙`}</button>`).join("")}</div>
+      <div class="mlabel">Hat</div><div class="mline">${Store.helmets().map(h=>`<button class="mtag${lk.helmet===h.id?" on":""}" data-h="${h.id}">${h.name}</button>`).join("")}</div>
+      <div class="mmore">Get more at the Trading Post 🏪</div>
       </div></div><div class="mrow"><button class="btn primary" id="mClose">${first?"Let's dig!":"Done"}</button></div>`);
     const pv=card().querySelector("#mPrev"),pg=pv.getContext("2d");
     const paint=()=>{pg.setTransform(1,0,0,1,0,0);pg.clearRect(0,0,240,280);drawMiner(pg,120,262,190,lk,1,0,false,0,PICKS[m.pick].col);};paint();
     card().querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{lk[b.dataset.k]=+b.dataset.v;Sound.sfx.pop();save();openWardrobe(first);});
-    card().querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{const h=L.helmets.find(x=>x.id===b.dataset.h);
-      if(!m.owned[h.id]){if(m.coins<h.cost){toast(`You need ${h.cost} coins for that`);Sound.sfx.nope();return;}m.coins-=h.cost;m.owned[h.id]=1;Sound.sfx.win();}
-      lk.helmet=h.id;save();openWardrobe(first);});
+    // only what he owns is here (buying is at the Trading Post)
+    card().querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{const h=Store.helmets().find(x=>x.id===b.dataset.h);if(!h)return;
+      lk.helmet=h.id;Sound.sfx.pop();save();openWardrobe(first);});
     card().querySelector("#mClose").onclick=()=>{m.made=true;save();closePanel();
       if(first&&(state.critters||[]).length)setTimeout(()=>toast("Tap 🐾 to bring a pet from your valley!",3500),5200);
       if(first)toast("Walk right to the mine sign, then hold ⛏️ to dig down! Push the stick sideways to dig sideways.",4800);};
@@ -8456,7 +8490,7 @@ const Adv=(()=>{
   /* ---------- what is he standing next to? ---------- */
   function findNear(){
     const close=(c,r,dc=1.15,dr=.8)=>Math.abs(c-P.c)<=dc&&Math.abs(r-P.r)<=dr;
-    for(const sp of spotList)if(close(sp.c,sp.r,1.05,.75))return{k:"spot",sp,label:sp.label};
+    for(const sp of spotList)if(!sp.low&&close(sp.c,sp.r,1.05,.75))return{k:"spot",sp,label:sp.label};
     const h=A().hunt;
     if(h){const m=h.marks.find(m=>!m.dug&&close(m.c,m.r,1,.7));if(m)return{k:"dig",m,label:"⛏️ Dig here"};}
     const cr=state.critters.find(x=>x.out!==false&&close(x.c,x.r));
@@ -8468,6 +8502,8 @@ const Adv=(()=>{
     const gRow=Math.max(firstRow(),ROWS_MAX-2);
     const gb=(state.guardians||[]).find(b=>GUARDIANS[b]&&close(GUARDIANS[b].c,gRow));
     if(gb!=null)return{k:"guard",b:gb,label:"📖 "+GUARDIANS[gb].name.split(" ")[0]};
+    // a spot that stands like a building (low: true, the Trading Post) gives way to the animals and vehicles passing it
+    for(const sp of spotList)if(sp.low&&close(sp.c,sp.r,1.05,.75))return{k:"spot",sp,label:sp.label};
     for(const key in state.grid){const[c,r]=key.split(",").map(Number);
       if(close(c,r,1.1,.7))return{k:"build",key,id:state.grid[key].id,label:"🚪 "+(NAMES[state.grid[key].id]||"Use")};}
     return null;
@@ -8558,7 +8594,7 @@ const Adv=(()=>{
   }
   function exit(){
     on=false;cancelAnimationFrame(raf);document.body.classList.remove("exploring");hud.classList.remove("on");Modes.close("adventure",hud);
-    input.jx=input.jy=0;[...grassEls,...landEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];ash=petEl=null;
+    input.jx=input.jy=0;[...grassEls,...landEls,...spotEls,ash,petEl].forEach(e=>e&&e.remove());grassEls=[];landEls=[];spotEls=[];ash=petEl=null;
     Sound.sfx.soft();
   }
   function refreshHud(){
@@ -10212,6 +10248,343 @@ const Jobs=(()=>{
 })();
 
 /* ================================================================
+   TRADING POST — one shop, two shelves and a swap
+   Everything he can wear or use is bought here, from the 🏪 button in
+   the tool bar (it shows both purses) or the stall in Adventure. Each
+   shelf is paid from its own purse:
+     💎 Outfits  for the buddy, paid with gems (reading). The wardrobe
+                 hats (HATS) are on it unchanged.
+     🪙 Gear     for the miner and the jobs, paid with the Mine's coins.
+                 The Mine's helmets (LOOK.helmets) are on it unchanged.
+   Items are data: Store.item({id, shelf:"outfit"|"gear", name,
+   cost:{gems:n}|{coins:n}, art, tag, unlock, wear, keep}).
+     art    the ART drawing (a hat_ drawing is shown on its wearer)
+     tag    "new" puts a ribbon on it; "uniform" / "tool" name job gear
+     unlock {job, level}: shown locked until that job level
+     wear   "hat" (the buddy, state.hat) or "helmet" (the miner,
+            state.mine.look.helmet); nothing for job gear
+     keep   where it is kept once bought: "hats" (state.hats) and "mine"
+            (state.mine.owned) for the older things, so nothing already
+            owned moves; anything new is kept in state.owned[id] = 1
+   Buying takes the price once: a second tap on something he owns takes
+   nothing, a tap without enough takes nothing and only says how many
+   more ("Almost! 3 more 💎."). Prices never change and nothing is sold
+   back. The Wardrobe tab of the sticker book and the Mine's clothes
+   tent only put on what he owns, with a line pointing here.
+   Swap: 1 💎 = 5 🪙 both ways, in whole bundles of 5 🪙, and every swap
+   shows its sum ("10 🪙 → 2 💎") and says it ("10 coins make" "2 gems").
+   The Swap tab appears once he has held gems and coins at the same
+   time (state.exchangeSeen: set then and kept; an older save that
+   already holds both has it from the start).
+   ================================================================ */
+const Store=(()=>{
+  const PURSE={
+    gems:{ic:"💎",one:"gem",many:"gems",get:()=>state.gems||0,set:v=>{state.gems=v;}},
+    coins:{ic:"🪙",one:"coin",many:"coins",get:()=>(state.mine&&state.mine.coins)||0,set:v=>{state.mine.coins=v;}}};
+  const KEEP={
+    hats:{has:id=>(state.hats||[]).indexOf(id)>=0,give:id=>{if(!Array.isArray(state.hats))state.hats=[];if(state.hats.indexOf(id)<0)state.hats.push(id);}},
+    mine:{has:id=>!!(state.mine&&state.mine.owned&&state.mine.owned[id]),give:id=>{state.mine.owned[id]=1;}},
+    own:{has:id=>!!(state.owned&&state.owned[id]),give:id=>{if(!state.owned)state.owned={};state.owned[id]=1;}}};
+  const items=[];
+  // ---------- the shelves ----------
+  function item(o){
+    const it=Object.assign({keep:"own",tag:"",unlock:null,wear:null,prize:false},o);
+    it.purse=it.cost&&it.cost.gems!=null?"gems":"coins";it.price=Math.max(0,+(it.cost||{})[it.purse]||0);
+    const i=items.findIndex(x=>x.shelf===it.shelf&&x.id===it.id);
+    if(i>=0)items[i]=it;else items.push(it);
+    return it;
+  }
+  const get=(shelf,id)=>items.find(x=>x.shelf===shelf&&x.id===id)||null;
+  const list=shelf=>items.filter(x=>x.shelf===shelf);
+  const owns=it=>!!it&&!!KEEP[it.keep]&&KEEP[it.keep].has(it.id);
+  // does he own a thing with this id (on this shelf, or on any)? for other modes, e.g. a job's uniform
+  const has=(id,shelf)=>items.some(it=>it.id===id&&(!shelf||it.shelf===shelf)&&owns(it));
+  // job gear waits for its job level. A job's level comes from the tasks done in it (state.jobs.xp[job]):
+  // level 1 to start, 2 at 5 tasks, 3 at 15, 4 at 30, 5 at 50. With no jobs in the save yet it waits.
+  const LEVELS=[0,5,15,30,50];
+  const tasksForLevel=n=>LEVELS[Math.max(1,Math.min(LEVELS.length,Math.floor(n)||1))-1];
+  const JOBS={shop:{name:"Shopkeeper",ic:"🛒"},mow:{name:"Lawn mower",ic:"🌿"}};
+  const tasksDone=job=>{const J=state.jobs;return J&&J.xp?(+J.xp[job]||0):0;};
+  const jobLevel=job=>{let lv=1;LEVELS.forEach((t,i)=>{if(tasksDone(job)>=t)lv=i+1;});return lv;};
+  const unlocked=it=>!it.unlock||!it.unlock.job||(!!(state.jobs&&state.jobs.xp)&&tasksDone(it.unlock.job)>=tasksForLevel(it.unlock.level));
+  const shown=it=>!it.prize||owns(it);          // a prize (the Crystal crown) is won in the Mine, not sold
+  const worn=it=>it.wear==="hat"?state.hat===it.id:
+    it.wear==="helmet"?!!(state.mine&&state.mine.look&&state.mine.look.helmet===it.id):false;
+  // what the two wardrobes offer: the things he owns that can be worn there
+  const outfits=()=>list("outfit").filter(it=>it.wear==="hat"&&owns(it));
+  const helmets=()=>list("gear").filter(it=>it.wear==="helmet"&&owns(it));
+
+  // ---------- buying and wearing (no screen needed) ----------
+  // {ok:true}, or {ok:false, why:"owned"|"locked"|"short"|"none", need}; the price is taken once
+  function purchase(shelf,id){
+    const it=get(shelf,id);if(!it||!shown(it))return{ok:false,why:"none"};
+    if(owns(it))return{ok:false,why:"owned"};
+    if(!unlocked(it))return{ok:false,why:"locked"};
+    const P=PURSE[it.purse],have=P.get();
+    if(have<it.price)return{ok:false,why:"short",need:it.price-have};
+    P.set(have-it.price);KEEP[it.keep].give(it.id);
+    if(it.wear)put(it,true);
+    save();try{renderHUD();}catch(e){}
+    return{ok:true};
+  }
+  function put(it,on){
+    if(!owns(it))return false;
+    if(it.wear==="hat")state.hat=on?it.id:null;
+    else if(it.wear==="helmet"&&on&&state.mine&&state.mine.look)state.mine.look.helmet=it.id;
+    else return false;
+    save();try{renderHUD();}catch(e){}
+    return true;
+  }
+
+  // ---------- speaking ----------
+  // a line made of fixed pieces and numbers ("12 more coins") plays in the game voice when every
+  // piece has a clip; otherwise the whole line goes to the device voice in one go
+  function sayParts(parts){
+    let all=false;
+    try{all=state.settings.voicePack!==false&&VoicePack.ready&&parts.every(p=>VoicePack.has(p));}catch(e){}
+    if(!all)return Sound.speak(parts.join(" "),.95);
+    return parts.reduce((p,x)=>p.then(()=>Sound.speak(x,.95)),Promise.resolve());
+  }
+  const count=(n,P)=>n+" "+(n===1?P.one:P.many);
+
+  // ---------- the swap: 1 💎 = 5 🪙, both ways, in whole bundles of 5 🪙 ----------
+  const RATE=5;
+  // the Swap tab opens once he holds gems and coins at the same time, and stays open
+  function note(){if(!state.exchangeSeen&&PURSE.gems.get()>0&&PURSE.coins.get()>0){state.exchangeSeen=true;save();}}
+  const other=from=>from==="coins"?"gems":"coins";
+  const worth=(from,n)=>from==="coins"?n/RATE:n*RATE;
+  // {ok:true, from, to, give, get}, or {ok:false, why:"bundle"|"short"|"none", need}
+  function exchange(from,n){
+    n=+n;
+    if(!PURSE[from]||!(n>0)||Math.floor(n)!==n)return{ok:false,why:"none"};
+    if(from==="coins"&&n%RATE)return{ok:false,why:"bundle"};
+    const have=PURSE[from].get();
+    if(have<n)return{ok:false,why:"short",need:n-have};
+    const to=other(from),get=worth(from,n);
+    PURSE[from].set(have-n);PURSE[to].set(PURSE[to].get()+get);
+    save();try{renderHUD();}catch(e){}
+    return{ok:true,from,to,give:n,get};
+  }
+  const sum=(from,n)=>`${n} ${PURSE[from].ic} → ${worth(from,n)} ${PURSE[other(from)].ic}`;
+  // said as two pieces each, a number and fixed words: "10 coins make" "2 gems", "2 gems make" "10 coins"
+  const sumWords=(from,n)=>from==="coins"?[n+" coins make",count(worth(from,n),PURSE.gems)]:[n+(n===1?" gem makes":" gems make"),count(worth(from,n),PURSE.coins)];
+
+  // ---------- the Trading Post ----------
+  let el=null,shelf="outfit",lockUntil=0,greeted=false;
+  // one tap at a time: a double tap lands once (the second would take off what the first put on)
+  const tap=fn=>{if(Date.now()<lockUntil)return;lockUntil=Date.now()+600;fn();};
+  const msg=t=>{if(el)el.querySelector("#stMsg").textContent=t||"";};
+  function build(){
+    el=document.createElement("div");el.className="overlay";el.id="ovStore";
+    el.innerHTML=`<div class="sheet stsheet"><h2>🏪 Trading Post</h2>
+      <div class="stpurse"><span id="stGems"></span><span id="stCoins"></span></div>
+      <div class="tabs" id="stTabs"><button class="tab" data-shelf="outfit">💎 Outfits</button><button class="tab" data-shelf="gear">🪙 Gear</button>
+        <button class="tab" data-shelf="swap" id="stSwapTab">🔄 Swap</button></div>
+      <p class="sub" id="stSub"></p><p class="stmsg" id="stMsg" aria-live="polite"></p>
+      <div class="gridcards" id="stGrid"></div><div id="stSwap"></div>
+      <div style="text-align:center;margin-top:18px"><button class="btn soft" id="stClose">Done</button></div></div>`;
+    document.body.appendChild(el);
+    el.querySelectorAll("[data-shelf]").forEach(b=>b.onclick=()=>{shelf=b.dataset.shelf;msg("");Sound.sfx.soft();render();});
+    el.querySelector("#stClose").onclick=close;
+  }
+  function open(sh){
+    if(!el)build();
+    note();
+    if(sh)shelf=sh;
+    msg("");render();
+    el.classList.add("on");Modes.open("store",el);Sound.sfx.soft();
+    if(!greeted){greeted=true;Sound.speak("Welcome to the Trading Post!",.95);}
+  }
+  function close(){if(!el)return;Modes.shut(el);Sound.sfx.soft();try{renderHUD();}catch(e){}}
+  function render(){
+    if(!el)return;
+    const $=s=>el.querySelector(s);
+    $("#stGems").textContent="💎 "+PURSE.gems.get();$("#stCoins").textContent="🪙 "+PURSE.coins.get();
+    if(shelf==="swap"&&!state.exchangeSeen)shelf="outfit";
+    $("#stSwapTab").style.display=state.exchangeSeen?"":"none";
+    el.querySelectorAll("[data-shelf]").forEach(b=>b.classList.toggle("on",b.dataset.shelf===shelf));
+    const g=$("#stGrid");g.innerHTML="";$("#stSwap").innerHTML="";
+    if(shelf==="swap"){$("#stSub").textContent="5 🪙 make 1 💎. 1 💎 makes 5 🪙.";renderSwap($("#stSwap"));return;}
+    $("#stSub").textContent=shelf==="outfit"?"Outfits for your buddy. Pay with 💎 from reading.":"Gear for your miner and your jobs. Pay with 🪙 coins.";
+    list(shelf).filter(shown).forEach(it=>g.appendChild(card(it)));
+  }
+  function art(it){
+    if(it.wear==="hat")return ART.buddy(stageIdx(),mulberry(42),it.id);
+    const f=ART[it.art];if(!f)return"";
+    // a helmet sits on a cushion; other gear is drawn to fill the box
+    return it.wear==="helmet"?S(`<ellipse cx="50" cy="82" rx="30" ry="9" fill="${grad("#7B5BE0","v",.3,.2)}"/><g transform="translate(0 38)">${f()}</g>`):S(f());
+  }
+  function card(it){
+    const own=owns(it),on=worn(it),open_=own||unlocked(it),P=PURSE[it.purse],job=it.unlock&&JOBS[it.unlock.job];
+    const d=document.createElement("div");
+    d.className="card2 stcard"+(on?" worn":"")+(own?" owned":"")+(open_?"":" locked");
+    d.dataset.id=it.id;d.dataset.shelf=it.shelf;
+    d.innerHTML=`${it.tag==="new"&&!own?`<b class="rib">New!</b>`:""}<div class="art">${art(it)}</div><div class="nm">${esc(it.name)}</div>
+      ${job?`<div class="job">${job.ic} ${job.name}${it.tag==="uniform"||it.tag==="tool"?" "+it.tag:""}</div>`:""}
+      <div class="cost">${!open_?`🔒 Job level ${it.unlock.level}`:own?(on?"Wearing it":"✓ Yours"):`<b>${it.price} ${P.ic}</b>`}</div>`;
+    // tap the picture to hear what it is (and what it costs)
+    d.querySelector(".art").onclick=()=>{Sound.sfx.pop();sayParts(own?[it.name]:[it.name,count(it.price,P)]);};
+    let b=document.createElement("button");
+    if(!open_){b.className="btn soft mini";b.textContent="🔒";b.dataset.act="locked";b.setAttribute("aria-label","Locked");b.onclick=()=>tap(()=>locked(it));}
+    else if(!own){b.className="btn mini "+(P.get()>=it.price?"primary":"soft");b.textContent="Buy";b.dataset.act="buy";b.onclick=()=>tap(()=>buy(it.shelf,it.id));}
+    else if(it.wear==="hat"){b.className="btn soft mini";b.textContent=on?"Take off":"Wear it";b.dataset.act=on?"off":"wear";b.onclick=()=>tap(()=>wear(it,!on));}
+    else if(it.wear==="helmet"){b.className="btn soft mini";b.textContent=on?"Wearing it":"Wear it";b.disabled=on;b.dataset.act="wear";b.onclick=()=>tap(()=>wear(it,true));}
+    else b=null;
+    if(b)d.appendChild(b);
+    return d;
+  }
+  // with the Trading Post on screen: what he sees and hears
+  function buy(shelf,id){
+    const it=get(shelf,id),r=purchase(shelf,id);
+    if(r.ok){
+      confetti();Sound.sfx.win();msg(`🎉 You got the ${it.name.toLowerCase()}!`);
+      Sound.speak(it.wear==="hat"?"How do I look?":it.wear==="helmet"?"Your miner has a new hat!":"It's yours!",.95);
+    }else if(r.why==="short")almost(r.need,PURSE[it.purse]);
+    else if(r.why==="locked")locked(it);
+    render();return r;
+  }
+  function almost(need,P){msg(`Almost! ${need} more ${P.ic}.`);Sound.sfx.soft();sayParts(["Almost!",need+" more "+(need===1?P.one:P.many)]);}
+  function locked(it){const j=JOBS[it.unlock.job]||{name:"your job",ic:"🔒"};
+    msg(`🔒 ${j.ic} ${j.name} level ${it.unlock.level} opens it.`);Sound.sfx.soft();Sound.speak("Keep working at your job to unlock it!",.95);}
+  // the swap counter: one row each way, − and + move a whole bundle, the sum is always on show
+  const step={coins:1,gems:1};
+  function renderSwap(host){
+    host.innerHTML=["coins","gems"].map(f=>`<div class="stswap" data-from="${f}">
+      <div class="sthead">${PURSE[f].ic} → ${PURSE[other(f)].ic}</div>
+      <div class="strow"><button class="btn soft stpm" data-d="-1" aria-label="Less">−</button><b class="stsum" data-sum></b>
+      <button class="btn soft stpm" data-d="1" aria-label="More">+</button><button class="btn primary" data-go>Swap!</button></div></div>`).join("");
+    host.querySelectorAll(".stswap").forEach(row=>{
+      const f=row.dataset.from,unit=f==="coins"?RATE:1,max=()=>Math.max(1,Math.floor(PURSE[f].get()/unit));
+      const upd=()=>{step[f]=Math.max(1,Math.min(max(),step[f]));const n=step[f]*unit;
+        row.dataset.n=n;row.querySelector("[data-sum]").textContent=sum(f,n);
+        row.querySelector('[data-d="-1"]').disabled=step[f]<=1;row.querySelector('[data-d="1"]').disabled=step[f]>=max();};
+      row.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{step[f]+=+b.dataset.d;Sound.sfx.pop();upd();});
+      row.querySelector("[data-go]").onclick=()=>tap(()=>swap(f,step[f]*unit));
+      upd();});
+  }
+  function swap(from,n){
+    const r=exchange(from,n);
+    if(r.ok){Sound.sfx.chime();msg("✓ "+sum(from,n));sayParts(sumWords(from,n));}
+    else if(r.why==="short")almost(r.need,PURSE[from]);
+    else if(r.why==="bundle"){msg("Coins swap in fives: 5 🪙 → 1 💎.");Sound.sfx.soft();Sound.speak("Coins swap in fives.",.95);}
+    render();return r;
+  }
+  function wear(it,on){const ok=put(it,on);if(ok){Sound.sfx.pop();if(on&&it.wear==="hat")buddyCheer();}render();return ok;}
+
+  // ---------- the stall in Adventure ----------
+  const STALL=()=>S(`${OCC}<path d="M16 52 L84 52 L84 92 L16 92Z" fill="${grad("#C98C3E","v",.24,.2)}"/>
+    <path d="M24 62 L76 62 L76 76 L24 76Z" fill="${grad("#FFE39A","v",.2,.15)}"/>
+    <path d="M18 52 L18 32 M82 52 L82 32" fill="none" stroke-width="3"/>
+    <path d="M6 34 L50 12 L94 34Z" fill="${grad("#DC5A4B","v",.3,.2)}"/>
+    ${[0,1,2,3,4].map(k=>`<path d="M${10+k*16} 34 L${26+k*16} 34 L${26+k*16} 42 Q${18+k*16} 50 ${10+k*16} 42Z" fill="${k%2?"#FBF6EC":"#DC5A4B"}"/>`).join("")}
+    <text x="30" y="73" font-size="12" stroke="none">💎</text><text x="54" y="73" font-size="12" stroke="none">🪙</text>`);
+  let stall=null;
+  // the same place every visit while the valley stays the same: as far forward as it fits, near column
+  // 5.5, away from the edges (the joystick and the use button sit there), clear of buildings, of the
+  // land keepers who are awake and of the story friend's place (COLS-3, ROWS_MAX-1.5)
+  function spot(){
+    const first=ROWS_MAX-state.rows,gRow=Math.max(first,ROWS_MAX-2);
+    const free=(c,r)=>!Object.keys(state.grid).some(k=>{const p=k.split(",").map(Number);return Math.abs(p[0]-c)<2.2&&Math.abs(p[1]-r)<1.5;})
+      &&!(state.guardians||[]).some(b=>GUARDIANS[b]&&Math.abs(GUARDIANS[b].c-c)<1.8&&Math.abs(gRow-r)<1.2)
+      &&!(Math.abs(c-(COLS-3))<1.8&&Math.abs(r-(ROWS_MAX-1.5))<1.2);
+    const cols=[];for(let c=2;c<=COLS-3;c+=.5)cols.push(c);
+    cols.sort((a,b)=>Math.abs(a-5.5)-Math.abs(b-5.5)||a-b);
+    for(let r=ROWS_MAX-1;r>=first;r--)for(let i=0;i<cols.length;i++)if(free(cols[i],r))return{c:cols[i],r};
+    return{c:5.5,r:ROWS_MAX-1};
+  }
+  Adv.provide(()=>{const p=spot();if(!stall)stall=STALL();
+    return[{c:p.c,r:p.r,size:1.15,low:true,cls:"tpost",html:stall,label:"🏪 Trading Post",act:()=>open()}];});
+
+  // ---------- the tool bar ----------
+  function hud(){
+    note();
+    const p=document.getElementById("storePurse");if(p)p.textContent=`💎 ${PURSE.gems.get()} · 🪙 ${PURSE.coins.get()}`;
+  }
+  document.getElementById("storeBtn").onclick=()=>open();
+
+  return{item,get,list,owns,has,unlocked,worn,outfits,helmets,purchase,put,buy,wear,open,close,hud,tasksForLevel,jobLevel,JOBS,exchange,swap,RATE,
+    get shelf(){return shelf;},_spot:spot};
+})();
+// the wardrobe hats, as they were (ids, prices, and kept in state.hats)
+HATS.forEach(h=>Store.item({id:h.id,shelf:"outfit",name:h.name,cost:{gems:h.gems},art:"hat_"+h.id,wear:"hat",keep:"hats"}));
+// the Mine's helmets, as they were (ids, prices, and kept in state.mine.owned); the Crystal crown is a prize
+LOOK.helmets.forEach(h=>Store.item({id:h.id,shelf:"gear",name:h.name,cost:{coins:h.cost},art:"hat_"+h.id,wear:"helmet",keep:"mine",prize:!!h.prize}));
+/* ---- Trading Post art: new outfits (drawn over the buddy's head, like the hats), the miner's
+   helmets as pictures, and job gear. Same 100-box and ink as everything else. ---- */
+Object.assign(ART,{
+  hat_bunny(){return `<path d="M38 28 Q28 14 32 2 Q40 -2 44 10 Q46 18 46 26Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+    <path d="M39 22 Q33 12 35 5 Q39 3 41 11 Q43 17 43 22Z" fill="#F7B6CB" stroke="none"/>
+    <path d="M56 26 Q56 16 58 10 Q62 -2 70 2 Q74 14 64 28Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+    <path d="M59 22 Q59 15 61 10 Q63 4 67 6 Q69 14 62 22Z" fill="#F7B6CB" stroke="none"/>
+    <path d="M30 30 Q50 20 70 30" fill="none" stroke="#F0628F" stroke-width="4.4"/>`;},
+  hat_beanie(){return `<path d="M29 31 Q28 9 50 9 Q72 9 71 31Z" fill="${grad("#DC5A4B","v",.3,.2)}"/>
+    <path d="M40 12 L40 28 M50 10 L50 28 M60 12 L60 28" fill="none" stroke-opacity=".3" stroke-width="2"/>
+    <path d="M26 26 Q50 22 74 26 L74 34 Q50 30 26 34Z" fill="${grad("#FBF6EC","v",.15,.15)}"/>
+    <circle cx="50" cy="8" r="6.5" fill="${dome("#FBF6EC",36,30)}"/>`;},
+  hat_shades(){return `<path d="M27 44 L75 44" fill="none" stroke-width="2.6"/>
+    <path d="M31 41 L49 41 L48 49 Q46 53 40 53 Q33 53 32 49Z" fill="${grad("#2E3A4E","v",.25,.1)}"/>
+    <path d="M53 41 L71 41 L70 49 Q68 53 62 53 Q55 53 54 49Z" fill="${grad("#2E3A4E","v",.25,.1)}"/>
+    <path d="M35 44 L40 44 M57 44 L62 44" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity=".75"/>`;},
+  hat_chef(){return `<path d="M34 33 L34 22 Q22 22 24 12 Q26 2 38 6 Q42 0 50 1 Q58 0 62 6 Q74 2 76 12 Q78 22 66 22 L66 33Z" fill="${grad("#FFFFFF","v",.05,.14)}"/>
+    <path d="M34 27 Q50 24 66 27" fill="none" stroke-opacity=".35" stroke-width="2"/>
+    <path d="M44 9 Q46 14 44 20 M56 9 Q54 14 56 20" fill="none" stroke-opacity=".3" stroke-width="1.8"/>`;},
+  hat_herocap(){return `<path d="M27 32 Q27 8 50 6 Q68 5 77 20 Q84 32 94 48 Q82 42 72 34 Q50 27 27 32Z" fill="${grad("#4FA84A","v",.3,.2)}"/>
+    <path d="M27 32 Q50 26 72 34" fill="none" stroke="#2F6B2A" stroke-width="3"/>
+    <path d="M36 14 Q44 8 52 9" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-opacity=".5"/>`;},
+  hat_horns(){return `<path d="M36 26 Q24 20 22 4 Q30 12 42 18Z" fill="${grad("#FFE9A8","v",.2,.25)}"/>
+    <path d="M64 26 Q76 20 78 4 Q70 12 58 18Z" fill="${grad("#FFE9A8","v",.2,.25)}"/>
+    <path d="M44 22 L47 12 L50 20 L53 10 L56 22Z" fill="${grad("#DC5A4B","v",.3,.2)}"/>`;},
+  // the miner's helmets that had no picture of their own (the others share the buddy's hat drawings)
+  hat_miner(){return `<path d="M27 32 Q27 6 50 6 Q73 6 73 32Z" fill="${grad("#FFC83D","v",.3,.2)}"/>
+    <path d="M50 6 L50 30" fill="none" stroke-opacity=".3" stroke-width="2"/>
+    <path d="M20 30 L80 30 Q83 34 80 38 L20 38 Q17 34 20 30Z" fill="${grad("#E8A92A","v",.2,.2)}"/>
+    <circle cx="50" cy="18" r="7" fill="${dome("#FFF6C8",40,35)}"/>`;},
+  hat_crystal(){return `<path d="M30 32 L26 6 L40 18 L50 -2 L60 18 L74 6 L70 32Z" fill="${grad("#BFF4FF","v",.3,.25)}"/>
+    <path d="M50 2 L50 30 M34 12 L38 30 M66 12 L62 30" fill="none" stroke="#5CC8DE" stroke-width="1.6"/>
+    <circle cx="50" cy="22" r="3.6" fill="#9B5CF6" stroke="none"/>
+    <circle cx="38" cy="25" r="2.4" fill="#F06CC0" stroke="none"/><circle cx="62" cy="25" r="2.4" fill="#2FBF5A" stroke="none"/>`;},
+  hat_viking(){return `<path d="M30 28 Q16 24 12 4 Q22 14 34 18Z" fill="${grad("#FBF6EC","v",.1,.25)}"/>
+    <path d="M70 28 Q84 24 88 4 Q78 14 66 18Z" fill="${grad("#FBF6EC","v",.1,.25)}"/>
+    <path d="M27 34 Q27 6 50 6 Q73 6 73 34Z" fill="${grad("#B8BEC6","v",.3,.25)}"/>
+    <path d="M50 6 L50 28" fill="none" stroke="#7E858F" stroke-width="2"/>
+    <path d="M25 28 L75 28 L75 36 L25 36Z" fill="${grad("#C98C3E","v",.2,.2)}"/>
+    <circle cx="34" cy="32" r="1.6" fill="#FFE39A" stroke="none"/><circle cx="50" cy="32" r="1.6" fill="#FFE39A" stroke="none"/><circle cx="66" cy="32" r="1.6" fill="#FFE39A" stroke="none"/>`;},
+  hat_diamond(){return `<path d="M36 24 L64 24 L64 40 L36 40Z" fill="#2E6F80" opacity=".45" stroke="none"/>
+    <path d="M24 40 L24 12 L32 12 L32 2 L68 2 L68 12 L76 12 L76 40 L64 40 L64 24 L36 24 L36 40Z" fill="${grad("#7FE3F5","v",.3,.25)}"/>
+    <path d="M32 12 L68 12 M24 20 L76 20 M24 31 L36 31 M64 31 L76 31" fill="none" stroke="#3FB8D0" stroke-width="2"/>
+    <path d="M38 7 L47 7 M28 16 L31 16" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-opacity=".8"/>`;},
+  // job gear (a whole picture each)
+  gear_apron(){return `${OCC}<path d="M38 20 Q50 4 62 20" fill="none" stroke-width="3.4"/>
+    <path d="M34 20 L66 20 L68 44 L84 46 L82 52 L68 50 L74 90 L26 90 L32 50 L18 52 L16 46 L32 44Z" fill="${grad("#3F86D2","v",.25,.2)}"/>
+    <path d="M40 58 L60 58 L60 74 Q50 78 40 74Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+    <path d="M44 64 L56 64" fill="none" stroke-opacity=".4" stroke-width="2"/>`;},
+  gear_gloves(){const g=`<path d="M22 90 L22 58 Q14 50 14 42 Q14 36 19 37 Q23 38 26 46 L26 24 Q26 19 30 19 Q34 19 34 24 L34 20 Q34 15 38 15 Q42 15 42 20 L42 24 Q42 19 46 19 Q50 19 50 24 L50 66 Q50 80 46 90Z" fill="${grad("#5FB35B","v",.3,.2)}"/>
+    <path d="M22 78 L49 78 L46 90 L22 90Z" fill="${grad("#FFC53D","v",.2,.2)}"/>`;
+    return `${OCC}${g}<g transform="translate(100 0) scale(-1 1)">${g}</g>`;},
+  gear_scanner(){return `${OCC}<path d="M20 30 L68 30 Q78 30 78 40 Q78 50 68 50 L52 50 L46 84 Q45 88 40 88 L34 88 Q30 88 31 84 L36 50 L20 50 Q14 50 14 40 Q14 30 20 30Z" fill="${grad("#4A4F5A","v",.3,.2)}"/>
+    <path d="M24 35 L56 35 L56 45 L24 45Z" fill="#9FD8F0"/>
+    <path d="M28 37 L28 43 M32 37 L32 43 M35 37 L35 43 M40 37 L40 43 M44 37 L44 43 M47 37 L47 43 M52 37 L52 43" fill="none" stroke-width="1.4"/>
+    <path d="M80 34 L96 24 M80 40 L98 40 M80 46 L96 56" fill="none" stroke="#E0344B" stroke-width="2.6"/>
+    <circle cx="41" cy="60" r="3" fill="#FFC53D"/>`;},
+  gear_clippers(){return `${OCC}<path d="M48 52 L18 14 Q16 8 22 10 L56 46Z" fill="${grad("#D8DEE6","h",.3,.2)}"/>
+    <path d="M52 52 L82 14 Q84 8 78 10 L44 46Z" fill="${grad("#C9CED6","h",.3,.2)}"/>
+    <path d="M47 54 L28 90 M53 54 L72 90" fill="none" stroke="#2E2620" stroke-width="12"/>
+    <path d="M47 54 L28 90 M53 54 L72 90" fill="none" stroke="#DC5A4B" stroke-width="7"/>
+    <circle cx="50" cy="50" r="5.5" fill="${dome("#FFC53D",36,30)}"/>`;}
+});
+// new on the 💎 shelf: outfits for the buddy, worn like the hats and kept in state.owned
+[{id:"bunny",name:"Bunny ears",gems:10},{id:"beanie",name:"Beanie",gems:15},{id:"shades",name:"Sunglasses",gems:20},
+ {id:"chef",name:"Chef hat",gems:25},{id:"herocap",name:"Hero cap",gems:40},{id:"horns",name:"Dragon horns",gems:55}]
+  .forEach(h=>Store.item({id:h.id,shelf:"outfit",name:h.name,cost:{gems:h.gems},art:"hat_"+h.id,wear:"hat",tag:"new"}));
+// new on the 🪙 shelf: two helmets for the miner, and the uniforms and tools of the two jobs (they open at a job level)
+Store.item({id:"viking",shelf:"gear",name:"Viking helmet",cost:{coins:60},art:"hat_viking",wear:"helmet",tag:"new"});
+Store.item({id:"diamond",shelf:"gear",name:"Diamond helmet",cost:{coins:80},art:"hat_diamond",wear:"helmet",tag:"new"});
+Store.item({id:"apron",shelf:"gear",name:"Apron",cost:{coins:15},art:"gear_apron",tag:"uniform",unlock:{job:"shop",level:2}});
+Store.item({id:"gloves",shelf:"gear",name:"Garden gloves",cost:{coins:20},art:"gear_gloves",tag:"uniform",unlock:{job:"mow",level:2}});
+Store.item({id:"scanner",shelf:"gear",name:"Price scanner",cost:{coins:40},art:"gear_scanner",tag:"tool",unlock:{job:"shop",level:3}});
+Store.item({id:"clippers",shelf:"gear",name:"Hedge clippers",cost:{coins:45},art:"gear_clippers",tag:"tool",unlock:{job:"mow",level:3}});
+
+/* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
    the small server in wordcraft-server/ running on the home NAS. By
@@ -11149,24 +11522,30 @@ document.getElementById("photoShare").onclick=async()=>{
 /* ================================================================
    7p. WARDROBE — hats for the buddy
    ================================================================ */
+// the outfits he owns (the hats, and anything newer from the Trading Post): put one on, or take it off.
+// Buying is at the Trading Post now; the line at the end goes there.
 function renderHats(g){
-  HATS.forEach(h=>{
-    const owned=state.hats.includes(h.id), worn=state.hat===h.id;
-    const d=document.createElement("div");d.className="hatcard"+(worn?" worn":"");
+  const mine=Store.outfits();
+  mine.forEach(h=>{
+    const worn=state.hat===h.id;
+    const d=document.createElement("div");d.className="hatcard"+(worn?" worn":"");d.dataset.id=h.id;
     d.innerHTML=`<div class="art">${ART.buddy(stageIdx(),mulberry(42),h.id)}</div><div class="n">${h.name}</div>
-      <div class="c">${owned?(worn?"wearing it":"owned"):h.gems+" gems"}</div>`;
+      <div class="c">${worn?"wearing it":"owned"}</div>`;
     const b=document.createElement("button");b.className="btn primary mini";
-    b.textContent=worn?"Take off":owned?"Wear it":"Buy";
-    b.disabled=!owned&&state.gems<h.gems;
+    b.textContent=worn?"Take off":"Wear it";
     b.onclick=()=>{
-      if(!owned){state.gems-=h.gems;state.hats.push(h.id);confetti();Sound.sfx.win();}
       state.hat=worn?null:h.id;
       buddyCheer();renderHUD();renderBuddy();renderAlbum();save();
       if(!worn)buddySay(h.id==="crown"?"I am the king of the valley!":"How do I look?");
     };
     d.appendChild(b);g.appendChild(d);
   });
-  document.getElementById("albumSub").textContent=`${state.hats.length} of ${HATS.length} hats. Earn gems by reading.`;
+  const more=document.createElement("div");more.className="storemore";
+  more.innerHTML=`<p>${mine.length?"":"No outfits yet. "}Get more at the Trading Post 🏪</p>`;
+  const go=document.createElement("button");go.className="btn soft";go.textContent="🏪 Go to the Trading Post";
+  go.onclick=()=>{hide("ovAlbum");Store.open("outfit");};
+  more.appendChild(go);g.appendChild(more);
+  document.getElementById("albumSub").textContent=`${mine.length} of ${Store.list("outfit").length} outfits. Earn gems by reading.`;
 }
 
 
@@ -11681,6 +12060,7 @@ const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","b
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
   "jobs","jobs.xp","tracks",
   "adv.dex"];
+NULL_IS_MISSING.push("owned");      // TRADING POST
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];
@@ -11755,6 +12135,8 @@ function bootFixups(){
   trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
   // a shift at a job this version doesn't have is over (its XP stays)
   if(state.jobs.current&&!Jobs.get(state.jobs.current))state.jobs.current=null;
+  // TRADING POST: a save that already holds gems and coins has the Swap tab
+  if(!state.exchangeSeen&&state.gems>0&&state.mine&&state.mine.coins>0)state.exchangeSeen=true;
 }
 
 /* Load a save: fill in its defaults, run the one-time conversions it has not had, then
