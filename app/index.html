@@ -1138,6 +1138,74 @@ body.exploring .slot-empty{display:none}
 .badge-pop .ic{font-size:44px}.badge-pop b{display:block;font-size:19px}.badge-pop span{font-size:13px;color:var(--ink-soft)}
 @keyframes badgein{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}
   20%,80%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(.9)}}
+/* jobs */
+.jobsheet{max-width:860px;text-align:center}
+.jobsheet .bhead{text-align:left;flex-wrap:wrap}
+.jpurse{font-weight:900;font-size:20px;background:#FFF3C4;border:3px solid var(--ink);border-radius:14px;padding:4px 12px;white-space:nowrap}
+.jcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:6px}
+.jcard{border:4px solid var(--ink);border-radius:22px;background:#fff;padding:14px;box-shadow:0 5px 0 rgba(0,0,0,.2);font-family:inherit;font-size:16px;color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;gap:6px}
+.jcard .jic{font-size:58px;line-height:1.1}.jcard b{font-size:22px}
+.jcard.locked{background:var(--paper-deep);box-shadow:none;opacity:.8}.jcard .jopen{margin:0;font-weight:800;color:var(--ink-soft)}
+.jlv{font-weight:800}.jpay{font-weight:800;color:#2F8F3A}
+.jbar{display:block;width:100%;height:14px;border:2px solid var(--ink);border-radius:9px;background:var(--paper-deep);overflow:hidden}
+.jbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--meadow))}
+.jme{position:relative;display:inline-block;width:120px;height:120px;margin:4px auto}
+.jme img,.jme svg{width:100%;height:100%;object-fit:contain}
+.jme .juni{position:absolute;right:-10px;bottom:-6px;font-size:44px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.jme.small{width:52px;height:52px;margin:0}.jme.small .juni{font-size:24px;right:-8px;bottom:-4px}
+.jwhat{list-style:none;padding:0;margin:8px 0;font-size:19px;font-weight:700;line-height:1.7}
+.jstat{display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;font-weight:800;margin:-2px 0 8px}
+.jtips{display:inline-flex;gap:4px}.jtips i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:#fff}.jtips i.on{background:var(--gold)}
+.jwork{display:flex;gap:14px;align-items:flex-start}
+.jcust{flex:0 0 110px}.jface{width:110px;height:110px}.jface svg{width:100%;height:100%}
+.jq{flex:1;min-width:0;min-height:280px}
+.jtext{display:inline-block;font-size:34px;margin:4px auto 12px;padding:10px 16px;background:#fff;border:3px solid var(--ink);border-radius:18px}
+.jsum{font-size:40px;font-weight:900;margin:2px 0 8px;letter-spacing:.04em}
+.jsay{font-size:18px}.jhear{border:2px solid var(--ink);border-radius:12px;background:var(--paper-deep);font-size:18px;min-height:36px;min-width:44px;margin-left:6px;font-family:inherit}
+.jart{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin:6px 0 10px}
+.jthings{display:grid;grid-template-columns:repeat(5,40px);gap:4px;padding:6px;border:3px solid var(--ink);border-radius:14px;background:#fff}
+.jthings img{width:40px;height:40px;display:block}.jthings img.gone{opacity:.25;transform:translateY(-6px) rotate(-12deg)}
+.jop{font-size:44px;font-weight:900}
+.jword{width:110px;height:110px}.jword svg{width:100%;height:100%}
+.wpic.jopt{width:auto;height:auto;min-width:130px;min-height:130px;display:grid;place-items:center;font-family:inherit}
+.jnum{font-size:44px;font-weight:900}
+.jcoins{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.jcoin{display:grid;place-items:center;border-radius:50%;border:3px solid var(--ink);font-weight:900;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+.jcoin.c1{width:52px;height:52px;background:#D9925A;font-size:17px}.jcoin.c5{width:64px;height:64px;background:#D6DADF;font-size:20px}
+.jcoin.c10{width:48px;height:48px;background:#EEF1F4;font-size:16px}
+.jlawn{display:grid;gap:4px;justify-content:center;margin:6px auto}
+.jlawn i,.jcell{display:block;width:44px;height:44px;border-radius:9px;border:2px solid #2F6B2A;background:#4E9A3E;padding:0;position:relative}
+.jlawn.small i{width:30px;height:30px}
+.jlawn .cut{background:repeating-linear-gradient(90deg,#9ED67A 0 6px,#8BC766 6px 12px)}
+.jlawn .cut2{background:repeating-linear-gradient(0deg,#C9E89E 0 6px,#B5DD86 6px 12px)}
+.jlawn .start::before{content:"🏁";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:18px}
+.jlawn .me::after{content:"🚜";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:30px}
+.jlawn .me.start::before{content:none}
+.jlawn .next{box-shadow:0 0 0 4px rgba(255,229,138,.95)}
+.jlawn.bump{animation:wobble .45s}
+.jrow{display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap}
+.jarrows{display:grid;grid-template-columns:repeat(3,72px);grid-auto-rows:64px;gap:8px;justify-content:center;margin-top:6px}
+.jpad{display:grid;grid-template-columns:repeat(6,64px);grid-auto-rows:60px;gap:8px;justify-content:center;margin-top:8px}
+.jarrow,.jkey{border:3px solid var(--ink);border-radius:18px;background:#fff;font-size:30px;font-weight:900;font-family:inherit;box-shadow:0 4px 0 rgba(0,0,0,.2);color:var(--ink)}
+.jarrow:active,.jkey:active{transform:translateY(3px);box-shadow:none}
+.jarrow.hint,.jkey.hint{box-shadow:0 0 0 5px rgba(127,176,105,.9);background:#EAF7E2}
+.jkey.ok{background:linear-gradient(160deg,#79C96F,#46974A);color:#fff}.jkey.del{background:var(--paper-deep)}
+.jshow{display:inline-flex;align-items:center;justify-content:center;min-width:120px;height:62px;padding:0 14px;border:4px solid var(--ink);border-radius:18px;background:#fff;font-size:42px;font-weight:900}
+.jshow .jghost{color:rgba(62,122,66,.45)}
+.jshow.right{background:#DDF3D4;border-color:var(--meadow-deep)}.jshow.wrong{animation:wobble .5s;background:#FFE1D8}
+.jmsg{min-height:26px;font-weight:800;color:#B0552F;margin:8px 0 0}
+.jmoment{padding:16px 0}.jbig{font-size:64px;line-height:1.1}
+.jpaid{animation:pop .3s cubic-bezier(.2,1.3,.4,1)}
+.jbd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%}
+.jbd span{font-size:34px;background:#C98F4E;border:3px solid var(--ink);border-radius:10px;padding:2px 8px}
+.jbd b{font-size:12px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 5px;margin-top:-3px}
+@media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
+  .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
+  .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
+  .wpic.jopt{min-width:112px;min-height:112px;padding:6px}.jword{width:86px;height:86px}
+  .jthings{grid-template-columns:repeat(5,30px)}.jthings img{width:30px;height:30px}.jlawn i,.jcell{width:36px;height:36px}
+  .jpad{grid-template-columns:repeat(6,46px);grid-auto-rows:54px;gap:6px}.jkey{font-size:24px}.jarrows{grid-template-columns:repeat(3,62px);grid-auto-rows:56px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1178,6 +1246,7 @@ body.exploring .slot-empty{display:none}
     <button class="toolbtn" id="questBtn" title="Today's quests">📜<span class="badge" id="questBadge"></span></button>
     <button class="toolbtn" id="craftBtn" title="Building plans">📐<span class="badge" id="planBadge"></span></button>
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
+    <button class="toolbtn" id="jobsBtn" title="Jobs">💼<span class="badge" id="jobsBadge"></span></button>
   </div>
 </div>
 
@@ -3830,6 +3899,11 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TODAY'S READING (7c): words read today toward the goal (a finished book completes it),
   // and the days it was reached (kept for 60 days)
   goal:{date:"",words:0,book:false,done:false},goalDays:{},
+  // JOBS: the job he is clocked in to (null when he isn't), tasks done per job (its XP, which sets
+  // the job level), tasks done in all, and tasks right first time in a row (five earn a tip)
+  jobs:{current:null,xp:{},tasks:0,streak:0},
+  // JOBS, tracks: per subject, answers per level, {math:{stats:{add10:{seen,right}}}}
+  tracks:{},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -4690,6 +4764,7 @@ const Modes=(()=>{
     mine:{name:"Gem Mine",reading:false},
     adventure:{name:"Adventure",reading:false},
     race:{name:"Races",reading:false},
+    job:{name:"Jobs",reading:false},                   // the Job board and a shift (JOBS)
     dex:{name:"Word-Dex",reading:false},
     craft:{name:"Building plans",reading:false},
     album:{name:"Sticker book",reading:false},
@@ -7215,7 +7290,8 @@ const Mine=(()=>{
      · Cave life: bats flit, slimes bounce him high, moles pop out with a
        word riddle, and one lost animal a day needs reading to get home.
      · Word vaults: locked rooms deep down that open with a reading key.
-     · Mine jobs: three small goals a day, paid in coins.
+     · Mine tasks: three small goals a day, paid in coins (the panel was
+       "Mine jobs" until v10.1 brought Jobs; the save keeps mine.jobs).
      ================================================================ */
   const BLK=[{k:"dirt",t:T.DIRT,n:"dirt"},{k:"stone",t:T.STONE,n:"stone"},{k:"sand",t:T.SAND,n:"sand"},
     {k:"ladder",t:T.LADDER,n:"ladder"},{k:"torch",t:T.TORCH,n:"torch"},{k:"sign",t:T.SIGN,n:"sign"}];
@@ -7432,14 +7508,14 @@ const Mine=(()=>{
   const jobProg=j=>Math.min(jobDef(j.id).n,(ST()[jobDef(j.id).s]||0)-j.base);
   function openJobs(){
     const J=jobs(),m=M();
-    openPanel(`<h2>📋 Mine jobs</h2><p class="sub">Three jobs a day. Finish one, then tap to get paid!</p>
+    openPanel(`<h2>📋 Mine tasks</h2><p class="sub">Three tasks a day. Finish one, then tap to get paid!</p>
       <div class="mjobs">${J.list.map((j,k)=>{const d=jobDef(j.id),p=jobProg(j),done=p>=d.n;
         return`<div class="mjob${j.paid?" paid":done?" done":""}"><b>${d.t}</b><div class="mjbar"><i style="width:${p/d.n*100}%"></i></div><span>${p}/${d.n}</span>
           ${j.paid?`<em>✓ paid</em>`:done?`<button class="btn primary mini" data-k="${k}">Get ${d.pay} 🪙</button>`:`<em>${d.pay} 🪙</em>`}</div>`;}).join("")}</div>
       <div class="mrow"><button class="btn primary" id="mClose">OK</button></div>`);
     card().querySelector("#mClose").onclick=closePanel;
     card().querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const j=J.list[+b.dataset.k];j.paid=true;m.coins+=jobDef(j.id).pay;Sound.sfx.win();
-      if(J.list.every(x=>x.paid)){state.gems+=3;toast("All three jobs done! +3 💎",3000);try{confetti();}catch(e){}}
+      if(J.list.every(x=>x.paid)){state.gems+=3;toast("All three tasks done! +3 💎",3000);try{confetti();}catch(e){}}
       save();hud();openJobs();});
   }
   function jobsBadge(){const J=jobs(),n=J.list.filter(j=>!j.paid&&jobProg(j)>=jobDef(j.id).n).length,el=root.querySelector("#mJobs");
@@ -8931,6 +9007,9 @@ const Read=(()=>{
       .reduce((a,x)=>{if(a.length<n&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
   }
   function rec(w,ok,o){try{Skills.result(w,{ok,...o});}catch(e){}}
+  // answer once: the first call goes through and every later one (a double tap, a tap during
+  // the success pause) is ignored. The Jobs kits use it; the builders below keep their own guards.
+  function once(done){let used=false;return function(){if(used)return;used=true;if(typeof done==="function")return done.apply(this,arguments);};}
   // read the word, tap its picture
   function pic(host,done,w){
     w=w||word();const t0=performance.now();let miss=0,fin=false;
@@ -8997,7 +9076,7 @@ const Read=(()=>{
           Sound.say("word:"+w.w,w.w,.82);},800);}});
     return w;
   }
-  return{word,others,pic,wordPick,sentence,build,shuffle};
+  return{word,others,pic,wordPick,sentence,build,shuffle,once,near};
 })();
 
 /* ================================================================
@@ -9569,6 +9648,567 @@ const Race=(()=>{
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
   return{start,_R:()=>R};
+})();
+
+/* ================================================================
+   JOBS — read the order, do the job, get paid in coins
+   The one non-reading mode of v10.1, and every task still starts with
+   reading: the customer's order, the note that says where to mow. Math
+   rides along at his level. Three layers:
+     TRACKS  a subject is a list of levels, each a pure, seeded question
+             generator (the math track, K–1, is registered below).
+     KITS    the only UI code: pick (tap the right thing), pad (a big
+             number pad), path (follow directions on a small lawn). A kit
+             shows one question in a host, keeps dataset.ans (and
+             dataset.kit) on it for the tests, reads the question aloud
+             and calls done(ok) exactly once through Read.once, ok being
+             "right the first time". A wrong answer is never the end: the
+             customer waits a moment, the same question stays, and after a
+             second miss the right answer glows.
+     JOBS    data only. Jobs.register({id,name,icon,uniform,unlock:{tier},
+             pay:{perTask,streakTip},tasks:[{id,lv,name,gen}]}). A task's
+             gen(seed,{tier,lv}) is pure and returns its steps, each one
+             question for a kit: {kit,track,say,text,read,art,choices,ans}.
+             say is spoken (a line, or pieces played one after another);
+             text is shown, and when read is set it is what he reads, so
+             it must decode at his level. A step whose kit or track this
+             version doesn't have is skipped with a console warning.
+   A shift: he picks a job on the Job board (💼 in the dock, or the
+   signpost in Adventure), puts on its uniform and clocks in. Tasks keep
+   coming until he clocks out; every 5 there is a small cheer and "keep
+   going or clock out?". Each task pays pay.perTask 🪙 into
+   state.mine.coins (the Mine's purse) at once, and five right first time
+   in a row add pay.streakTip. Pay is never taken away. Each task done is
+   one point of that job's XP (state.jobs.xp[id]); LEVELS turns XP into a
+   job level, and each level opens the next task type and a badge in the
+   sticker book. Clocking in is free: Jobs.canClockIn() is where the
+   v10.0 reading-ticket gate will go.
+   ================================================================ */
+// seeded helpers for the generators: the same seed always makes the same question
+const Seeded={
+  rnd:seed=>mulberry(hashStr("job:"+seed)),
+  int:(r,a,b)=>a+Math.floor(r()*(b-a+1)),
+  pick:(r,list)=>list[Math.floor(r()*list.length)],
+  shuffle:(r,list)=>{const a=list.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;},
+  // n different whole numbers from lo to hi: ans and the rest close to it, shuffled
+  near:(r,ans,n,lo,hi)=>{const out=[ans];
+    for(let k=0;k<40&&out.length<n;k++){const v=ans+(1+Math.floor(r()*3))*(r()<.5?-1:1);if(v>=lo&&v<=hi&&out.indexOf(v)<0)out.push(v);}
+    for(let v=lo;v<=hi&&out.length<n;v++)if(out.indexOf(v)<0)out.push(v);
+    return Seeded.shuffle(r,out);}
+};
+
+/* ---- TRACKS: subjects as levels of generated questions ----
+   Tracks.register({id,name,icon,levels:[{id,grade,name,gen:(seed,opt)=>question}]}).
+   Tracks.gen(track,level,seed,opt) stamps the question with its track and level.
+   What he got right is kept per track and level in state.tracks[id].stats[level]
+   = {seen,right}, the same idea as the word stats, for the Grown-up side later. */
+const Tracks=(()=>{
+  const all={};
+  function register(t){
+    if(!t||!t.id||!Array.isArray(t.levels)){console.warn("Tracks.register: a track needs an id and a list of levels",t);return null;}
+    all[t.id]=t;return t;
+  }
+  const get=id=>all[id]||null;
+  const level=(id,lv)=>{const t=get(id);return t&&t.levels.find(l=>l.id===lv)||null;};
+  function gen(id,lv,seed,opt){
+    const L=level(id,lv);if(!L){console.warn(`Tracks: no level "${lv}" in the track "${id}"`);return null;}
+    const q=L.gen(seed,opt||{});return q?Object.assign(q,{track:id,level:lv}):null;
+  }
+  function record(id,lv,ok){
+    if(!id||!lv)return;const T=state.tracks||(state.tracks={}),t=T[id]||(T[id]={stats:{}});if(!t.stats)t.stats={};
+    const s=t.stats[lv]||(t.stats[lv]={seen:0,right:0});s.seen++;if(ok)s.right++;
+  }
+  return{register,get,level,gen,record,list:()=>Object.keys(all)};
+})();
+// reading steps come from each job's own generator (his word list, decode-checked), so this track has no levels
+Tracks.register({id:"reading",name:"Reading",icon:"📖",levels:[]});
+
+const Jobs=(()=>{
+  const REG=[],BY={},KITS={};
+  // tasks done to reach job levels 1 to 5
+  const LEVELS=[0,5,15,30,50];
+  const J=()=>state.jobs;
+  const xpOf=id=>{const x=state.jobs&&state.jobs.xp;return x&&+x[id]||0;};
+  function levelOf(id){const xp=xpOf(id);let l=1;for(let i=1;i<LEVELS.length;i++)if(xp>=LEVELS[i])l=i+1;return l;}
+  const isOpen=j=>!!j&&currentTier()>=((j.unlock&&j.unlock.tier)||1);
+  const coins=()=>(state.mine&&+state.mine.coins)||0;
+  function purse(n){if(!state.mine||typeof state.mine!=="object")state.mine=def().mine;state.mine.coins=(+state.mine.coins||0)+n;}
+  const CUSTOMERS=["dog","cat","hen","pig","duck","frog","rabbit","penguin","monkey","bear","fox","raccoon","parrot","elephant","sloth"];
+
+  /* ---------- registering a job ---------- */
+  function register(j){
+    if(!j||!j.id||!j.name||!Array.isArray(j.tasks)){console.warn("Jobs.register: a job needs an id, a name and a list of tasks",j);return null;}
+    j.tasks=j.tasks.filter((t,i)=>{
+      if(!t||typeof t.gen!=="function"){console.warn(`Jobs.register: task ${i} of ${j.id} has no generator, left out`);return false;}
+      if(!t.id)t.id="t"+i;if(!t.lv)t.lv=1;return true;});
+    j.icon=j.icon||"💼";j.unlock=j.unlock||{tier:1};j.pay=Object.assign({perTask:1,streakTip:0},j.pay);
+    if(!j.uniform||typeof j.uniform==="string")j.uniform={id:j.uniform||"cap",name:j.uniform||"cap",ic:"🧢"};
+    const at=REG.findIndex(x=>x.id===j.id);if(at>=0)REG[at]=j;else REG.push(j);BY[j.id]=j;
+    // a badge for each job level from 2 up, in the sticker book
+    for(let lv=2;lv<=LEVELS.length;lv++){const id="job_"+j.id+"_"+lv,need=LEVELS[lv-1];
+      if(!BADGES.some(b=>b.id===id))BADGES.push({id,ic:j.icon,n:`${j.name} level ${lv}`,d:`${need} ${j.name.toLowerCase()} tasks done.`,
+        t:s=>!!(s.jobs&&s.jobs.xp&&+s.jobs.xp[j.id]>=need)});}
+    return j;
+  }
+  // one task's steps from its generator; a step for a kit or track this version doesn't have is left out
+  function gen(jobId,taskId,seed,opt){
+    const j=BY[jobId],t=j&&j.tasks.find(x=>x.id===taskId);if(!t)return[];
+    opt=opt||{};const L={tier:opt.tier||currentTier(),lv:opt.lv||levelOf(jobId)};
+    let out;try{out=t.gen(seed,L);}catch(e){console.warn(`Jobs: ${jobId}/${taskId} could not make a task:`,e&&e.message);return[];}
+    return[].concat(out||[]).map(q=>q&&Object.assign({kit:t.kit,track:t.track},q)).filter(q=>{
+      if(!q||!KITS[q.kit]){console.warn(`Jobs: ${jobId}/${taskId}: no kit "${q&&q.kit}", step skipped`);return false;}
+      if(q.track&&!Tracks.get(q.track)){console.warn(`Jobs: ${jobId}/${taskId}: no track "${q.track}", step skipped`);return false;}
+      return true;});
+  }
+
+  /* ---------- speaking ---------- */
+  // say is a line or a list of pieces ([3,"and","4.","How many in all?"]). When every piece has a
+  // game-voice clip they play one after another; otherwise the whole line goes at once (the game
+  // voice if it can cover it, else the device voice). A newer line stops the rest of an older one.
+  let talkTok=0;
+  const hush=()=>{talkTok++;};
+  const sayText=s=>[].concat(s==null?[]:s).map(p=>String(p).trim()).filter(Boolean).join(" ");
+  function talk(say){
+    hush();const my=talkTok,list=[].concat(say==null?[]:say).map(p=>String(p).trim()).filter(Boolean);
+    if(!list.length)return Promise.resolve();
+    let clips=false;try{clips=list.length>1&&state.settings.voicePack!==false&&VoicePack.ready&&list.every(p=>VoicePack.has(p));}catch(e){}
+    if(!clips)return Sound.speak(list.join(" "),.95);
+    return list.reduce((pr,p)=>pr.then(()=>my===talkTok?Sound.speak(p,.95):null),Promise.resolve());
+  }
+
+  /* ---------- pictures for questions ---------- */
+  const IMG={};
+  const pic=t=>IMG[t]||(IMG[t]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(drawWord(t,"q")));
+  const things=(t,n,gone)=>`<div class="jthings">${Array.from({length:n},(_,i)=>`<img src="${pic(t)}" alt=""${gone&&i>=n-gone?' class="gone"':""}>`).join("")}</div>`;
+  function lawn(a){let h="";
+    for(let y=0;y<a.h;y++)for(let x=0;x<a.w;x++){const k=x+","+y,c=a.cut&&a.cut[k];
+      h+=`<i class="${c?(c>1?"cut2":"cut"):""}${a.start&&a.start.c===x&&a.start.r===y?" start":""}"></i>`;}
+    return`<div class="jlawn small" style="grid-template-columns:repeat(${a.w},auto)">${h}</div>`;}
+  const COIN={1:"c1",5:"c5",10:"c10"};
+  function artHtml(a){
+    if(!a)return"";
+    switch(a.kind){
+      case"word":return`<div class="jword">${drawWord(a.w,"q")}</div>`;
+      case"things":return things(a.thing,a.n);
+      case"take":return things(a.thing,a.n,a.gone);
+      case"groups":return a.groups.map(g=>things(g.thing,g.n)).join(a.op?`<b class="jop">${esc(a.op)}</b>`:"");
+      case"coins":return`<div class="jcoins">${a.coins.map(c=>`<span class="jcoin ${COIN[c]||"c1"}">${c}¢</span>`).join("")}</div>`;
+      case"lawn":return lawn(a);
+      case"array":return`<div class="jlawn small" style="grid-template-columns:repeat(${a.cols},auto)">${"<i></i>".repeat(a.rows*a.cols)}</div>`;
+    }
+    return"";
+  }
+
+  /* ---------- KITS ---------- */
+  // the top of every kit: what is said (with 🔊 to hear it again), the text, the picture
+  function head(q){
+    const s=sayText(q.say);
+    return(s?`<p class="wp jsay">${esc(s)} <button class="jhear" aria-label="Hear it again">🔊</button></p>`:"")+
+      (q.text?(q.read?`<div class="btext jtext">${String(q.text).split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</div>`
+        :`<div class="jsum">${esc(q.text)}</div>`):"")+
+      (q.art?`<div class="jart">${artHtml(q.art)}</div>`:"");
+  }
+  // a word he taps is sounded out (as in the books); the question is read aloud as it appears
+  function wire(host,q){
+    const t=host.querySelector(".jtext");if(t)try{Books.wireWords(t);}catch(e){}
+    const h=host.querySelector(".jhear");if(h)h.onclick=()=>talk(q.say);
+    setTimeout(()=>{if(host.isConnected)talk(q.say);},250);
+  }
+  // one kit takes the keyboard at a time (digits for the pad, arrows and WASD for the lawn)
+  let keyFn=null;
+  document.addEventListener("keydown",e=>{
+    if(!keyFn||!ov||!ov.classList.contains("on")||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||""))return;
+    if(keyFn(e)===true)e.preventDefault();
+  });
+  const val=c=>c&&typeof c==="object"?c.v:c;
+  // pick: tap the right thing. choices are values, or {v, art} to show a picture
+  KITS.pick=function(host,q,done,opt){
+    done=Read.once(done);opt=opt||{};let miss=0,fin=false;const ans=String(q.ans);
+    host.dataset.kit="pick";host.dataset.ans=ans;
+    host.innerHTML=head(q)+`<div class="wopts jopts">${(q.choices||[]).map(c=>`<button class="wpic jopt" data-w="${esc(val(c))}">${
+      c&&typeof c==="object"&&c.art?artHtml(c.art):`<span class="jnum">${esc(val(c))}</span>`}</button>`).join("")}</div>`;
+    const btns=[...host.querySelectorAll(".jopt")],right=btns.find(b=>b.dataset.w===ans);
+    if(!right)throw new Error("the answer is not one of the choices");
+    wire(host,q);keyFn=null;
+    if(opt.hint)right.classList.add("hint");
+    btns.forEach(b=>b.onclick=()=>{
+      if(fin)return;
+      // a word he read is said back to him once he has found it, as in Read.pic
+      if(b===right){fin=true;b.classList.add("right");Sound.sfx.win();if(q.word){hush();Sound.say("word:"+q.word,q.word,.9);}setTimeout(()=>done(!miss),800);return;}
+      miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
+      if(miss>=2)right.classList.add("hint");
+      if(opt.onMiss)opt.onMiss(miss);});
+  };
+  // pad: a big number pad in two rows, 1–5 and 6–0 like a number line, with rub out and ✓
+  // (the keyboard's digits, Backspace and Enter work too)
+  KITS.pad=function(host,q,done,opt){
+    done=Read.once(done);opt=opt||{};const ans=String(q.ans);
+    if(!/^\d+$/.test(ans))throw new Error("a pad answer is a whole number");
+    let miss=0,fin=false,typed="",hint=!!opt.hint;const max=Math.max(2,ans.length);
+    host.dataset.kit="pad";host.dataset.ans=ans;
+    const key=k=>`<button class="jkey" data-key="${k}">${k}</button>`;
+    host.innerHTML=head(q)+`<div class="jshow"><span class="jtyped"></span><span class="jghost"></span></div>
+      <div class="jpad">${[1,2,3,4,5].map(key).join("")}<button class="jkey del" data-key="del" aria-label="Rub out">⌫</button>${[6,7,8,9,0].map(key).join("")}<button class="jkey ok" data-key="ok" aria-label="Done">✓</button></div>`;
+    const show=host.querySelector(".jshow"),tEl=host.querySelector(".jtyped"),gEl=host.querySelector(".jghost"),keys=[...host.querySelectorAll(".jkey")];
+    // after a second miss the answer shows faintly and the next key to press glows
+    function put(){tEl.textContent=typed;gEl.textContent=hint&&!typed?ans:"";
+      const nx=hint&&!fin&&ans.indexOf(typed)===0?(typed.length<ans.length?ans.charAt(typed.length):"ok"):null;
+      keys.forEach(b=>b.classList.toggle("hint",b.dataset.key===nx));}
+    function press(k){
+      if(fin)return;k=String(k);
+      if(k==="del"){if(typed){typed=typed.slice(0,-1);Sound.sfx.soft();put();}return;}
+      if(k==="ok"){if(!typed)return;
+        if(+typed===+ans){fin=true;keyFn=null;show.classList.add("right");put();Sound.sfx.win();setTimeout(()=>done(!miss),800);return;}
+        miss++;if(miss>=2)hint=true;typed="";put();show.classList.remove("wrong");void show.offsetWidth;show.classList.add("wrong");Sound.sfx.nope();
+        if(opt.onMiss)opt.onMiss(miss);return;}
+      if(typed.length>=max)return;typed+=k;Sound.sfx.pop();put();
+    }
+    keys.forEach(b=>b.onclick=()=>press(b.dataset.key));
+    keyFn=e=>{if(!host.isConnected)return false;const k=e.key;
+      if(/^[0-9]$/.test(k)){press(k);return true;}if(k==="Backspace"){press("del");return true;}if(k==="Enter"){press("ok");return true;}return false;};
+    wire(host,q);put();
+  };
+  // path: follow the directions on a small lawn, one square per tap (arrows, the square next to
+  // the mower, or the keyboard's arrows and WASD). q.ans is the moves, e.g. "RRRUU".
+  const STEP={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]},ARROW={L:"⬅️",R:"➡️",U:"⬆️",D:"⬇️"},DIR_NAME={L:"Left",R:"Right",U:"Up",D:"Down"};
+  const KEY_DIR={ArrowLeft:"L",ArrowRight:"R",ArrowUp:"U",ArrowDown:"D",KeyA:"L",KeyD:"R",KeyW:"U",KeyS:"D"};
+  KITS.path=function(host,q,done,opt){
+    done=Read.once(done);opt=opt||{};const moves=String(q.ans||""),g=q.grid||{w:6,h:5},st=q.start||{c:0,r:0};
+    if(!/^[LRUD]+$/.test(moves))throw new Error("a path answer is a list of moves (L, R, U, D)");
+    let miss=0,fin=false,i=0,c=st.c,r=st.r,hint=!!opt.hint;const cut={};
+    host.dataset.kit="path";host.dataset.ans=moves;
+    let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="grass"></button>`;
+    const arrow=d=>`<button class="jarrow" data-dir="${d}" aria-label="${DIR_NAME[d]}">${ARROW[d]}</button>`;
+    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
+      <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
+    const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
+    function draw(){
+      const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
+      cellEls.forEach(b=>{const x=+b.dataset.c,y=+b.dataset.r;
+        b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"");});
+      arrows.forEach(b=>b.classList.toggle("hint",b.dataset.dir===nx));
+    }
+    function go(d){
+      if(fin||!STEP[d])return;
+      if(d===moves.charAt(i)){c+=STEP[d][0];r+=STEP[d][1];cut[c+","+r]=1;i++;Sound.sfx.pop();
+        if(i>=moves.length){fin=true;keyFn=null;lawnEl.classList.add("done");Sound.sfx.win();setTimeout(()=>done(!miss),900);}
+        draw();return;}
+      miss++;if(miss>=2)hint=true;lawnEl.classList.remove("bump");void lawnEl.offsetWidth;lawnEl.classList.add("bump");Sound.sfx.nope();draw();
+      if(opt.onMiss)opt.onMiss(miss);
+    }
+    arrows.forEach(b=>b.onclick=()=>go(b.dataset.dir));
+    cellEls.forEach(b=>b.onclick=()=>{const dx=+b.dataset.c-c,dy=+b.dataset.r-r;
+      if(Math.abs(dx)+Math.abs(dy)===1)go(dx<0?"L":dx>0?"R":dy<0?"U":"D");});
+    keyFn=e=>{if(!host.isConnected)return false;const d=KEY_DIR[e.code]||KEY_DIR[e.key];if(!d)return false;go(d);return true;};
+    wire(host,q);draw();
+  };
+
+  /* ---------- the Job board and the shift ---------- */
+  let ov=null,S=null;
+  const root=()=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovJob";document.body.appendChild(ov);}return ov;};
+  const $=s=>ov&&ov.querySelector(s);
+  function me(){let src=null;try{src=Mine.avatar();}catch(e){}return src?`<img src="${src}" alt="">`:drawThing("fox",1);}
+  const wearing=j=>`<span class="jme">${me()}<span class="juni" title="${esc(j.uniform.name)}">${j.uniform.ic}</span></span>`;
+  function open(){
+    const o=root();
+    if(!o.classList.contains("on")){o.classList.add("on");Modes.open("job",o);}
+    const cur=J().current&&BY[J().current];
+    if(cur)shift(cur,true);else{J().current=null;board();}
+    Sound.sfx.soft();
+  }
+  function close(){hush();keyFn=null;S=null;try{VoicePack.stop();Sound.stopVoice();}catch(e){}if(ov)Modes.shut(ov);badge();}
+  function board(){
+    S=null;keyFn=null;const o=root();
+    o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>💼 Job board</h2><span class="jpurse">🪙 ${coins()}</span><button class="bx" id="jX">✕</button></div>
+      <p class="sub">Pick a job. Read, count and get paid in 🪙!</p>
+      <div class="jcards">${REG.length?REG.map(card).join(""):`<p class="sub">No jobs yet.</p>`}</div></div>`;
+    o.querySelector("#jX").onclick=close;
+    o.querySelectorAll(".jcard[data-job]").forEach(b=>b.onclick=()=>{Sound.sfx.pop();intro(BY[b.dataset.job]);});
+  }
+  function card(j){
+    // a locked job says when it opens; there is no padlock to puzzle over
+    if(!isOpen(j))return`<div class="jcard locked"><div class="jic">${j.icon}</div><b>${esc(j.name)}</b><p class="jopen">Opens at level ${(j.unlock&&j.unlock.tier)||1}</p></div>`;
+    const lv=levelOf(j.id),xp=xpOf(j.id),lo=LEVELS[lv-1],hi=LEVELS[lv];
+    return`<button class="jcard" data-job="${esc(j.id)}"><div class="jic">${j.icon}</div><b>${esc(j.name)}</b>
+      <span class="jlv">⭐ Level ${lv} · ${xp} task${xp===1?"":"s"}</span>
+      <span class="jbar"><i style="width:${hi?Math.round((xp-lo)/(hi-lo)*100):100}%"></i></span>
+      <span class="jpay">${j.pay.perTask} 🪙 a task</span></button>`;
+  }
+  // put on the uniform, then clock in
+  function intro(j){
+    if(!j)return board();const o=root();
+    o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2><button class="bx" id="jBack">‹ Jobs</button></div>
+      ${wearing(j)}<p class="sub">You put on your ${esc(j.uniform.name)}!</p>
+      <ul class="jwhat"><li>🪙 ${j.pay.perTask} for each task</li>${j.pay.streakTip?`<li>🎉 5 right in a row: a tip of ${j.pay.streakTip} 🪙</li>`:""}<li>⏰ Clock out when you are done</li></ul>
+      <div class="mrow"><button class="btn primary big" id="jIn">⏰ Clock in</button></div></div>`;
+    o.querySelector("#jBack").onclick=()=>{Sound.sfx.pop();board();};
+    o.querySelector("#jIn").onclick=()=>clockIn(j);
+    if(j.hello)talk(j.hello);
+  }
+  // The v10.0 reading-ticket gate (3 🎟️ to clock in, earned by reading) will live here.
+  // Until it ships, clocking in is free.
+  function canClockIn(j){return true;}
+  function clockIn(j){
+    if(typeof j==="string")j=BY[j];
+    if(!isOpen(j)||!canClockIn(j))return false;
+    J().current=j.id;save();badge();Sound.sfx.chime();shift(j,false);return true;
+  }
+  function shift(j){
+    const o=root();S={job:j,n:0,coins:0,tips:0,task:null};
+    o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2>${wearing(j).replace('class="jme"','class="jme small"')}
+        <span class="jpurse" id="jPurse">🪙 ${coins()}</span><button class="btn soft" id="jOut">⏰ Clock out</button></div>
+      <div class="jstat"><span id="jLv"></span><span class="jtips" id="jTips" title="Five right in a row: a tip!"></span><span id="jN"></span></div>
+      <div class="jwork"><div class="jcust" id="jCust"></div><div class="jq" id="jQ"></div></div>
+      <p class="jmsg" id="jMsg"></p></div>`;
+    o.querySelector("#jOut").onclick=clockOut;
+    stat();next();
+  }
+  function stat(){
+    if(!S||!ov)return;const lv=levelOf(S.job.id),st=Math.min(5,+J().streak||0);
+    if($("#jLv"))$("#jLv").textContent="⭐ Level "+lv;
+    if($("#jTips"))$("#jTips").innerHTML=[0,1,2,3,4].map(i=>`<i class="${i<st?"on":""}"></i>`).join("");
+    if($("#jN"))$("#jN").textContent="✅ "+S.n;
+    if($("#jPurse"))$("#jPurse").textContent="🪙 "+coins();
+  }
+  const msg=t=>{const m=$("#jMsg");if(m)m.textContent=t||"";};
+  // a new host for each step, so taps on the last one can't reach this one
+  function freshHost(){const old=$("#jQ"),h=document.createElement("div");h.className="jq";h.id="jQ";if(old)old.replaceWith(h);return h;}
+  // the next task: a type his job level has opened (the newest one a bit more often)
+  function next(typeId){
+    if(!S)return;const j=S.job,lv=levelOf(j.id),open=j.tasks.filter(t=>(t.lv||1)<=lv);
+    if(!open.length){console.warn(`Jobs: ${j.id} has no task for level ${lv}`);return;}
+    let t=typeId&&open.find(x=>x.id===typeId);
+    if(!t)t=open.length>1&&Math.random()<.4?open[open.length-1]:open[Math.floor(Math.random()*open.length)];
+    let steps=[],seed=0;
+    for(let k=0;k<4&&!steps.length;k++){seed=(Math.random()*1e9)|0;steps=gen(j.id,t.id,seed,{tier:currentTier(),lv});}
+    if(!steps.length&&t!==open[0])return next(open[0].id);
+    if(!steps.length){msg("No customers right now. Come back soon!");return;}
+    S.task={type:t,seed,steps,i:0,miss:0};
+    const who=(j.customers||CUSTOMERS).filter(id=>ART[id]),cu=$("#jCust");
+    if(cu&&who.length)cu.innerHTML=`<div class="jface">${drawThing(who[Math.floor(Math.random()*who.length)],(Math.random()*9)|0)}</div>`;
+    msg("");step();
+  }
+  function step(){
+    if(!S||!S.task)return;const T=S.task,q=T.steps[T.i],host=freshHost();keyFn=null;
+    try{KITS[q.kit](host,q,ok=>{if(S&&S.task===T&&T.steps[T.i]===q)stepDone(q,ok);},
+      {hint:false,onMiss:n=>{if(!S||S.task!==T)return;T.miss++;wait(n);}});}
+    catch(e){console.warn(`Jobs: the ${q.kit} kit could not show a step of ${S.job.id}/${T.type.id}:`,e&&e.message);
+      T.i++;if(T.i<T.steps.length)step();else taskDone();}
+  }
+  // a wrong answer takes nothing away: the customer waits, and the second time the answer glows
+  function wait(n){
+    hush();
+    if(n>=2){msg("Look for the one that glows!");Sound.speak("Look for the one that glows!",.95);}
+    else{msg("The customer waits a moment. Try again!");Sound.speak("The customer waits a moment. Try again!",.95);}
+  }
+  function stepDone(q,ok){
+    const T=S.task;
+    if(q.track&&q.level)Tracks.record(q.track,q.level,ok);
+    if(q.track==="reading"){if(ok)state.wordsRead++;
+      if(q.word){const w=allWords().find(x=>x.w===q.word);if(w)try{Skills.result(w,{ok,help:!ok});}catch(e){}}}
+    msg("");T.i++;save();
+    if(T.i<T.steps.length)step();else taskDone();
+  }
+  // paid at once; five right first time in a row add a tip
+  function taskDone(){
+    const T=S.task,j=S.job,jb=J(),first=!T.miss,before=levelOf(j.id);S.task=null;
+    if(!jb.xp||typeof jb.xp!=="object")jb.xp={};
+    jb.xp[j.id]=xpOf(j.id)+1;jb.tasks=(+jb.tasks||0)+1;
+    let tip=0;
+    if(first){jb.streak=(+jb.streak||0)+1;if(jb.streak>=5){jb.streak=0;tip=+j.pay.streakTip||0;}}else jb.streak=0;
+    const pay=+j.pay.perTask||0;purse(pay+tip);S.n++;S.coins+=pay+tip;if(tip)S.tips++;
+    save();renderHUD();stat();
+    hush();Sound.sfx.chime();Sound.speak("Thank you!",.95);
+    toast(tip?`+${pay} 🪙 and a tip! +${tip} 🪙`:`+${pay} 🪙`);
+    const h=freshHost();h.innerHTML=`<div class="jmoment"><p class="mpaid jpaid">+${pay} 🪙</p>${tip?`<p class="mpaid jpaid">🎉 Tip! +${tip} 🪙</p>`:""}</div>`;
+    if(tip)setTimeout(()=>{if(!S)return;Sound.sfx.fanfare();try{confetti();}catch(e){}hush();Sound.speak("Five in a row! Here is a tip!",.95);},700);
+    const after=levelOf(j.id),pause=tip?2400:1200,mine=S;
+    setTimeout(()=>{if(S!==mine)return;
+      if(after>before)levelUp(j,after);else if(S.n%5===0)five();else next();},pause);
+  }
+  // a pause with a choice: keep going, or clock out
+  function moment(title,line){
+    const h=freshHost();keyFn=null;
+    h.innerHTML=`<div class="jmoment"><div class="jbig">🎉</div><h2>${title}</h2>${line?`<p class="sub">${line}</p>`:""}
+      <div class="mrow"><button class="btn soft" id="jStop">⏰ Clock out</button><button class="btn primary big" id="jGo">Keep going ▶</button></div></div>`;
+    h.querySelector("#jGo").onclick=()=>{Sound.sfx.pop();next();};
+    h.querySelector("#jStop").onclick=clockOut;
+  }
+  function five(){
+    moment(`${S.n} tasks done!`,"Keep going or clock out?");
+    Sound.sfx.chime();try{buddyCheer();}catch(e){}hush();Sound.speak("Great work! Keep going, or clock out?",.95);
+  }
+  function levelUp(j,lv){
+    const t=j.tasks.find(x=>(x.lv||1)===lv);
+    moment(`⭐ ${esc(j.name)} level ${lv}!`,t?`New: ${esc(t.name||t.id)}!`:"You got a new badge!");
+    Sound.sfx.fanfare();try{confetti();}catch(e){}hush();Sound.speak("Level up! You got a new badge.",.95);
+    try{checkBadges();}catch(e){}
+  }
+  function clockOut(){
+    const s=S;hush();keyFn=null;S=null;J().current=null;save();badge();
+    if(!ov)return;
+    ov.innerHTML=`<div class="sheet jobsheet"><div class="jbig">${s?s.job.icon:"💼"}</div><h2>Great work today!</h2>
+      <p class="mpaid">${s?s.n:0} task${s&&s.n===1?"":"s"} · +${s?s.coins:0} 🪙</p>${s&&s.tips?`<p class="sub">🎉 ${s.tips} tip${s.tips===1?"":"s"}</p>`:""}
+      <div class="mrow"><button class="btn soft" id="jBoard">💼 Job board</button><button class="btn primary big" id="jHome">🏡 Back to the valley</button></div></div>`;
+    ov.querySelector("#jBoard").onclick=()=>{Sound.sfx.pop();board();};
+    ov.querySelector("#jHome").onclick=close;
+    Sound.sfx.chime();Sound.speak("Great work today!",.95);
+  }
+  // the dock button shows ⏰ while he is clocked in
+  function badge(){const b=document.getElementById("jobsBadge");if(!b)return;const on=!!(state.jobs&&state.jobs.current);b.textContent=on?"⏰":"";b.classList.toggle("on",on);}
+  document.getElementById("jobsBtn").onclick=()=>open();
+  setTimeout(()=>{try{badge();}catch(e){}},1500);
+  // the Job board in Adventure: a signpost at the first of these places with no building next to it
+  const BOARD_AT=[{c:1.6,r:ROWS_MAX-1.35},{c:5.6,r:ROWS_MAX-2.4},{c:COLS-6.5,r:ROWS_MAX-1.35}];
+  function boardAt(){
+    const free=p=>!Object.keys(state.grid||{}).some(k=>{const b=k.split(",").map(Number);return Math.abs(b[0]-p.c)<2.2&&Math.abs(b[1]-p.r)<1.5;});
+    return BOARD_AT.find(free)||BOARD_AT[0];
+  }
+  Adv.provide(()=>{
+    if(!REG.length)return[];const p=boardAt();
+    return[{c:p.c,r:p.r,size:.75,cls:"jboard",html:`<div class="jbd"><span>💼</span><b>JOBS</b></div>`,label:"💼 Job board",act:()=>open()}];
+  });
+
+  // every fixed line the jobs and tracks can say (tools/voice/extract.js adds them to the voice
+  // list); numbers already have clips, so a piece with a digit in it is left out
+  function voiceLines(){
+    const out={},add=q=>{if(q)[].concat(q.say||[]).forEach(p=>{p=String(p).trim();if(p&&!/\d/.test(p))out[p]=1;});};
+    Tracks.list().forEach(id=>(Tracks.get(id).levels||[]).forEach(L=>{for(let s=0;s<40;s++){try{add(L.gen(s,{}));}catch(e){}}}));
+    REG.forEach(j=>{[].concat(j.hello||[]).forEach(t=>{if(t)out[t]=1;});
+      j.tasks.forEach(t=>{for(let tier=(j.unlock&&j.unlock.tier)||1;tier<=MAX_TIER;tier++)for(let s=0;s<20;s++)gen(j.id,t.id,s,{tier,lv:t.lv||1}).forEach(add);});});
+    return Object.keys(out).sort();
+  }
+
+  return{register,get:id=>BY[id]||null,list:()=>REG.slice(),kit:(name,fn)=>{KITS[name]=fn;},kits:()=>Object.keys(KITS),KITS,
+    gen,level:levelOf,xp:xpOf,LEVELS,isOpen,open,close,clockIn,clockOut,canClockIn,talk,voiceLines,art:artHtml,boardAt,
+    _S:()=>S&&{job:S.job.id,n:S.n,coins:S.coins,tips:S.tips,task:S.task&&{type:S.task.type.id,i:S.task.i,steps:S.task.steps.length,miss:S.task.miss,seed:S.task.seed}},
+    _next:id=>next(id)};
+})();
+
+/* ---- the math track, K–1 ----
+   Seven levels, every question generated from a seed and read aloud, so his reading level
+   never holds his math back. The shown text is only numbers and signs (3 + 4 = ?); the words
+   are spoken. opt.thing sets what is counted (the Shopkeeper counts what was ordered) and
+   opt.max the size of each group. math:{op,...} is what the answer is worked out from, so the
+   tests can check it. Spoken lines are short fixed pieces plus numbers, which have clips. */
+(()=>{
+  const {rnd,int,pick,near}=Seeded;
+  const THINGS=["plum","nut","fish","star","bell","shell","leaf","seed","egg","spoon","jar","boot","gem","lemon"].filter(w=>WORD_ART[w]);
+  const thing=(r,o)=>o&&o.thing||pick(r,THINGS);
+  const add=(a,b)=>[a,"and",b+".","How many in all?"];
+  Tracks.register({id:"math",name:"Numbers",icon:"🔢",levels:[
+    {id:"count10",grade:"K",name:"Count to 10",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),n=int(r,1,10);
+      return{kit:"pad",say:["How many are there?"],art:{kind:"things",thing:t,n},choices:near(r,n,4,1,10),ans:n,math:{op:"count",n}};}},
+    {id:"count20",grade:"K",name:"Count to 20",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),n=int(r,11,20);
+      return{kit:"pad",say:["How many are there?"],art:{kind:"things",thing:t,n},choices:near(r,n,4,1,20),ans:n,math:{op:"count",n}};}},
+    // the two groups are never the same size; tap the one with more (or fewer)
+    {id:"compare",grade:"K",name:"More or fewer",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),a=int(r,1,10);let b=int(r,1,9);if(b>=a)b++;
+      const more=r()<.5,ans=more?Math.max(a,b):Math.min(a,b);
+      return{kit:"pick",say:[more?"Which has more?":"Which has fewer?"],choices:[a,b].map(n=>({v:n,art:{kind:"things",thing:t,n}})),ans,math:{op:more?"more":"fewer",a,b}};}},
+    {id:"add10",grade:"K",name:"Add within 10",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),m=Math.min(9,o&&o.max||9),a=int(r,1,m),b=int(r,1,Math.min(m,10-a));
+      return{kit:"pad",say:add(a,b),text:`${a} + ${b} = ?`,art:{kind:"groups",groups:[{thing:t,n:a},{thing:t,n:b}],op:"+"},choices:near(r,a+b,4,0,10),ans:a+b,math:{op:"+",a,b}};}},
+    {id:"sub10",grade:"K",name:"Take away within 10",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),a=int(r,2,10),b=int(r,1,a-1);
+      return{kit:"pad",say:[a,"take away",b+".","How many are left?"],text:`${a} − ${b} = ?`,art:{kind:"take",thing:t,n:a,gone:b},choices:near(r,a-b,4,0,10),ans:a-b,math:{op:"-",a,b}};}},
+    {id:"add20",grade:"1",name:"Add within 20",gen:(seed,o)=>{const r=rnd(seed),t=thing(r,o),a=int(r,2,10),b=int(r,Math.max(1,11-a),10);
+      return{kit:"pad",say:add(a,b),text:`${a} + ${b} = ?`,art:{kind:"groups",groups:[{thing:t,n:a},{thing:t,n:b}],op:"+"},choices:near(r,a+b,4,0,20),ans:a+b,math:{op:"+",a,b}};}},
+    // 1¢, 5¢ and 10¢ coins, biggest first, never more than four pennies
+    {id:"coins20",grade:"1",name:"Coins to 20¢",gen:(seed)=>{const r=rnd(seed),T=int(r,2,20),d=int(r,0,Math.min(2,Math.floor(T/10))),left=T-10*d,
+        n=int(r,Math.max(0,Math.ceil((left-4)/5)),Math.floor(left/5)),p=left-5*n,coins=[];
+      for(let i=0;i<d;i++)coins.push(10);for(let i=0;i<n;i++)coins.push(5);for(let i=0;i<p;i++)coins.push(1);
+      return{kit:"pad",say:["How much money is this?"],text:"? ¢",art:{kind:"coins",coins},choices:near(r,T,4,1,20),ans:T,math:{op:"coins",coins}};}}
+  ]});
+})();
+
+/* ---- 🛒 Shopkeeper, opens at reading level 2 ----
+   Every task starts with the customer's order, made from his own word list at his level and
+   decode-checked: he reads it and finds the thing among three others. Each job level adds a
+   step after it: count them (to 10), add two small groups, then count the coins the customer
+   pays with (to 20¢). */
+(()=>{
+  const {rnd,pick,shuffle}=Seeded;
+  // what the shop sells: a thing is used when it is in his word list, at his level, with a picture
+  const STOCK=["hat","cap","map","pan","pot","mop","box","sock","van","cab","bus","jet","sub","bed","pen","net","egg","cup","nut","bin",
+    "ship","fish","dish","chip","shell","drum","flag","tent","plum","truck","sled","rocket","tram",
+    "cake","bike","rope","kite","bone","bell","car","boat","train","plane","jar","fork","corn","shirt",
+    "peach","seed","coat","boot","spoon","soap","lemon","magnet","cupcake","burger","hotdog","sandwich","backpack","pumpkin",
+    "candy","rice","teapot","pancake","popcorn","sailboat","wrench"];
+  // these stay the same for more than one: "the fish", "the rice"
+  const SAME=["fish","rice","corn","popcorn","candy","soap"];
+  const plural=w=>SAME.indexOf(w)>=0?w:/(s|x|z|sh|ch)$/.test(w)?w+"es":/[^aeiou]y$/.test(w)?w.slice(0,-1)+"ies":w+"s";
+  const one=w=>(/^[aeiou]/.test(w)?"an ":"a ")+w;
+  // {one} becomes "a hat", {many} "hats"; a line is used only when its own words decode at his level
+  const ONE=["Can I get {one}?","Get me {one}!","Do you have {one}?","I wish I had {one}.","Can I have {one}?"];
+  const MANY=["Can I get the {many}?","Get me the {many}!","Do you have {many}?","I will get the {many}."];
+  const fits=(line,tier)=>Decode.check(line.replace(/\{\w+\}/g,""),tier).every(x=>x.ok);
+  const stock=tier=>allWords().filter(x=>!x.tricky&&x.t<=tier&&WORD_ART[x.w]&&STOCK.indexOf(x.w)>=0);
+  // the order, and the thing to find among three others that look different
+  function order(r,tier,many){
+    const pool=stock(tier);if(!pool.length)return null;
+    const mine=pool.filter(x=>x.t>=tier-2),w=pick(r,mine.length?mine:pool).w;
+    const lines=(many?MANY:ONE).filter(l=>fits(l,tier)),line=pick(r,lines.length?lines:[many?MANY[0]:ONE[0]]);
+    const text=line.replace("{one}",one(w)).replace("{many}",plural(w));
+    const others=[];shuffle(r,STOCK).forEach(x=>{if(others.length<3&&x!==w&&WORD_ART[x]&&WORD_ART[x]!==WORD_ART[w]&&!Read.near(x,w)
+      &&!others.some(y=>WORD_ART[y]===WORD_ART[x]||Read.near(x,y)))others.push(x);});
+    return{w,step:{kit:"pick",track:"reading",read:true,word:w,say:["Read the order. Find it on the shelf!"],text,
+      choices:shuffle(r,[w].concat(others)).map(x=>({v:x,art:{kind:"word",w:x}})),ans:w}};
+  }
+  const then=(o,q)=>o?[o.step].concat(q?[q]:[]):[];
+  Jobs.register({
+    id:"shop",name:"Shopkeeper",icon:"🛒",uniform:{id:"apron",name:"shop apron",ic:"🎽"},unlock:{tier:2},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the shop! Read each order.",
+    tasks:[
+      {id:"order",lv:1,name:"reading orders",gen:(seed,L)=>then(order(rnd(seed),L.tier,false))},
+      {id:"count",lv:2,name:"counting",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,true);return then(o,o&&Tracks.gen("math","count10",seed+":n",{thing:o.w}));}},
+      {id:"add",lv:3,name:"adding",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,true);return then(o,o&&Tracks.gen("math","add10",seed+":n",{thing:o.w,max:5}));}},
+      {id:"coins",lv:4,name:"coins",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,false);return then(o,o&&Tracks.gen("math","coins20",seed+":n"));}}
+    ]});
+})();
+
+/* ---- 🌱 Lawn mower, opens at reading level 4 ----
+   Every task starts with a note to read that says where to mow: "Go 3 →, then 2 up." He follows
+   it on a 6 × 5 lawn, one square per tap. "up" and "down" are words (level 1 and 2); "right" needs
+   level 7 (igh), so left and right are arrows until both words decode at his level, then words.
+   Each job level adds a step after the mowing: count the squares mowed, add the two runs, then
+   rows × columns as an array (a row of 4 and another row of 4: 4 + 4). */
+(()=>{
+  const {rnd,int,pick}=Seeded,W=6,H=5,MOVE={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]};
+  // runs that turn at every corner, so the path never crosses itself and every step mows a new square
+  function path(r,legs,maxLen){
+    for(let k=0;k<200;k++){
+      const start={c:int(r,0,W-1),r:int(r,0,H-1)},out=[];let c=start.c,y=start.r,flat=r()<.5;
+      for(let i=0;i<legs;i++){const room={L:c,R:W-1-c,U:y,D:H-1-y},ds=(flat?["L","R"]:["U","D"]).filter(d=>room[d]>0);
+        if(!ds.length)break;const d=pick(r,ds),n=int(r,1,Math.min(maxLen,room[d]));
+        out.push({d,n});c+=MOVE[d][0]*n;y+=MOVE[d][1]*n;flat=!flat;}
+      if(out.length===legs)return{start,legs:out};
+    }
+    return{start:{c:0,r:H-1},legs:[{d:"R",n:2}]};
+  }
+  function note(p,tier){
+    const words=Decode.tier("left")<=tier&&Decode.tier("right")<=tier;
+    const way=d=>d==="U"?"up":d==="D"?"down":words?(d==="L"?"left":"right"):(d==="L"?"←":"→");
+    return p.legs.map((l,i)=>(i?"then ":"Go ")+l.n+" "+way(l.d)).join(", ")+".";
+  }
+  // the reading step, and what it mows (each square marked with the run that mowed it)
+  function mow(r,tier,legs,maxLen){
+    const p=path(r,legs,maxLen),cut={};let c=p.start.c,y=p.start.r;
+    p.legs.forEach((l,i)=>{for(let k=0;k<l.n;k++){c+=MOVE[l.d][0];y+=MOVE[l.d][1];cut[c+","+y]=i+1;}});
+    return{p,cut,step:{kit:"path",track:"reading",read:true,say:["Read the note. Mow the grass!"],text:note(p,tier),
+      grid:{w:W,h:H},start:p.start,ans:p.legs.map(l=>l.d.repeat(l.n)).join("")}};
+  }
+  const lawn=m=>({kind:"lawn",w:W,h:H,cut:m.cut,start:m.p.start});
+  Jobs.register({
+    id:"mow",name:"Lawn mower",icon:"🌱",uniform:{id:"sunhat",name:"sun hat",ic:"👒"},unlock:{tier:4},
+    pay:{perTask:4,streakTip:6},hello:"Time to mow! Read each note.",
+    tasks:[
+      {id:"mow",lv:1,name:"reading notes",gen:(seed,L)=>{const r=rnd(seed);return[mow(r,L.tier,int(r,1,2),4).step];}},
+      {id:"count",lv:2,name:"counting squares",gen:(seed,L)=>{const m=mow(rnd(seed),L.tier,2,4),n=m.step.ans.length;
+        return[m.step,{kit:"pad",track:"math",level:"count10",say:["How many squares did you mow?"],art:lawn(m),ans:n,math:{op:"count",n}}];}},
+      {id:"rows",lv:3,name:"adding rows",gen:(seed,L)=>{const m=mow(rnd(seed),L.tier,2,4),a=m.p.legs[0].n,b=m.p.legs[1].n;
+        return[m.step,{kit:"pad",track:"math",level:"add10",say:[a,"and",b+".","How many in all?"],text:`${a} + ${b} = ?`,art:lawn(m),ans:a+b,math:{op:"+",a,b}}];}},
+      {id:"array",lv:4,name:"rows and columns",gen:(seed,L)=>{const r=rnd(seed),m=mow(r,L.tier,int(r,1,2),4),rows=int(r,2,4),cols=int(r,2,5);
+        return[m.step,{kit:"pad",track:"math",level:"array",say:[rows,"rows of",cols+".","How many squares?"],
+          text:Array.from({length:rows},()=>cols).join(" + ")+" = ?",art:{kind:"array",rows,cols},ans:rows*cols,math:{op:"×",a:rows,b:cols}}];}}
+    ]});
 })();
 
 /* ================================================================
@@ -11039,6 +11679,7 @@ function defaults(t,d){
 const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","buddy","daily","pace","badges","modeMin","modeOpens",
   "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","reread","rereadPaid","adv","notes","quest","quest2","mybooks","write","sync","togetherDays",
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
+  "jobs","jobs.xp","tracks",
   "adv.dex"];
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
@@ -11112,6 +11753,8 @@ function bootFixups(){
   const trim=(list,max)=>{const on=list.filter(x=>x.out!==false).sort((a,b)=>(a.since||0)-(b.since||0));
     while(on.length>max){on.shift().out=false;}};
   trim(state.critters,outMax("animal"));trim(state.vehicles,outMax("vehicle"));
+  // a shift at a job this version doesn't have is over (its XP stays)
+  if(state.jobs.current&&!Jobs.get(state.jobs.current))state.jobs.current=null;
 }
 
 /* Load a save: fill in its defaults, run the one-time conversions it has not had, then
