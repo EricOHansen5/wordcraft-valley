@@ -10108,6 +10108,51 @@ const Jobs=(()=>{
   ]});
 })();
 
+/* ---- 🛒 Shopkeeper, opens at reading level 2 ----
+   Every task starts with the customer's order, made from his own word list at his level and
+   decode-checked: he reads it and finds the thing among three others. Each job level adds a
+   step after it: count them (to 10), add two small groups, then count the coins the customer
+   pays with (to 20¢). */
+(()=>{
+  const {rnd,pick,shuffle}=Seeded;
+  // what the shop sells: a thing is used when it is in his word list, at his level, with a picture
+  const STOCK=["hat","cap","map","pan","pot","mop","box","sock","van","cab","bus","jet","sub","bed","pen","net","egg","cup","nut","bin",
+    "ship","fish","dish","chip","shell","drum","flag","tent","plum","truck","sled","rocket","tram",
+    "cake","bike","rope","kite","bone","bell","car","boat","train","plane","jar","fork","corn","shirt",
+    "peach","seed","coat","boot","spoon","soap","lemon","magnet","cupcake","burger","hotdog","sandwich","backpack","pumpkin",
+    "candy","rice","teapot","pancake","popcorn","sailboat","wrench"];
+  // these stay the same for more than one: "the fish", "the rice"
+  const SAME=["fish","rice","corn","popcorn","candy","soap"];
+  const plural=w=>SAME.indexOf(w)>=0?w:/(s|x|z|sh|ch)$/.test(w)?w+"es":/[^aeiou]y$/.test(w)?w.slice(0,-1)+"ies":w+"s";
+  const one=w=>(/^[aeiou]/.test(w)?"an ":"a ")+w;
+  // {one} becomes "a hat", {many} "hats"; a line is used only when its own words decode at his level
+  const ONE=["Can I get {one}?","Get me {one}!","Do you have {one}?","I wish I had {one}.","Can I have {one}?"];
+  const MANY=["Can I get the {many}?","Get me the {many}!","Do you have {many}?","I will get the {many}."];
+  const fits=(line,tier)=>Decode.check(line.replace(/\{\w+\}/g,""),tier).every(x=>x.ok);
+  const stock=tier=>allWords().filter(x=>!x.tricky&&x.t<=tier&&WORD_ART[x.w]&&STOCK.indexOf(x.w)>=0);
+  // the order, and the thing to find among three others that look different
+  function order(r,tier,many){
+    const pool=stock(tier);if(!pool.length)return null;
+    const mine=pool.filter(x=>x.t>=tier-2),w=pick(r,mine.length?mine:pool).w;
+    const lines=(many?MANY:ONE).filter(l=>fits(l,tier)),line=pick(r,lines.length?lines:[many?MANY[0]:ONE[0]]);
+    const text=line.replace("{one}",one(w)).replace("{many}",plural(w));
+    const others=[];shuffle(r,STOCK).forEach(x=>{if(others.length<3&&x!==w&&WORD_ART[x]&&WORD_ART[x]!==WORD_ART[w]&&!Read.near(x,w)
+      &&!others.some(y=>WORD_ART[y]===WORD_ART[x]||Read.near(x,y)))others.push(x);});
+    return{w,step:{kit:"pick",track:"reading",read:true,word:w,say:["Read the order. Find it on the shelf!"],text,
+      choices:shuffle(r,[w].concat(others)).map(x=>({v:x,art:{kind:"word",w:x}})),ans:w}};
+  }
+  const then=(o,q)=>o?[o.step].concat(q?[q]:[]):[];
+  Jobs.register({
+    id:"shop",name:"Shopkeeper",icon:"🛒",uniform:{id:"apron",name:"shop apron",ic:"🎽"},unlock:{tier:2},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the shop! Read each order.",
+    tasks:[
+      {id:"order",lv:1,name:"reading orders",gen:(seed,L)=>then(order(rnd(seed),L.tier,false))},
+      {id:"count",lv:2,name:"counting",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,true);return then(o,o&&Tracks.gen("math","count10",seed+":n",{thing:o.w}));}},
+      {id:"add",lv:3,name:"adding",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,true);return then(o,o&&Tracks.gen("math","add10",seed+":n",{thing:o.w,max:5}));}},
+      {id:"coins",lv:4,name:"coins",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,false);return then(o,o&&Tracks.gen("math","coins20",seed+":n"));}}
+    ]});
+})();
+
 /* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
