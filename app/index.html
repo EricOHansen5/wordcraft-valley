@@ -1401,6 +1401,29 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   #toast{bottom:calc(env(safe-area-inset-bottom) + 176px)}
   #coach{bottom:calc(env(safe-area-inset-bottom) + 176px)}
 }
+/* overlays keep clear of the status bar and the home indicator */
+.overlay{padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+/* a sheet taller than the screen: its header (with ✕), its tabs and its closing row stay in view while it scrolls.
+   A sticky box keeps clear of its scroller's padding, so each one is offset by that padding (22 px, 18 px on a book). */
+.sheet .bhead,.bpage .bhead,.sheet .qhead{position:-webkit-sticky;position:sticky;top:-22px;z-index:4;background:inherit;padding:4px 0;margin-top:-4px}
+.bpage .bhead{top:-18px}
+.temple .qhead,.ltsheet .bhead{position:static;background:none}
+.sheet>.tabs{position:-webkit-sticky;position:sticky;top:-22px;z-index:4;background:var(--paper);padding:6px 0;margin-top:-6px}
+.sheetfoot{position:-webkit-sticky;position:sticky;bottom:-22px;z-index:4;text-align:center;margin:14px -22px -22px;padding:18px 22px 20px;
+  background:linear-gradient(rgba(251,246,236,0),var(--paper) 16px)}
+.report .rbtns{position:-webkit-sticky;position:sticky;bottom:-22px;z-index:4;margin:14px -22px -22px;padding:18px 22px 20px;
+  background:linear-gradient(rgba(251,246,236,0),var(--paper) 16px)}
+/* collections use the width of a landscape iPad: fewer rows to scroll through */
+#ovAlbum .sheet,#ovCraft .sheet,#ovParent .sheet,.stsheet{max-width:940px}
+#ovCraft .gridcards,.stsheet .gridcards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+/* read a sentence, find its picture: three pictures side by side whenever they fit */
+.psopts .psopt{width:calc((100% - 24px) / 3);max-width:270px;min-width:150px}
+/* a book's cover picture shrinks on a short screen, so "Read it!" stays in view */
+.bcoverart{max-width:calc((94vh - 330px) * 16 / 9);margin:0 auto}
+/* the pet in the corner of a book page never sits on the buttons */
+.bpage .bctl,.bpage .bafter{padding:0 86px}
+@media (max-width:700px){.jobsheet .bhead,.tksheet .bhead,.fssheet .bhead{top:-14px}}
+@media (max-width:600px){.bpage .bctl,.bpage .bafter{padding:0 78px 0 0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1453,7 +1476,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 <div class="overlay" id="ovCrates"><div class="sheet">
   <h2>Pick a crate</h2><p class="sub">Read the word to wake up what's inside.</p>
   <div id="crateRow"></div>
-  <div style="text-align:center;margin-top:20px"><button class="btn soft" data-close>Back to my valley</button></div>
+  <div class="sheetfoot"><button class="btn soft" data-close>Back to my valley</button></div>
 </div></div>
 
 <div class="overlay" id="ovRead"><div class="sheet">
@@ -1470,7 +1493,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   <p class="sub" id="pickPrompt" style="text-align:center;margin:18px 0 8px">Which one is it?</p>
   <div id="shieldHost"></div>
   <div id="picks"></div>
-  <div style="text-align:center;margin-top:16px"><button class="btn ghost" data-close>Later</button></div>
+  <div class="sheetfoot"><button class="btn ghost" data-close>Later</button></div>
 </div></div>
 
 <div class="overlay" id="ovReward"><div class="sheet" style="text-align:center;max-width:440px">
@@ -1492,7 +1515,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 <div class="overlay" id="ovCraft"><div class="sheet">
   <h2>Building plans</h2><p class="sub" id="craftSub"></p>
   <div class="gridcards" id="craftGrid"></div>
-  <div style="text-align:center;margin-top:20px"><button class="btn soft" data-close>Close</button></div>
+  <div class="sheetfoot"><button class="btn soft" data-close>Close</button></div>
 </div></div>
 
 <div class="overlay" id="ovQuests"><div class="sheet" style="max-width:560px">
@@ -1500,7 +1523,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   <div id="questList"></div>
   <div id="chest">🧰</div>
   <p class="sub" id="chestSub" style="text-align:center;margin-top:6px"></p>
-  <div style="text-align:center;margin-top:12px"><button class="btn soft" data-close>Back to the valley</button></div>
+  <div class="sheetfoot"><button class="btn soft" data-close>Back to the valley</button></div>
 </div></div>
 
 <div class="overlay" id="ovPhoto"><div class="sheet" style="max-width:640px;text-align:center">
@@ -1563,7 +1586,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
     <button class="tab" data-atab="hats">Wardrobe</button>
   </div>
   <div class="gridcards" id="albumGrid"></div>
-  <div style="text-align:center;margin-top:20px"><button class="btn soft" data-close>Close</button></div>
+  <div class="sheetfoot"><button class="btn soft" data-close>Close</button></div>
 </div></div>
 
 <div class="overlay" id="ovGate"><div class="sheet" style="max-width:360px;text-align:center">
@@ -1710,7 +1733,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
       <button class="btn soft" id="resetBtn" style="border-color:var(--berry);color:var(--berry)">Start over</button>
     </div>
   </div>
-  <div style="text-align:center;margin-top:20px"><button class="btn primary" data-close>Back to the valley</button></div>
+  <div class="sheetfoot"><button class="btn primary" data-close>Back to the valley</button></div>
 </div></div>
 
 <div id="fx"></div><div id="toast"></div>
@@ -10656,16 +10679,16 @@ const Store=(()=>{
         <button class="tab" data-shelf="swap" id="stSwapTab">🔄 Swap</button></div>
       <p class="sub" id="stSub"></p><p class="stmsg" id="stMsg" aria-live="polite"></p>
       <div class="gridcards" id="stGrid"></div><div id="stSwap"></div>
-      <div style="text-align:center;margin-top:18px"><button class="btn soft" id="stClose">Done</button></div></div>`;
+      <div class="sheetfoot"><button class="btn soft" id="stClose">Done</button></div></div>`;
     document.body.appendChild(el);
-    el.querySelectorAll("[data-shelf]").forEach(b=>b.onclick=()=>{shelf=b.dataset.shelf;msg("");Sound.sfx.soft();render();});
+    el.querySelectorAll("[data-shelf]").forEach(b=>b.onclick=()=>{shelf=b.dataset.shelf;msg("");Sound.sfx.soft();render();el.querySelector(".sheet").scrollTop=0;});
     el.querySelector("#stClose").onclick=close;
   }
   function open(sh){
     if(!el)build();
     note();
     if(sh)shelf=sh;
-    msg("");render();
+    msg("");render();el.querySelector(".sheet").scrollTop=0;
     el.classList.add("on");Modes.open("store",el);Sound.sfx.soft();
     if(!greeted){greeted=true;Sound.speak("Welcome to the Trading Post!",.95);}
   }
@@ -11114,7 +11137,7 @@ const Looks=(()=>{
     el=document.createElement("div");el.className="overlay";el.id="ovCloset";
     el.innerHTML=`<div class="sheet clsheet"><h2>🎨 Closet</h2><p class="sub">Dress up your valley. Wear a look on any day.</p>
       <p class="stmsg" id="clMsg" aria-live="polite"></p><div class="gridcards" id="clGrid"></div>
-      <div style="text-align:center;margin-top:18px"><button class="btn soft" id="clClose">Done</button></div></div>`;
+      <div class="sheetfoot"><button class="btn soft" id="clClose">Done</button></div></div>`;
     document.body.appendChild(el);
     el.querySelector("#clClose").onclick=close;
   }
@@ -13326,7 +13349,7 @@ function renderCraft(){
 let albumTab="words";
 document.querySelectorAll("[data-atab]").forEach(t=>t.onclick=()=>{
   document.querySelectorAll("[data-atab]").forEach(x=>x.classList.remove("on"));t.classList.add("on");
-  albumTab=t.dataset.atab;renderAlbum();});
+  albumTab=t.dataset.atab;renderAlbum();const sh=t.closest(".sheet");if(sh)sh.scrollTop=0;});
 document.getElementById("albumBtn").onclick=()=>{renderAlbum();show("ovAlbum");Sound.sfx.soft();};
 function renderAlbum(){
   const g=document.getElementById("albumGrid");g.innerHTML="";
@@ -13415,6 +13438,7 @@ document.querySelectorAll(".tabs .tab[data-tab]").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tabs .tab[data-tab]").forEach(x=>x.classList.remove("on"));t.classList.add("on");
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("on"));
   document.getElementById("pane-"+t.dataset.tab).classList.add("on");
+  const sh=t.closest(".sheet");if(sh)sh.scrollTop=0;
 });
 function openParent(){renderProgress();renderDaily();renderWordsPane();renderStudio();renderPackPane();renderSettings();try{Notes.renderPane();Sync.renderRow();voiceRow();}catch(e){}show("ovParent");}
 function renderProgress(){
