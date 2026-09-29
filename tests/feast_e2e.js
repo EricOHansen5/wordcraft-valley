@@ -31,6 +31,9 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const question=async()=>{const a=await waitFor(p,()=>document.getElementById("fsQ").dataset.ans,{timeout:4000});if(a)asked.push(a);return a;};
   const wrong=()=>E(()=>{const h=document.getElementById("fsQ"),a=h.dataset.ans,b=[...h.querySelectorAll("[data-w]")].find(x=>x.dataset.w!==a);b.click();return b.dataset.w;});
   const dishes=n=>waitFor(p,n=>!!state.feast&&state.feast.dishes.length===n,{arg:n,timeout:4000});
+  const card=()=>E(()=>{const c=document.querySelector('#clGrid .clcard[data-look="thanks"]');return c&&{locked:c.classList.contains("locked"),worn:c.classList.contains("worn"),
+    text:c.querySelector(".cost").textContent.trim(),when:(c.querySelector(".clwhen")||{}).textContent||"",got:[...c.querySelectorAll(".clpc.got")].map(x=>x.dataset.piece)};});
+  const closet=async()=>{await p.click("#closetBtn");await waitFor(p,()=>Modes.top()==="closet");const c=await card();await p.click("#clClose");await waitFor(p,()=>Modes.top()==="valley");return c;};
   await listen();await tidy();
 
   // ---- 1. the window: 15 November to Thanksgiving Day (the fourth Thursday of November), both counted ----
@@ -47,6 +50,8 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(!(await shown("feastBtn")),"outside the window: no 🦃 button");
   ok(await E(()=>Feast.open())===false&&!(await E(()=>!!document.querySelector("#ovFeast.on"))),"...and the table does not open");
   ok(J(await fe())===J(DEF),"outside the window: the save field stays at its default "+J(await fe()));
+  let cc=await closet();
+  ok(cc&&cc.locked&&cc.text==="Earn it at Thanksgiving 🦃"&&cc.when==="in November","the Closet lists the Thanksgiving look, greyed: \"Earn it at Thanksgiving 🦃\", in November "+J(cc));
 
   // ---- 3. in the window: the button, and a Picture it with a food word ----
   await E(()=>Feast._setToday("2026-11-20"));
@@ -140,7 +145,8 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok((await said()).indexOf("The table is full! Come back tomorrow.")>=0,"\"The table is full! Come back tomorrow.\"");
   ok((await purse()).c===c4&&(await fe()).tables===1&&await E(()=>window.__g.length===1),"...nothing more is paid or granted");
   await p.click("#fsDone");await wait(150);
-  await E(()=>{Looks.grant=window.__og;});
+  cc=await closet();
+  ok(cc&&!cc.locked&&cc.worn&&cc.text==="1 of 4 pieces"&&J(cc.got)===J(["garland"]),"the Closet: Thanksgiving worn, 1 of 4 pieces "+J(cc));
 
   // ---- 8. a new day: a new table ----
   await E(()=>Feast._setToday("2026-11-21"));
@@ -150,6 +156,15 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const a3=await question();await answer(p,"#fsQ");
   ok(await waitFor(p,()=>state.feast.day==="2026-11-21"&&state.feast.dishes.length===1),"a dish on the new day's table");
   f=await fe();ok(f.tables===1&&J(f.dishes)===J([a3]),"a new table in the save "+J(f));
+  // the second full table gives the second piece, which the Look system names
+  for(let i=0;i<9;i++){await question();if(i===8)await listen();await answer(p,"#fsQ");await dishes(2+i);}
+  f=await fe();
+  ok(f.day==="2026-11-21"&&f.dishes.length===10&&f.tables===2,"a second full table: tables 2 "+J(f));
+  ok(await waitFor(p,()=>JSON.stringify(Looks.pieces("thanks").earned)==='["garland","pie"]'),"...and the second piece, the pie "+J(await E(()=>Looks.pieces("thanks").earned)));
+  ok(await toasted(/You got the pie! Look in your closet/)&&(await said()).indexOf("You got the pie! Look in your closet.")>=0,"the Look system says \"You got the pie!\" "+J(await said()));
+  ok(/You got the pie!/.test(await E(()=>document.getElementById("fsPiece").textContent))&&await E(()=>window.__g.length===2),"...the panel repeats it, and grant was called once more");
+  ok(await E(()=>!!document.querySelector('#tiles .lookprop[data-prop="pie"] svg')),"the pie is in the valley");
+  await E(()=>{Looks.grant=window.__og;});
   await E(()=>Feast.close());
   // the day after Thanksgiving has none of it
   await E(()=>Feast._setToday("2026-11-27"));
@@ -163,7 +178,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(J(lv[4].f.slice(0,5).sort())===J(["chip","egg","fish","nut","plum"])&&lv[4].f[5]==="pot","level 4: the five foods he can read, then a pot "+J(lv[4].f));
   ok(J(lv[1].f.slice(0,2))===J(["pot","pan"])&&lv[1].f.every(x=>!["cat","dog","bat","fox"].includes(x)),"level 1 (no foods yet): a pot, a pan, then other words at his level, never an animal "+J(lv[1].f));
   ok(lv[6].f.indexOf("corn")>=0&&lv[6].f.indexOf("cake")>=0&&lv[8].f.indexOf("pumpkin")>=0,"corn and cake from level 5–6, pumpkin at 8");
-  ok(await E(x=>x.every(a=>Decode.check(a,4).every(c=>c.ok)&&Feast.foods().indexOf(a)>=0),asked)&&asked.length===11,
+  ok(await E(x=>x.every(a=>Decode.check(a,4).every(c=>c.ok)&&Feast.foods().indexOf(a)>=0),asked)&&asked.length===20,
     "every word the table asked for was one of his foods and decodes at level 4 "+J(asked));
 
   // ---- 10. the mode, the save, an old save ----
@@ -171,9 +186,9 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "the feast mode is counted as reading in Where the time goes: "+await E(()=>JSON.stringify(state.modeOpens[today()])));
   await E(()=>saveNow());await wait(300);
   await reload(p);await listen();await tidy();
-  f=await fe();ok(f.day==="2026-11-21"&&f.dishes.length===1&&f.tables===1,"state.feast is saved "+J(f));
+  f=await fe();ok(f.day==="2026-11-21"&&f.dishes.length===10&&f.tables===2,"state.feast is saved "+J(f));
   ok((await shown("feastBtn"))===(await E(()=>Feast.inWindow(today()))),"after a reload the test date is gone: the real date ("+await E(()=>today())+") decides");
-  ok(await E(()=>JSON.stringify(Looks.pieces("thanks").earned)==='["garland"]'&&!!document.querySelector('#tiles .lookprop[data-prop="garland"]')),"the garland is still on after a reload");
+  ok(await E(()=>JSON.stringify(Looks.pieces("thanks").earned)==='["garland","pie"]'&&!!document.querySelector('#tiles .lookprop[data-prop="garland"]')&&!!document.querySelector('#tiles .lookprop[data-prop="pie"]')),"the garland and the pie are still on after a reload");
   await seed(p,Object.assign({},START,{feast:null}));await tidy();
   ok(J(await fe())===J(DEF),"a save with feast null gets the default");
   const V8=FX("v8-era.json");
