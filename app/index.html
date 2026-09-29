@@ -11900,10 +11900,12 @@ const Factory=(()=>{
     {id:"sort",k:K.SORT,name:"Sorter",from:8},{id:"stamp",k:K.STAMP,name:"Stamper",from:10},
     {id:"tunnel",k:K.TUNNEL,name:"Tunnel",from:11},{id:"erase",k:0,name:"Erase",from:1}];
   const TOOL=id=>TOOLS.filter(t=>t.id===id)[0]||TOOLS[0];
+  const UNLOCK={mixer:"The mixer is yours now!",split:"The splitter is yours now!",sort:"The sorter is yours now!",
+    stamp:"The stamper is yours now!",tunnel:"The tunnel is yours now!"};
   // the buddy's lean tips: overproduction (without "Try a splitter." until the splitter is his), inventory, transportation
   const TIPS={drills:"The drills are waiting. The belt is full! Try a splitter.",drills0:"The drills are waiting. The belt is full!",wip:"Lots of rocks waiting in line!",
     long:"That's a long trip! Can the belt be shorter?"};
-  const R=1,B=2,Y=3;
+  const R=1,B=2,Y=3,PUR=E.BAR0+3,ORA=E.BAR0+5,GRN=E.BAR0+6,TPUR=E.TOY0+3,TGRN=E.TOY0+6;
   /* ---- the levels: a board (. floor, # rock, r b y a spot, T the truck), the order, the math it asks,
      the piece budget for ⭐⭐⭐, the time its known solution (sol) must beat, and what the buddy says ---- */
   const LEVELS=[
@@ -11918,7 +11920,43 @@ const Factory=(()=>{
     {name:"Two drills",ic:"🚚",order:[[R,4],[Y,3]],math:"add10",budget:26,limit:45,
      intro:"Two drills, one truck. Send red and yellow!",
      rows:["............",".r..........","............","......#.....","......#..T..","......#.....","............",".y..........","............"],
-     sol:"000000000000095555555600000000000600000000000600000000000000000000000400000000000400095555555400000000000000"}];
+     sol:"000000000000095555555600000000000600000000000600000000000000000000000400000000000400095555555400000000000000"},
+    {name:"The mixer",ic:"🌀",teach:"mixer",order:[[PUR,3]],math:"count10",budget:21,limit:45,
+     intro:"New machine: the mixer! Red and blue make purple.",
+     rows:["............","..r.........","............","............","..........T.","............","............","..b.........","............"],
+     sol:"00000000000000a00000000000600000000000600000000000555d555500000004000000000004000000009554000000000000000000"},
+    {name:"All the colors",ic:"🎨",order:[[PUR,2],[GRN,2],[ORA,2]],math:"add10",budget:32,limit:45,
+     intro:"Mix all the colors! Red and yellow make orange. Blue and yellow make green.",
+     rows:[".r..........","............",".b..........",".b..........","..........T.",".y..........",".y..........","............",".r.........."],
+     sol:"0a00000000000d60000000000860000000000a60000000000d55555555000840000000000a40000000000d4000000000080000000000"},
+    {name:"The splitter",ic:"🔀",teach:"split",order:[[PUR,6]],math:"add10",sum:[[PUR,3],[PUR,3]],budget:30,limit:45,
+     intro:"New machine: the splitter! One mixer is too slow for four drills. Split the rocks to two mixers.",
+     rows:["###.........","#rr#........","#...........","###.........",".....T......","###.........","#...........","#bb#........","###........."],
+     sol:"0000000000000aa000000000055h55560000000600060000000d507f0000000400040000055h55540000088000000000000000000000"},
+    {name:"Split the yellow",ic:"🔀",order:[[GRN,5],[ORA,5]],math:"add10",budget:34,limit:60,
+     intro:"One yellow drill and two mixers. Split the yellow!",
+     rows:["............",".r..........","............","............",".y.......T..","............","............",".b..........","............"],
+     sol:"00000000000009d55555560000400000060000400000060009h00000000000600000040000600000040009d555555400000000000000"},
+    {name:"The sorter",ic:"🎯",teach:"sort",order:[[B,4],[ORA,2]],math:"add10",budget:30,limit:45,
+     intro:"New machine: the sorter! It pulls one color off the belt. Send the blue to the truck, and mix the red with yellow.",
+     rows:["####........","#rb#........","#...........","####........","............","........y...","..........T.","............","............"],
+     sol:"0000000000000aa00000000005555x55d560000006004060000006004060000006008060000005555500000000000000000000000000"},
+    {name:"Sort and mix",ic:"🎯",order:[[GRN,6],[R,4]],math:"add10",budget:26,limit:45,
+     intro:"Sort the red to the truck. Mix the blue with yellow!",
+     rows:["............","............","............","............","..........T.","####........","#...........","#rb#........","####....y..."],
+     sol:"00000000000000000000000000000000000000000000000000000555550000000400004005555t55d540088000004000000000008000"},
+    {name:"The stamper",ic:"🔨",teach:"stamp",order:[[TPUR,4]],math:"add10",sum:"double",budget:22,limit:45,
+     intro:"New machine: the stamper! It makes a mixed bar into a toy.",
+     rows:["............","..r.........","............","............","..........T.","............","............","..b.........","............"],
+     sol:"00000000000000a00000000000600000000000600000000000555dl55500000004000000000004000000009554000000000000000000"},
+    {name:"The tunnel",ic:"🚇",teach:"tunnel",order:[[ORA,7],[B,6]],math:"add20",budget:34,limit:60,
+     intro:"New machine: the tunnel! Put one on each side, and the belt goes under.",
+     rows:["#####y######","#####.######","#####.######","#####.######","b..........T","#####.#####.","#####.#####.","#####.#####.","####r......."],
+     sol:"00000a0000000000060000000000060000000000060000009555p6p5555000000600000400000600000400000600000400009d555554"},
+    {name:"The big order",ic:"🏆",order:[[TGRN,8],[ORA,12]],math:"add20",budget:44,limit:60,
+     intro:"The big order! Use every machine.",
+     rows:["####........","#rb#........","#...........","####........","...........T","####........","#yy#........","#...........","####........"],
+     sol:"0000000000000aa00000000005555x555d56000006000o0600000dl55550000004000o000aa00400040005555h555400000000000000"}];
   LEVELS.forEach((L,i)=>{L.n=i+1;L.id="F"+(i+1);
     // "a long trip": twice the belts of the known solution
     let belts=0;for(let k=0;k<L.sol.length;k++){const c=E.ALPHA.indexOf(L.sol.charAt(k));if(c>=4&&c<8)belts++;}L.long=Math.max(16,belts*2);});
@@ -11948,6 +11986,18 @@ const Factory=(()=>{
   function orderSay(parts){const out=["Send"];
     parts.forEach((p,i)=>{if(i&&i===parts.length-1)out.push("and");out.push(p[1]);out.push(nameOf(p[0])+(i===parts.length-1?".":i<parts.length-2?",":""));});return out;}
   const orderText=parts=>"Send "+parts.map((p,i)=>(i?(i===parts.length-1?" and ":", "):"")+p[1]+" "+dot(p[0])).join("");
+  // the sum at the end, for the Jobs number pad: its question, what is said and what is shown
+  function sumQ(parts,lv,how){
+    if(how==="double"){const p=parts[0],n=p[1];
+      return{kit:"pad",track:"math",level:lv,say:[n,"toys.","Each toy took",2,"rocks.","How many rocks?"],
+        text:Array.apply(null,Array(n)).map(()=>2).join(" + ")+" = ?",ans:2*n,math:{op:"+",terms:Array.apply(null,Array(n)).map(()=>2)}};}
+    const g=Array.isArray(how)?how:parts;
+    if(g.length===1)return{kit:"pad",track:"math",level:lv,say:["How many did you send?"],text:dot(g[0][0])+" = ?",ans:g[0][1],math:{op:"count",n:g[0][1]}};
+    const say=[];g.forEach((p,i)=>{if(i&&i===g.length-1)say.push("and");say.push(p[1]);say.push(nameOf(p[0])+(i===g.length-1?".":i<g.length-2?",":""));});
+    say.push("How many in all?");
+    const terms=g.map(p=>p[1]);
+    return{kit:"pad",track:"math",level:lv,say,text:g.map(p=>p[1]+" "+dot(p[0])).join(" + ")+" = ?",ans:terms.reduce((a,b)=>a+b,0),math:{op:"+",terms}};
+  }
   /* ---------- the session ---------- */
   let ov=null,view="",w=null,cv=null,g=null,dpr=1,cell=40,raf=0,lastT=0,acc=0,S=null,stroke=null,armT=0,moTimer=0;
   const layouts={};   // this visit's layout on each level
@@ -11958,18 +12008,19 @@ const Factory=(()=>{
   function session(opt){
     return Object.assign({n:0,level:null,tool:"belt",lastDir:1,sortCol:2,running:false,done:false,
       order:null,base:new Int16Array(128),full:0,hop:-99,tip:{cand:"",since:0,shown:"",said:{}},flow:1,jam:0,cur:0,kb:false,kbDir:1,kbLast:-1,
-      armed:false,result:null,sig:""},opt||{});
+      armed:false,result:null,q:null,sig:"",miss:0},opt||{});
   }
   const tools=()=>TOOLS.filter(t=>S&&t.from<=S.n);
   const hasTool=id=>tools().some(t=>t.id===id);
   const got=it=>w.got[it]-(S.base[it]||0);
   const met=()=>!!S.order&&S.order.parts.every(p=>got(p[0])>=p[1]);
-  // open the Factory: where he left off, or the next level
+  // open the Factory: the levels, or straight into level 1 the first time
   function open(){
     root();
     if(!isOpen()){ov.classList.add("on");Modes.open("factory",ov);Sound.sfx.pop();}
     if(S&&view==="board")board();
-    else play(Math.min(LEVELS.length,done()+1));
+    else if(!done()&&!S)play(1);
+    else map();
     return true;
   }
   function close(){
@@ -11983,16 +12034,30 @@ const Factory=(()=>{
     if(!S||!w)return;const code=E.encode(w);
     layouts[S.n]=code;
   }
-  // the sheet: a title (and stars beside it), ✕ to close
+  // the sheet: a title (and stars beside it), 🗺️ back to the levels, ✕ to close
   function shell(title,sub){
     // moving between the levels and a board inside the Factory: no pop-in again
     const inside=isOpen()&&!!ov.querySelector(".sheet");
     ov.innerHTML=`<div class="sheet fcsheet${inside?" noanim":""}"><div class="bhead"><h2 id="fcTitle">${title}</h2>${sub||""}
-      <button class="bx" id="fcX" aria-label="Close">✕</button></div><div id="fcBody"></div></div>`;
+      <button class="bx" id="fcMapBtn" aria-label="All the levels"${view==="map"?' style="display:none"':""}>🗺️</button><button class="bx" id="fcX" aria-label="Close">✕</button></div><div id="fcBody"></div></div>`;
     $("#fcX").onclick=close;
+    $("#fcMapBtn").onclick=()=>{Sound.sfx.soft();if(S){S.running=false;keep();}map();};
   }
 
   /* ---------- the levels ---------- */
+  function map(){
+    stop();view="map";root();
+    const d=done();
+    shell("🏭 Factory",`<b class="fcstars" id="fcAll">⭐ ${LEVELS.reduce((s,L)=>s+starsOf(L.n),0)} of ${LEVELS.length*3}</b>`);
+    const btn=L=>{const st=starsOf(L.n),open=L.n<=d+1,next=L.n===d+1;
+      return`<button class="fcl${st?" done":""}${next?" next":""}${open?"":" locked"}" data-n="${L.n}" aria-label="Level ${L.n}: ${esc(L.name)}${open?"":" (locked)"}">
+        <b>${open?L.ic:"🔒"} ${L.n}</b><span>${esc(L.name)}</span><i>${"★".repeat(st)}${"☆".repeat(3-st)}</i></button>`;};
+    $("#fcBody").innerHTML=`<div class="fcmap"><p class="sub">Fill the truck's order! New machines come as you go.</p>
+      <div class="fclv">${LEVELS.map(btn).join("")}</div></div>`;
+    [].slice.call(ov.querySelectorAll(".fcl")).forEach(b=>{b.onclick=()=>{const n=+b.dataset.n;
+      if(n>done()+1){Sound.sfx.soft();b.classList.remove("wig");void b.offsetWidth;b.classList.add("wig");Sound.speak("Finish the level before this one first!",.95);return;}
+      play(n);};});
+  }
   // a level: a fresh board, with the layout he left on it this visit
   function play(n){
     n=Math.floor(+n);const L=LEVELS[n-1];
@@ -12013,12 +12078,13 @@ const Factory=(()=>{
     view="board";root();
     const L=S.level,st=starsOf(L.n);
     shell(`🏭 ${L.n} · ${esc(L.name)}`,`<b class="fcstars" id="fcStars" aria-label="${st} stars">${"★".repeat(st)}${"☆".repeat(3-st)}</b>`);
+    const teach=L&&L.teach?TOOL(L.teach):null;
     $("#fcBody").innerHTML=`<div class="fcwrap"><div class="fcmain">
         <div class="fcboard" id="fcBox"><canvas id="fcCv" aria-label="The factory board"></canvas><div class="fcdone" id="fcDone"></div></div>
         <div class="fcpal" id="fcPal"></div></div>
       <div class="fcside">
         <div class="fccard"><p class="fcsend" id="fcSend"></p><div class="fcrow2"><button class="jhear" id="fcHear" aria-label="Hear it again">🔊</button>
-          <span class="fcpay" id="fcPay"></span></div></div>
+          <span class="fcpay" id="fcPay"></span></div>${teach?`<p class="fcteach">✨ New: the ${esc(teach.name.toLowerCase())}!</p>`:""}</div>
         <div class="fctally" id="fcTally"></div>
         <p class="fctip" id="fcTip" aria-live="polite"></p>
         <div class="fcctl"><button class="btn primary" id="fcRun">▶ Run</button><button class="btn soft" id="fcClear" aria-label="Start again">↺</button></div>
@@ -12037,7 +12103,8 @@ const Factory=(()=>{
   const blur=e=>{try{e.currentTarget.blur();}catch(x){}};
   function palette(){
     const p=$("#fcPal");if(!p)return;
-    p.innerHTML=tools().map((t,i)=>`<button class="fctool${S.tool===t.id?" on":""}" data-tool="${t.id}" aria-label="${t.name} (${i+1})">${
+    const L=S.level,fresh=L&&L.teach;
+    p.innerHTML=tools().map((t,i)=>`<button class="fctool${S.tool===t.id?" on":""}${fresh===t.id?" new":""}" data-tool="${t.id}" aria-label="${t.name} (${i+1})">${
       t.id==="erase"?'<span class="fcic">🗑️</span>':'<canvas width="76" height="76"></canvas>'}<span>${t.name}</span></button>`).join("");
     [].slice.call(p.querySelectorAll(".fctool")).forEach(b=>{
       const c=b.querySelector("canvas");if(c)icon(c,b.dataset.tool);
@@ -12167,18 +12234,37 @@ const Factory=(()=>{
   }
   function showDone(){
     const d=$("#fcDone");if(!d)return;d.classList.add("on");
+    if(S.result&&S.result.asked)return result();
+    S.q=null;
+    d.innerHTML=`<div class="fcfin"><h2>🎉 Order done!</h2><div class="jq fcq" id="fcQ"></div></div>`;
+    const mine=S;setTimeout(()=>{if(S===mine&&S.done&&isOpen()&&view==="board")ask();},1200);
+  }
+  // the sum on the Jobs number pad: a miss takes nothing, the tally board helps, the same question stays
+  function ask(){
+    const host=$("#fcQ");if(!host||S.q)return;
+    const o=S.order,q=sumQ(o.parts,o.math,o.sum);S.q=q;S.miss=0;
+    try{Jobs.KITS.pad(host,q,ok=>answered(q,ok),{onMiss:n=>{S.miss=n;const t=$("#fcTally");
+        if(t){t.classList.remove("glow");void t.offsetWidth;t.classList.add("glow");}
+        say("💡 The tally board can help!");Sound.speak("The tally board can help!",.95);}});}
+    catch(e){console.warn("Factory: the number pad could not show the sum:",e&&e.message);answered(q,false);}
+  }
+  function answered(q,ok){
+    if(!S||S.q!==q)return;S.q=null;
+    try{Tracks.record(q.track,q.level,ok);}catch(e){}
+    save();S.result.asked=true;say("");
     result();
   }
   function result(){
     const d=$("#fcDone"),r=S.result;if(!d||!r)return;
     let h="",line="",pay="";
     {
-      const L=S.level,st=r.stars;
+      const L=S.level,st=r.stars,teach=r.first&&L.teach?L.teach:"";
       pay=r.gems?`+${r.gems} 💎`:"";
       const star=(on,t)=>`<li class="${on?"on":""}">${on?"⭐":"☆"} ${t}</li>`;
       h=`<h2>🎉 Level ${L.n} done!</h2><div class="fcbig" aria-label="${st} stars">${"★".repeat(st)}${"☆".repeat(3-st)}</div>
         <ul class="fcwhy">${star(true,"The order")}${star(r.cool,"No red belts")}${star(r.cool&&r.small,`${L.budget} pieces or fewer`)}</ul>
         ${pay?`<p class="mpaid">${pay}</p>`:`<p class="sub">You already have these stars! Great building.</p>`}
+        ${teach?`<p class="fcteach">🔓 ${esc(UNLOCK[teach])}</p>`:""}
         <div class="mrow">${L.n<LEVELS.length?'<button class="btn primary big" id="fcNextL">Next level ▶</button>':""}
           <button class="btn soft" id="fcAgain">🔁 Build again</button></div>`;
     }
@@ -12188,7 +12274,7 @@ const Factory=(()=>{
     on("fcAgain",again);on("fcNextL",()=>play(S.n+1));
     const first=d.querySelector(".btn.primary");if(first)try{first.focus();}catch(e){}
     if(!r.said){r.said=true;
-      if(r.gems)Sound.speak(r.stars===3?"Three stars! Great building!":"Great building!",.95);
+      if(r.gems){const t=r.first&&S.level.teach?UNLOCK[S.level.teach]:r.stars===3?"Three stars! Great building!":"Great building!";Sound.speak(t,.95);}
       else Sound.speak("You already have these stars! Great building.",.95);}
   }
   // play the level again: back to the start, his pieces stay
@@ -12320,6 +12406,8 @@ const Factory=(()=>{
   function key(e){
     if(!isOpen()||view!=="board"||!S)return false;
     const k=e.key;
+    if(S.q){const host=$("#fcQ"),hit=x=>{const b=host&&host.querySelector('.jkey[data-key="'+x+'"]');if(b){b.click();return true;}return false;};
+      if(/^[0-9]$/.test(k))return hit(k);if(k==="Backspace")return hit("del");if(k==="Enter")return hit("ok");return false;}
     if(S.done)return false;
     const A={ArrowUp:0,ArrowRight:1,ArrowDown:2,ArrowLeft:3};
     if(Object.prototype.hasOwnProperty.call(A,k)){const d=A[k],j=E.nb(w,S.cur,d);S.kb=true;S.kbDir=d;if(j>=0)S.cur=j;draw();return true;}
@@ -12466,11 +12554,11 @@ const Factory=(()=>{
     return{done:ok(),t:x.t,sec:+(x.t/E.HZ).toFixed(2),hot:x.hot,pieces,got,stars:ok()?1+(x.hot<E.RED?1:0)+(x.hot<E.RED&&pieces<=L.budget?1:0):0};
   }
 
-  return{open,close,play,LEVELS,TOOLS,TIPS,engine:E,sim,orderSay,
+  return{open,close,play,map,LEVELS,TOOLS,TIPS,engine:E,sim,sumQ,orderSay,
     get done(){return done();},stars:starsOf,isOpen,
     // for the tests
     _w:()=>w,_S:()=>S&&{n:S.n,tool:S.tool,running:S.running,done:S.done,tip:S.tip.shown,cur:S.cur,kb:S.kb,
-      order:S.order&&{parts:S.order.parts},result:S.result,
+      order:S.order&&{parts:S.order.parts},result:S.result,q:S.q&&{ans:S.q.ans,level:S.q.level,text:S.q.text},miss:S.miss,
       pieces:w?E.pieces(w):0,hot:w?w.hot:0,t:w?w.t:0,view},
     _load:code=>{if(!S||!w)return 0;const n=E.decode(w,code);changed();return n;},
     _run:ticks=>{if(!S||!w)return null;if(!S.done)S.running=true;for(let k=0;k<ticks&&!S.done;k++)step();runBtn();draw();return{done:S.done,t:w.t,hot:w.hot};},
