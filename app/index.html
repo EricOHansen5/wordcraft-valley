@@ -1272,6 +1272,14 @@ body.exploring .slot-empty{display:none}
 @media (max-width:700px){.tksheet{padding:14px}.tksheet .bhead{flex-wrap:wrap}.tksheet .bhead h2{font-size:21px}
   .tkwork{flex-direction:column;align-items:center;gap:4px}.tkwho{flex-basis:auto}
   .tkcrit{width:84px;height:84px;margin-top:12px}.tkq{min-height:0}}
+/* ---- FEAST TABLE (Thanksgiving): the 🦃 button, the look's falling leaves and the table panel ---- */
+.lfall[data-lk="thanks:leaves"]{animation-name:leafdrift}
+.lfall[data-lk="thanks:leaves"]:nth-child(2n){filter:hue-rotate(36deg) saturate(1.3) brightness(1.08)}
+.lfall[data-lk="thanks:leaves"]::before,.lfall[data-lk="thanks:leaves"]::after{position:absolute;pointer-events:none}
+.lfall[data-lk="thanks:leaves"]::before{content:"🍂";left:2.3em;top:-3.3em;font-size:.8em}
+.lfall[data-lk="thanks:leaves"]::after{content:"🍁";left:-2.1em;top:-6.2em;font-size:.9em;filter:hue-rotate(36deg) saturate(1.3)}
+@keyframes leafdrift{0%{transform:translate(0,-20px) rotate(0)}25%{transform:translate(36px,28vh) rotate(90deg)}50%{transform:translate(-8px,58vh) rotate(180deg)}
+  75%{transform:translate(38px,88vh) rotate(270deg)}100%{transform:translate(12px,120vh) rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -10748,6 +10756,14 @@ Object.assign(ART,{
     <path d="M46 25.5 L54 25.5 L54 32 L46 32Z" fill="#FFC53D" stroke-width="1.6"/>
     <path d="M52 14 L54 11 M58 20 L60 18" fill="none" stroke="#FFE9A8" stroke-width="2"/></g>`;}
 });
+// the pilgrim hat (the Thanksgiving look, FEAST TABLE): a tall hat with a gold buckle and a leaf tucked in the band
+Object.assign(ART,{hat_pilgrim(){return `<g data-hat="pilgrim"><path d="M12 33 Q50 44 88 33 Q82 26 50 26 Q18 26 12 33Z" fill="${grad("#3A302C","v",.3,.2)}"/>
+    <path d="M32 30 L35 5 Q50 2 65 5 L68 30 Q50 34 32 30Z" fill="${grad("#4A3F3A","v",.32,.2)}"/>
+    <path d="M33.2 21 Q50 24 66.8 21 L68 30 Q50 34 32 30Z" fill="#2A2220"/>
+    <path d="M43 20.5 L57 20.5 L57 31 L43 31Z" fill="${grad("#FFD24D","v",.3,.2)}" stroke-width="1.8"/>
+    <path d="M47 24 L53 24 L53 27.5 L47 27.5Z" fill="#2A2220" stroke-width="1.2"/>
+    <path d="M39.5 9 L38.5 18" fill="none" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="2.4"/>
+    <path d="M62 24 Q71 15 76 24 Q69 29 62 24Z" fill="#E0782E" stroke-width="1.6"/></g>`;}});
 // the hat the buddy shows: a worn look's hat once he has earned it, otherwise his wardrobe hat.
 // A function declaration, so the drawings that run before this section is reached can call it.
 function buddyHat(){try{return Looks.hat();}catch(e){return state.hat;}}
@@ -12045,6 +12061,90 @@ const Trick=(()=>{
     _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";hud();try{Adv.redraw();}catch(e){}},
     _q:()=>cur&&{id:cur.id,kind:cur.kind,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece};
 })();
+
+/* ================================================================
+   FEAST TABLE — Thanksgiving, 15 November to Thanksgiving Day (v10.3)
+   The Thanksgiving look (Looks.add below) is earned here, one piece per
+   full table, in this order: corn-and-leaf garlands on a bit of fence,
+   a pie cooling on a stump, red-and-gold leaves falling (thicker than
+   the season's), and a pilgrim hat for the buddy (hat_pilgrim, drawn
+   with the witch hat). While it is worn the valley turns amber.
+   The window runs from 15 November to Thanksgiving Day, the fourth
+   Thursday of November (thanksgivingDay(year)), both days counted.
+   The mini-game exists only in that window: Looks.inWindow("thanks"),
+   or the same dates here. In the window a 🦃 button sits in the tool
+   bar (and stays while a table is part-way through), with the dishes
+   still to go on its badge. It opens a long empty table with ten
+   plates. Each round is a Picture it (Read.pic) with a food word at his
+   level: the foods below that are in his word list at or under his
+   level and pass the decode check; when there are fewer than six, table
+   things (pot, pan, cup...) and then other words at his level fill in.
+   Nothing is said before he reads: the word is said once he finds it.
+     right  the dish goes on the next plate (its picture) and 2 🪙
+     miss   "Not that one, try again!": the same question stays, after
+            the second miss the right picture glows, and it still pays
+   Nothing is ever taken away. Ten dishes fill the table: every animal
+   he has comes to sit at it, the buddy says "Thank you for the feast!"
+   with confetti, and one look piece (Looks.grant("thanks"), which says
+   and shows it; the panel only repeats it). One full table a day; a
+   second visit that day shows the full table and says to come back
+   tomorrow. Every dish counts toward the daily reading goal.
+   Save: state.feast = {day, dishes (the words put on the table that
+   day), tables (full tables in all)}. Nothing is written until a dish
+   goes on the table, so outside the window the save is untouched.
+   ================================================================ */
+// Thanksgiving Day in year y, the fourth Thursday of November: its date (the 22nd to the 28th)
+function thanksgivingDay(y){const wd=new Date(y,10,1).getDay();return 22+(4-wd+7)%7;}
+// the look's window: 15 November to Thanksgiving Day, both counted. A function, since the last day moves
+// each year; its `from` is only for the Closet, which names the month on a look not earned yet
+const THANKS_WINDOW=d=>d.getMonth()===10&&d.getDate()>=15&&d.getDate()<=thanksgivingDay(d.getFullYear());
+THANKS_WINDOW.from=[11,15];
+/* ---- the look's props (the same 100-box and ink as the seasonal builds) ---- */
+Object.assign(ART,{
+  // a garland of autumn leaves on a bit of fence, with a corn cob tied on each post
+  look_garland(r){
+    const at=t=>{const a=(1-t)*(1-t),b=2*(1-t)*t,c=t*t;return[a*17+b*50+c*83,a*50+b*76+c*50];},
+      cols=["#D9482B","#F2A33A","#E8C13D","#B8561F","#E57A2E"];
+    let leaves="";
+    for(let i=0;i<9;i++){const p=at(.08+i*.105),rot=Math.round((i%2?35:-35)+(r()-.5)*50);
+      leaves+=`<path transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)}) rotate(${rot})" d="M0 -8 Q7 -2 0 8 Q-7 -2 0 -8Z M0 -6 L0 6" fill="${cols[i%5]}" stroke-width="1.5"/>`;}
+    const cob=(x,rot)=>`<g transform="translate(${x} 50) rotate(${rot})"><path d="M-2 0 Q-13 10 -5 24 Q-5 10 -2 0Z" fill="#A3B85C" stroke-width="1.5"/>
+      <path d="M2 0 Q13 10 5 24 Q5 10 2 0Z" fill="#8FA84E" stroke-width="1.5"/><ellipse cx="0" cy="12" rx="5" ry="11" fill="${dome("#F2C43D",40,30)}" stroke-width="1.7"/>
+      <path d="M-3.5 7 L3.5 7 M-4.2 12 L4.2 12 M-3.5 17 L3.5 17 M0 2 L0 22" fill="none" stroke="#B8862A" stroke-width="1" stroke-opacity=".75"/>
+      <path d="M0 0 L-6 -4 L-6 3Z M0 0 L6 -4 L6 3Z" fill="#C8323C" stroke-width="1.4"/></g>`;
+    return S(`${OCC}<path d="M14 92 L14 47 Q18.5 42 23 47 L23 92Z" fill="${grad("#C08A55","h")}"/>
+      <path d="M77 92 L77 47 Q81.5 42 86 47 L86 92Z" fill="${grad("#C08A55","h")}"/>
+      <path d="M6 63 L94 60 L94 68 L6 71Z" fill="${grad("#B07A48","v",.22,.24)}"/>
+      <path d="M6 80 L94 77 L94 85 L6 88Z" fill="${grad("#A97244","v",.22,.24)}"/>
+      <path d="M17 50 Q50 76 83 50" fill="none" stroke="#6E4A2A" stroke-width="2.2"/>
+      ${leaves}${cob(18.5,-6)}${cob(81.5,6)}
+      ${HI(40,64,10,1.6,.28,0)}`);
+  },
+  // a pie with a lattice top cooling on a tree stump, steam curling up
+  look_pie(r){
+    const w=+((r()-.5)*3).toFixed(1);
+    return S(`${OCC}<path d="M24 92 L27 62 L73 62 L76 92 Q50 99 24 92Z" fill="${grad("#9A6A3E","h")}"/>
+      <path d="M31 68 L30 90 M41 66 L40 94 M59 66 L60 94 M69 68 L70 90" fill="none" stroke-opacity=".3" stroke-width="1.6"/>
+      <ellipse cx="50" cy="62" rx="23" ry="7.5" fill="#E8C690"/>
+      <ellipse cx="50" cy="62" rx="13" ry="3.8" fill="none" stroke="#B88A55" stroke-width="1.2" stroke-opacity=".8"/>
+      <path d="M29 51 L32 59 Q50 64.5 68 59 L71 51Z" fill="${grad("#B9C2C8","v",.3,.2)}"/>
+      <ellipse cx="50" cy="51" rx="21" ry="7" fill="${dome("#E9A94E",40,30)}"/>
+      <path d="M36 48.5 L64 48.5 M31.5 52 L68.5 52 M37 55 L63 55 M41 45.5 L39 56.5 M50 44.3 L50 57.7 M59 45.5 L61 56.5" fill="none" stroke="#C57A2A" stroke-width="2.6" stroke-opacity=".9"/>
+      <ellipse cx="50" cy="51" rx="19.5" ry="6.2" fill="none" stroke="#F6CF86" stroke-width="2.6" stroke-dasharray="2.4 2.6" stroke-opacity="1"/>
+      <path d="M${43+w} 40 Q${39+w} 34 ${43+w} 29 Q${47+w} 24 ${43+w} 18 M${56-w} 39 Q${52-w} 33 ${56-w} 28 Q${60-w} 23 ${56-w} 17" fill="none" stroke="#FFFFFF" stroke-opacity=".8" stroke-width="2.6"/>
+      ${HI(41,48,5,1.8,.4,0)}`);
+  }
+});
+Looks.add({id:"thanks",name:"Thanksgiving",ic:"🦃",window:THANKS_WINDOW,
+  tint:"linear-gradient(180deg,rgba(255,196,92,.16),rgba(236,146,52,.22) 55%,rgba(196,98,36,.18))",
+  particles:"leaves",drift:"🍁",
+  props:[{id:"garland",at:{c:10.6,r:6.6},size:1.25},{id:"pie",at:{c:14.5,r:7},size:.85}],
+  hat:"pilgrim",
+  greet:"Happy Thanksgiving! The valley says thank you.",
+  pieces:["garland","pie","leaves","hat"],
+  names:{garland:"corn garland",pie:"pie",leaves:"falling leaves",hat:"pilgrim hat"},
+  css:{hud:"linear-gradient(180deg,#FFE6B8,rgba(255,230,184,0))",trim:"repeating-linear-gradient(90deg,#C8641E 0 16px,#F2C14E 16px 32px,#8C4A1E 32px 48px)",
+    edge:"#8C4A1E",crate:"linear-gradient(160deg,#FFEDC8,#F4B860)"}});
 
 /* ================================================================
    7m. LISTEN-AND-PICK  ("Hear it")

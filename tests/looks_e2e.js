@@ -44,7 +44,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(await waitFor(p,()=>Modes.top()==="closet"),"a tap on 🎨 opens the Closet (mode closet)");
   ok(await E(()=>Modes.list().closet.name==="Closet"&&Modes.list().closet.reading===false),"the closet mode: \"Closet\", not reading");
   let c=await cards();
-  ok(c.length===2&&c[0].look===""&&c[0].worn&&c[1].look==="halloween"&&c[1].locked&&!c[1].worn,"the Closet lists Valley (worn) and Halloween (greyed) "+J(c));
+  ok(c.length===1+await E(()=>LOOKS.length)&&c[0].look===""&&c[0].worn&&c[1].look==="halloween"&&c[1].locked&&!c[1].worn,"the Closet lists Valley (worn), Halloween (greyed) and every other look "+J(c));
   ok(c[1].text==="Earn it at Halloween 🎃"&&await E(()=>document.querySelector('#clGrid [data-look="halloween"] .clwhen').textContent)==="in October",
     "a look with nothing earned: \"Earn it at Halloween 🎃\", in October: "+c[1].text);
   await tapCard("halloween");
