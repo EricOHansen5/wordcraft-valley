@@ -1424,6 +1424,18 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .bpage .bctl,.bpage .bafter{padding:0 86px}
 @media (max-width:700px){.jobsheet .bhead,.tksheet .bhead,.fssheet .bhead{top:-14px}}
 @media (max-width:600px){.bpage .bctl,.bpage .bafter{padding:0 78px 0 0}}
+/* Write it: a bigger pad to trace on, as big as the screen's height allows */
+.wrpad{width:min(420px,70vw,calc(92vh - 300px));min-width:240px}
+/* counting at the Job board: bigger things to count on a tablet */
+@media (min-width:701px){.jthings{grid-template-columns:repeat(5,48px)}.jthings img{width:48px;height:48px}}
+/* a phone: the buddy's name and bar take the first row of the HUD, the counters and buttons the second */
+@media (max-width:600px){
+  #hud{flex-wrap:wrap;row-gap:6px}
+  #hudMid{flex:1 1 calc(100% - 80px)}
+  #goalRing{margin-left:auto}
+  /* the tool bar takes three rows there: the toast and the tour sit above it */
+  #toast,#coach{bottom:calc(env(safe-area-inset-bottom) + 236px)}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
