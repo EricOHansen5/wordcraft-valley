@@ -18,11 +18,13 @@ const {launch,reload,waitFor,check}=require("./lib");
 
   // 1. the table
   const IDS=["valley","read","book","pic","sign","note","story","wild","care","write","maker","mine","adventure","race","dex","craft","album","quests","reward","evo","scene","recap","photo","gate","parent","report","store","other","job","trick","closet"];
+  IDS.push("lights");   // LIGHT THE TREE
   const L=await E(()=>Modes.list());
   const missing=IDS.filter(id=>!L[id]||typeof L[id].reading!=="boolean"||!L[id].name);
   ok(!missing.length&&Object.keys(L).length===IDS.length,`Modes.list() has all ${IDS.length} modes, each with a name and a reading flag`+(missing.length?" — missing: "+missing:""));
   ok(L.read.reading&&L.book.reading&&L.write.reading&&!L.mine.reading&&!L.adventure.reading&&!L.valley.reading,"reading flags: crates, books and writing count as reading; the Mine, Adventure and the valley don't");
   ok(L.trick&&L.trick.reading===true,"Trick-or-Read (a knock on a Halloween door) counts as reading");
+  ok(L.lights&&L.lights.reading===true,"Light the tree (the Winter tree and its advent doors) counts as reading");
   ok(await top()==="valley","nothing open: top() is valley");
   // a raw class toggle (like the tests' own tidy-up) must not wedge the stack
   await E(()=>show("ovQuests"));ok(await top()==="quests","show() opens a mode");
