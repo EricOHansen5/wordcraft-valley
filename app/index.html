@@ -1184,12 +1184,14 @@ body.exploring .slot-empty{display:none}
 .jlawn .me.start::before{content:none}
 .jlawn .next{box-shadow:0 0 0 4px rgba(255,229,138,.95)}
 .jlawn.bump{animation:wobble .45s}
-.jarrows,.jpad{display:grid;grid-template-columns:repeat(3,76px);grid-auto-rows:62px;gap:8px;justify-content:center;margin-top:8px}
+.jrow{display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap}
+.jarrows{display:grid;grid-template-columns:repeat(3,72px);grid-auto-rows:64px;gap:8px;justify-content:center;margin-top:6px}
+.jpad{display:grid;grid-template-columns:repeat(6,64px);grid-auto-rows:60px;gap:8px;justify-content:center;margin-top:8px}
 .jarrow,.jkey{border:3px solid var(--ink);border-radius:18px;background:#fff;font-size:30px;font-weight:900;font-family:inherit;box-shadow:0 4px 0 rgba(0,0,0,.2);color:var(--ink)}
 .jarrow:active,.jkey:active{transform:translateY(3px);box-shadow:none}
 .jarrow.hint,.jkey.hint{box-shadow:0 0 0 5px rgba(127,176,105,.9);background:#EAF7E2}
 .jkey.ok{background:linear-gradient(160deg,#79C96F,#46974A);color:#fff}.jkey.del{background:var(--paper-deep)}
-.jshow{display:inline-flex;align-items:center;justify-content:center;min-width:130px;height:72px;padding:0 14px;border:4px solid var(--ink);border-radius:18px;background:#fff;font-size:46px;font-weight:900}
+.jshow{display:inline-flex;align-items:center;justify-content:center;min-width:120px;height:62px;padding:0 14px;border:4px solid var(--ink);border-radius:18px;background:#fff;font-size:42px;font-weight:900}
 .jshow .jghost{color:rgba(62,122,66,.45)}
 .jshow.right{background:#DDF3D4;border-color:var(--meadow-deep)}.jshow.wrong{animation:wobble .5s;background:#FFE1D8}
 .jmsg{min-height:26px;font-weight:800;color:#B0552F;margin:8px 0 0}
@@ -1199,7 +1201,8 @@ body.exploring .slot-empty{display:none}
 .jbd span{font-size:34px;background:#C98F4E;border:3px solid var(--ink);border-radius:10px;padding:2px 8px}
 .jbd b{font-size:12px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 5px;margin-top:-3px}
 @media (max-width:700px){.jwork{flex-direction:column;align-items:center}.jcust{flex-basis:auto}.jface{width:80px;height:80px}
-  .jthings{grid-template-columns:repeat(5,32px)}.jthings img{width:32px;height:32px}.jlawn i,.jcell{width:38px;height:38px}.jtext{font-size:28px}}
+  .jthings{grid-template-columns:repeat(5,32px)}.jthings img{width:32px;height:32px}.jlawn i,.jcell{width:38px;height:38px}.jtext{font-size:28px}
+  .jpad{grid-template-columns:repeat(6,46px);grid-auto-rows:54px;gap:6px}.jkey{font-size:24px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -9831,7 +9834,8 @@ const Jobs=(()=>{
       if(miss>=2)right.classList.add("hint");
       if(opt.onMiss)opt.onMiss(miss);});
   };
-  // pad: a big number pad, 0–9, rub out and ✓ (the keyboard's digits, Backspace and Enter work too)
+  // pad: a big number pad in two rows, 1–5 and 6–0 like a number line, with rub out and ✓
+  // (the keyboard's digits, Backspace and Enter work too)
   KITS.pad=function(host,q,done,opt){
     done=Read.once(done);opt=opt||{};const ans=String(q.ans);
     if(!/^\d+$/.test(ans))throw new Error("a pad answer is a whole number");
@@ -9839,7 +9843,7 @@ const Jobs=(()=>{
     host.dataset.kit="pad";host.dataset.ans=ans;
     const key=k=>`<button class="jkey" data-key="${k}">${k}</button>`;
     host.innerHTML=head(q)+`<div class="jshow"><span class="jtyped"></span><span class="jghost"></span></div>
-      <div class="jpad">${[1,2,3,4,5,6,7,8,9].map(key).join("")}<button class="jkey del" data-key="del" aria-label="Rub out">⌫</button>${key(0)}<button class="jkey ok" data-key="ok" aria-label="Done">✓</button></div>`;
+      <div class="jpad">${[1,2,3,4,5].map(key).join("")}<button class="jkey del" data-key="del" aria-label="Rub out">⌫</button>${[6,7,8,9,0].map(key).join("")}<button class="jkey ok" data-key="ok" aria-label="Done">✓</button></div>`;
     const show=host.querySelector(".jshow"),tEl=host.querySelector(".jtyped"),gEl=host.querySelector(".jghost"),keys=[...host.querySelectorAll(".jkey")];
     // after a second miss the answer shows faintly and the next key to press glows
     function put(){tEl.textContent=typed;gEl.textContent=hint&&!typed?ans:"";
@@ -9870,8 +9874,8 @@ const Jobs=(()=>{
     host.dataset.kit="path";host.dataset.ans=moves;
     let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="grass"></button>`;
     const arrow=d=>`<button class="jarrow" data-dir="${d}" aria-label="${DIR_NAME[d]}">${ARROW[d]}</button>`;
-    host.innerHTML=head(q)+`<div class="jlawn play" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
-      <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div>`;
+    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
+      <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
     const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
     function draw(){
       const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
@@ -10150,6 +10154,53 @@ const Jobs=(()=>{
       {id:"count",lv:2,name:"counting",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,true);return then(o,o&&Tracks.gen("math","count10",seed+":n",{thing:o.w}));}},
       {id:"add",lv:3,name:"adding",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,true);return then(o,o&&Tracks.gen("math","add10",seed+":n",{thing:o.w,max:5}));}},
       {id:"coins",lv:4,name:"coins",gen:(seed,L)=>{const o=order(rnd(seed),L.tier,false);return then(o,o&&Tracks.gen("math","coins20",seed+":n"));}}
+    ]});
+})();
+
+/* ---- 🌱 Lawn mower, opens at reading level 4 ----
+   Every task starts with a note to read that says where to mow: "Go 3 →, then 2 up." He follows
+   it on a 6 × 5 lawn, one square per tap. "up" and "down" are words (level 1 and 2); "right" needs
+   level 7 (igh), so left and right are arrows until both words decode at his level, then words.
+   Each job level adds a step after the mowing: count the squares mowed, add the two runs, then
+   rows × columns as an array (a row of 4 and another row of 4: 4 + 4). */
+(()=>{
+  const {rnd,int,pick}=Seeded,W=6,H=5,MOVE={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]};
+  // runs that turn at every corner, so the path never crosses itself and every step mows a new square
+  function path(r,legs,maxLen){
+    for(let k=0;k<200;k++){
+      const start={c:int(r,0,W-1),r:int(r,0,H-1)},out=[];let c=start.c,y=start.r,flat=r()<.5;
+      for(let i=0;i<legs;i++){const room={L:c,R:W-1-c,U:y,D:H-1-y},ds=(flat?["L","R"]:["U","D"]).filter(d=>room[d]>0);
+        if(!ds.length)break;const d=pick(r,ds),n=int(r,1,Math.min(maxLen,room[d]));
+        out.push({d,n});c+=MOVE[d][0]*n;y+=MOVE[d][1]*n;flat=!flat;}
+      if(out.length===legs)return{start,legs:out};
+    }
+    return{start:{c:0,r:H-1},legs:[{d:"R",n:2}]};
+  }
+  function note(p,tier){
+    const words=Decode.tier("left")<=tier&&Decode.tier("right")<=tier;
+    const way=d=>d==="U"?"up":d==="D"?"down":words?(d==="L"?"left":"right"):(d==="L"?"←":"→");
+    return p.legs.map((l,i)=>(i?"then ":"Go ")+l.n+" "+way(l.d)).join(", ")+".";
+  }
+  // the reading step, and what it mows (each square marked with the run that mowed it)
+  function mow(r,tier,legs,maxLen){
+    const p=path(r,legs,maxLen),cut={};let c=p.start.c,y=p.start.r;
+    p.legs.forEach((l,i)=>{for(let k=0;k<l.n;k++){c+=MOVE[l.d][0];y+=MOVE[l.d][1];cut[c+","+y]=i+1;}});
+    return{p,cut,step:{kit:"path",track:"reading",read:true,say:["Read the note. Mow the grass!"],text:note(p,tier),
+      grid:{w:W,h:H},start:p.start,ans:p.legs.map(l=>l.d.repeat(l.n)).join("")}};
+  }
+  const lawn=m=>({kind:"lawn",w:W,h:H,cut:m.cut,start:m.p.start});
+  Jobs.register({
+    id:"mow",name:"Lawn mower",icon:"🌱",uniform:{id:"sunhat",name:"sun hat",ic:"👒"},unlock:{tier:4},
+    pay:{perTask:4,streakTip:6},hello:"Time to mow! Read each note.",
+    tasks:[
+      {id:"mow",lv:1,name:"reading notes",gen:(seed,L)=>{const r=rnd(seed);return[mow(r,L.tier,int(r,1,2),4).step];}},
+      {id:"count",lv:2,name:"counting squares",gen:(seed,L)=>{const m=mow(rnd(seed),L.tier,2,4),n=m.step.ans.length;
+        return[m.step,{kit:"pad",track:"math",level:"count10",say:["How many squares did you mow?"],art:lawn(m),ans:n,math:{op:"count",n}}];}},
+      {id:"rows",lv:3,name:"adding rows",gen:(seed,L)=>{const m=mow(rnd(seed),L.tier,2,4),a=m.p.legs[0].n,b=m.p.legs[1].n;
+        return[m.step,{kit:"pad",track:"math",level:"add10",say:[a,"and",b+".","How many in all?"],text:`${a} + ${b} = ?`,art:lawn(m),ans:a+b,math:{op:"+",a,b}}];}},
+      {id:"array",lv:4,name:"rows and columns",gen:(seed,L)=>{const r=rnd(seed),m=mow(r,L.tier,int(r,1,2),4),rows=int(r,2,4),cols=int(r,2,5);
+        return[m.step,{kit:"pad",track:"math",level:"array",say:[rows,"rows of",cols+".","How many squares?"],
+          text:Array.from({length:rows},()=>cols).join(" + ")+" = ?",art:{kind:"array",rows,cols},ans:rows*cols,math:{op:"×",a:rows,b:cols}}];}}
     ]});
 })();
 
