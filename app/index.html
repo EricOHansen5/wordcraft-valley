@@ -9314,8 +9314,10 @@ const Quest=questArc({key:"quest",title:"The Letter Thief",
    It opens the day after The Letter Thief ends, at reading level 3, and each
    chapter waits for its own level (lvl), because every line he is shown is
    checked with Decode.check at that level. Each chapter pays gems and one real
-   prize, once (q.got holds the chapters paid): a creature that hatches, or a
-   building plan. */
+   prize, once (q.got holds the chapters paid): a creature that hatches, a
+   building plan, or a pile of gems (the last chapter gives a creature and gems).
+   After chapter 6 the arc ends on END: Puff was only sleepy and lonely, and a
+   baby dragon (a small Puff) stays in the valley. */
 const Quest2=questArc({key:"quest2",title:"The Sleepy Volcano",total:6,gems:16,
   art:()=>drawThing("dragon",2),
   hello:"❗ Puff the dragon is up to something! Find the ❗",find:"Find the eggs! 🥚",
@@ -9326,14 +9328,16 @@ const Quest2=questArc({key:"quest2",title:"The Sleepy Volcano",total:6,gems:16,
   grant:(q,c,i)=>{
     q.got=q.got||[];const first=q.got.indexOf(i)<0;if(first)q.got.push(i);
     const g=c.gift||{};
+    // gems as a gift (Puff's thank-you, the gem rain) are paid once too, and can come with a creature
+    const gems=first&&g.gems?g.gems:0,more=gems?(g.says||"Here are {n} gems!").replace("{n}",gems):"";state.gems+=gems;
     if(g.crit){const k=CRIT(g.crit),res=first?addItem(g.crit):null;
-      return{art:drawThing(g.crit,7),sub:first?arrival(k,res,`A baby ${k.name.toLowerCase().replace("t. rex","T. rex")} hatched! It lives in your valley now.`):""};}
+      return{art:drawThing(g.crit,7),sub:first?arrival(k,res,`A baby ${k.name.toLowerCase().replace("t. rex","T. rex")} hatched! It lives in your valley now.`)+(more?" "+more:""):""};}
     if(g.plan){const b=BUILDING(g.plan);let sub="";
       if(first&&!state.blueprints.includes(b.id)){state.blueprints.push(b.id);sub=`The ${b.name.toLowerCase()} plan is yours! Build it with 📐.`;
         try{document.getElementById("planBadge").classList.add("on");}catch(e){}}
       else if(first){state.gems+=10;sub=`You have the ${b.name.toLowerCase()} plan already, so here are 10 more gems!`;}
       return{art:drawThing(b.id,9),sub};}
-    return{art:c.icon,sub:""};},
+    return{art:c.icon,sub:more};},
   CH:[
     {title:"Puff and the Eggs",lvl:3,icon:"🥚",type:"letters",lock:"pic",gift:{crit:"lizard"},
      spot:"🥚",spotLabel:"🥚 Get the egg",lockTitle:"A lost egg!",got:"🥚",
@@ -9347,13 +9351,23 @@ const Quest2=questArc({key:"quest2",title:"The Sleepy Volcano",total:6,gems:16,
      place:"The wake-up spell",placeIc:"🌋",prompt:"A bit of the spell! Listen, then build it.",
      chest:"The hot hill wakes up! The big egg cracks…",chestIc:"🌋",open:"Look! ▶",
      story:["You got the big egg back, but it is cold. It will not hatch.","The egg must be hot to hatch. But the hot hill is not hot at all.",
-       "It is in a big, long nap, and Puff is sad as well.","The spell has three bits. Make them all, and the hill will wake up!"]}
-    // Chapters 4-6 go here. total:6 above already counts them, so the prize row shows ❔ for
-    // them and the last chapter here ends on "more is on the way" instead of the arc's end.
-    // Planned: the last eggs, Puff's own lost egg, and the volcano's gem rain, with Puff staying
-    // as a friend (a dragon to hatch). Each needs lvl, story lines that pass Decode.check at lvl,
-    // and a gift; when chapter 6 is in, give the arc an END.
-  ]});
+       "It is in a big, long nap, and Puff is sad as well.","The spell has three bits. Make them all, and the hill will wake up!"]},
+    {title:"The Last Eggs",lvl:5,icon:"🦅",type:"letters",lock:"pic",gift:{crit:"hawk"},
+     spot:"🥚",spotLabel:"🥚 Get the egg",lockTitle:"A hawk egg!",got:"🥚",
+     story:["The hot hill woke up with a big bang!","Puff still had three eggs up on the rocks.",
+       "The bang made them roll down the hill. Oh no!","They are hawk eggs. Get them back to the nest!"]},
+    {title:"The Egg of Puff",lvl:6,icon:"💎",type:"temple",rooms:4,hard:true,gift:{gems:15,says:"Puff says thank you with {n} gems!"},
+     place:"Puff's den",placeIc:"🐉",chest:"The egg of Puff, on a bed of 💎!",chestIc:"🥚",open:"Get it!",
+     story:["Puff is still sad. Why? Puff lost an egg as well!","It is at the far end of the den, and the den is dark.",
+       "The paths are hard. Stop at the hint and think.","Then pick the best path. Get the egg for Puff!"]},
+    {title:"The Big Burst",lvl:6,icon:"🐉",type:"spell",words:["star","corn","bird"],gift:{crit:"dragon",gems:20,says:"And the hot hill rained {n} gems!"},
+     place:"The big spell",placeIc:"🌋",prompt:"Part of the big spell! Tap 👂, then make it.",
+     chest:"BANG! The hot hill bursts! 💎 💎 💎",chestIc:"🌋",open:"Look! ▶",
+     story:["Puff has the egg back, but it is as cold as a stone.","The hot hill is up, but it is just a bit hot.",
+       "Make the last spell, and the hill will burst!","Then the egg will get hot, and it can hatch."]}],
+  END:["Crack! The little one is out. It is a small Puff!","Puff was not bad at all. Puff was just sad.",
+    "Puff and the hill had a long nap, and the egg got lost.","Puff had no one to hug, so Puff hid the eggs of the pets.",
+    "The hill is hot, and Puff has a pal: you!","Puff and the small one will be here with you!"]});
 
 /* ================================================================
    MY OWN BOOK — he writes it
