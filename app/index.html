@@ -1265,6 +1265,7 @@ body.exploring .slot-empty{display:none}
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
     <button class="toolbtn" id="jobsBtn" title="Jobs">💼<span class="badge" id="jobsBadge"></span></button>
     <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
+    <button class="toolbtn" id="trickBtn" title="Trick-or-Read" aria-label="Trick-or-Read" style="display:none">🎃<span class="badge" id="trickBadge"></span></button>
   </div>
 </div>
 
@@ -3926,6 +3927,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   owned:{},
   // TRADING POST: he has held gems and coins at the same time, so the Swap tab shows (and stays)
   exchangeSeen:false,
+  // TRICK-OR-READ (Halloween): the night's date, the doors closed that night, candy got in all, nights finished
+  trick:{day:"",doors:[],candy:0,nights:0},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -4784,6 +4787,7 @@ const Modes=(()=>{
     care:{name:"Animal care",reading:true},
     write:{name:"Writing",reading:true},               // Write it, and signs he writes in the Mine
     maker:{name:"My own book",reading:true},
+    trick:{name:"Trick-or-Read",reading:true},        // TRICK-OR-READ: a knock on a Halloween door
     mine:{name:"Gem Mine",reading:false},
     adventure:{name:"Adventure",reading:false},
     race:{name:"Races",reading:false},
@@ -12061,6 +12065,7 @@ const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","b
   "jobs","jobs.xp","tracks",
   "adv.dex"];
 NULL_IS_MISSING.push("owned");      // TRADING POST
+NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];
