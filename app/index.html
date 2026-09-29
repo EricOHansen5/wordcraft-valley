@@ -1820,7 +1820,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-09-29e"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-09-29f"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* ================================================================
@@ -8783,12 +8783,17 @@ const Adv=(()=>{
     if(Math.abs(bc-c)<2.2&&Math.abs(br-r)<1.5)return true;}return false;};
   // a free spot a few steps from Ash, for things that arrive while he explores
   function freePos(minD=2.5){
-    for(let k=0;k<60;k++){const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
+    for(let k=0;k<160;k++){const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
+      // the distance from him and from other things relaxes as the search goes on; a building is never allowed
       if(Math.abs(c-P.c)<minD&&k<50)continue;if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.6&&Math.abs(p.r-r)<1))continue;
-      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1)||(k<50&&byBuilding(c,r)))continue;
+      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1)||byBuilding(c,r))continue;
       // not on a treasure mark either: the spot would take the "use" button and the mark could never be dug
       if(A().hunt&&A().hunt.marks.some(m=>!m.dug&&Math.abs(m.c-c)<1.6&&Math.abs(m.r-r)<1))continue;
       return{c,r};}
+    // last resort: the nearest front-row spot to him that is clear of every building
+    for(let d=0;d<COLS;d++)for(const sg of [1,-1]){const cc=+Math.min(COLS-2,Math.max(1,P.c+sg*(3+d))).toFixed(2),rr=P.r;
+      if(byBuilding(cc,rr)||spotList.some(s=>Math.abs(s.c-cc)<1.6&&Math.abs(s.r-rr)<1)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.6&&Math.abs(p.r-rr)<1)||(A().hunt&&A().hunt.marks.some(m=>!m.dug&&Math.abs(m.c-cc)<1.6&&Math.abs(m.r-rr)<1)))continue;
+      return{c:cc,r:rr};}
     return{c:Math.min(COLS-2,P.c+3),r:P.r};
   }
 
@@ -8931,15 +8936,20 @@ const Adv=(()=>{
     const pick=[];for(const w of pool){if(pick.length>=4)break;if(pick.some(x=>x.w===w.w||near(x.w,w.w)||WORD_ART[x.w]===WORD_ART[w.w]))continue;pick.push(w);}
     if(pick.length<4){toast("Read a few more words first!");return;}
     // spread the landmarks around the valley
-    const spots=[];for(let k=0;k<200&&spots.length<4;k++){
+    const spots=[];for(let k=0;k<450&&spots.length<4;k++){
       // rounded before the checks: the stored value is the one that must keep clear
       const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
-      if(spots.some(s=>Math.abs(s.c-c)<3.2))continue;
+      // the spread between marks relaxes as the search goes on; the clearance from buildings never does
+      if(spots.some(s=>Math.abs(s.c-c)<(k<150?3.2:k<300?2.2:1.6)))continue;
       // keep clear of notes and the quest giver, which win the "use" button over a mark
       if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
-      if(k<150&&byBuilding(c,r))continue;
+      if(byBuilding(c,r))continue;
       spots.push({c,r});}
+    // a crowded valley: walk the front row for spots that are still clear of every building
+    for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=1.5){const cc=+c.toFixed(2),rr=ROWS_MAX-1;
+      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2)||spotList.some(s=>Math.abs(s.c-cc)<1.6&&Math.abs(s.r-rr)<1)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
+      spots.push({c:cc,r:rr});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
     const order=[0,1,2].sort(()=>Math.random()-.5);
     A().hunt={marks,order,step:0,miss:0,t0:Date.now(),tier};save();
