@@ -456,6 +456,31 @@ select{width:auto}
 .stswap .sthead{font-weight:900;font-size:18px;margin-bottom:8px}
 .strow{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
 .strow .stpm{min-width:56px;font-size:24px;padding:6px 14px}.strow .stsum{font-size:26px;min-width:170px;white-space:nowrap}
+/* looks and the closet (LOOKS): a worn look sets body.look-on, body.look-<id> and the --look-* tokens */
+body.look-on #hud{background:var(--look-hud,transparent)}
+body.look-on #hud::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:7px;border-radius:4px;
+  background:var(--look-trim,var(--gold));border:2px solid var(--ink);pointer-events:none}
+body.look-on #buddyBtn{border-color:var(--look-edge,var(--ink))}
+body.look-on .crate{position:relative}
+body.look-on .crate:not(.keep){border-color:var(--look-edge,var(--ink))}
+body.look-on .crate:not(.keep):not(.spell):not(.swap):not(.pic):not(.write):not(.lost):not(.season){background:var(--look-crate,var(--paper-deep))}
+body.look-on .crate::after{content:var(--look-badge,"");position:absolute;top:-12px;right:-8px;font-size:24px;transform:rotate(12deg);pointer-events:none}
+#tiles .tile.lookprop,#tiles .tile.lookprop svg,#tiles .tile.lookprop svg *{pointer-events:none}
+.lookprop .lpic{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;font-size:60px;line-height:1}
+.lbat{position:absolute;left:-8%;opacity:.92;animation:batfly linear infinite}
+.lbat svg{width:100%;height:100%;display:block;animation:batflap .26s ease-in-out infinite alternate;transform-origin:50% 45%}
+@keyframes batfly{0%{transform:translate(0,0)}25%{transform:translate(30vw,-16px)}50%{transform:translate(60vw,10px)}75%{transform:translate(90vw,-12px)}100%{transform:translate(125vw,4px)}}
+@keyframes batflap{from{transform:scaleY(1)}to{transform:scaleY(.4)}}
+.lfall{position:absolute;animation:snowfall linear infinite;opacity:.9}
+.clsheet{max-width:620px}
+.clcard{cursor:pointer}
+.clcard.worn{background:linear-gradient(160deg,#FFF3C4,#FFE39A);box-shadow:0 0 16px rgba(255,197,61,.5)}
+.clcard .clic{font-size:56px;line-height:76px}
+.clcard .clwhen{font-size:12px;font-weight:800;color:var(--ink-soft);margin:-4px 0 6px}
+.clpieces{display:flex;gap:4px;justify-content:center;margin:0 0 8px}
+.clpc{width:30px;height:30px;border:2px solid var(--ink);border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;opacity:.35;filter:grayscale(1)}
+.clpc.got{opacity:1;filter:none;background:#FFF3C4}
+.clpc svg{width:100%;height:100%;display:block}
 /* vehicles: body flips to face travel, act carries tap stunts, hop idles */
 .vehicle{position:absolute;transform:translate(-50%,-100%);cursor:pointer}
 .vehicle .body,.vehicle .act,.vehicle .hop{width:100%;height:100%;transform-origin:50% 100%}
@@ -1262,6 +1287,7 @@ body.exploring .slot-empty{display:none}
     <div id="slots" style="display:flex;gap:9px"></div>
     <button class="toolbtn" id="questBtn" title="Today's quests">📜<span class="badge" id="questBadge"></span></button>
     <button class="toolbtn" id="craftBtn" title="Building plans">📐<span class="badge" id="planBadge"></span></button>
+    <button class="toolbtn" id="closetBtn" title="Closet" aria-label="Closet">🎨<span class="badge" id="closetBadge"></span></button>
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
     <button class="toolbtn" id="jobsBtn" title="Jobs">💼<span class="badge" id="jobsBadge"></span></button>
     <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
@@ -3926,6 +3952,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   owned:{},
   // TRADING POST: he has held gems and coins at the same time, so the Swap tab shows (and stays)
   exchangeSeen:false,
+  // LOOKS: the look the valley wears ("" = the plain valley), and the pieces earned of each look, {halloween:{pieces:[]}}
+  look:"",looks:{},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -4143,6 +4171,7 @@ function renderWorld(){
   }
   renderCritters();renderVehicles();renderBuddy();renderGuardians();applyNight();
   try{Adv.mount();}catch(e){}
+  try{Looks.mount();}catch(e){}
 }
 function renderCritters(){
   document.querySelectorAll(".critter").forEach(n=>n.remove());
@@ -4632,7 +4661,7 @@ function renderDock(){
 function stageIdx(){let i=0;STAGES.forEach((s,n)=>{if(state.wordsRead>=s.at)i=n;});return i;}
 function renderHUD(){
   const i=stageIdx(), s=STAGES[i], next=STAGES[i+1];
-  document.getElementById("buddyBtn").innerHTML=ART.buddy(i,mulberry(42),state.hat);
+  document.getElementById("buddyBtn").innerHTML=ART.buddy(i,mulberry(42),buddyHat());
   document.getElementById("buddyName").textContent=s.name;
   document.getElementById("bar").style.width=
     (next?Math.min(100,(state.wordsRead-s.at)/(next.at-s.at)*100):100)+"%";
@@ -4705,6 +4734,7 @@ function seedParticles(){
     P.appendChild(m);
   }
   seedSeasonParticles(P);
+  try{Looks.particles(P);}catch(e){}
   const leafCols=["#8FBE6E","#E8B33D","#E08A4B","#C96B86"];
   for(let i=0;i<(season().id==="autumn"?11:4);i++){
     const l=document.createElement("div");l.className="leaf";
@@ -4801,6 +4831,7 @@ const Modes=(()=>{
     parent:{name:"Grown-up menu",reading:false},
     report:{name:"Reading report",reading:false},
     store:{name:"Trading Post",reading:false},         // TRADING POST: the two shelves
+    closet:{name:"Closet",reading:false},              // LOOKS: the 🎨 Closet
     other:{name:"Other",reading:false}};
   // overlays, by element id
   const OV={ovCrates:"read",ovRead:"read",ovReward:"reward",ovSign:"sign",ovCraft:"craft",ovQuests:"quests",ovPhoto:"photo",
@@ -6223,8 +6254,8 @@ function evolveScene(from,to){
   const nm=STAGES[to].name,old=from===0?"The egg":STAGES[from].name;
   const pool=Object.keys(state.stats||{}).filter(k=>state.stats[k]&&state.stats[k].mastered);
   const word=state.lastWord&&Math.random()<.5?state.lastWord:(pool.length?pool[Math.floor(Math.random()*pool.length)]:(state.lastWord||"cat"));
-  document.getElementById("evoOld").innerHTML=ART.buddy(from,mulberry(42),state.hat);
-  document.getElementById("evoNew").innerHTML=ART.buddy(to,mulberry(42),state.hat);
+  document.getElementById("evoOld").innerHTML=ART.buddy(from,mulberry(42),buddyHat());
+  document.getElementById("evoNew").innerHTML=ART.buddy(to,mulberry(42),buddyHat());
   document.getElementById("evoText").textContent=from===0?"What? The egg is hatching!":`What? ${old} is evolving!`;
   document.getElementById("evoWord").textContent=word;
   document.getElementById("evoAsk").style.display="";document.getElementById("evoDone").style.display="none";
@@ -10585,6 +10616,312 @@ Store.item({id:"scanner",shelf:"gear",name:"Price scanner",cost:{coins:40},art:"
 Store.item({id:"clippers",shelf:"gear",name:"Hedge clippers",cost:{coins:45},art:"gear_clippers",tag:"tool",unlock:{job:"mow",level:3}});
 
 /* ================================================================
+   LOOKS — the valley dresses up for a holiday, and keeps it on
+   A look is a pack of pieces he earns one at a time from its holiday's
+   mini-game (nothing is sold) and wears on any day of the year from the
+   🎨 Closet in the tool bar. While a look is worn (state.look) the valley
+   shows the pieces he has earned of it, and only those:
+     props      small drawings at fixed spots in the valley; each steps
+                along its row to stay clear of buildings, which never move
+     particles  the look's own kind in #particles, next to the season's
+     "hat"      the buddy wears the look's hat; state.hat (his wardrobe
+                choice) is left alone and comes back when the look is off
+   and, for any look he wears, its tint on #seasonTint (the look's wins
+   over the season's while it is on), the body classes "look-on" and
+   "look-<id>", and the CSS tokens --look-hud, --look-trim, --look-edge,
+   --look-crate and --look-badge that restyle the HUD trim and the crate
+   faces. The valley's own redraws (renderWorld, seedParticles,
+   applySeason, renderBuddy, renderHUD) call back in here.
+   A look is data: an entry in LOOKS, or Looks.add({...}) for another.
+     id, name, ic   "halloween", "Halloween", "🎃"
+     window         {from:[month,day], to:[month,day]}, both days counted
+                    (it may wrap the new year), or fn(date) → true/false
+     tint           any CSS background, laid on #seasonTint
+     particles      a kind in PARTS ("bats"); another kind drifts `drift`,
+                    an emoji, down the screen
+     props          [{id, at:{c,r}, size, art, lum, sway}]: art is the ART
+                    drawing (default "look_<id>"), else `ic`, an emoji;
+                    lum glows after dark like the lanterns
+     hat            the ART drawing hat_<hat>
+     greet          said the first time the look gets a piece
+     pieces         the order he earns them: prop ids, the particles kind
+                    and "hat" (props first, the hat last)
+     names          what each piece is called ("You got the ghost!")
+     css            {hud, trim, edge, crate}: values for the tokens
+   Saves: state.look, the look worn ("" for the plain valley), and
+   state.looks, the pieces earned: {halloween:{pieces:["pumpkins"]}}.
+   Only grant() writes state.looks, so a new valley's save is unchanged.
+   For the holiday mini-games: Looks.grant(id) gives the next piece (the
+   first also puts the look on and says its greeting; later ones say
+   what he got) and returns its id, or null once the look is complete.
+   Looks.inWindow(id, date) is true inside the look's window. Also
+   Looks.pieces(id) → {earned, all}, Looks.has(id, piece), Looks.done(id).
+   ================================================================ */
+const LOOKS=[
+  {id:"halloween",name:"Halloween",ic:"🎃",window:{from:[10,15],to:[10,31]},
+   tint:"linear-gradient(180deg,rgba(128,84,168,.18),rgba(244,122,48,.24) 50%,rgba(244,122,48,.18))",
+   particles:"bats",
+   props:[{id:"pumpkins",at:{c:8.5,r:7},size:.9,lum:true},{id:"ghost",at:{c:13.5,r:6},size:1.25,sway:true}],
+   hat:"witch",
+   greet:"Happy Halloween! Your valley looks spooky and sweet.",
+   pieces:["pumpkins","ghost","bats","hat"],
+   names:{pumpkins:"pumpkins",ghost:"ghost",bats:"bats",hat:"witch hat"},
+   css:{hud:"linear-gradient(180deg,#FFE2BF,rgba(255,226,191,0))",trim:"repeating-linear-gradient(90deg,#F2782E 0 16px,#5B3F8C 16px 32px)",
+     edge:"#5B3F8C",crate:"linear-gradient(160deg,#FFE4C0,#F9AE66)"}}
+];
+/* ---- Looks art: the props (same 100-box and ink as the seasonal builds) and the look hats ---- */
+Object.assign(ART,{
+  // jack-o'-lanterns by the door: a big one and a little one, both smiling
+  look_pumpkins(r){return S(`${OCC}<ellipse cx="50" cy="76" rx="42" ry="20" fill="#FFC96B" opacity=".22" stroke="none"/>
+    <path d="${blob(40,72,24,19,r,10,.06)}" fill="${dome("#F2782E",34,26)}"/>
+    <path d="M40 54 Q36 72 40 90 M30 57 Q24 72 30 88 M50 57 Q56 72 50 88" fill="none" stroke-opacity=".3" stroke-width="1.8"/>
+    <path d="M39 54 Q38 46 43 43" fill="none" stroke="#5C8C48" stroke-width="4"/>
+    <path d="M43 46 Q52 40 53 48 Q47 50 43 46Z" fill="${grad("#7FB069","h")}"/>
+    <path d="M28 70 L32 62 L36 70Z M44 70 L48 62 L52 70Z" fill="#FFE27A" stroke-width="1.6"/>
+    <path d="M38 73 L40 69 L42 73Z" fill="#FFE27A" stroke-width="1.4"/>
+    <path d="M27 76 Q40 90 53 76 Q49 78 47 77 L46 80 L43 78 Q40 79 37 78 L34 80 L33 77 Q30 78 27 76Z" fill="#FFE27A" stroke-width="1.6"/>
+    <path d="${blob(74,81,15,11,r,9,.07)}" fill="${dome("#F58A3A",34,24)}"/>
+    <path d="M74 70 Q71 80 74 92 M66 72 Q62 80 66 90 M82 72 Q86 80 82 90" fill="none" stroke-opacity=".28" stroke-width="1.6"/>
+    <path d="M74 70 Q74 65 77 63" fill="none" stroke="#5C8C48" stroke-width="3.2"/>
+    <path d="M67 79 L70 75 L73 79Z M75 79 L78 75 L81 79Z" fill="#FFE27A" stroke-width="1.4"/>
+    <path d="M67 84 Q74 90 81 84 Q74 86 67 84Z" fill="#FFE27A" stroke-width="1.4"/>
+    ${HI(30,62,6,4,.35)}`);},
+  // a friendly ghost in the pine, waving from behind the branches
+  look_ghost(r){const c="#3F7A3A";return S(`${OCC}<path d="M46 94 L46 70 L54 70 L54 94Z" fill="${grad("#8B6238","h")}"/>
+    <path d="M50 30 L80 70 Q50 62 20 70Z" fill="${grad(shade(c,-.1),"v",.26,.24)}"/>
+    <path d="M58 44 Q58 22 75 22 Q92 22 92 44 L92 60 Q89 56 86 60 Q83 56 80 60 Q77 56 74 60 Q71 56 68 60 Q64 56 60 58Z" fill="${dome("#FBFDFE",40,30)}"/>
+    <path d="${blob(96,32,4,5,r,7,.1)}" fill="#FBFDFE"/>
+    <ellipse cx="78" cy="36" rx="2.6" ry="3.4" fill="${INK}" stroke="none"/><ellipse cx="86" cy="36" rx="2.6" ry="3.4" fill="${INK}" stroke="none"/>
+    <circle cx="77.2" cy="35" r=".9" fill="#FFF" stroke="none"/><circle cx="85.2" cy="35" r=".9" fill="#FFF" stroke="none"/>
+    <path d="M78 43 Q82 47 86 43" fill="none" stroke-width="2"/>
+    <ellipse cx="74" cy="41" rx="2.6" ry="1.6" fill="#F7B6CB" stroke="none" opacity=".8"/><ellipse cx="90" cy="41" rx="2.6" ry="1.6" fill="#F7B6CB" stroke="none" opacity=".8"/>
+    <path d="M50 16 L74 50 Q50 44 26 50Z" fill="${grad(c,"v",.3,.2)}"/>
+    <path d="M50 5 L68 32 Q50 27 32 32Z" fill="${grad(shade(c,.12),"v",.3,.18)}"/>
+    <path d="M50 16 L50 44 M50 30 L50 62" fill="none" stroke-opacity=".25" stroke-width="1.6"/>
+    ${HI(40,26,7,3.6,.32)}${HI(70,28,4,2.4,.6)}`);},
+  // the witch hat, drawn over the buddy's head like the wardrobe hats
+  hat_witch(){return `<g data-hat="witch"><path d="M10 33 Q50 45 90 33 Q82 25 50 25 Q18 25 10 33Z" fill="${grad("#4A3470","v",.3,.2)}"/>
+    <path d="M31 30 Q39 19 43 9 Q47 0 57 -1 Q67 -2 72 5 Q64 3 61 9 Q58 18 69 30 Q50 34 31 30Z" fill="${grad("#5B3F8C","v",.3,.2)}"/>
+    <path d="M33 25 Q50 29 67 25 L69 30 Q50 34 31 30Z" fill="#F2782E"/>
+    <path d="M46 25.5 L54 25.5 L54 32 L46 32Z" fill="#FFC53D" stroke-width="1.6"/>
+    <path d="M52 14 L54 11 M58 20 L60 18" fill="none" stroke="#FFE9A8" stroke-width="2"/></g>`;}
+});
+// the hat the buddy shows: a worn look's hat once he has earned it, otherwise his wardrobe hat.
+// A function declaration, so the drawings that run before this section is reached can call it.
+function buddyHat(){try{return Looks.hat();}catch(e){return state.hat;}}
+const Looks=(()=>{
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const get=id=>{for(let i=0;i<LOOKS.length;i++)if(LOOKS[i].id===id)return LOOKS[i];return null;};
+  const nameOf=(L,p)=>(L.names&&L.names[p])||p;
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  // ---------- what he has (reading never writes to the save) ----------
+  // the pieces of a look he has earned, in the look's order
+  function earned(id){
+    const L=get(id),r=isObj(state.looks)?state.looks[id]:null;
+    if(!L||!isObj(r)||!Array.isArray(r.pieces))return[];
+    return L.pieces.filter(p=>r.pieces.indexOf(p)>=0);
+  }
+  const pieces=id=>{const L=get(id);return{earned:earned(id),all:L?L.pieces.slice():[]};};
+  const has=(id,piece)=>earned(id).indexOf(piece)>=0;
+  const done=id=>{const L=get(id);return !!L&&L.pieces.length>0&&earned(id).length===L.pieces.length;};
+  // the look worn now: a known look with at least one piece earned, else null (the plain valley)
+  function current(){const L=get(state.look);return L&&earned(L.id).length?L:null;}
+  const hat=()=>{const L=current();return L&&L.hat&&ART["hat_"+L.hat]&&has(L.id,"hat")?L.hat:state.hat;};
+
+  // ---------- the window: pure, from a Date or "YYYY-MM-DD" (today when left out) ----------
+  // a date string is read as the family's own day, never as UTC midnight
+  function day(x){
+    if(typeof x==="string"){const m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(x);
+      return m?{md:+m[2]*100+(+m[3]),d:new Date(+m[1],+m[2]-1,+m[3])}:null;}
+    const d=x instanceof Date?x:typeof x==="number"?new Date(x):new Date();
+    return isNaN(d.getTime())?null:{md:(d.getMonth()+1)*100+d.getDate(),d};
+  }
+  function inWindow(id,when){
+    const L=get(id),w=L&&L.window,t=day(when==null?new Date():when);
+    if(!w||!t)return false;
+    if(typeof w==="function"){try{return !!w(t.d);}catch(e){return false;}}
+    const a=w.from[0]*100+w.from[1],b=w.to[0]*100+w.to[1];
+    return a<=b?(t.md>=a&&t.md<=b):(t.md>=a||t.md<=b);
+  }
+
+  // ---------- earning: the next piece, never bought ----------
+  // returns the piece's id, or null when the look is complete (or unknown). opts.quiet: nothing said or shown
+  function grant(id,opts){
+    const L=get(id);if(!L)return null;
+    const have=earned(id),next=L.pieces.filter(p=>have.indexOf(p)<0)[0];
+    if(!next)return null;
+    if(!isObj(state.looks))state.looks={};
+    let r=state.looks[id];if(!isObj(r))r=state.looks[id]={pieces:[]};
+    if(!Array.isArray(r.pieces))r.pieces=[];
+    r.pieces.push(next);
+    const first=!have.length;
+    if(first)state.look=id;
+    save();apply();badge(true);
+    if(!(opts&&opts.quiet)){
+      if(first){Sound.sfx.win();toast(L.ic+" "+L.greet);buddySay(L.greet);Sound.speak(L.greet,.95);}
+      else{const n=nameOf(L,next);Sound.sfx.chime();toast(`You got the ${n}! Look in your closet 🎨`);buddySay(`You got the ${n}!`);
+        Sound.speak(`You got the ${n}! Look in your closet.`,.95);}
+    }
+    return next;
+  }
+  // put a look on ("" or null: the plain valley); only a look with a piece earned can be worn, on any day
+  function wear(id){
+    id=id||"";
+    if(id&&(!get(id)||!earned(id).length))return false;
+    state.look=id;save();apply();return true;
+  }
+
+  // ---------- the look layer in the valley ----------
+  const TOKENS=["hud","trim","edge","crate"];
+  function tint(){
+    const t=document.getElementById("seasonTint"),L=current();if(!t)return;
+    t.style.background=L&&L.tint?L.tint:season().tint;
+  }
+  function dress(){
+    const b=document.body,L=current();
+    [].slice.call(b.classList).forEach(c=>{if(c.indexOf("look-")===0)b.classList.remove(c);});
+    TOKENS.concat("badge").forEach(k=>b.style.removeProperty("--look-"+k));
+    if(L){
+      b.classList.add("look-on");b.classList.add("look-"+L.id);
+      const c=L.css||{};TOKENS.forEach(k=>{if(c[k])b.style.setProperty("--look-"+k,c[k]);});
+      b.style.setProperty("--look-badge",JSON.stringify(L.ic||""));
+    }
+    tint();
+  }
+  // a prop's place: its spot, or the nearest one along the row clear of buildings (in that row and the one in front)
+  function spot(p){
+    const at=p.at||{c:COLS/2,r:ROWS_MAX-1},first=ROWS_MAX-state.rows,r=Math.max(first,Math.min(ROWS_MAX-1,at.r));
+    const keys=Object.keys(state.grid||{}).map(k=>k.split(",").map(Number));
+    const clear=c=>!keys.some(q=>(q[1]===r||q[1]===r+1)&&Math.abs(q[0]-c)<1.4);
+    for(let d=0;d<COLS;d++)for(const s of d?[1,-1]:[1]){const c=at.c+d*s;if(c>=.5&&c<=COLS-1.5&&clear(c))return{c,r};}
+    return{c:at.c,r};
+  }
+  const artOf=(L,p)=>{const f=ART[p.art||("look_"+p.id)];return f?f(mulberry(hashStr(L.id+":"+p.id))):`<div class="lpic">${p.ic||L.ic}</div>`;};
+  function props(){
+    [].slice.call(document.querySelectorAll("#tiles .lookprop")).forEach(n=>n.remove());
+    const L=current();if(!L)return;
+    const base=baseSize(),lit=phase().id==="night"||phase().id==="dusk";
+    (L.props||[]).forEach(p=>{
+      if(!has(L.id,p.id))return;
+      const s=spot(p),g=geom(s.c,s.r),size=base*g.scale*(p.size||.8),f=atmos(g);
+      const el=document.createElement("div");el.className="tile lookprop";el.dataset.prop=p.id;el.dataset.look=L.id;
+      el.dataset.baseFilter=f;if(p.lum)el.dataset.lum="1";
+      el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${size}px;height:${size}px;transform:translate(-50%,-100%);
+        z-index:${g.z-1};filter:${f}${p.lum&&lit?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""}`;
+      const inner=document.createElement("div");inner.style.cssText="width:100%;height:100%";
+      if(p.sway){inner.className="sway";inner.style.animationDelay=(hashStr(p.id)%3000)/1000+"s";}
+      inner.innerHTML=artOf(L,p);el.appendChild(inner);
+      tilesEl.appendChild(el);
+    });
+  }
+  // particles: a bat is a little drawing that flaps across the sky
+  const BAT=`<svg viewBox="0 0 40 22" aria-hidden="true"><path d="M20 7 L18.2 3.6 L17.2 7.4 Q12 4 7 5.4 Q3.6 3 .8 4.6 Q4.4 8.2 3.6 13 Q7.6 10.4 10.8 13.4 Q13.6 10.6 16.6 14 Q18.4 13 20 17.6 Q21.6 13 23.4 14 Q26.4 10.6 29.2 13.4 Q32.4 10.4 36.4 13 Q35.6 8.2 39.2 4.6 Q36.4 3 33 5.4 Q28 4 22.8 7.4 L21.8 3.6Z" fill="#3B2A4A"/>
+    <circle cx="18.6" cy="9.4" r="1.1" fill="#FFD86B"/><circle cx="21.4" cy="9.4" r="1.1" fill="#FFD86B"/></svg>`;
+  const PARTS={
+    bats(P){for(let i=0;i<7;i++){const b=document.createElement("div");b.className="lookp lbat";const w=26+Math.random()*18;
+      b.style.cssText=`top:${5+Math.random()*32}%;width:${w}px;height:${w*.55}px;animation-duration:${13+Math.random()*10}s;animation-delay:${-Math.random()*20}s`;
+      b.innerHTML=BAT;P.appendChild(b);}}};
+  // the look's particles, once it has earned them; left alone when they are already the right ones
+  function particles(P){
+    P=P||document.getElementById("particles");if(!P)return;
+    const L=current(),want=L&&L.particles&&state.settings.ambient&&has(L.id,L.particles)?L.id+":"+L.particles:"";
+    const now=P.querySelector(".lookp");
+    if(now&&now.dataset.lk===want)return;
+    [].slice.call(P.querySelectorAll(".lookp")).forEach(n=>n.remove());
+    if(!want)return;
+    if(PARTS[L.particles])PARTS[L.particles](P);
+    else if(L.drift)for(let i=0;i<12;i++){const d=document.createElement("div");d.className="lookp lfall";d.textContent=L.drift;
+      d.style.cssText=`left:${Math.random()*100}%;top:-4%;font-size:${12+Math.random()*10}px;animation-duration:${10+Math.random()*9}s;animation-delay:${-Math.random()*14}s`;P.appendChild(d);}
+    [].slice.call(P.querySelectorAll(".lookp")).forEach(n=>{n.dataset.lk=want;});
+  }
+  // the valley's layer: called by renderWorld after it redraws, and whenever the look or its pieces change
+  function mount(){props();dress();particles();}
+  function apply(){
+    try{mount();}catch(e){console.warn("look:",e&&e.message);}
+    try{renderBuddy();renderHUD();}catch(e){}
+    if(el&&el.classList.contains("on"))render();
+  }
+
+  // ---------- the Closet ----------
+  let el=null,lockUntil=0;
+  // one tap at a time: a double tap would put a look on and take it off again
+  const tap=fn=>{if(Date.now()<lockUntil)return;lockUntil=Date.now()+600;fn();};
+  const msg=t=>{if(el)el.querySelector("#clMsg").textContent=t||"";};
+  const badge=on=>{const b=document.getElementById("closetBadge");if(b)b.classList.toggle("on",!!on);};
+  function build(){
+    el=document.createElement("div");el.className="overlay";el.id="ovCloset";
+    el.innerHTML=`<div class="sheet clsheet"><h2>🎨 Closet</h2><p class="sub">Dress up your valley. Wear a look on any day.</p>
+      <p class="stmsg" id="clMsg" aria-live="polite"></p><div class="gridcards" id="clGrid"></div>
+      <div style="text-align:center;margin-top:18px"><button class="btn soft" id="clClose">Done</button></div></div>`;
+    document.body.appendChild(el);
+    el.querySelector("#clClose").onclick=close;
+  }
+  function open(){
+    if(!el)build();
+    msg("");render();badge(false);
+    el.classList.add("on");Modes.open("closet",el);Sound.sfx.soft();
+  }
+  function close(){if(!el)return;Modes.shut(el);Sound.sfx.soft();}
+  // a small picture of one piece, for the row under a look
+  function thumb(L,p){
+    if(p==="hat"&&L.hat&&ART["hat_"+L.hat])return S(`<g transform="translate(0 32)">${ART["hat_"+L.hat]()}</g>`);
+    const pr=(L.props||[]).filter(x=>x.id===p)[0];
+    if(pr)return artOf(L,pr);
+    if(p===L.particles&&p==="bats")return BAT;
+    return `<b>${esc(L.drift||L.ic)}</b>`;
+  }
+  function card(L,cur){
+    const d=document.createElement("div"),b=document.createElement("button");b.className="btn soft mini";
+    if(!L){   // the plain valley: no look
+      const on=!cur;
+      d.className="card2 clcard"+(on?" worn":"");d.dataset.look="";
+      d.innerHTML=`<div class="art">${ART.tree(mulberry(7))}</div><div class="nm">Valley</div><div class="cost">${on?"Wearing it":"No look"}</div>`;
+      b.textContent=on?"✓":"Wear it";b.disabled=on;b.dataset.act=on?"on":"wear";
+      d.appendChild(b);d.onclick=()=>tap(()=>pick(""));return d;
+    }
+    const got=earned(L.id),on=!!cur&&cur.id===L.id,when=L.window&&L.window.from?MONTHS[L.window.from[0]-1]:"";
+    d.className="card2 clcard"+(on?" worn":"")+(got.length?"":" locked");d.dataset.look=L.id;
+    d.innerHTML=`<div class="art clic">${L.ic}</div><div class="nm">${esc(L.name)}</div>
+      <div class="cost">${got.length?`${got.length} of ${L.pieces.length} pieces`:`Earn it at ${esc(L.name)} ${L.ic}`}</div>
+      ${!got.length&&when?`<div class="clwhen">in ${when}</div>`:""}
+      <div class="clpieces">${L.pieces.map(p=>`<span class="clpc${got.indexOf(p)>=0?" got":""}" data-piece="${esc(p)}" title="${esc(nameOf(L,p))}">${thumb(L,p)}</span>`).join("")}</div>`;
+    if(!got.length){b.textContent="🔒";b.dataset.act="locked";b.setAttribute("aria-label","Not earned yet");}
+    else{b.textContent=on?"Take off":"Wear it";b.dataset.act=on?"off":"wear";}
+    d.appendChild(b);d.onclick=()=>tap(()=>pick(L.id));
+    return d;
+  }
+  function render(){
+    if(!el)return;
+    const g=el.querySelector("#clGrid"),cur=current();g.innerHTML="";
+    g.appendChild(card(null,cur));
+    LOOKS.forEach(L=>g.appendChild(card(L,cur)));
+  }
+  // a tap on a card: wear it, take it off (a worn look, or "Valley"), or a kind word about when it comes
+  function pick(id){
+    const cur=current();
+    if(!id){if(cur){wear("");Sound.sfx.soft();msg("Back to your valley");}return;}
+    const L=get(id);if(!L)return;
+    if(!earned(id).length){Sound.sfx.soft();msg(`Earn it at ${L.name} ${L.ic}`);return;}
+    if(cur&&cur.id===id){wear("");Sound.sfx.soft();msg("Back to your valley");return;}
+    wear(id);Sound.sfx.chime();buddyCheer();msg(`${L.ic} ${L.name} is on!`);
+    if(has(id,"hat"))Sound.speak("How do I look?",.95);
+  }
+  document.getElementById("closetBtn").onclick=()=>open();
+
+  // another look, as data (see the note above); an id already known is replaced
+  function add(L){const i=LOOKS.indexOf(get(L.id));if(i>=0)LOOKS[i]=L;else LOOKS.push(L);return L;}
+  // the fixed lines the looks speak, for the voice extractor: each greeting, each piece's name, and the two pieces around it
+  function voiceLines(){
+    const out=["You got the","Look in your closet"];
+    LOOKS.forEach(L=>{if(L.greet)out.push(L.greet);L.pieces.forEach(p=>out.push(nameOf(L,p)));});
+    return out;
+  }
+  return{grant,pieces,has,done,inWindow,wear,current,hat,get,list:()=>LOOKS.slice(),add,mount,particles,tint,apply,open,close,voiceLines,
+    _spot:spot};
+})();
+
+/* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
    the small server in wordcraft-server/ running on the home NAS. By
@@ -10982,7 +11319,7 @@ function renderBuddy(){
   const g=geom(b.c,b.r), size=baseSize()*g.scale*.9;
   el.style.left=g.x+"px";el.style.top=g.y*100+"%";el.style.width=size+"px";el.style.height=size+"px";
   el.style.zIndex=g.z+6;
-  el.querySelector(".hop").innerHTML=ART.buddy(stageIdx(),mulberry(42),state.hat);
+  el.querySelector(".hop").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());
 }
 function buddyGo(c,r){
   state.buddy={c:Math.max(0,Math.min(COLS-1,c)),r:Math.max(ROWS_MAX-state.rows,Math.min(ROWS_MAX-1,r))};
@@ -11036,7 +11373,7 @@ const Coach={
     document.querySelectorAll(".coach-target").forEach(x=>x.classList.remove("coach-target"));
     const c=document.getElementById("coach");
     if(!st){c.classList.remove("on");return;}
-    document.getElementById("coachFace").innerHTML=ART.buddy(stageIdx(),mulberry(42),state.hat);
+    document.getElementById("coachFace").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());
     document.getElementById("coachSay").textContent=st.say;
     c.classList.add("on");
     if(st.target){const t=document.querySelector(st.target);if(t)t.classList.add("coach-target");}
@@ -11065,7 +11402,7 @@ document.getElementById("tourBtn").onclick=()=>Coach.restart();
    7f. SESSION RECAP
    ================================================================ */
 function showRecap(){
-  document.getElementById("recapFace").innerHTML=ART.buddy(stageIdx(),mulberry(42),state.hat);
+  document.getElementById("recapFace").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());
   document.getElementById("rWords").textContent=sess.words;
   document.getElementById("rNew").textContent=sess.mastered;
   document.getElementById("rStreak").textContent=state.best||0;
@@ -11333,6 +11670,7 @@ document.getElementById("exportWords").onclick=()=>{
 function applySeason(){
   const z=season();
   document.getElementById("seasonTint").style.background=z.tint;
+  try{Looks.tint();}catch(e){}
   let b=document.getElementById("seasonBanner");
   if(!b){b=document.createElement("span");b.id="seasonBanner";document.getElementById("buddyName").after(b);}
   b.textContent=z.ic+" "+z.name;
@@ -12061,6 +12399,7 @@ const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","b
   "jobs","jobs.xp","tracks",
   "adv.dex"];
 NULL_IS_MISSING.push("owned");      // TRADING POST
+NULL_IS_MISSING.push("look","looks");      // LOOKS
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];

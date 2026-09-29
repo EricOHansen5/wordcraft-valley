@@ -10,7 +10,8 @@
 // as Books.petWord() picks it), every word in allWords(), the QUEST_POOL texts, the Quest chapter stories
 // and ending, string literals passed to Sound.speak / Sound.say / buddySay (template strings with ${}
 // are left out: they can never match a clip), and the fixed pieces the Jobs speak (Jobs.voiceLines(),
-// sampled from each job's and track's generators; numbers already have clips). Existing entries are
+// sampled from each job's and track's generators; numbers already have clips), and the Looks' greetings and the
+// pieces of their "You got the …" lines (Looks.voiceLines(), from the LOOKS data). Existing entries are
 // never removed; the lists are deduped by the same norm() that gen.py, index.py and the game use, sorted,
 // and written one entry per line so a diff shows exactly what is new. {hero} is expanded over def().hero if the game ever has one.
 "use strict";
@@ -48,6 +49,7 @@ function load(){
     critters:CRITTERS.map(c=>c.id),
     quests:typeof QUEST_POOL!=="undefined"?QUEST_POOL.map(q=>q.t):[],
     jobs:typeof Jobs!=="undefined"&&Jobs.voiceLines?Jobs.voiceLines():[],
+    looks:typeof Looks!=="undefined"&&Looks.voiceLines?Looks.voiceLines():[],
     hero:(def()||{}).hero||null})`);
   w.close();
   return Object.assign(JSON.parse(data),{html,errors});
@@ -165,7 +167,8 @@ function collect(d){
   return{
     words:d.words.map(x=>({text:x.w,from:"word"})),
     sents:[].concat(bookTexts(d),d.quests.map(t=>({text:t,from:"quest pool"})),questStories(src),sp.found,
-      (d.jobs||[]).map(t=>({text:t,from:"jobs"}))),
+      (d.jobs||[]).map(t=>({text:t,from:"jobs"})),
+      (d.looks||[]).map(t=>({text:t,from:"looks"}))),
     skipped:sp.skipped,hero:!!d.hero,heroUsed:/\{hero\}/.test(src)};
 }
 const cmp=(a,b)=>{const x=norm(a),y=norm(b);return x<y?-1:x>y?1:a<b?-1:a>b?1:0;};
