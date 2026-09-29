@@ -46,6 +46,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   let c=await cards();
   ok(c.length===1+(await E(()=>LOOKS.length))&&c[0].look===""&&c[0].worn&&c[1].look==="halloween"&&c[1].locked&&!c[1].worn,"the Closet lists Valley (worn), then Halloween (greyed) and the other looks "+J(c));
   ok(c.some(x=>x.look==="winter"&&x.locked&&!x.worn&&x.text==="Earn it at Holiday Lights 🎄"),"...the Winter look is greyed until it is earned "+J(c.filter(x=>x.look==="winter")));
+  ok(c.some(x=>x.look==="thanks"&&x.locked&&!x.worn),"...the Thanksgiving look is greyed until it is earned "+J(c.filter(x=>x.look==="thanks")));
   ok(c[1].text==="Earn it at Halloween 🎃"&&await E(()=>document.querySelector('#clGrid [data-look="halloween"] .clwhen').textContent)==="in October",
     "a look with nothing earned: \"Earn it at Halloween 🎃\", in October: "+c[1].text);
   await tapCard("halloween");
