@@ -12601,6 +12601,18 @@ const Factory=(()=>{
   setTimeout(()=>{try{Adv.provide(()=>Object.keys(state.grid||{}).filter(k=>state.grid[k]&&state.grid[k].id==="factory").map(k=>{const p=k.split(",").map(Number);
     return{c:p[0],r:p[1],size:.42,low:true,cls:"fcspot",html:`<div class="fcsign">🏭</div>`,label:"🏭 Factory",act:()=>open()};}));}catch(e){}},0);
 
+  // every fixed line the Factory speaks, and the pieces its orders and sums are built from (tools/voice/extract.js)
+  function voiceLines(){
+    const out={},add=p=>{p=String(p).trim();if(p&&!/\d/.test(p))out[p]=1;};
+    LEVELS.forEach(L=>{add(L.intro);orderSay(L.order).forEach(add);sumQ(L.order,L.math,L.sum).say.forEach(add);});
+    for(let k=0;k<40;k++){const o=sideOrder(k);orderSay(o.parts).forEach(add);sumQ(o.parts,o.math).say.forEach(add);}
+    KINDS.forEach(it=>{add(nameOf(it));add(nameOf(it)+".");add(nameOf(it)+",");});
+    Object.keys(TIPS).forEach(k=>add(TIPS[k]));Object.keys(UNLOCK).forEach(k=>add(UNLOCK[k]));
+    ["toys","Send","Order done!","The tally board can help!","Great building!","Three stars! Great building!","You already have these stars! Great building.",
+      "Great building! More orders tomorrow.","Your own factory! Build anything you like.","You finished every level! Now build your own factory!",
+      "Put a drill on a rock first!","Finish the level before this one first!","Finish all twelve levels to build your own factory!"].forEach(add);
+    return Object.keys(out).sort();
+  }
   // a whole run with no screen: a layout on level n until the order is met or max ticks pass (the tests, and the same every time)
   function sim(n,code,max){
     const L=LEVELS[n-1];if(!L)return null;const x=E.make(L.rows);E.decode(x,code==null?L.sol:code);E.reset(x);
@@ -12611,7 +12623,7 @@ const Factory=(()=>{
     return{done:ok(),t:x.t,sec:+(x.t/E.HZ).toFixed(2),hot:x.hot,pieces,got,stars:ok()?1+(x.hot<E.RED?1:0)+(x.hot<E.RED&&pieces<=L.budget?1:0):0};
   }
 
-  return{open,close,play,sandbox,map,LEVELS,SANDBOX,TOOLS,TIPS,engine:E,sim,sumQ,orderSay,sideOrder,
+  return{open,close,play,sandbox,map,LEVELS,SANDBOX,TOOLS,TIPS,engine:E,voiceLines,sim,sumQ,orderSay,sideOrder,
     get done(){return done();},stars:starsOf,isOpen,
     // for the tests
     _w:()=>w,_S:()=>S&&{n:S.n,sandbox:S.sandbox,tool:S.tool,running:S.running,done:S.done,tip:S.tip.shown,cur:S.cur,kb:S.kb,

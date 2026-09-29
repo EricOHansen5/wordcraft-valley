@@ -108,12 +108,13 @@ setTimeout(()=>{
   // ---- 4. orders and sums, as pieces with clips ----
   const q=E(()=>({f3:Factory.orderSay(Factory.LEVELS[2].order),f5:Factory.orderSay(Factory.LEVELS[4].order),s3:Factory.sumQ(Factory.LEVELS[2].order,"add10"),
     s1:Factory.sumQ(Factory.LEVELS[0].order,"count10"),s6:Factory.sumQ(Factory.LEVELS[5].order,"add10",Factory.LEVELS[5].sum),s10:Factory.sumQ(Factory.LEVELS[9].order,"add10","double"),
-    s12:Factory.sumQ(Factory.LEVELS[11].order,"add20"),side:[0,1,2,3,4,5,6,7].map(k=>Factory.sideOrder(k))}));
+    s12:Factory.sumQ(Factory.LEVELS[11].order,"add20"),side:[0,1,2,3,4,5,6,7].map(k=>Factory.sideOrder(k)),vl:Factory.voiceLines()}));
   ok(J(q.f3)===J(["Send",4,"red","and",3,"yellow."])&&J(q.f5)===J(["Send",2,"purple,",2,"green","and",2,"orange."]),"orders are spoken as pieces: "+q.f3.join(" ")+" / "+q.f5.join(" "));
   ok(q.s3.ans===7&&q.s3.text==="4 🔴 + 3 🟡 = ?"&&J(q.s3.say)===J([4,"red","and",3,"yellow.","How many in all?"])&&q.s3.level==="add10"&&q.s3.track==="math","F3's sum: "+q.s3.text);
   ok(q.s1.ans===5&&q.s1.level==="count10"&&J(q.s1.say)===J(["How many did you send?"]),"F1 counts: "+q.s1.text);
   ok(q.s6.ans===6&&q.s6.text==="3 🟣 + 3 🟣 = ?"&&q.s10.ans===8&&q.s10.text==="2 + 2 + 2 + 2 = ?"&&q.s12.ans===20&&q.s12.level==="add20","F6 3 + 3, F10 doubling, F12 to 20: "+[q.s6.text,q.s10.text,q.s12.text].join(" | "));
   ok(q.side.every(o=>o.pay>=3&&o.pay<=6&&o.parts.length>=1&&o.parts.reduce((s,p)=>s+p[1],0)<=20&&/^(count|add)(10|20)$/.test(o.math)),"side orders pay 3–6 💎 and stay within 20 "+J(q.side.map(o=>o.parts.map(p=>p.join("×")).join("+")+"="+o.pay)));
+  ok(q.vl.length>30&&q.vl.every(t=>!/\d/.test(t))&&q.vl.indexOf("Send")>=0&&q.vl.indexOf("toys")>=0&&q.vl.indexOf("The tally board can help!")>=0,`voiceLines(): ${q.vl.length} fixed lines and pieces, no numbers in them`);
   ok(!errors.length,"no errors while running "+errors.join(" | "));
   console.log(fails?`factory engine: ${fails} failed`:"factory engine: all passed");
   process.exit(fails?1:0);
