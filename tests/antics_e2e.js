@@ -13,7 +13,9 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
   await p.evaluate(s=>new Promise(res=>{const r=indexedDB.open("wordcraft-valley",2);
     r.onupgradeneeded=()=>{r.result.createObjectStore("kv");r.result.createObjectStore("blobs");};
     r.onsuccess=()=>{const tx=r.result.transaction("kv","readwrite");tx.objectStore("kv").put(s,"state");tx.oncomplete=()=>{r.result.close();res();};};}),st);
-  await p.reload();await p.waitForTimeout(2500);
+  await p.reload();
+  // wait for the boot rather than a fixed sleep: on a loaded CI runner 2.5 s was not always enough
+  await p.waitForFunction(()=>typeof state!=="undefined"&&state&&Array.isArray(state.critters)&&typeof geom==="function",null,{timeout:20000}).catch(()=>{});await p.waitForTimeout(1200);
   await p.evaluate(()=>{window.__fx=0;new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.classList&&(n.classList.contains("fx")||n.classList.contains("ring")||n.classList.contains("puff")||n.classList.contains("vshout")))window.__fx++;}))).observe(tilesEl,{childList:true});});
   await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));
   const g0=await p.evaluate(()=>state.gems);
