@@ -450,6 +450,8 @@ select{width:auto}
 .stcard .rib{position:absolute;top:-9px;right:-6px;background:#DC5A4B;color:#fff;font-size:12px;padding:2px 8px;border:2px solid var(--ink);border-radius:10px;transform:rotate(8deg)}
 .stcard .job{font-size:12px;font-weight:800;color:var(--ink-soft)}
 .stmsg{min-height:26px;text-align:center;font-weight:900;font-size:19px;margin:-6px 0 10px}
+.storemore{grid-column:1/-1;text-align:center;padding:6px 0}.storemore p{margin:0 0 8px;font-weight:800;color:var(--ink-soft)}
+.mmore{margin-top:8px;font-weight:800;font-size:14px;color:#6B5E52}
 /* vehicles: body flips to face travel, act carries tap stunts, hop idles */
 .vehicle{position:absolute;transform:translate(-50%,-100%);cursor:pointer}
 .vehicle .body,.vehicle .act,.vehicle .hop{width:100%;height:100%;transform-origin:50% 100%}
@@ -3057,7 +3059,7 @@ const BADGES=[
   {id:"swap",    ic:"🔁", n:"Sound swapper",     d:"Changed one sound to make a new word.", t:s=>(s.swaps||0)>=1},
   {id:"night",   ic:"🌙", n:"Night owl",         d:"Saw the valley at night.",              t:s=>(s.phase||0)===2||s.sawNight},
   {id:"story",   ic:"📖", n:"Story teller",      d:"Put a whole sentence back in order.",   t:s=>(s.scrambles||0)>=1},
-  {id:"style",   ic:"🎩", n:"Dressed up",        d:"Gave your buddy a hat.",                t:s=>(s.hats||[]).length>=1},
+  {id:"style",   ic:"🎩", n:"Dressed up",        d:"Gave your buddy a hat.",                t:s=>(s.hats||[]).length>=1||!!s.hat},
   {id:"season",  ic:"🍂", n:"In season",         d:"Built the season's special.",           t:s=>SEASONS.some(z=>Object.values(s.grid).some(t=>t.id===z.plan.id))},
   {id:"wheels",  ic:"🚗", n:"First wheels",      d:"Got your first vehicle.",               t:s=>(s.vehicles||[]).length>=1},
   {id:"traffic", ic:"🚦", n:"Traffic jam",       d:"Ten different vehicles.",               t:s=>new Set((s.vehicles||[]).map(v=>v.id)).size>=10},
@@ -6968,14 +6970,15 @@ const Mine=(()=>{
       <div class="mline">${sw("hair",L.hair)}</div>
       <div class="mlabel">Shirt</div><div class="mline">${sw("shirt",L.shirt)}</div>
       <div class="mlabel">Pants</div><div class="mline">${sw("pants",L.pants)}</div>
-      <div class="mlabel">Hat</div><div class="mline">${L.helmets.filter(h=>!h.prize||m.owned[h.id]).map(h=>`<button class="mtag${lk.helmet===h.id?" on":""}" data-h="${h.id}">${h.name}${m.owned[h.id]?"":` · ${h.cost}🪙`}</button>`).join("")}</div>
+      <div class="mlabel">Hat</div><div class="mline">${Store.helmets().map(h=>`<button class="mtag${lk.helmet===h.id?" on":""}" data-h="${h.id}">${h.name}</button>`).join("")}</div>
+      <div class="mmore">Get more at the Trading Post 🏪</div>
       </div></div><div class="mrow"><button class="btn primary" id="mClose">${first?"Let's dig!":"Done"}</button></div>`);
     const pv=card().querySelector("#mPrev"),pg=pv.getContext("2d");
     const paint=()=>{pg.setTransform(1,0,0,1,0,0);pg.clearRect(0,0,240,280);drawMiner(pg,120,262,190,lk,1,0,false,0,PICKS[m.pick].col);};paint();
     card().querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{lk[b.dataset.k]=+b.dataset.v;Sound.sfx.pop();save();openWardrobe(first);});
-    card().querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{const h=L.helmets.find(x=>x.id===b.dataset.h);
-      if(!m.owned[h.id]){if(m.coins<h.cost){toast(`You need ${h.cost} coins for that`);Sound.sfx.nope();return;}m.coins-=h.cost;m.owned[h.id]=1;Sound.sfx.win();}
-      lk.helmet=h.id;save();openWardrobe(first);});
+    // only what he owns is here (buying is at the Trading Post)
+    card().querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{const h=Store.helmets().find(x=>x.id===b.dataset.h);if(!h)return;
+      lk.helmet=h.id;Sound.sfx.pop();save();openWardrobe(first);});
     card().querySelector("#mClose").onclick=()=>{m.made=true;save();closePanel();
       if(first&&(state.critters||[]).length)setTimeout(()=>toast("Tap 🐾 to bring a pet from your valley!",3500),5200);
       if(first)toast("Walk right to the mine sign, then hold ⛏️ to dig down! Push the stick sideways to dig sideways.",4800);};
@@ -10716,24 +10719,30 @@ document.getElementById("photoShare").onclick=async()=>{
 /* ================================================================
    7p. WARDROBE — hats for the buddy
    ================================================================ */
+// the outfits he owns (the hats, and anything newer from the Trading Post): put one on, or take it off.
+// Buying is at the Trading Post now; the line at the end goes there.
 function renderHats(g){
-  HATS.forEach(h=>{
-    const owned=state.hats.includes(h.id), worn=state.hat===h.id;
-    const d=document.createElement("div");d.className="hatcard"+(worn?" worn":"");
+  const mine=Store.outfits();
+  mine.forEach(h=>{
+    const worn=state.hat===h.id;
+    const d=document.createElement("div");d.className="hatcard"+(worn?" worn":"");d.dataset.id=h.id;
     d.innerHTML=`<div class="art">${ART.buddy(stageIdx(),mulberry(42),h.id)}</div><div class="n">${h.name}</div>
-      <div class="c">${owned?(worn?"wearing it":"owned"):h.gems+" gems"}</div>`;
+      <div class="c">${worn?"wearing it":"owned"}</div>`;
     const b=document.createElement("button");b.className="btn primary mini";
-    b.textContent=worn?"Take off":owned?"Wear it":"Buy";
-    b.disabled=!owned&&state.gems<h.gems;
+    b.textContent=worn?"Take off":"Wear it";
     b.onclick=()=>{
-      if(!owned){state.gems-=h.gems;state.hats.push(h.id);confetti();Sound.sfx.win();}
       state.hat=worn?null:h.id;
       buddyCheer();renderHUD();renderBuddy();renderAlbum();save();
       if(!worn)buddySay(h.id==="crown"?"I am the king of the valley!":"How do I look?");
     };
     d.appendChild(b);g.appendChild(d);
   });
-  document.getElementById("albumSub").textContent=`${state.hats.length} of ${HATS.length} hats. Earn gems by reading.`;
+  const more=document.createElement("div");more.className="storemore";
+  more.innerHTML=`<p>${mine.length?"":"No outfits yet. "}Get more at the Trading Post 🏪</p>`;
+  const go=document.createElement("button");go.className="btn soft";go.textContent="🏪 Go to the Trading Post";
+  go.onclick=()=>{hide("ovAlbum");Store.open("outfit");};
+  more.appendChild(go);g.appendChild(more);
+  document.getElementById("albumSub").textContent=`${mine.length} of ${Store.list("outfit").length} outfits. Earn gems by reading.`;
 }
 
 
