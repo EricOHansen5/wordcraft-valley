@@ -36,7 +36,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   async function ready(){
     const r=await waitFor(p,()=>{const s=Jobs._S(),h=document.getElementById("jQ");
       if(document.getElementById("jGo"))return "moment";return s&&s.task&&h&&h.dataset.ans?"task":false;},{timeout:8000});
-    if(r==="moment"){await E(()=>document.getElementById("jGo").click());return ready();}
+    if(r==="moment"){await waitFor(p,"#jGo");await E(()=>document.getElementById("jGo").click());return ready();}
     return r;
   }
   // answer every step of the task on screen; returns the kits used
@@ -58,8 +58,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     await p.click(`#ovJob .jcard[data-job="${id}"]`);await waitFor(p,"#ovJob #jIn");
     await p.click("#ovJob #jIn");return ready();
   };
-  const clockOut=async()=>{await E(()=>document.getElementById("jOut").click());await waitFor(p,"#ovJob #jHome");
-    await E(()=>document.getElementById("jHome").click());await waitFor(p,()=>Modes.top()==="valley");};
+  const clockOut=async()=>{await waitFor(p,"#jOut");await E(()=>document.getElementById("jOut").click());await waitFor(p,"#ovJob #jHome");
+    await waitFor(p,"#jHome");await E(()=>document.getElementById("jHome").click());await waitFor(p,()=>Modes.top()==="valley");};
 
   // 0. the registry
   const JOBS=await E(()=>Jobs.list().map(j=>({id:j.id,name:j.name,tier:j.unlock.tier,pay:j.pay,tasks:j.tasks.map(t=>({id:t.id,lv:t.lv}))})));
@@ -103,7 +103,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(cards.some(c=>c.job==="shop"&&!c.locked)&&cards.some(c=>c.locked&&/Lawn mower/.test(c.t)&&/Opens at level 4/.test(c.t)&&!c.job),
     "at level 2 the Shopkeeper is open and the Lawn mower says “Opens at level 4”: "+cards.map(c=>c.t).join(" | "));
   ok(await E(()=>Modes.top()==="job"),"the Job board is the job mode");
-  await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
+  await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
 
   // 3. every job × task type: right answers (with a double tap on the last one) pay once
   const kitsUsed=new Set();
@@ -163,12 +163,12 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   for(let k=0;k<5;k++){await waitFor(p,()=>{const s=Jobs._S(),h=document.getElementById("jQ");return s&&s.task&&h&&h.dataset.ans;},{timeout:8000});await doTask();}
   const mo=await waitFor(p,()=>document.getElementById("jGo")&&document.getElementById("jStop")?Jobs._S():false,{timeout:5000});
   ok(mo&&mo.n===5&&!mo.task&&mo.coins===5*3+5&&mo.tips===1,"after 5 tasks: a cheer and “Keep going or clock out?” ("+await E(()=>(document.querySelector("#jQ .jmoment")||{}).textContent.replace(/\s+/g," ").trim())+") "+JSON.stringify(mo));
-  await E(()=>document.getElementById("jGo").click());
+  await waitFor(p,"#jGo");await E(()=>document.getElementById("jGo").click());
   ok(await waitFor(p,()=>{const s=Jobs._S(),h=document.getElementById("jQ");return s&&s.task&&h&&h.dataset.ans;}),"Keep going brings the next customer");
-  await E(()=>document.getElementById("jOut").click());await waitFor(p,"#ovJob #jHome");
+  await waitFor(p,"#jOut");await E(()=>document.getElementById("jOut").click());await waitFor(p,"#ovJob #jHome");
   const sum=await E(()=>document.querySelector("#ovJob .sheet").textContent.replace(/\s+/g," "));
   ok(/Great work today!/.test(sum)&&/5 tasks · \+20 🪙/.test(sum)&&/1 tip/.test(sum),"clock out shows the shift: "+sum.trim().slice(0,70));
-  await E(()=>document.getElementById("jHome").click());await waitFor(p,()=>Modes.top()==="valley");
+  await waitFor(p,"#jHome");await E(()=>document.getElementById("jHome").click());await waitFor(p,()=>Modes.top()==="valley");
 
   // 5. XP and a level up: the next task type and a badge
   await E(()=>{state.jobs.xp.shop=4;state.badges=state.badges.filter(b=>!/^job_/.test(b));});
@@ -201,7 +201,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(lab&&await E(()=>!!document.querySelector(".tile.spot.jboard")),"Adventure has a Job board signpost: "+lab);
   await p.click("#advAct");
   ok(await waitFor(p,()=>Modes.stack().join(">")==="adventure>job"),"walking up to it opens the Job board: "+await E(()=>Modes.stack().join(">")));
-  await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="adventure");
+  await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="adventure");
   await p.click("#advDone");await waitFor(p,()=>Modes.top()==="valley");
 
   // 8. Where the time goes: jobs are counted as their own mode
