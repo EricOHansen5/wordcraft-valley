@@ -8931,6 +8931,9 @@ const Read=(()=>{
       .reduce((a,x)=>{if(a.length<n&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
   }
   function rec(w,ok,o){try{Skills.result(w,{ok,...o});}catch(e){}}
+  // answer once: the first call goes through and every later one (a double tap, a tap during
+  // the success pause) is ignored. The Jobs kits use it; the builders below keep their own guards.
+  function once(done){let used=false;return function(){if(used)return;used=true;if(typeof done==="function")return done.apply(this,arguments);};}
   // read the word, tap its picture
   function pic(host,done,w){
     w=w||word();const t0=performance.now();let miss=0,fin=false;
@@ -8997,7 +9000,7 @@ const Read=(()=>{
           Sound.say("word:"+w.w,w.w,.82);},800);}});
     return w;
   }
-  return{word,others,pic,wordPick,sentence,build,shuffle};
+  return{word,others,pic,wordPick,sentence,build,shuffle,once,near};
 })();
 
 /* ================================================================
