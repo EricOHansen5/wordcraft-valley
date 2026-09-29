@@ -439,6 +439,17 @@ select{width:auto}
 .hatcard .art{width:84px;height:84px;margin:0 auto 4px}.hatcard .art svg{width:100%;height:100%}
 .hatcard .n{font-weight:900;font-size:15px}.hatcard .c{font-size:12px;color:var(--ink-soft);margin:2px 0 8px}
 .hatcard.worn{background:linear-gradient(160deg,#FFF3C4,#FFE39A);box-shadow:0 0 16px rgba(255,197,61,.5)}
+/* trading post */
+#storeBtn{width:auto;padding:0 12px 0 10px;display:flex;align-items:center;gap:6px}
+#storeBtn .purse{font-size:15px;font-weight:900;white-space:nowrap}
+.stpurse{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 12px}
+.stpurse span{padding:6px 16px;border:3px solid var(--ink);border-radius:999px;background:var(--paper-deep);font-weight:900;font-size:19px}
+.stcard{position:relative}.stcard .art{cursor:pointer}
+.stcard.worn{background:linear-gradient(160deg,#FFF3C4,#FFE39A);box-shadow:0 0 16px rgba(255,197,61,.5)}
+.stcard.locked .art{filter:grayscale(.85);opacity:.6}
+.stcard .rib{position:absolute;top:-9px;right:-6px;background:#DC5A4B;color:#fff;font-size:12px;padding:2px 8px;border:2px solid var(--ink);border-radius:10px;transform:rotate(8deg)}
+.stcard .job{font-size:12px;font-weight:800;color:var(--ink-soft)}
+.stmsg{min-height:26px;text-align:center;font-weight:900;font-size:19px;margin:-6px 0 10px}
 /* vehicles: body flips to face travel, act carries tap stunts, hop idles */
 .vehicle{position:absolute;transform:translate(-50%,-100%);cursor:pointer}
 .vehicle .body,.vehicle .act,.vehicle .hop{width:100%;height:100%;transform-origin:50% 100%}
@@ -1178,6 +1189,7 @@ body.exploring .slot-empty{display:none}
     <button class="toolbtn" id="questBtn" title="Today's quests">📜<span class="badge" id="questBadge"></span></button>
     <button class="toolbtn" id="craftBtn" title="Building plans">📐<span class="badge" id="planBadge"></span></button>
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
+    <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
   </div>
 </div>
 
@@ -3830,6 +3842,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TODAY'S READING (7c): words read today toward the goal (a finished book completes it),
   // and the days it was reached (kept for 60 days)
   goal:{date:"",words:0,book:false,done:false},goalDays:{},
+  // TRADING POST: what he bought there that has no older home (hats stay in hats, the Mine's helmets in mine.owned)
+  owned:{},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -4546,6 +4560,7 @@ function renderHUD(){
   document.getElementById("timeBtn").style.display=state.settings.ambient?"grid":"none";
   try{booksBadge();}catch(e){}
   try{Goal.render();}catch(e){}
+  try{Store.hud();}catch(e){}
 }
 document.getElementById("buddyBtn").onclick=()=>{
   const el=document.getElementById("buddyBtn");el.classList.add("pulse");
@@ -4702,6 +4717,7 @@ const Modes=(()=>{
     gate:{name:"Grown-up gate",reading:false},
     parent:{name:"Grown-up menu",reading:false},
     report:{name:"Reading report",reading:false},
+    store:{name:"Trading Post",reading:false},         // TRADING POST: the two shelves
     other:{name:"Other",reading:false}};
   // overlays, by element id
   const OV={ovCrates:"read",ovRead:"read",ovReward:"reward",ovSign:"sign",ovCraft:"craft",ovQuests:"quests",ovPhoto:"photo",
@@ -9572,6 +9588,197 @@ const Race=(()=>{
 })();
 
 /* ================================================================
+   TRADING POST — one shop, two shelves
+   Everything he can wear or use is bought here, from the 🏪 button in
+   the tool bar (it shows both purses) or the stall in Adventure. Each
+   shelf is paid from its own purse:
+     💎 Outfits  for the buddy, paid with gems (reading). The wardrobe
+                 hats (HATS) are on it unchanged.
+     🪙 Gear     for the miner and the jobs, paid with the Mine's coins.
+                 The Mine's helmets (LOOK.helmets) are on it unchanged.
+   Items are data: Store.item({id, shelf:"outfit"|"gear", name,
+   cost:{gems:n}|{coins:n}, art, tag, unlock, wear, keep}).
+     art    the ART drawing (a hat_ drawing is shown on its wearer)
+     tag    "new" puts a ribbon on it; "uniform" / "tool" name job gear
+     unlock {job, level}: shown locked until that job level
+     wear   "hat" (the buddy, state.hat) or "helmet" (the miner,
+            state.mine.look.helmet); nothing for job gear
+     keep   where it is kept once bought: "hats" (state.hats) and "mine"
+            (state.mine.owned) for the older things, so nothing already
+            owned moves; anything new is kept in state.owned[id] = 1
+   Buying takes the price once: a second tap on something he owns takes
+   nothing, a tap without enough takes nothing and only says how many
+   more ("Almost! 3 more 💎."). Prices never change and nothing is sold
+   back. The Wardrobe tab of the sticker book and the Mine's clothes
+   tent only put on what he owns, with a line pointing here.
+   ================================================================ */
+const Store=(()=>{
+  const PURSE={
+    gems:{ic:"💎",one:"gem",many:"gems",get:()=>state.gems||0,set:v=>{state.gems=v;}},
+    coins:{ic:"🪙",one:"coin",many:"coins",get:()=>(state.mine&&state.mine.coins)||0,set:v=>{state.mine.coins=v;}}};
+  const KEEP={
+    hats:{has:id=>(state.hats||[]).indexOf(id)>=0,give:id=>{if(!Array.isArray(state.hats))state.hats=[];if(state.hats.indexOf(id)<0)state.hats.push(id);}},
+    mine:{has:id=>!!(state.mine&&state.mine.owned&&state.mine.owned[id]),give:id=>{state.mine.owned[id]=1;}},
+    own:{has:id=>!!(state.owned&&state.owned[id]),give:id=>{if(!state.owned)state.owned={};state.owned[id]=1;}}};
+  const items=[];
+  // ---------- the shelves ----------
+  function item(o){
+    const it=Object.assign({keep:"own",tag:"",unlock:null,wear:null,prize:false},o);
+    it.purse=it.cost&&it.cost.gems!=null?"gems":"coins";it.price=Math.max(0,+(it.cost||{})[it.purse]||0);
+    const i=items.findIndex(x=>x.shelf===it.shelf&&x.id===it.id);
+    if(i>=0)items[i]=it;else items.push(it);
+    return it;
+  }
+  const get=(shelf,id)=>items.find(x=>x.shelf===shelf&&x.id===id)||null;
+  const list=shelf=>items.filter(x=>x.shelf===shelf);
+  const owns=it=>!!it&&!!KEEP[it.keep]&&KEEP[it.keep].has(it.id);
+  // does he own a thing with this id (on this shelf, or on any)? for other modes, e.g. a job's uniform
+  const has=(id,shelf)=>items.some(it=>it.id===id&&(!shelf||it.shelf===shelf)&&owns(it));
+  const unlocked=it=>!it.unlock;
+  const shown=it=>!it.prize||owns(it);          // a prize (the Crystal crown) is won in the Mine, not sold
+  const worn=it=>it.wear==="hat"?state.hat===it.id:
+    it.wear==="helmet"?!!(state.mine&&state.mine.look&&state.mine.look.helmet===it.id):false;
+  // what the two wardrobes offer: the things he owns that can be worn there
+  const outfits=()=>list("outfit").filter(it=>it.wear==="hat"&&owns(it));
+  const helmets=()=>list("gear").filter(it=>it.wear==="helmet"&&owns(it));
+
+  // ---------- buying and wearing (no screen needed) ----------
+  // {ok:true}, or {ok:false, why:"owned"|"locked"|"short"|"none", need}; the price is taken once
+  function purchase(shelf,id){
+    const it=get(shelf,id);if(!it||!shown(it))return{ok:false,why:"none"};
+    if(owns(it))return{ok:false,why:"owned"};
+    if(!unlocked(it))return{ok:false,why:"locked"};
+    const P=PURSE[it.purse],have=P.get();
+    if(have<it.price)return{ok:false,why:"short",need:it.price-have};
+    P.set(have-it.price);KEEP[it.keep].give(it.id);
+    if(it.wear)put(it,true);
+    save();try{renderHUD();}catch(e){}
+    return{ok:true};
+  }
+  function put(it,on){
+    if(!owns(it))return false;
+    if(it.wear==="hat")state.hat=on?it.id:null;
+    else if(it.wear==="helmet"&&on&&state.mine&&state.mine.look)state.mine.look.helmet=it.id;
+    else return false;
+    save();try{renderHUD();}catch(e){}
+    return true;
+  }
+
+  // ---------- speaking ----------
+  // a line made of fixed pieces and numbers ("12 more coins") plays in the game voice when every
+  // piece has a clip; otherwise the whole line goes to the device voice in one go
+  function sayParts(parts){
+    let all=false;
+    try{all=state.settings.voicePack!==false&&VoicePack.ready&&parts.every(p=>VoicePack.has(p));}catch(e){}
+    if(!all)return Sound.speak(parts.join(" "),.95);
+    return parts.reduce((p,x)=>p.then(()=>Sound.speak(x,.95)),Promise.resolve());
+  }
+  const count=(n,P)=>n+" "+(n===1?P.one:P.many);
+
+  // ---------- the Trading Post ----------
+  let el=null,shelf="outfit",lockUntil=0,greeted=false;
+  // one tap at a time: a double tap lands once (the second would take off what the first put on)
+  const tap=fn=>{if(Date.now()<lockUntil)return;lockUntil=Date.now()+600;fn();};
+  const msg=t=>{if(el)el.querySelector("#stMsg").textContent=t||"";};
+  function build(){
+    el=document.createElement("div");el.className="overlay";el.id="ovStore";
+    el.innerHTML=`<div class="sheet stsheet"><h2>🏪 Trading Post</h2>
+      <div class="stpurse"><span id="stGems"></span><span id="stCoins"></span></div>
+      <div class="tabs" id="stTabs"><button class="tab" data-shelf="outfit">💎 Outfits</button><button class="tab" data-shelf="gear">🪙 Gear</button></div>
+      <p class="sub" id="stSub"></p><p class="stmsg" id="stMsg" aria-live="polite"></p>
+      <div class="gridcards" id="stGrid"></div><div id="stSwap"></div>
+      <div style="text-align:center;margin-top:18px"><button class="btn soft" id="stClose">Done</button></div></div>`;
+    document.body.appendChild(el);
+    el.querySelectorAll("[data-shelf]").forEach(b=>b.onclick=()=>{shelf=b.dataset.shelf;msg("");Sound.sfx.soft();render();});
+    el.querySelector("#stClose").onclick=close;
+  }
+  function open(sh){
+    if(!el)build();
+    if(sh)shelf=sh;
+    msg("");render();
+    el.classList.add("on");Modes.open("store",el);Sound.sfx.soft();
+    if(!greeted){greeted=true;Sound.speak("Welcome to the Trading Post!",.95);}
+  }
+  function close(){if(!el)return;Modes.shut(el);Sound.sfx.soft();try{renderHUD();}catch(e){}}
+  function render(){
+    if(!el)return;
+    const $=s=>el.querySelector(s);
+    $("#stGems").textContent="💎 "+PURSE.gems.get();$("#stCoins").textContent="🪙 "+PURSE.coins.get();
+    el.querySelectorAll("[data-shelf]").forEach(b=>b.classList.toggle("on",b.dataset.shelf===shelf));
+    const g=$("#stGrid");g.innerHTML="";$("#stSwap").innerHTML="";
+    $("#stSub").textContent=shelf==="outfit"?"Outfits for your buddy. Pay with 💎 from reading.":"Gear for your miner and your jobs. Pay with 🪙 coins.";
+    list(shelf).filter(shown).forEach(it=>g.appendChild(card(it)));
+  }
+  function art(it){
+    if(it.wear==="hat")return ART.buddy(stageIdx(),mulberry(42),it.id);
+    const f=ART[it.art];if(!f)return"";
+    // a helmet sits on a cushion; other gear is drawn to fill the box
+    return it.wear==="helmet"?S(`<ellipse cx="50" cy="82" rx="30" ry="9" fill="${grad("#7B5BE0","v",.3,.2)}"/><g transform="translate(0 38)">${f()}</g>`):S(f());
+  }
+  function card(it){
+    const own=owns(it),on=worn(it),open_=unlocked(it),P=PURSE[it.purse];
+    const d=document.createElement("div");
+    d.className="card2 stcard"+(on?" worn":"")+(own?" owned":"")+(open_?"":" locked");
+    d.dataset.id=it.id;d.dataset.shelf=it.shelf;
+    d.innerHTML=`${it.tag==="new"&&!own?`<b class="rib">New!</b>`:""}<div class="art">${art(it)}</div><div class="nm">${esc(it.name)}</div>
+      <div class="cost">${own?(on?"Wearing it":"✓ Yours"):`<b>${it.price} ${P.ic}</b>`}</div>`;
+    // tap the picture to hear what it is (and what it costs)
+    d.querySelector(".art").onclick=()=>{Sound.sfx.pop();sayParts(own?[it.name]:[it.name,count(it.price,P)]);};
+    let b=document.createElement("button");
+    if(!own){b.className="btn mini "+(P.get()>=it.price?"primary":"soft");b.textContent="Buy";b.dataset.act="buy";b.onclick=()=>tap(()=>buy(it.shelf,it.id));}
+    else if(it.wear==="hat"){b.className="btn soft mini";b.textContent=on?"Take off":"Wear it";b.dataset.act=on?"off":"wear";b.onclick=()=>tap(()=>wear(it,!on));}
+    else if(it.wear==="helmet"){b.className="btn soft mini";b.textContent=on?"Wearing it":"Wear it";b.disabled=on;b.dataset.act="wear";b.onclick=()=>tap(()=>wear(it,true));}
+    else b=null;
+    if(b)d.appendChild(b);
+    return d;
+  }
+  // with the Trading Post on screen: what he sees and hears
+  function buy(shelf,id){
+    const it=get(shelf,id),r=purchase(shelf,id);
+    if(r.ok){
+      confetti();Sound.sfx.win();msg(`🎉 The ${it.name.toLowerCase()} is yours!`);
+      Sound.speak(it.wear==="hat"?"How do I look?":it.wear==="helmet"?"Your miner has a new hat!":"It's yours!",.95);
+    }else if(r.why==="short")almost(r.need,PURSE[it.purse]);
+    render();return r;
+  }
+  function almost(need,P){msg(`Almost! ${need} more ${P.ic}.`);Sound.sfx.soft();sayParts(["Almost!",need+" more "+(need===1?P.one:P.many)]);}
+  function wear(it,on){const ok=put(it,on);if(ok){Sound.sfx.pop();if(on&&it.wear==="hat")buddyCheer();}render();return ok;}
+
+  // ---------- the stall in Adventure ----------
+  const STALL=()=>S(`${OCC}<path d="M16 52 L84 52 L84 92 L16 92Z" fill="${grad("#C98C3E","v",.24,.2)}"/>
+    <path d="M24 62 L76 62 L76 76 L24 76Z" fill="${grad("#FFE39A","v",.2,.15)}"/>
+    <path d="M18 52 L18 32 M82 52 L82 32" fill="none" stroke-width="3"/>
+    <path d="M6 34 L50 12 L94 34Z" fill="${grad("#DC5A4B","v",.3,.2)}"/>
+    ${[0,1,2,3,4].map(k=>`<path d="M${10+k*16} 34 L${26+k*16} 34 L${26+k*16} 42 Q${18+k*16} 50 ${10+k*16} 42Z" fill="${k%2?"#FBF6EC":"#DC5A4B"}"/>`).join("")}
+    <text x="30" y="73" font-size="12" stroke="none">💎</text><text x="54" y="73" font-size="12" stroke="none">🪙</text>`);
+  let stall=null;
+  // the same place every visit: the front row near the left edge, clear of buildings and the land keepers
+  function spot(){
+    const first=ROWS_MAX-state.rows,gRow=Math.max(first,ROWS_MAX-2);
+    const free=(c,r)=>!Object.keys(state.grid).some(k=>{const p=k.split(",").map(Number);return Math.abs(p[0]-c)<2.2&&Math.abs(p[1]-r)<1.5;})
+      &&!GUARDIANS.some(g=>Math.abs(g.c-c)<1.8&&Math.abs(gRow-r)<1.2);
+    for(let r=ROWS_MAX-1;r>=first;r--)for(const c of [.9,5.5,COLS-5.5])if(free(c,r))return{c,r};
+    for(let r=ROWS_MAX-1;r>=first;r--)for(let c=.9;c<COLS-1;c+=.5)if(free(c,r))return{c,r};
+    return{c:.9,r:ROWS_MAX-1};
+  }
+  Adv.provide(()=>{const p=spot();if(!stall)stall=STALL();
+    return[{c:p.c,r:p.r,size:.95,cls:"tpost",html:stall,label:"🏪 Trading Post",act:()=>open()}];});
+
+  // ---------- the tool bar ----------
+  function hud(){
+    const p=document.getElementById("storePurse");if(p)p.textContent=`💎 ${PURSE.gems.get()} · 🪙 ${PURSE.coins.get()}`;
+  }
+  document.getElementById("storeBtn").onclick=()=>open();
+
+  return{item,get,list,owns,has,unlocked,worn,outfits,helmets,purchase,put,buy,wear,open,close,hud,
+    get shelf(){return shelf;},_spot:spot};
+})();
+// the wardrobe hats, as they were (ids, prices, and kept in state.hats)
+HATS.forEach(h=>Store.item({id:h.id,shelf:"outfit",name:h.name,cost:{gems:h.gems},art:"hat_"+h.id,wear:"hat",keep:"hats"}));
+// the Mine's helmets, as they were (ids, prices, and kept in state.mine.owned); the Crystal crown is a prize
+LOOK.helmets.forEach(h=>Store.item({id:h.id,shelf:"gear",name:h.name,cost:{coins:h.cost},art:"hat_"+h.id,wear:"helmet",keep:"mine",prize:!!h.prize}));
+
+/* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
    the small server in wordcraft-server/ running on the home NAS. By
@@ -11040,6 +11247,7 @@ const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","b
   "treats","mine","skills","skillMiss","answers","rushes","minutes","comp","library","reread","rereadPaid","adv","notes","quest","quest2","mybooks","write","sync","togetherDays",
   "mine.found","mine.museum","mine.bosses","mine.items","mine.eggs","mine.blocks","mine.placed","mine.signs","mine.vaults","mine.stat",
   "adv.dex"];
+NULL_IS_MISSING.push("owned");      // TRADING POST
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];
