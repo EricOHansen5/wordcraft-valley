@@ -201,7 +201,7 @@ Each one is a content pack on an engine that exists. It opens only in its window
 The birthday needs one Grown-up setting (`settings.birthday`, month and day). Easter is computed (the anonymous Gregorian algorithm, a dozen lines).
 
 ### Order and size
-- **First** the Look system with the closet and `looks_e2e.js` (about 300 lines), then whichever holiday's window comes next once Jobs has shipped: Thanksgiving if that is before 10 November, otherwise the winter one. Halloween 2026 keeps Harvest Days only.
+- **First** the Look system with the closet and `looks_e2e.js` (about 300 lines), then the first window after Jobs. Jobs shipped on 28 September, so that is **Halloween** (window opens 15 October), then Thanksgiving and the winter pack. Story arc 2 chapters 4–6 are built alongside.
 - Then one holiday per window as the calendar comes round, each 150–300 lines plus its own suite on `tests/lib.js`. Nothing is built for a window more than two months out, and anything not ready by its window waits a year.
 - Art: props as procedural SVG like the seasonal builds, plus a few Fluent Emoji (MIT) icons embedded like the others (jack-o'-lantern, ghost, gift, heart, egg, fireworks, turkey), attributions kept in About.
 - Judged by: opens per day in the window against the week before, and reading minutes in the window from "Where the time goes".
@@ -216,7 +216,7 @@ The birthday needs one Grown-up setting (`settings.birthday`, month and day). Ea
 | **v10.0** | 18 books for levels 1–6; two new quiz types; second story arc (3 chapters); sentence reread timing and words-per-minute trend; Read with Dad; reading tickets with parent toggle; hero name | Reading minutes vs baseline; books finished per week |
 | **v10.1** | Jobs engine with 3 kits; Shopkeeper and Lawn mower; math track K–1; Trading Post with two shelves and the 1 = 5 exchange; "Mine tasks" rename | Reading minutes hold or rise; Jobs opens per week |
 | **v10.2** | Chosen by the data (see above) | |
-| **v10.3** | Look system with a closet; then one holiday mini-game per window, starting with the first window after Jobs (Thanksgiving or Winter) | Opens per day and reading minutes in the window |
+| **v10.3** | Look system with a closet; then one holiday mini-game per window, starting with Halloween 2026 | Opens per day and reading minutes in the window |
 | Later | Items under Deferred, each with its trigger | |
 
 Each phase follows the usual workflow: tests, voice clips, `npm run release`, a `design.md` section, then deploy.
@@ -250,7 +250,7 @@ Each phase follows the usual workflow: tests, voice clips, `npm run release`, a 
 ## Decisions made (28 Sept 2026)
 | Topic | Choice |
 |---|---|
-| Looks and holidays | After Jobs (v10.3). Halloween 2026 keeps Harvest Days; the first holiday pack is Thanksgiving or Winter |
+| Looks and holidays | After Jobs (v10.3). Jobs shipped 28 Sept, so the first pack is Halloween 2026, then Thanksgiving and Winter |
 | Getting a look | Earned from its mini-game only, piece by piece. Nothing sold |
 | Wearing a look | Any earned look on any day, from a closet button |
 | Holidays | All seven: Halloween, Thanksgiving, Winter, Valentine's, Easter, 4th of July, his birthday |
