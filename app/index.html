@@ -11895,7 +11895,10 @@ const Factory=(()=>{
   const dot=it=>isToy(it)?colOf(it).t:colOf(it).e;
   const nameOf=it=>colOf(it).n+(isToy(it)?" toys":"");
   // the pieces, in the palette's order; from: the level that teaches it (it is his from then on)
-  const TOOLS=[{id:"belt",k:K.BELT,name:"Belt",from:1},{id:"drill",k:K.DRILL,name:"Drill",from:1},{id:"erase",k:0,name:"Erase",from:1}];
+  const TOOLS=[{id:"belt",k:K.BELT,name:"Belt",from:1},{id:"drill",k:K.DRILL,name:"Drill",from:1},
+    {id:"mixer",k:K.MIXER,name:"Mixer",from:4},{id:"split",k:K.SPLIT,name:"Splitter",from:6},
+    {id:"sort",k:K.SORT,name:"Sorter",from:8},{id:"stamp",k:K.STAMP,name:"Stamper",from:10},
+    {id:"tunnel",k:K.TUNNEL,name:"Tunnel",from:11},{id:"erase",k:0,name:"Erase",from:1}];
   const TOOL=id=>TOOLS.filter(t=>t.id===id)[0]||TOOLS[0];
   // the buddy's lean tips: overproduction (without "Try a splitter." until the splitter is his), inventory, transportation
   const TIPS={drills:"The drills are waiting. The belt is full! Try a splitter.",drills0:"The drills are waiting. The belt is full!",wip:"Lots of rocks waiting in line!",
@@ -11953,7 +11956,7 @@ const Factory=(()=>{
   const hidden=()=>typeof document!=="undefined"&&document.visibilityState==="hidden";
   function root(){if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFactory";document.body.appendChild(ov);}return ov;}
   function session(opt){
-    return Object.assign({n:0,level:null,tool:"belt",lastDir:1,running:false,done:false,
+    return Object.assign({n:0,level:null,tool:"belt",lastDir:1,sortCol:2,running:false,done:false,
       order:null,base:new Int16Array(128),full:0,hop:-99,tip:{cand:"",since:0,shown:"",said:{}},flow:1,jam:0,cur:0,kb:false,kbDir:1,kbLast:-1,
       armed:false,result:null,sig:""},opt||{});
   }
@@ -12019,6 +12022,7 @@ const Factory=(()=>{
         <div class="fctally" id="fcTally"></div>
         <p class="fctip" id="fcTip" aria-live="polite"></p>
         <div class="fcctl"><button class="btn primary" id="fcRun">▶ Run</button><button class="btn soft" id="fcClear" aria-label="Start again">↺</button></div>
+        <div class="fcsw" id="fcSw"></div>
         <p class="fcmeta" id="fcMeta"></p></div></div>`;
     cv=$("#fcCv");g=null;try{g=cv.getContext("2d");if(g&&typeof g.fillRect!=="function")g=null;}catch(e){g=null;}
     $("#fcHear").onclick=()=>{Sound.sfx.soft();hear();};
@@ -12038,10 +12042,19 @@ const Factory=(()=>{
     [].slice.call(p.querySelectorAll(".fctool")).forEach(b=>{
       const c=b.querySelector("canvas");if(c)icon(c,b.dataset.tool);
       b.onclick=e=>{blur(e);pick(b.dataset.tool);};});
+    swatches();
   }
   function pick(id){
     if(!hasTool(id))return;S.tool=id;Sound.sfx.pop();
     [].slice.call(ov.querySelectorAll(".fctool")).forEach(b=>b.classList.toggle("on",b.dataset.tool===id));
+    swatches();
+  }
+  // the sorter's colours, while the sorter is picked
+  function swatches(){
+    const el=$("#fcSw");if(!el)return;
+    if(S.tool!=="sort"){el.innerHTML="";return;}
+    el.innerHTML=`<p class="fcswl">Sorter pulls off:</p>`+E.SORT_COLS.map(m=>`<button class="fcswatch${S.sortCol===m?" on":""}" data-m="${m}" style="background:${COL[m].c}" aria-label="${COL[m].n}"></button>`).join("");
+    [].slice.call(el.querySelectorAll(".fcswatch")).forEach(b=>{b.onclick=e=>{blur(e);S.sortCol=+b.dataset.m;Sound.sfx.pop();swatches();};});
   }
   function card(){
     const s=$("#fcSend");if(!s)return;
@@ -12179,11 +12192,11 @@ const Factory=(()=>{
       else Sound.speak("You already have these stars! Great building.",.95);}
   }
   // play the level again: back to the start, his pieces stay
-  function again(){if(!S)return;E.reset(w);S=Object.assign(session({n:S.n,level:S.level,order:S.order}),{tool:S.tool,cur:S.cur,kb:S.kb});board();}
+  function again(){if(!S)return;E.reset(w);S=Object.assign(session({n:S.n,level:S.level,order:S.order}),{tool:S.tool,cur:S.cur,sortCol:S.sortCol,kb:S.kb});board();}
   /* ---------- building on the board ---------- */
   const W=()=>w.W;
   const kindOf=id=>TOOL(id).k;
-  const isMach=t=>t===K.DRILL;
+  const isMach=t=>t===K.DRILL||t===K.MIXER||t===K.SPLIT||t===K.STAMP||t===K.TUNNEL||t===K.SORT;
   function changed(){keep();meta();if(!S.running)draw();}
   function rotate(i){if(i<0||!E.isPiece(w.type[i]))return false;w.dir[i]=(w.dir[i]+1)&3;Sound.sfx.soft();changed();return true;}
   // a new drill faces whatever is next to it that can take a rock, else the truck's way
@@ -12202,6 +12215,12 @@ const Factory=(()=>{
     for(let d=0;d<4;d++){const j=E.nb(w,b,d);if(j<0||w.type[j]!==K.DRILL)continue;
       const f=E.next(w,j),ft=f>=0?w.type[f]:K.ROCK;if(f===b||ft===K.NONE||ft===K.ROCK)w.dir[j]=(d+2)&3;}
   }
+  // a second tunnel in line with one that has no partner: both face from the first to the second
+  function tunnelDir(i,d){
+    for(let dd=0;dd<4;dd++){let j=i;for(let n=1;n<=E.TUNNEL_RANGE;n++){j=E.nb(w,j,(dd+2)&3);if(j<0)break;
+      if(w.type[j]===K.TUNNEL&&E.tunnelExit(w,j)<0&&!E.tunnelIsExit(w,j)){w.dir[j]=dd;return dd;}}}
+    return d;
+  }
   // put the picked piece at i (dir: which way, when he says)
   function place(i,dir){
     const T=S.tool,k=kindOf(T);if(i<0)return false;
@@ -12210,7 +12229,8 @@ const Factory=(()=>{
     if(t===k&&k!==K.BELT)return false;
     let d=dir!=null?dir:(t===K.BELT?w.dir[i]:S.lastDir);
     if(k===K.DRILL&&dir==null)d=aim(i);
-    if(!E.put(w,i,k,d)){if(t!==k){Sound.sfx.nope();wiggle();}return false;}
+    if(k===K.TUNNEL)d=tunnelDir(i,d);
+    if(!E.put(w,i,k,d,S.sortCol)){if(t!==k){Sound.sfx.nope();wiggle();}return false;}
     if(k===K.BELT)aimDrills(i);
     Sound.sfx.pop();changed();return true;
   }
@@ -12262,7 +12282,7 @@ const Factory=(()=>{
     if(!stroke)return;const s=stroke;stroke=null;
     if(!s.moved){const i=s.first,t=w.type[i];
       if(s.tool==="belt"&&t===K.BELT&&!s.placed)rotate(i);
-      else if(s.same)rotate(i);}
+      else if(s.same){if(t===K.SORT&&w.filt[i]!==S.sortCol){w.filt[i]=S.sortCol;Sound.sfx.pop();changed();}else rotate(i);}}
     keep();
   }
   // touch first (pointer events), the older touch and mouse events where there are none
@@ -12306,6 +12326,8 @@ const Factory=(()=>{
     if(k===" "||k==="Spacebar"){S.kb=true;keyPlace();draw();return true;}
     if(k==="r"||k==="R"){S.kb=true;rotate(S.cur);draw();return true;}
     if(k==="e"||k==="E"){S.kb=true;if(E.erase(w,S.cur)){Sound.sfx.soft();changed();}S.kbLast=-1;draw();return true;}
+    if(k==="c"||k==="C"){const i=S.cur,m=E.SORT_COLS,at=m.indexOf(w.type[i]===K.SORT?w.filt[i]:S.sortCol);
+      S.sortCol=m[(at+1)%m.length];if(w.type[i]===K.SORT){w.filt[i]=S.sortCol;changed();}swatches();draw();return true;}
     if(k==="Enter"){toggle();return true;}
     if(/^[1-9]$/.test(k)){const t=tools()[+k-1];if(t)pick(t.id);return true;}
     return false;
@@ -12364,7 +12386,7 @@ const Factory=(()=>{
     rr(c,cx-s*.25,cy-s*.2,s*.5,s*.36,s*.06);c.fill();c.stroke();
     c.fillStyle="rgba(255,255,255,.45)";c.fillRect(cx-s*.18,cy-s*.13,s*.08,s*.2);
   }
-  // one piece; o holds what it needs to show (the ore, how far along)
+  // one piece; o holds what it needs to show (the ore, a mixer's colours, how far along)
   function drawPiece(c,x,y,s,t,d,o){
     o=o||{};
     if(t===K.BELT){drawBelt(c,x,y,s,d,o.heat||0,o.ph||0);return;}
@@ -12373,6 +12395,27 @@ const Factory=(()=>{
       const a=o.spin||0;c.strokeStyle=INK_C;c.lineWidth=Math.max(1.2,s*.05);
       for(let k=0;k<3;k++){const q=a+k*2.094;c.beginPath();c.moveTo(x+s/2,y+s/2);c.lineTo(x+s/2+Math.cos(q)*s*.22,y+s/2+Math.sin(q)*s*.22);c.stroke();}
       tri(c,x,y,s,d,col.c,1.05);return;}
+    if(t===K.MIXER){box(c,x,y,s,"#C7D3DE");c.beginPath();c.arc(x+s/2,y+s/2,s*.28,0,7);c.fillStyle="#FFFFFF";c.fill();c.stroke();
+      const m=o.mask||0;
+      if(E.POP[m]===2){const col=COL[m];c.beginPath();c.moveTo(x+s/2,y+s/2);c.arc(x+s/2,y+s/2,s*.24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,(o.prog||0)));c.closePath();c.fillStyle=col.c;c.fill();}
+      else{let n=0;[1,2,4].forEach(b=>{if(m&b){c.beginPath();c.arc(x+s*(.4+n*.2),y+s/2,s*.08,0,7);c.fillStyle=COL[b].c;c.fill();c.lineWidth=1;c.stroke();n++;}});
+        if(!m){c.strokeStyle="#9AAAB8";c.lineWidth=Math.max(1,s*.04);c.beginPath();c.arc(x+s/2,y+s/2,s*.13,0,4.5);c.stroke();}}
+      tri(c,x,y,s,d,"#FFFFFF");return;}
+    if(t===K.SPLIT){box(c,x,y,s,"#BDE7E0");tri(c,x,y,s,(d+2)&3,"#7FB7AF",.8,true);
+      [d,(d+1)&3,(d+3)&3].forEach((q,k)=>tri(c,x,y,s,q,k?"#E9FFFB":"#FFFFFF",k?.85:1));
+      if(o.item)drawItem(c,x+s/2,y+s/2,s*.8,o.item);return;}
+    if(t===K.SORT){const col=COL[o.filt]||COL[1];box(c,x,y,s,"#F6E7C1");tri(c,x,y,s,(d+2)&3,"#D8C79F",.8,true);
+      tri(c,x,y,s,d,"#FFFFFF",.8);tri(c,x,y,s,(d+1)&3,col.c,1);tri(c,x,y,s,(d+3)&3,col.c,1);
+      c.beginPath();c.arc(x+s/2,y+s/2,s*.16,0,7);c.fillStyle=col.c;c.fill();c.lineWidth=Math.max(1.2,s*.04);c.strokeStyle=INK_C;c.stroke();
+      if(o.item)drawItem(c,x+s/2,y+s/2,s*.65,o.item);return;}
+    if(t===K.STAMP){box(c,x,y,s,"#E7C9A5");const p=o.prog||0,dn=Math.sin(Math.min(1,p)*Math.PI);
+      if(o.item)drawItem(c,x+s/2,y+s*.6,s*.8,o.item);
+      rr(c,x+s*.26,y+s*(.14+dn*.18),s*.48,s*.2,s*.05);c.fillStyle="#6F6A62";c.fill();c.lineWidth=Math.max(1.2,s*.04);c.strokeStyle=INK_C;c.stroke();
+      c.fillRect(x+s*.46,y+s*.08,s*.08,s*(.08+dn*.18));
+      tri(c,x,y,s,d,"#FFFFFF");return;}
+    if(t===K.TUNNEL){box(c,x,y,s,"#B08D6B");const b=(d+2)&3,cx=x+s/2,cy=y+s/2;
+      c.fillStyle="#2E2620";c.beginPath();c.arc(cx+E.DX[o.exit?d:b]*s*.05,cy+E.DY[o.exit?d:b]*s*.05,s*.22,0,7);c.fill();
+      tri(c,x,y,s,d,o.exit?"#E9DCC8":"#FFFFFF",.9);if(o.item&&!o.exit)drawItem(c,cx,cy,s*.6,o.item);return;}
   }
   function draw(){
     if(!g||!w||!cv)return;
@@ -12380,13 +12423,19 @@ const Factory=(()=>{
       const s=cell,run=S&&S.running,ph=(w.t%E.BELT_T)/E.BELT_T;
       g.setTransform(dpr,0,0,dpr,0,0);
       for(let y=0;y<w.H;y++)for(let x=0;x<w.W;x++){g.fillStyle=(x+y)%2?"#EADDC3":"#F1E6CF";g.fillRect(x*s,y*s,s,s);}
+      // the tunnels' underground links, under everything
+      g.setLineDash&&g.setLineDash([s*.12,s*.12]);g.strokeStyle="rgba(59,48,36,.45)";g.lineWidth=Math.max(2,s*.08);
+      for(let i=0;i<w.N;i++){if(w.type[i]!==K.TUNNEL)continue;const ex=E.tunnelIsExit(w,i)?-1:E.tunnelExit(w,i);if(ex<0)continue;
+        g.beginPath();g.moveTo((i%w.W+.5)*s,(((i/w.W)|0)+.5)*s);g.lineTo((ex%w.W+.5)*s,(((ex/w.W)|0)+.5)*s);g.stroke();}
+      g.setLineDash&&g.setLineDash([]);
       for(let i=0;i<w.N;i++){
         const x=(i%w.W)*s,y=((i/w.W)|0)*s,t=w.type[i];
         if(t===K.ROCK){drawRock(g,x,y,s,i);continue;}
         if(t===K.TRUCK){drawTruck(g,x,y-(S&&w.t-S.hop<6?s*.07:0),s);continue;}
         if(w.ore[i]&&t!==K.DRILL)drawSpot(g,x,y,s,w.ore[i]);
         if(!t)continue;
-        drawPiece(g,x,y,s,t,w.dir[i],{heat:w.heat[i],ph:run?ph:0,ore:w.ore[i],spin:run&&!w.stall[i]?w.t*.35:0});
+        drawPiece(g,x,y,s,t,w.dir[i],{heat:w.heat[i],ph:run?ph:0,ore:w.ore[i],mask:w.mask[i],filt:w.filt[i],item:w.item[i],
+          prog:t===K.MIXER?w.timer[i]/E.MIX_T:t===K.STAMP?w.timer[i]/E.STAMP_T:0,spin:run&&!w.stall[i]?w.t*.35:0,exit:t===K.TUNNEL&&E.tunnelIsExit(w,i)});
       }
       // what is riding the belts, from the middle of a cell to the middle of the next
       for(let i=0;i<w.N;i++){if(w.type[i]!==K.BELT||!w.item[i])continue;const p=Math.min(1,w.prog[i]/E.BELT_T),d=w.dir[i];
@@ -12399,7 +12448,7 @@ const Factory=(()=>{
     let x=null;try{x=c.getContext("2d");}catch(e){}if(!x||typeof x.fillRect!=="function")return;
     try{x.setTransform(2,0,0,2,0,0);x.clearRect(0,0,38,38);const t=TOOL(id);
       if(t.k===K.BELT){drawBelt(x,0,0,38,1,0,.25);drawItem(x,19,19,38,1);}
-      else drawPiece(x,0,0,38,t.k,1,{ore:1});}catch(e){}
+      else drawPiece(x,0,0,38,t.k,1,{ore:1,filt:S?S.sortCol:2,mask:0});}catch(e){}
   }
 
   /* ---------- in the valley and in Adventure ---------- */
