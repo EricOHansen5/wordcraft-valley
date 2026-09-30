@@ -13,6 +13,7 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 | `server/` | Node home server with no dependencies. It serves `app/` and handles backups (`/api/*`). Environment variables: `PORT DATA APP TOKEN KEEP`. |
 | `tests/` | jsdom and Playwright tests. `npm test` runs them all and starts the server itself for the sync, multi and voice tests. |
 | `tools/release.js` | Bumps `sw.js` VERSION. |
+| `tools/progress.js` | Prints his progress from the home server's newest backup (`WCV_SERVER`, default `http://192.168.1.91:8088`; `--file` for a snapshot; `--json` for the state minus recordings). Use it to answer "how is he doing" before changing the game. |
 | `tools/voice/` | Voice generator (`gen.py`, then `index.py`). Its model files are not committed (see below). |
 | `src/modules/` | Readable copies of the modules as they were inserted up to v9. **Reference only**: `app/index.html` may have moved on. |
 | `src/history/` | The one-time Python patch scripts that built the file. They have hard-coded old paths and are **not re-runnable**; kept for history. |
