@@ -10,6 +10,15 @@ services:
     environment:
       - TOKEN=          # optional: set a word here and type the same word in the game's Settings
       - KEEP=60         # daily snapshots to keep (plus the first of every month, forever)
+      - HEAR_URL=http://hear:9000/hear   # the listener below ("off" to leave it out)
     volumes:
       - ../app:/app:ro
       - ./data:/data     # backups (git-ignored)
+  # the listener for "Talk to me" (server/hear/): Whisper on the NAS's CPU. The game works without it.
+  # Its first start downloads the model (about 150 MB) into ./hear-cache (git-ignored).
+  hear:
+    build: ./hear
+    container_name: wordcraft-hear
+    restart: unless-stopped
+    volumes:
+      - ./hear-cache:/root/.cache
