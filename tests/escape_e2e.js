@@ -1,6 +1,6 @@
 // A grown-up's typed text (a note, or the sync server address) must show up literally, never as live markup.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8796,async()=>{
+const srv=require("./page").serveApp({port:8796},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const p=await b.newPage({viewport:{width:1180,height:820}});const errs=[];p.on("pageerror",e=>errs.push(e.message));
   const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);

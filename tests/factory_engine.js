@@ -3,7 +3,7 @@
 // sorter, stamper, tunnel); the hand-off rules; a layout survives its short string; a jammed layout shows the right tip;
 // the order and sum pieces; the page boots without errors.
 const fs=require("fs"),path=require("path"),{JSDOM}=require("jsdom"),fdb=require("fake-indexeddb");
-const html=fs.readFileSync(path.join(__dirname,"../app/index.html"),"utf8"),errors=[];
+const html=require("./page").html(),errors=[];
 const dom=new JSDOM(html,{runScripts:"dangerously",pretendToBeVisual:true,beforeParse(w){
   w.indexedDB=fdb.indexedDB;w.IDBKeyRange=fdb.IDBKeyRange;
   const P=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}});

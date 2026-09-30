@@ -1,7 +1,7 @@
 // The kindergarten tricky word checklist is in his base level: every word is there, spells right, can be sounded, and comes round in crates.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const LIST="one all were two from here three was there the when he a word she blue why we yellow to be look where me I no they are what their little so my down which by out once you of said your funny says".split(" ");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8794,async()=>{
+const srv=require("./page").serveApp({port:8794},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const p=await b.newPage({viewport:{width:1180,height:820}});const errs=[];p.on("pageerror",e=>errs.push(e.message));
   const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);

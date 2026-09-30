@@ -1,7 +1,7 @@
 // Voice text extractor: finds the fixed lines the game speaks and adds any new ones to voice_texts.json.
 //
 // Where it sits in the voice pipeline (run from the repo root, `npm run voice:extract`):
-//   1. node tools/voice/extract.js   reads app/index.html, merges new lines into tools/voice/voice_texts.json
+//   1. node tools/voice/extract.js   reads app/index.html (with its data scripts, through tests/page.js), merges new lines into tools/voice/voice_texts.json
 //   2. python gen.py <part> <parts>  (in tools/voice) renders a clip for every line that has none yet
 //   3. python index.py               copies the clips into app/voice/ and rewrites app/voice/index.json
 // tests/voice_cov.js then checks that every book page, quiz question and word has a clip.
@@ -18,15 +18,15 @@
 // and written one entry per line so a diff shows exactly what is new. {hero} is expanded over def().hero if the game ever has one.
 "use strict";
 const fs=require("fs"),path=require("path");
-const ROOT=path.join(__dirname,"../..");
-const HTML=path.join(ROOT,"app/index.html"),TEXTS=path.join(__dirname,"voice_texts.json");
+const TEXTS=path.join(__dirname,"voice_texts.json");
 // the same normalisation as VoicePack.norm in the game and norm in gen.py / index.py
 const norm=t=>String(t).toLowerCase().replace(/[’]/g,"'").replace(/[^a-z0-9' ]+/g," ").replace(/\s+/g," ").trim();
 
 // ---------- the page, loaded in jsdom the way tests/regress.js does ----------
 function load(){
   const {JSDOM}=require("jsdom"),fdb=require("fake-indexeddb");
-  const html=fs.readFileSync(HTML,"utf8"),errors=[];
+  // the page with its data scripts (art/, content/) inlined: jsdom does not fetch a <script src>
+  const html=require("../../tests/page").html(),errors=[];
   const dom=new JSDOM(html,{runScripts:"dangerously",pretendToBeVisual:true,beforeParse(w){
     w.indexedDB=fdb.indexedDB;w.IDBKeyRange=fdb.IDBKeyRange;
     const P=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}});

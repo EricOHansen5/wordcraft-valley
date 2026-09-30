@@ -2,7 +2,7 @@
 // (letters, temple, spell), each prize paid once, every line decodable at its chapter level, old saves.
 // Chapters 4-6 and the ending are walked in quest2b_e2e.js.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs"),path=require("path");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(path.join(__dirname,"../app/index.html")));}).listen(8817,async()=>{
+const srv=require("./page").serveApp({port:8817},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true,serviceWorkers:"block"});
   const p=await ctx.newPage();const errs=[];p.on("pageerror",e=>errs.push(e.message));

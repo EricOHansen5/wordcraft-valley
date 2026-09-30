@@ -1,5 +1,5 @@
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8778,async()=>{
+const srv=require("./page").serveApp({port:8778},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const p=await b.newPage({viewport:{width:1180,height:820}});
   const errs=[];p.on("pageerror",e=>errs.push(e.message));
   const st={tour:99,guardians:[0,1,2,3],wordsRead:120,gems:100,rows:7,biome:3,vehStarter:true,seasonSeen:"autumn",phase:0,grid:{"4,6":{id:"lantern",seed:1},"16,6":{id:"lantern",seed:2}},inventory:{},

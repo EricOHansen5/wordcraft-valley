@@ -11,10 +11,8 @@
 // seed(page,partial) re-seeds, reload(page) waits for boot; answer(page,sel) clicks the right answer in a host with data-ans / data-tiles.
 "use strict";
 const {chromium}=require("playwright");
-const http=require("http"),fs=require("fs"),path=require("path");
-const APP=path.join(__dirname,"../app");
-const TYPES={".html":"text/html",".js":"text/javascript",".json":"application/json",".mp3":"audio/mpeg",".png":"image/png",
-  ".svg":"image/svg+xml",".webmanifest":"application/manifest+json"};
+const http=require("http");
+const {handler}=require("./page");
 
 // ---------- ports: a counter from 8830, skipping any port already held ----------
 let nextPort=8830;
@@ -22,17 +20,11 @@ function probe(port){return new Promise(res=>{const s=http.createServer();s.once
 async function freePort(){for(;;){const p=nextPort++;if(await probe(p))return p;}}
 
 // ---------- the test server ----------
-// static:false answers every path with app/index.html (keep the service worker out: its script would be HTML);
-// static:true serves the real files under app/ and 404s the rest.
+// static:false answers every path with app/index.html, except the page's own scripts (art/, content/), which are real
+// (keep the service worker out: its script would be the page); static:true serves the real files under app/ and 404s the rest.
+// Both are tests/page.js handler(), which the suites with a server of their own use too.
 async function serve({port,static:real=false}={}){
-  const srv=http.createServer((q,r)=>{
-    if(!real){r.writeHead(200,{"content-type":"text/html"});return r.end(fs.readFileSync(path.join(APP,"index.html")));}
-    let f;try{f=decodeURIComponent(q.url.split("?")[0]);}catch(e){r.writeHead(400);return r.end();}
-    if(f.endsWith("/"))f+="index.html";
-    const fp=path.join(APP,path.normalize(f));
-    if(!fp.startsWith(APP+path.sep)||!fs.existsSync(fp)||!fs.statSync(fp).isFile()){r.writeHead(404);return r.end();}
-    r.writeHead(200,{"content-type":TYPES[path.extname(fp)]||"application/octet-stream"});r.end(fs.readFileSync(fp));
-  });
+  const srv=http.createServer(handler({static:real}));
   // a port given is used as is; otherwise the next free one, trying again if another process takes it first
   for(;;){const p=port||await freePort();
     try{await new Promise((res,rej)=>{srv.once("error",rej);srv.listen(p,()=>{srv.off("error",rej);res();});});

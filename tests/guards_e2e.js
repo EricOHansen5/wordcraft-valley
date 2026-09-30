@@ -1,6 +1,6 @@
 // Double taps, old saves and dates: one reward per answer, nothing frozen or lost after a reload.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8792,async()=>{
+const srv=require("./page").serveApp({port:8792},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   // evening in California: UTC is already tomorrow
   const ctx=await b.newContext({viewport:{width:1180,height:820},timezoneId:"America/Los_Angeles"});

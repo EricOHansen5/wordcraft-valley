@@ -1,9 +1,5 @@
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs"),path=require("path");
-const ROOT=require("path").join(__dirname,"../app");
-const types={".html":"text/html",".js":"text/javascript",".png":"image/png",".webmanifest":"application/manifest+json"};
-const srv=http.createServer((q,r)=>{let f=decodeURIComponent(q.url.split("?")[0]);if(f.endsWith("/"))f+="index.html";
-  const fp=path.join(ROOT,f);if(!fs.existsSync(fp)){r.writeHead(404);return r.end();}
-  r.writeHead(200,{"content-type":types[path.extname(fp)]||"application/octet-stream"});r.end(fs.readFileSync(fp));}).listen(8771,async()=>{
+const srv=require("./page").serveApp({port:8771,static:true},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const ctx=await b.newContext({viewport:{width:1180,height:820},acceptDownloads:true});const p=await ctx.newPage();
   const errs=[];p.on("pageerror",e=>errs.push(e.message));

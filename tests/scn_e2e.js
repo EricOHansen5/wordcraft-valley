@@ -1,5 +1,5 @@
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8774,async()=>{
+const srv=require("./page").serveApp({port:8774},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const p=await b.newPage({viewport:{width:1180,height:820}});
   const errs=[];p.on("pageerror",e=>errs.push(e.message));
   const out={};
