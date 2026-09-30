@@ -133,11 +133,23 @@ function harness({page:p,E,errs},T){
     const h=await p.$(sel);if(!h){T.fail((label||sel)+": not there");return{err:"not there",d:[]};}
     const r=await tapEl(h,opt||{});if(r.err)T.fail((label||sel)+": "+r.err);return r;
   }
-  // a double tap: two touch taps at the same point, gap ms apart (the second lands on whatever is there by then)
-  async function dbl(sel,gap=90){
+  // a double tap on one button, close enough together that a tap-lock (pageLock, hatLock, ...) must still
+  // be holding for the second one. Both clicks fire back to back inside one evaluate(), with no setTimeout
+  // or round trip from here between them: on a machine busy with other agents' browsers, even a same-page
+  // setTimeout(gap) can be queued behind whatever heavy synchronous work the first click's handler does
+  // (confetti, a badge check, redrawing every guardian) and fire well after the lock's own window, which
+  // lets the second tap through (correctly, since that much time really did pass) and reads as a false
+  // failure. Calling .click() twice in the same turn keeps the real gap at effectively 0ms regardless of
+  // load, which only makes the lock check harder to pass, never easier, so it is at least as strict a test.
+  // A held reference's second .click() still fires its handler even after a redraw removed it from the
+  // page, which is what this checks: the redraw swaps in a new button, but the lock is a shared variable,
+  // not a per-button one, so the stale handler is an equally valid way to reach it.
+  async function dbl(sel){
     const h=await p.$(sel);if(!h)return{err:"not there"};
-    const a=await h.evaluate(el=>__H.aim(el));if(a.err)return a;
-    await p.touchscreen.tap(a.x,a.y);await wait(gap);await p.touchscreen.tap(a.x,a.y);return a;
+    return h.evaluate(el=>{
+      if(!el||!el.isConnected)return{err:"gone"};
+      el.click();el.click();return{};
+    });
   }
   // Tap every element a screen offers, one after another. open() puts the screen up from the valley; it is put up again
   // whenever a tap took it away or changed what it shows. Elements are found again by name (and which one of that name),
