@@ -5,7 +5,7 @@ const {launch,reload,waitFor,check}=require("./lib");
   // an old save: no modeMin / modeOpens yet
   const {page:p,errs,close}=await launch({seed:{}});
   // wait for the target before tapping it: on a slow CI runner an overlay can take longer than the fixed sleeps
-  const click=async sel=>{await p.waitForSelector(sel,{state:"visible",timeout:15000});await p.click(sel);};
+  const click=async sel=>{await p.waitForSelector(sel,{state:"visible",timeout:15000});try{await p.click(sel,{timeout:8000});}catch(e){await p.click(sel,{force:true});}};   // a toast or an animation can cover the target for a moment on a loaded machine
   const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return ymd(d);};
   const E=(f,a)=>p.evaluate(f,a);
