@@ -13184,7 +13184,8 @@ const Nature=(()=>{
   function schedule(){
     clearTimeout(timer);if(!started)return;
     if(state.settings.nature&&!document.querySelector(".overlay.on"))chirp();
-    timer=setTimeout(schedule,(phase().id==="night"?900:1800)+Math.random()*2600);
+    // half as often as before (was 900/1800 + up to 2600 ms): a chirp or a cricket every 4-9 s by day, 2-7 s at night
+    timer=setTimeout(schedule,(phase().id==="night"?1800:3600)+Math.random()*5200);
   }
   function stop(){
     if(!started)return;
