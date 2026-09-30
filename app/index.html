@@ -7827,7 +7827,8 @@ const Books=(()=>{
   }
   const BG={meadow:["#BFE0F0","#F4EFDC","#8FBE6E"],farm:["#CFE6F2","#F6EBD2","#A9C46A"],pond:["#AED9E8","#EEF3E0","#6FAC72"],
     town:["#C8DDF0","#F2ECDD","#B9B2A4"],shop:["#F6E1C0","#F9EEDB","#C9A47A"],sea:["#9FD8F0","#FBF1D6","#4FA8D8"],
-    cave:["#2A2238","#3B2F4E","#5A4A3A"],night:["#1E2450","#3B3F7A","#2E4A6A"],rain:["#9AA8B8","#C8D0D8","#7FA07A"]};
+    cave:["#2A2238","#3B2F4E","#5A4A3A"],night:["#1E2450","#3B3F7A","#2E4A6A"],rain:["#9AA8B8","#C8D0D8","#7FA07A"],
+    jungle:["#A9D3B0","#EEF0D2","#5E9A48"]};
   function scene(bg,items,t,extra){
     const c=BG[bg]||BG.meadow;
     return`<div class="bscene bg-${bg}" style="background:linear-gradient(180deg,${c[0]},${c[1]} 68%,${c[2]} 68%)">

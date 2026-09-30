@@ -1,11 +1,11 @@
 // v10.0 books: three new books per level 1-6, decodable at their level, with art that exists, voice lines listed,
 // and the two new question kinds ("What happened first?", "Which page said it?") answered through dataset.ans, paid once.
-// Then three more at level 7 (five books a level for 1-7), held to the same rules, with every picture on the page.
+// Then three more at levels 7 and 8 (five books a level for 1-8), held to the same rules, with every picture on the page.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs"),path=require("path");
 const NEW=["zap_fox","map_x","bob_logs","red_egg","log_hut","den_bug","dock_whale","chop_shed","king_chick",
   "frog_croc","block_steps","bonk_plums","snake_grass","stone_man","gate_bell","storm_bird","start_farm","dark_fort"];
-// level 7: seven pages and three questions each (one of each new kind and one older kind)
-const NEW78=["mine_train","moon_trip","seal_net"],ALL=NEW.concat(NEW78);
+// levels 7 and 8: seven pages and three questions each (one of each new kind and one older kind)
+const NEW78=["mine_train","moon_trip","seal_net","bonk_stomp","castle_key","lava_map"],ALL=NEW.concat(NEW78);
 const texts=JSON.parse(fs.readFileSync(path.join(__dirname,"../tools/voice/voice_texts.json"),"utf8"));
 const norm=t=>String(t).toLowerCase().replace(/[’]/g,"'").replace(/[^a-z0-9' ]+/g," ").replace(/\s+/g," ").trim();
 const listed=new Set(texts.sents.concat(texts.words).map(norm));
@@ -19,15 +19,15 @@ const srv=require("./page").serveApp({port:8816},async()=>{
   const E=x=>p.evaluate(x),run=ms=>p.clock.runFor(ms);
   await E(`state.tour=99;state.settings.tierOverride=12;document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"))`);
 
-  // the shelf: at least five books a level for levels 1-7 (two from before, three new)
-  const per=await E(`[1,2,3,4,5,6,7].map(t=>BOOKS.filter(b=>!b.mine&&b.t===t).length)`);
-  ok(per.every(n=>n>=5),"levels 1-7 have five books each or more: "+per.join(","));
+  // the shelf: at least five books a level for levels 1-8 (two from before, three new)
+  const per=await E(`[1,2,3,4,5,6,7,8].map(t=>BOOKS.filter(b=>!b.mine&&b.t===t).length)`);
+  ok(per.every(n=>n>=5),"levels 1-8 have five books each or more: "+per.join(","));
   const books=await E(`BOOKS.filter(b=>${JSON.stringify(NEW)}.includes(b.id))`);
   ok(books.length===18,"all 18 new books are on the shelf ("+books.length+")");
   ok([1,2,3,4,5,6].every(t=>books.filter(b=>b.t===t).length===3),"three new books per level 1-6");
   ok(books.every(b=>b.pages.length>=5&&b.pages.length<=7),"every new book has 5-7 pages");
   const books78=await E(`BOOKS.filter(b=>${JSON.stringify(NEW78)}.includes(b.id))`);
-  ok(books78.length===3&&books78.every(b=>b.t===7),"three new books at level 7 ("+books78.map(b=>b.id+":"+b.t).join(", ")+")");
+  ok(books78.length===6&&[7,8].every(t=>books78.filter(b=>b.t===t).length===3),"three new books at level 7 and three at level 8 ("+books78.map(b=>b.id+":"+b.t).join(", ")+")");
   ok(books78.every(b=>b.pages.length===7&&b.quiz.length===3&&b.quiz.some(q=>!q.order&&!q.said)),"each has 7 pages and 3 questions, one of them an older kind");
 
   // decodable at its level, with every pet he could have at that level and more than one hero name
@@ -49,7 +49,7 @@ const srv=require("./page").serveApp({port:8816},async()=>{
       const h=Books.scene(b.bg,b.pages[0][1],b.t);if(!h||/undefined/.test(h))bad.push(b.id+" scene");});return bad;})()`);
   ok(!art.length,"every art id in every book resolves"+(art.length?": "+art.join(", "):""));
 
-  // every book's background is one the scenes know (an unknown one falls back to the meadow), and in the level 7
+  // every book's background is one the scenes know (an unknown one falls back to the meadow), and in the level 7-8
   // books every picture is on the page: at least three quarters of its box inside the scene
   const lay=await E(`(()=>{const box=document.createElement("div");box.style.cssText="position:fixed;left:0;top:0;width:800px;visibility:hidden";document.body.appendChild(box);
     const plain=bg=>Books.scene(bg,[],1).replace(/bg-[a-z]+/,""),bgs=[],off=[];
@@ -61,7 +61,7 @@ const srv=require("./page").serveApp({port:8816},async()=>{
         if(!(f>=.75))off.push(b.id+" page "+(i+1)+": "+items[k][0]+" "+Math.round(f*100)+"%");});}));
     box.remove();return{bgs,off};})()`);
   ok(!lay.bgs.length,"every book's background is a known one"+(lay.bgs.length?": "+lay.bgs.join(", "):""));
-  ok(!lay.off.length,"in the level 7 books every picture is on the page"+(lay.off.length?": "+lay.off.join(", "):""));
+  ok(!lay.off.length,"in the level 7-8 books every picture is on the page"+(lay.off.length?": "+lay.off.join(", "):""));
 
   // the new question kinds are well formed
   const shape=[];
