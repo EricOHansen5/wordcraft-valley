@@ -1,6 +1,6 @@
 # Wordcraft Valley
 
-A phonics adventure game made for one kid: letter sounds, decodable books, a valley to build, a gem mine, races and pets. It is one offline HTML file that installs to the iPad home screen, and a tiny home server keeps backups.
+A phonics adventure game made for one kid: letter sounds, decodable books, a valley to build, a gem mine, races and pets. It is an offline web app: one HTML file of code plus its art and content files that installs to the iPad home screen, and a tiny home server keeps backups.
 
 - Play locally: `npm install && npm run serve` → http://localhost:8088
 - Test: `npm test`

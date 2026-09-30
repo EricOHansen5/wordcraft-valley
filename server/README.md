@@ -33,7 +33,7 @@ Put the game on every iPad, phone or laptop from the same HTTPS address. Each on
 - To lock the server, set `TOKEN=` in `docker-compose.yml`, then type the same word in the game's token box.
 
 ## Updating the game
-`cd /volume1/docker/wordcraft && git pull`. `app/` is mounted live, so no restart is needed (restart the project only if `server/` changed). The iPad picks up the new version on its next launch, because `npm run release` gives sw.js a new version string each release.
+`cd /volume1/docker/wordcraft && git pull`. `app/` is mounted live, so no restart is needed (restart the project only if `server/` changed; the split into `art/` and `content/` on 30 Sept 2026 was one such change). The iPad picks up the new version on its next launch, because `npm run release` gives sw.js a new version string each release.
 
 To pull automatically, add a DSM Task Scheduler job (user: root, e.g. every 15 min): `cd /volume1/docker/wordcraft && git pull -q`.
 

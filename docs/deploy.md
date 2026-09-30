@@ -60,7 +60,7 @@ repo secrets (Settings → Secrets and variables → Actions):
 
 Until those are set, deploy by hand with `npm run deploy`.
 
-As at home, run `npm run release` when you change `app/index.html`. Installed home-screen apps
+As at home, run `npm run release` when you change anything in `app/`. Installed home-screen apps
 only notice a new build when `sw.js`'s `VERSION` string changes.
 
 ## What friends get, and what they don't

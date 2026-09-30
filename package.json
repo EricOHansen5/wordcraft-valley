@@ -1,7 +1,7 @@
 {
   "name": "wordcraft-valley",
   "private": true,
-  "description": "Phonics adventure game for Asher (single-file HTML5 PWA) + tiny home server for backups",
+  "description": "Phonics adventure game for Asher (offline HTML5 PWA) + tiny home server for backups",
   "scripts": {
     "serve": "PORT=8088 APP=./app DATA=./data node server/server.js",
     "test": "node tests/run-all.js",

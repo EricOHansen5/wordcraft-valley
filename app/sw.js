@@ -1,6 +1,6 @@
-// Wordcraft Valley service worker: offline app shell, stale-while-revalidate.
+// Wordcraft Valley service worker: offline app shell, cache-only and replaced whole on each VERSION.
 // Bump VERSION (npm run release) whenever anything in app/ changes (index.html, art/, content/) so the iPad picks up the new build.
-const VERSION = "wcv-2026-09-30a";
+const VERSION = "wcv-2026-09-30b";
 // the game voice lives in its own cache so a new build doesn't re-download it
 const VOICE = "wcv-voice-1";
 const SHELL = ["./", "index.html", "manifest.webmanifest",
@@ -34,12 +34,12 @@ self.addEventListener("fetch", e => {
   }
   e.respondWith(caches.open(VERSION).then(async cache => {
     const key = req.mode === "navigate" ? "index.html" : req;
+    // The shell is cache-only: a new VERSION installs a complete new cache (page and data together), so the page
+    // and its art/content files never mix versions. Refreshing single files in the background could leave a
+    // new index.html next to old data for an offline launch, which is the one way to see "files did not load".
     const hit = await cache.match(key, {ignoreSearch: true});
-    const net = fetch(req).then(res => {
-      if (res.ok) cache.put(key, res.clone());
-      return res;
-    }).catch(() => null);
-    if (hit) { e.waitUntil(net); return hit; }
-    return (await net) || (await cache.match("index.html")) || Response.error();
+    if (hit) return hit;
+    try { const res = await fetch(req); if (res.ok) cache.put(key, res.clone()); return res; }
+    catch (err) { return req.mode === "navigate" ? (await cache.match("index.html")) || Response.error() : Response.error(); }
   }));
 });
