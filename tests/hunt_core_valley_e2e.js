@@ -38,6 +38,25 @@ const {INIT,harness,VIEW}=require("./hunt_core_e2e");
     await home();
   }
 
+  // ================= the sticker book's wardrobe =================
+  {
+    await E(()=>{state.hats=["flower","cap"];state.hat=null;});
+    // the sheet's own .3s "pop" entrance animation moves its contents (the tab bar included) for
+    // that long, so a tap right after opening can land where a tab used to be before it settles
+    const openHats=async()=>{await home();await tap("#albumBtn","sticker book");await wait(350);await tap('[data-atab="hats"]',"the Wardrobe tab");};
+    await openHats();
+    // a double tap on "Wear it" puts the cap on (the second tap used to land on "Take off", drawn in its place)
+    await dbl('#albumGrid .hatcard[data-id="cap"] .btn');await wait(400);
+    T.ok(await E(()=>state.hat)==="cap","wardrobe: a double tap on Wear it leaves the cap on: "+await E(()=>state.hat));
+    await wait(700);
+    await dbl('#albumGrid .hatcard[data-id="cap"] .btn');await wait(400);
+    T.ok(await E(()=>state.hat)===null,"wardrobe: a double tap on Take off leaves it off: "+await E(()=>state.hat));
+    await wait(700);
+    await tap('#albumGrid .hatcard[data-id="flower"] .btn',"Wear it");
+    T.ok(await E(()=>state.hat==="flower"&&!!document.querySelector('#buddyBtn [data-hat="flower"],#buddyBtn svg')),"wardrobe: one tap on Wear it puts the flower on (HUD redrawn)");
+    await home();
+  }
+
   Hn.report();
   T.ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();T.done();
