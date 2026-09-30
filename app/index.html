@@ -13156,10 +13156,10 @@ const Nature=(()=>{
       let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}
       wind=ctx.createBufferSource();wind.buffer=buf;wind.loop=true;
       const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=420;
-      windGain=ctx.createGain();windGain.gain.value=.16;
+      windGain=ctx.createGain();windGain.gain.value=.08;   // half the old .16: the wind sits under the chirps rather than beside them
       wind.connect(lp).connect(windGain).connect(master);wind.start();
       // slow swell so the wind breathes
-      const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.08;lg.gain.value=.06;
+      const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.08;lg.gain.value=.03;   // the swell scales with the wind
       lfo.connect(lg).connect(windGain.gain);lfo.start();
       master.gain.linearRampToValueAtTime(.55,ctx.currentTime+3);
       started=true;schedule();
