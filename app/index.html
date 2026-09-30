@@ -1325,6 +1325,8 @@ body.exploring .slot-empty{display:none}
 .jmark{position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:1px;pointer-events:none}
 .jmark .jword{width:34px;height:34px}.jmark b{display:block;margin-top:-3px;padding:0 4px;border-radius:6px;background:#fff;border:2px solid var(--ink);font-size:13px;font-weight:900;line-height:1.1;color:var(--ink)}
 @media (max-width:700px){.jlawn.bus .jcell{width:44px;height:44px}.jmark .jword{width:26px;height:26px}.jmark b{font-size:11px}}
+/* the Detective: a word on a card */
+.jwcard{display:block;font-size:40px;font-weight:900;letter-spacing:.02em;padding:0 10px;color:var(--ink)}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -9892,6 +9894,8 @@ const jobPic=id=>JOB_PIC[id]||(JOB_PIC[id]="data:image/svg+xml;charset=utf-8,"+e
 Object.assign(JOB_ART,{
   // one thing by its ART id: the Bus driver's stops (the valley's buildings), the animals
   thing:a=>`<div class="jword">${drawThing(a.id,1)}</div>`,
+  // a word written on a card: the Detective's words to choose from, with no pictures
+  wcard:a=>`<span class="jwcard">${esc(a.text)}</span>`,
   plate:a=>{const items=a.items||[],n=items.reduce((s,x)=>s+(x.n|0),0);
     return`<div class="jplate${n>4?" many":""}">${items.map(x=>`<span class="jpgrp">${`<img src="${jobPic(x.id)}" alt="" draggable="false">`.repeat(Math.max(0,x.n|0))}</span>`).join("")}</div>`;},
   pizza:a=>{const f=+a.f||1,cut=deg=>{const t=deg*Math.PI/180,x=(Math.sin(t)*37).toFixed(1),y=(Math.cos(t)*37).toFixed(1),d=`M${50-x} ${50-y} L${50+ +x} ${50+ +y}`;
@@ -9994,6 +9998,8 @@ const Jobs=(()=>{
   // a word he taps is sounded out (as in the books); the question is read aloud as it appears
   function wire(host,q){
     const t=host.querySelector(".jtext");if(t)try{Books.wireWords(t);}catch(e){}
+    // a sound in slashes (the Detective's /sh/) plays that sound, not the letter's name
+    if(t)t.querySelectorAll(".bw").forEach(sp=>{const m=/^\/([a-z]+)\/[.,!?]*$/.exec(sp.textContent);if(m)sp.onclick=()=>{hush();Sound.say("sound:"+m[1],m[1]);};});
     const h=host.querySelector(".jhear");if(h)h.onclick=()=>talk(q.say);
     setTimeout(()=>{if(host.isConnected)talk(q.say);},250);
   }
@@ -10637,6 +10643,177 @@ Jobs.kit("sort",function(host,q,done,opt){
       {id:"riders",lv:2,name:"getting on and off",gen:(seed,L)=>{const d=drive(rnd(seed),L.tier);return then(d,d&&riders(seed));}},
       {id:"clock",lv:3,name:"the bus times",gen:(seed,L)=>{const d=drive(rnd(seed),L.tier);return then(d,d&&timetable(seed));}},
       {id:"route",lv:4,name:"the stops in order",gen:(seed,L)=>then(route(seed,L.tier))}
+    ]});
+})();
+
+/* ---- what the jobs know about animals: the Detective's clues and the Park ranger's signs ----
+   Plain facts only. A fact lists the animals it is true of (yes) and the ones it is plainly not true of
+   (no; "*" is every other animal here); an animal in neither list is never one the fact has to tell apart.
+   Each fact is a sentence with {X} for the animal ("It" in a clue, "The fox" on a sign), plainest first:
+   the last one that decodes at his level is used. kind is what it is about: body (looks and does), home
+   (where it lives: a bin on the ranger's sign, with its icon) or food (what it eats: a bin too). Animals go
+   by the word he reads, which is their critter id ("bug" is the Beetle). */
+const JOB_ZOO=(()=>{
+  const ALL="dog cat fox hen chick pig duck frog fish bug bat wolf bear crab whale seal shark croc hawk lion tiger rabbit penguin snake elephant sloth monkey parrot eagle lizard snail owl".split(" ");
+  const F=(id,kind,t,yes,no,ic)=>{const y=yes.split(" ");return{id,kind,t,ic:ic||"",yes:y,no:no==="*"?ALL.filter(a=>y.indexOf(a)<0):no.split(" ")};};
+  const FACTS=[
+    F("wings","body",["{X} has wings."],"hen chick duck bat hawk parrot penguin eagle owl","dog cat fox pig frog fish wolf bear crab whale seal shark croc lion tiger rabbit snake elephant sloth monkey snail lizard"),
+    F("fins","body",["{X} has fins."],"fish shark whale","dog cat fox hen chick pig duck frog bug bat wolf bear crab hawk lion tiger rabbit snake elephant sloth monkey parrot eagle owl snail lizard croc penguin"),
+    F("hops","body",["{X} hops."],"frog rabbit","pig fish whale snake elephant croc shark crab bear wolf lion tiger fox cat dog duck bat hawk sloth seal snail eagle owl"),
+    F("legs6","body",["{X} has six legs."],"bug","*"),
+    F("shell","body",["{X} has a shell."],"crab snail","dog cat fox hen chick pig duck frog fish bat wolf bear whale seal shark croc hawk lion tiger rabbit penguin snake elephant sloth monkey parrot eagle lizard owl"),
+    F("quacks","body",["{X} quacks.","{X} says quack."],"duck","*"),
+    F("pecks","body",["{X} pecks."],"hen chick","dog cat fox pig frog fish bug bat wolf bear whale seal shark croc lion tiger rabbit snake elephant sloth monkey crab snail lizard"),
+    F("nolegs","body",["{X} has no legs."],"snake fish whale shark snail","dog cat fox hen chick pig duck frog bug bat wolf bear crab hawk lion tiger rabbit elephant croc sloth monkey parrot penguin eagle lizard owl"),
+    F("hasden","body",["{X} has a den."],"fox wolf bear","hen chick duck frog fish bug whale crab snail hawk parrot penguin shark seal dog cat pig elephant monkey sloth eagle owl"),
+    F("pink","body",["{X} is pink."],"pig","dog fox hen chick duck frog fish bug bat wolf bear whale seal shark croc hawk lion tiger penguin elephant sloth monkey parrot eagle lizard owl"),
+    F("trunk","body",["{X} has a trunk."],"elephant","*"),
+    F("mane","body",["{X} has a mane."],"lion","*"),
+    F("stripes","body",["{X} has stripes."],"tiger","fox pig hen chick duck bat wolf bear whale elephant crab snail croc seal penguin lion rabbit hawk sloth monkey parrot eagle owl"),
+    F("hangs","body",["{X} hangs up to nap."],"bat sloth","dog cat fox hen chick pig duck frog fish wolf bear crab whale seal shark croc hawk lion tiger rabbit penguin snake elephant snail eagle lizard"),
+    F("swims","body",["{X} swims."],"fish duck frog whale shark seal penguin","hen chick hawk eagle parrot owl snail"),
+    F("pen","home",["{X} is in the pen.","{X} lives in a pen."],"pig hen chick","fox wolf bear whale shark seal frog fish bat bug crab snail hawk eagle owl parrot penguin lion tiger elephant monkey sloth snake croc lizard","🏡"),
+    F("den","home",["{X} is in the den.","{X} lives in a den."],"fox wolf bear","hen chick duck frog fish bug whale crab snail hawk parrot penguin shark seal dog cat pig elephant monkey sloth eagle owl","🕳️"),
+    F("pond","home",["{X} is in the pond.","{X} lives in the pond."],"duck frog fish","dog cat fox hen chick pig bat wolf bear whale seal shark lion tiger rabbit elephant sloth monkey parrot hawk eagle penguin owl lizard","💧"),
+    F("land","home",["{X} is on land.","{X} lives on land."],"dog cat fox pig hen chick wolf bear lion tiger rabbit elephant sloth monkey snake lizard","fish whale shark","🌳"),
+    F("sea","home",["{X} is in the sea.","{X} lives in the sea."],"whale seal shark crab","dog cat fox hen chick pig frog bat wolf bear lion tiger rabbit elephant sloth monkey parrot hawk eagle owl lizard bug","🌊"),
+    F("day","home",["{X} is up in the day."],"hen chick duck pig hawk eagle parrot monkey","bat owl","☀️"),
+    F("night","home",["{X} is up at night."],"bat owl","hen chick duck pig hawk eagle parrot monkey","🌙"),
+    F("bugs","food",["{X} gets bugs.","{X} eats bugs."],"hen chick bat frog lizard","whale seal shark elephant sloth penguin rabbit lion tiger snail eagle","🐛"),
+    F("fish","food",["{X} gets fish.","{X} eats fish."],"cat whale seal shark croc penguin bear eagle","hen chick rabbit elephant sloth snail monkey parrot bug lion pig","🐟"),
+    F("plants","food",["{X} gets plants.","{X} eats plants."],"snail sloth rabbit elephant","cat whale seal shark croc penguin frog lion tiger wolf hawk eagle owl snake","🌿"),
+    F("nuts","food",["{X} gets nuts.","{X} eats nuts."],"pig parrot","cat whale seal shark croc penguin frog snail fish lion tiger wolf hawk eagle owl sloth lizard snake","🌰")];
+  const {pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const fact=id=>FACTS.find(f=>f.id===id)||null;
+  const has=(f,a)=>f.yes.indexOf(a)>=0,not=(f,a)=>f.no.indexOf(a)>=0;
+  // the fact said about X ("It", "The fox"), in the plainest wording that decodes at his level, or null
+  const say=(f,X,tier)=>f.t.map(s=>s.replace("{X}",X)).filter(s=>fits(s,tier)).pop()||null;
+  // an animal he can read the name of, with its picture
+  const named=(a,tier)=>ALL.indexOf(a)>=0&&!!ART[a]&&fits(a,tier);
+  // his own animals first (the critters in his valley, each once), then the ones given, all with names he can read
+  function animals(tier,more){const out=[];(state.critters||[]).concat((more||[]).map(id=>({id}))).forEach(c=>{const a=c&&c.id;if(a&&out.indexOf(a)<0&&named(a,tier))out.push(a);});return out;}
+  const COMMON="dog cat fox hen pig duck fish bug bat frog chick whale crab wolf snail hawk snake croc sloth seal owl bear".split(" ");
+  // a clue of two facts (of the kinds given) about one of the animals, and two others it rules out: one like it
+  // in the first fact only and one in the second only when there are such, so both facts are needed
+  function clue(r,tier,kinds,ids){
+    const facts=FACTS.filter(f=>kinds.indexOf(f.kind)>=0&&say(f,"It",tier)),P=ids.filter(a=>named(a,tier));
+    const out=(A,fs,o)=>({ans:A,facts:fs,others:o,text:fs.map(f=>say(f,"It",tier)).join(" ")});
+    for(const A of shuffle(r,P)){const mine=shuffle(r,facts.filter(f=>has(f,A)));
+      for(let i=0;i<mine.length;i++)for(let j=i+1;j<mine.length;j++){const f1=mine[i],f2=mine[j];
+        const d1=P.filter(x=>x!==A&&has(f1,x)&&not(f2,x)),d2=P.filter(x=>x!==A&&has(f2,x)&&not(f1,x));
+        if(d1.length&&d2.length)return out(A,[f1,f2],[pick(r,d1),pick(r,d2)]);}}
+    for(const A of shuffle(r,P)){const mine=shuffle(r,facts.filter(f=>has(f,A)));
+      for(let i=0;i<mine.length;i++)for(let j=i+1;j<mine.length;j++){const f1=mine[i],f2=mine[j],d=shuffle(r,P.filter(x=>x!==A&&(not(f1,x)||not(f2,x))));
+        if(d.length>=2)return out(A,[f1,f2],d.slice(0,2));}
+      for(const f of mine){const d=shuffle(r,P.filter(x=>x!==A&&not(f,x)));if(d.length>=2)return out(A,[f],d.slice(0,2));}}
+    return null;
+  }
+  // things to sort into bins (facts of one kind): each thing is true of one bin and of none of the others
+  function sort(r,tier,bins,ids,n){
+    const B=bins.map(fact).filter(f=>f&&say(f,"It",tier));if(B.length!==bins.length)return null;
+    const own=a=>{const y=B.filter(f=>has(f,a));return y.length===1?y[0]:null;};
+    const P=shuffle(r,ids.filter(a=>named(a,tier)&&own(a)));if(P.length<n)return null;
+    // every bin gets one before any gets two, when the animals allow it
+    const got=[],left=P.slice();B.forEach(f=>{const i=left.findIndex(a=>own(a)===f);if(i>=0&&got.length<n)got.push(left.splice(i,1)[0]);});
+    while(got.length<n&&left.length)got.push(left.shift());
+    const items=shuffle(r,got);
+    return{items,bin:a=>own(a).id,lines:items.map(a=>say(own(a),"The "+a,tier)),bins:B};
+  }
+  return{FACTS,fact,has,not,say,named,animals,clue,sort,COMMON,ALL};
+})();
+
+/* ---- 🕵️ Detective, opens at reading level 5 ----
+   Every task starts with a clue to read, and the clue is what finds the answer: its front sound and its
+   end ("It has /b/ at the front, and it ends like hat."; "It starts with /b/" from level 6, "it rhymes
+   with hat" from 8), or a sound in it and what it does ("It has /sh/ in it, and it swims."). A sound in
+   slashes plays when he taps it. Job level 1 finds the creature or thing among three pictures: one of the
+   others has the same front sound and one the same end, so both halves of the clue count. Level 2 has the
+   two halves on two cards to put in order, the front one first (a case to crack: "Who has the jam?"), then
+   finds it; level 3 is about one of his own animals ("It has wings. It quacks."), found among his animals;
+   level 4 finds the word among three written words, with no pictures ("ship", "chip", "shop"). */
+(()=>{
+  const {rnd,pick,shuffle}=Seeded,Z=JOB_ZOO;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // words to build clues and word cards from: short words, all of them decodable by sounds
+  const WORDS=("cat hat bat mat rat sat cap map nap tap pan van can fan man ran log dog frog hog jog fog pot hot dot mop shop chop top hop pop "+
+    "rock sock lock box fox pig big dig wig fig bin pin win fin bed red sled fed hen pen ten men net jet wet pet vet sun bun fun run bug rug mug hug jug "+
+    "cup pup nut hut cut sub tub rub cub ship chip dip hip lip tip zip fish dish wish bath path math duck truck luck shell well bell tell sell "+
+    "chick kick sick pick lick crab cab drum plum gum hum flag bag tag wag nest vest cake lake bake make bike like hike rope hope kite bite bone cone gate late plane crane cane").split(" ");
+  const tiles=w=>{const x=allWords().find(y=>y.w===w);if(x&&x.p)return x.p;try{return splitPhonemes(w);}catch(e){return null;}};
+  // a word's front sound (its first sound, spelled as its first letters) and its end (the letters from its first vowel on)
+  function parts(w){const p=tiles(w);if(!p||!p.length)return null;const t=tileText(p[0]),m=/[aeiou].*$/.exec(w);
+    if(!m||/[aeiouy]/.test(t)||w.indexOf(t)!==0)return null;return{w,t,s:soundOf(p[0]),end:m[0],p};}
+  const pictured=tier=>allWords().filter(x=>!x.tricky&&x.t<=tier&&WORD_ART[x.w]&&/^[a-z]{2,5}$/.test(x.w)).map(x=>parts(x.w)).filter(Boolean);
+  const written=tier=>WORDS.filter(w=>fits(w,tier)).map(parts).filter(Boolean);
+  const same=(a,b)=>a.t===b.t&&a.s===b.s;
+  // the answer, one with its end but not its front sound, one with its front sound but not its end, and a
+  // word that ends the same to name the end by ("ends like hat"), which is none of the three
+  function frontEnd(r,tier,P){
+    const W=written(tier).concat(pictured(tier));
+    for(const A of shuffle(r,P)){
+      const R=P.filter(x=>x.end===A.end&&x.t!==A.t&&x.s!==A.s&&!Read.near(x.w,A.w)),O=P.filter(x=>same(x,A)&&x.end!==A.end&&!Read.near(x.w,A.w));
+      if(!R.length||!O.length)continue;const rr=pick(r,R),oo=pick(r,O);
+      const Y=W.filter(x=>x.end===A.end&&x.w!==A.w&&x.w!==rr.w&&x.w!==oo.w);if(!Y.length)continue;
+      return{A,R:rr,O:oo,Y:pick(r,Y)};
+    }
+    return null;
+  }
+  const last=(list,tier)=>list.filter(x=>fits(x,tier)).pop()||null;
+  const frontClue=(c,tier)=>last([`It has /${c.A.t}/ at the front.`,`It starts with /${c.A.t}/.`],tier);
+  const endClue=(c,tier)=>last([`It ends like ${c.Y.w}.`,`It rhymes with ${c.Y.w}.`],tier);
+  const both=(c,tier)=>{const f=frontClue(c,tier),e=endClue(c,tier);return f&&e?f.replace(/\.$/,", and ")+e.charAt(0).toLowerCase()+e.slice(1):null;};
+  const card=w=>({v:w,art:WORD_ART[w]?{kind:"word",w}:{kind:"thing",id:w}});
+  // or a sound somewhere in it and what it does: one of the others has the sound, one does what it does
+  const SOUNDS=["sh","ch","th","wh"],DOES=["swims","wings","hops","legs6","fins"];
+  function soundDoes(r,tier){
+    const P=pictured(tier),hasS=(x,s)=>x.p.some(ph=>tileText(ph)===s),thing=x=>Z.ALL.indexOf(x.w)<0;
+    for(const s of shuffle(r,SOUNDS))for(const id of shuffle(r,DOES)){const f=Z.fact(id),line=Z.say(f,"it",tier);if(!line)continue;
+      const A=P.filter(x=>hasS(x,s)&&Z.has(f,x.w)),D1=P.filter(x=>hasS(x,s)&&(thing(x)||Z.not(f,x.w))),D2=P.filter(x=>!hasS(x,s)&&Z.has(f,x.w));
+      if(!A.length||!D1.length||!D2.length)continue;
+      const text=last([`It has /${s}/ in it, and ${line}`,`It has the sound /${s}/, and ${line}`],tier);if(!text)continue;
+      const a=pick(r,A);return{text,ans:a.w,choices:[a.w,pick(r,D1).w,pick(r,D2).w]};
+    }
+    return null;
+  }
+  // level 1: read the clue, find it among three pictures
+  function find(r,tier){
+    const sd=r()<.35?soundDoes(r,tier):null;
+    if(sd)return{kit:"pick",track:"reading",read:true,say:["Read the clue. Find it!"],text:sd.text,choices:shuffle(r,sd.choices).map(card),ans:sd.ans};
+    const c=frontEnd(r,tier,pictured(tier)),text=c&&both(c,tier);if(!text)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the clue. Find it!"],text,choices:shuffle(r,[c.A.w,c.R.w,c.O.w]).map(card),ans:c.A.w};
+  }
+  // level 2: a case, its two clues to put in order (the front one first), then who or what it is
+  const CASES=["Who has the jam?","Who hid the nuts?","Who dug in the mud?","Who got the ham?"];
+  function crack(seed,tier){
+    const r=rnd(seed),animal=r()<.6,P=pictured(tier),c=frontEnd(r,tier,animal?P.filter(x=>Z.ALL.indexOf(x.w)>=0):P)||frontEnd(r,tier,P);
+    const f=c&&frontClue(c,tier),e=c&&endClue(c,tier);if(!f||!e)return null;
+    const who=Z.ALL.indexOf(c.A.w)>=0,text=who?pick(r,CASES.filter(x=>fits(x,tier))):"What is it?";
+    const q=Tracks.gen("math","seq",seed+":c",{steps:[{text:f},{text:e}],say:["Read the clues. Put the front clue first!"]});if(!q)return null;delete q.level;
+    return[Object.assign(q,{track:"reading",read:true,text,also:{track:"math",level:"seq"}}),
+      {kit:"pick",say:[who?"Who is it?":"What is it?"],choices:shuffle(r,[c.A.w,c.R.w,c.O.w]).map(card),ans:c.A.w}];
+  }
+  // level 3: a clue about one of his own animals, found among his animals
+  function suspect(r,tier){
+    const c=Z.clue(r,tier,["body"],Z.animals(tier,Z.COMMON));if(!c)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the clue. Who is it?"],text:c.text,
+      choices:shuffle(r,[c.ans].concat(c.others)).map(a=>({v:a,art:{kind:"thing",id:a}})),ans:c.ans};
+  }
+  // level 4: the word among three written words, no pictures
+  function word(r,tier){
+    const c=frontEnd(r,tier,written(tier)),text=c&&both(c,tier);if(!text)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the clue. Which word is it?"],text,
+      choices:shuffle(r,[c.A.w,c.R.w,c.O.w]).map(w=>({v:w,art:{kind:"wcard",text:w}})),ans:c.A.w};
+  }
+  const one=q=>q?[q]:[];
+  Jobs.register({
+    id:"detective",name:"Detective",icon:"🕵️",uniform:{id:"dethat",name:"detective hat",ic:"🎩"},unlock:{tier:5},
+    pay:{perTask:4,streakTip:6},hello:"A new case! Read each clue.",
+    tasks:[
+      {id:"find",lv:1,name:"reading clues",gen:(seed,L)=>one(find(rnd(seed),L.tier))},
+      {id:"case",lv:2,name:"two clues in order",gen:(seed,L)=>crack(seed,L.tier)||[]},
+      {id:"suspect",lv:3,name:"which animal",gen:(seed,L)=>one(suspect(rnd(seed),L.tier))},
+      {id:"word",lv:4,name:"which word",gen:(seed,L)=>one(word(rnd(seed),L.tier))}
     ]});
 })();
 

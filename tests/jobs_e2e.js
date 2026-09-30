@@ -158,7 +158,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   await E(()=>{state.settings.tierOverride=3;});
   await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
   ok(await E(()=>!!document.querySelector('#ovJob .jcard[data-job="mail"]')&&!!document.querySelector("#ovJob .jcard.locked")&&
-    [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>/Opens at level 4/.test(c.textContent))),"at level 3 the Mail carrier opens");
+    [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>+(/Opens at level (\d+)/.exec(c.textContent)||[])[1]>3)),"at level 3 the Mail carrier opens; the jobs still locked open at 4 or later");
   ok(await E(()=>Modes.top()==="job"),"the Job board is the job mode");
   await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
 
