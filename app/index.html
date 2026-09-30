@@ -8098,13 +8098,18 @@ const Books=(()=>{
 const Rec=(()=>{
   let mr=null,stream=null,chunks=[];
   const ok=()=>!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
+  // one recording at a time: one still running is stopped first, and a microphone that opened
+  // for a recorder that then failed is let go again (the iPad shows the microphone as in use)
   async function start(){
-    try{stream=await navigator.mediaDevices.getUserMedia({audio:true});mr=new MediaRecorder(stream);chunks=[];
-      mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};mr.start();return true;}catch(e){return false;}
+    if(mr){try{await stop();}catch(e){}}
+    let s=null;
+    try{s=await navigator.mediaDevices.getUserMedia({audio:true});stream=s;mr=new MediaRecorder(s);chunks=[];
+      mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};mr.start();return true;}
+    catch(e){try{if(s)s.getTracks().forEach(t=>t.stop());}catch(x){}mr=null;return false;}
   }
-  function stop(){return new Promise(res=>{if(!mr){res(null);return;}
-    mr.onstop=()=>{try{stream.getTracks().forEach(t=>t.stop());}catch(e){}res(new Blob(chunks,{type:mr.mimeType||"audio/mp4"}));mr=null;};
-    try{mr.stop();}catch(e){res(null);}});}
+  function stop(){return new Promise(res=>{const m=mr,s=stream,c=chunks;if(!m){res(null);return;}mr=null;
+    m.onstop=()=>{try{s.getTracks().forEach(t=>t.stop());}catch(e){}res(new Blob(c,{type:m.mimeType||"audio/mp4"}));};
+    try{m.stop();}catch(e){try{s.getTracks().forEach(t=>t.stop());}catch(x){}res(null);}});}
   return{ok,start,stop};
 })();
 
