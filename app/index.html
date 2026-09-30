@@ -11316,7 +11316,28 @@ Object.assign(ART,{
     <path d="M52 52 L82 14 Q84 8 78 10 L44 46Z" fill="${grad("#C9CED6","h",.3,.2)}"/>
     <path d="M47 54 L28 90 M53 54 L72 90" fill="none" stroke="#2E2620" stroke-width="12"/>
     <path d="M47 54 L28 90 M53 54 L72 90" fill="none" stroke="#DC5A4B" stroke-width="7"/>
-    <circle cx="50" cy="50" r="5.5" fill="${dome("#FFC53D",36,30)}"/>`;}
+    <circle cx="50" cy="50" r="5.5" fill="${dome("#FFC53D",36,30)}"/>`;},
+  // the Mail carrier's and the Baker's gear
+  gear_mailbag(){return `${OCC}<path d="M26 46 Q28 8 50 8 Q72 8 74 46" fill="none" stroke="#7A5230" stroke-width="5"/>
+    <path d="M32 26 L62 22 L66 44 L36 48Z" fill="#FBF6EC"/><path d="M32 26 L50 36 L62 22" fill="none" stroke-width="1.8"/>
+    <path d="M16 42 L84 42 L82 84 Q82 90 76 90 L24 90 Q18 90 18 84Z" fill="${grad("#3F6FB8","v",.25,.2)}"/>
+    <path d="M16 42 L84 42 L82 62 Q50 72 18 62Z" fill="${grad("#2F5A9C","v",.2,.2)}"/>
+    <path d="M45 60 L55 60 L55 71 L45 71Z" fill="${dome("#FFC53D",36,30)}"/>`;},
+  gear_mailcart(){return `${OCC}<path d="M12 24 L22 24 L32 72 L84 72" fill="none" stroke-width="4.5"/>
+    <path d="M40 22 L56 22 L56 40 L40 40Z" fill="#FBF6EC"/><path d="M40 22 L48 30 L56 22" fill="none" stroke-width="1.6"/>
+    <path d="M58 16 L76 16 L76 40 L58 40Z" fill="#FBF6EC"/><path d="M58 16 L67 26 L76 16" fill="none" stroke-width="1.6"/>
+    <path d="M28 38 L86 38 L82 68 L34 68Z" fill="${grad("#DC5A4B","v",.3,.2)}"/>
+    <path d="M40 46 L76 46 M42 56 L74 56" fill="none" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="2.4"/>
+    <circle cx="42" cy="82" r="8" fill="${dome("#4A4F5A",36,30)}"/><circle cx="74" cy="82" r="8" fill="${dome("#4A4F5A",36,30)}"/>`;},
+  gear_bakerhat(){return `${OCC}<path d="M28 88 L28 60 Q12 56 14 38 Q16 20 34 24 Q38 6 50 6 Q62 6 66 24 Q84 20 86 38 Q88 56 72 60 L72 88Z" fill="${grad("#FFFFFF","v",.05,.14)}"/>
+    <path d="M28 68 L72 68 L72 88 L28 88Z" fill="${grad("#F2E6CF","v",.1,.15)}"/>
+    <path d="M40 28 Q42 44 40 60 M60 28 Q58 44 60 60 M50 12 L50 60" fill="none" stroke-opacity=".3" stroke-width="2"/>`;},
+  gear_rollingpin(){return `${OCC}<g transform="rotate(-18 50 55)">
+    <path d="M4 50 Q4 46 8 46 L20 46 L20 64 L8 64 Q4 64 4 60Z" fill="${grad("#A86B34","v",.2,.2)}"/>
+    <path d="M80 46 L92 46 Q96 46 96 50 L96 60 Q96 64 92 64 L80 64Z" fill="${grad("#A86B34","v",.2,.2)}"/>
+    <path d="M24 40 Q20 40 20 44 L20 66 Q20 70 24 70 L76 70 Q80 70 80 66 L80 44 Q80 40 76 40Z" fill="${grad("#E2B27A","v",.25,.2)}"/>
+    <path d="M30 48 Q50 46 70 48 M32 61 Q50 63 68 61" fill="none" stroke-opacity=".3" stroke-width="1.6"/></g>
+    <circle cx="28" cy="84" r="2.2" fill="#FFFFFF" stroke="none"/><circle cx="68" cy="88" r="1.8" fill="#FFFFFF" stroke="none"/><circle cx="46" cy="90" r="1.5" fill="#FFFFFF" stroke="none"/>`;}
 });
 // new on the 💎 shelf: outfits for the buddy, worn like the hats and kept in state.owned
 [{id:"bunny",name:"Bunny ears",gems:10},{id:"beanie",name:"Beanie",gems:15},{id:"shades",name:"Sunglasses",gems:20},
@@ -11329,6 +11350,12 @@ Store.item({id:"apron",shelf:"gear",name:"Apron",cost:{coins:15},art:"gear_apron
 Store.item({id:"gloves",shelf:"gear",name:"Garden gloves",cost:{coins:20},art:"gear_gloves",tag:"uniform",unlock:{job:"mow",level:2}});
 Store.item({id:"scanner",shelf:"gear",name:"Price scanner",cost:{coins:40},art:"gear_scanner",tag:"tool",unlock:{job:"shop",level:3}});
 Store.item({id:"clippers",shelf:"gear",name:"Hedge clippers",cost:{coins:45},art:"gear_clippers",tag:"tool",unlock:{job:"mow",level:3}});
+// and the Mail carrier's and the Baker's
+Object.assign(Store.JOBS,{mail:{name:"Mail carrier",ic:"📬"},baker:{name:"Baker",ic:"🧁"}});
+Store.item({id:"mailbag",shelf:"gear",name:"Mail bag",cost:{coins:20},art:"gear_mailbag",tag:"uniform",unlock:{job:"mail",level:2}});
+Store.item({id:"mailcart",shelf:"gear",name:"Mail cart",cost:{coins:45},art:"gear_mailcart",tag:"tool",unlock:{job:"mail",level:3}});
+Store.item({id:"bakerhat",shelf:"gear",name:"Baker hat",cost:{coins:25},art:"gear_bakerhat",tag:"uniform",unlock:{job:"baker",level:2}});
+Store.item({id:"rollingpin",shelf:"gear",name:"Rolling pin",cost:{coins:50},art:"gear_rollingpin",tag:"tool",unlock:{job:"baker",level:3}});
 
 /* ================================================================
    LOOKS — the valley dresses up for a holiday, and keeps it on
