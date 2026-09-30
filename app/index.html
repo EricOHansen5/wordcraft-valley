@@ -1286,6 +1286,31 @@ body.exploring .slot-empty{display:none}
 .jochk{margin-top:10px}.jocheck{width:110px;height:62px}
 .jocheck.ready{box-shadow:0 0 0 4px rgba(255,229,138,.95),0 4px 0 rgba(0,0,0,.2)}.jocheck.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9)}
 @media (max-width:700px){.jorder.wide{flex-direction:column;align-items:stretch}.jorder.wide .jorow,.jorder.wide .jopool{flex:0 0 auto}.jocard,.jorder.wide .jocard{font-size:20px;padding:6px 10px}.jogap{min-width:80px}}
+/* the sort kit: the things to sort in a row, and two or three labelled bins to put them in */
+.jsort{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:760px}
+.jspool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:88px;padding:4px;border-radius:18px}
+.jsbins{display:flex;gap:12px;justify-content:center;align-items:stretch}
+.jsbin{flex:1 1 0;min-width:0;max-width:280px;min-height:150px;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px;border:3px solid var(--ink);border-radius:18px;
+  background:rgba(255,255,255,.6);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.jslab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font-size:26px;font-weight:900;color:var(--ink);pointer-events:none}
+.jsic{font-size:32px;line-height:1}.jsic .jword{width:40px;height:40px}
+.jsin{flex:1;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-content:flex-start;min-height:98px;padding:6px;border:3px dashed rgba(59,48,36,.28);border-radius:14px;background:#fff}
+.jscard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:80px;min-height:80px;padding:4px 8px;border:3px solid var(--ink);border-radius:16px;
+  background:#fff;box-shadow:0 4px 0 rgba(0,0,0,.2);font-family:inherit;font-size:20px;font-weight:800;line-height:1.1;color:var(--ink);
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.jsart{display:block;width:46px;height:46px;pointer-events:none}.jsart>*{width:46px!important;height:46px!important;margin:0!important}
+.jsart svg,.jsart img{width:100%;height:100%;display:block;-webkit-user-drag:none}
+.jstext{pointer-events:none}
+.jscard.lift{transform:translateY(-6px);box-shadow:0 0 0 4px #3F86D2,0 8px 0 rgba(0,0,0,.18)}
+.jscard.drag{position:relative;z-index:9;box-shadow:0 12px 18px rgba(0,0,0,.28)}
+.jscard.hint{box-shadow:0 0 0 5px rgba(127,176,105,.9);background:#EAF7E2}
+.jscard.cur,.jsbin.cur{outline:4px solid #3F86D2;outline-offset:2px}
+.jsbin.open{border-color:#3F86D2}.jsbin.over{background:#E3F0FB}
+.jsbin.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9);background:#EAF7E2}
+.jsort.right .jscard{background:#DDF3D4;border-color:var(--meadow-deep)}
+.jsort.wrong .jsbins,.jspool.nudge{animation:joshake .45s}
+@media (max-width:700px){.jsbins{gap:8px}.jsbin{min-height:120px;padding:6px}.jslab{font-size:20px}.jsic{font-size:26px}.jscard{min-width:72px;min-height:72px;font-size:17px}
+  .jsart,.jsart>*{width:40px!important;height:40px!important}}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -10311,6 +10336,114 @@ Jobs.kit("order",function(host,q,done,opt){
       const fromPool=slots.indexOf(v)<0,pi=pool().map(c=>c.v).indexOf(v);move(v);
       // stay among the cards still to place: the next one along, or the one just put back
       const p=pool().map(c=>c.v),nx=fromPool&&p.length?p[Math.min(pi,p.length-1)]:v;cur=Math.max(0,items().indexOf(nx));
+      draw();return true;}
+    if(k==="Enter"){kbd=true;check();return true;}
+    return false;});
+  U.wire(host,q);draw();
+});
+
+/* ---- the sort kit: put each thing in the right bin ----
+   Added with Jobs.kit("sort",fn) and wired like the order kit (Jobs.ui). q.choices are the things to sort:
+   a value, or {v, text, art} (a picture with its name under it); q.bins are two or three bins, each
+   {v, text, ic} (a word and an icon; art instead of ic for a picture); q.ans says where each thing goes,
+   "fox:den|pig:pen", or {fox:"den", pig:"pen"}. A tap on a thing lifts it and a tap on a bin puts it in; a
+   thing can also be dragged onto a bin with a finger (pointer events; the taps always work too). A tap on a
+   placed thing lifts it back out, ready for another bin; ✓ checks. A miss keeps the things that are in the
+   right bin, the others come back out to try again, and the customer waits (opt.onMiss); after the second
+   miss the next thing to place glows, and so does its bin. dataset.ans is item:bin|item:bin, in the order of
+   the things. done(ok) once, through Read.once, ok being right the first time. Keyboard: the arrows move a
+   cursor over the things and the bins, Space picks up and puts down, Enter checks. Things and bins are at
+   least 56 px. */
+Jobs.kit("sort",function(host,q,done,opt){
+  const U=Jobs.ui;done=Read.once(done);opt=opt||{};
+  const val=c=>String(c&&typeof c==="object"?c.v:c),obj=c=>c&&typeof c==="object"?c:{};
+  const things=(q.choices||[]).map(c=>({v:val(c),text:String(obj(c).text!=null?obj(c).text:val(c)),art:obj(c).art||null}));
+  const bins=(q.bins||[]).map(b=>({v:val(b),text:String(obj(b).text!=null?obj(b).text:val(b)),ic:obj(b).ic||"",art:obj(b).art||null}));
+  const pairs=typeof q.ans==="string"?q.ans.split("|").map(p=>{const i=p.lastIndexOf(":");return[p.slice(0,i),p.slice(i+1)];})
+    :q.ans&&typeof q.ans==="object"?Object.keys(q.ans).map(k=>[k,q.ans[k]]):[];
+  const want={},isBin={};pairs.forEach(p=>{want[String(p[0])]=String(p[1]);});bins.forEach(b=>{isBin[b.v]=1;});
+  if(things.length<2||bins.length<2||Object.keys(isBin).length!==bins.length||new Set(things.map(t=>t.v)).size!==things.length||
+    pairs.length!==things.length||things.some(t=>!isBin[want[t.v]]))throw new Error("a sort answer puts every thing in one of the bins");
+  host.dataset.kit="sort";host.dataset.ans=things.map(t=>t.v+":"+want[t.v]).join("|");
+  let miss=0,fin=false,hint=!!opt.hint,lifted=null,cur=0,kbd=false,quiet=0,drag=null;
+  const at={};   // a thing -> the bin it is in
+  const lab=b=>(b.art?`<span class="jsic">${Jobs.art(b.art)}</span>`:b.ic?`<span class="jsic">${esc(b.ic)}</span>`:"")+`<b>${esc(b.text)}</b>`;
+  host.innerHTML=U.head(q)+`<div class="jsort"><div class="jspool"></div><div class="jsbins">${bins.map(b=>
+    `<div class="jsbin" data-bin="${esc(b.v)}" role="button" aria-label="${esc(b.text)}"><span class="jslab">${lab(b)}</span><span class="jsin"></span></div>`).join("")}</div></div>
+    <div class="mrow jochk"><button class="jkey ok jocheck" data-act="check" aria-label="Check">✓</button></div>`;
+  const box=host.querySelector(".jsort"),poolEl=host.querySelector(".jspool"),binEls=[...host.querySelectorAll(".jsbin")],chk=host.querySelector(".jocheck");
+  const pool=()=>things.filter(t=>!at[t.v]);
+  // what the cursor walks over, as they stand on the screen: the things still out, then each bin and what is in it
+  const stops=()=>{const s=pool().map(t=>"t:"+t.v);bins.forEach(b=>{s.push("b:"+b.v);things.forEach(t=>{if(at[t.v]===b.v)s.push("t:"+t.v);});});return s;};
+  const face=t=>(t.art?`<span class="jsart">${Jobs.art(t.art)}</span>`:"")+`<span class="jstext">${esc(t.text)}</span>`;
+  function draw(){
+    const next=hint&&!fin?(lifted||(pool()[0]||{}).v||null):null,goal=next?want[next]:null,list=stops();
+    cur=Math.max(0,Math.min(cur,list.length-1));const k=kbd&&!fin?list[cur]:null;
+    const card=t=>`<button class="jscard${t.v===lifted?" lift":""}${t.v===next?" hint":""}${k==="t:"+t.v?" cur":""}" data-w="${esc(t.v)}">${face(t)}</button>`;
+    poolEl.innerHTML=pool().map(card).join("");
+    binEls.forEach(el=>{const b=el.dataset.bin;
+      el.querySelector(".jsin").innerHTML=things.filter(t=>at[t.v]===b).map(card).join("");
+      el.classList.toggle("open",!!lifted&&!fin);el.classList.toggle("hint",b===goal);el.classList.toggle("cur",k==="b:"+b);});
+    const all=!pool().length;chk.classList.toggle("ready",all);
+    chk.classList.toggle("hint",!!(hint&&!fin&&all&&things.every(t=>at[t.v]===want[t.v])));
+  }
+  const nudge=el=>{Sound.sfx.soft();el.classList.remove("nudge");void el.offsetWidth;el.classList.add("nudge");};
+  // a thing still out is lifted (or put down again); a placed one comes back out, lifted, ready for another bin
+  function lift(v){
+    if(fin||!want[v])return;
+    if(at[v]){delete at[v];lifted=v;Sound.sfx.soft();}
+    else{lifted=lifted===v?null:v;Sound.sfx.pop();}
+    draw();
+  }
+  function put(v,b){if(fin||!want[v]||!isBin[b])return;at[v]=b;lifted=null;Sound.sfx.pop();draw();}
+  function binTap(b){if(fin)return;if(lifted)put(lifted,b);else nudge(poolEl);}
+  function check(){
+    if(fin)return;
+    if(pool().length){nudge(poolEl);return;}
+    if(things.every(t=>at[t.v]===want[t.v])){fin=true;lifted=null;U.keys(null);box.classList.add("right");draw();Sound.sfx.win();setTimeout(()=>done(!miss),900);return;}
+    // the things in the right bin stay there; the others come back out to be tried again
+    miss++;if(miss>=2)hint=true;lifted=null;
+    things.forEach(t=>{if(at[t.v]!==want[t.v])delete at[t.v];});
+    box.classList.remove("wrong");void box.offsetWidth;box.classList.add("wrong");Sound.sfx.nope();draw();
+    if(opt.onMiss)opt.onMiss(miss);
+  }
+  host.addEventListener("click",e=>{
+    const el=e.target&&e.target.closest?e.target.closest(".jscard,.jsbin,.jocheck"):null;if(!el||!host.contains(el))return;
+    // a button keeps no focus, so Space from the keyboard never presses it a second time
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(x){}
+    if(Date.now()<quiet)return;   // the end of a drag is not a tap
+    if(el.classList.contains("jocheck"))check();else if(el.classList.contains("jscard"))lift(el.dataset.w);else binTap(el.dataset.bin);
+  });
+  // a drag: the card follows the finger and goes into the bin it is let go over; let go anywhere else and nothing moves
+  const binAt=(x,y)=>binEls.find(el=>{const r=el.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;})||null;
+  host.addEventListener("pointerdown",e=>{
+    if(fin||drag||(e.button!=null&&e.button>0))return;
+    const el=e.target&&e.target.closest?e.target.closest(".jscard"):null;if(!el||!host.contains(el))return;
+    drag={el,v:el.dataset.w,x:e.clientX,y:e.clientY,id:e.pointerId,on:false};
+  });
+  host.addEventListener("pointermove",e=>{
+    const d=drag;if(!d||e.pointerId!==d.id)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+    if(!d.on){if(Math.abs(dx)+Math.abs(dy)<12)return;d.on=true;d.el.classList.add("drag");try{d.el.setPointerCapture(d.id);}catch(x){}}
+    d.el.style.transform=`translate(${dx}px,${dy}px)`;
+    const over=binAt(e.clientX,e.clientY);binEls.forEach(b=>b.classList.toggle("over",b===over));
+    if(e.cancelable)e.preventDefault();
+  });
+  const letGo=e=>{
+    const d=drag;if(!d||e.pointerId!==d.id)return;drag=null;if(!d.on)return;
+    quiet=Date.now()+200;binEls.forEach(b=>b.classList.remove("over"));
+    const over=e.type==="pointerup"&&!fin?binAt(e.clientX,e.clientY):null;
+    if(over)put(d.v,over.dataset.bin);else{d.el.classList.remove("drag");d.el.style.transform="";}
+  };
+  host.addEventListener("pointerup",letGo);host.addEventListener("pointercancel",letGo);
+  U.keys(e=>{
+    if(!host.isConnected||fin)return false;const k=e.key,list=stops();
+    if(k==="ArrowLeft"||k==="ArrowUp"||k==="ArrowRight"||k==="ArrowDown"){
+      if(kbd&&list.length)cur=(cur+(k==="ArrowLeft"||k==="ArrowUp"?-1:1)+list.length)%list.length;kbd=true;draw();return true;}
+    if(k===" "||k==="Spacebar"||e.code==="Space"){
+      kbd=true;const s=list[cur];if(!s){draw();return true;}
+      // a thing picked up: on to the first bin; one put down: back to the things still out
+      if(s.charAt(0)==="t"){lift(s.slice(2));cur=Math.max(0,stops().indexOf(lifted?"b:"+bins[0].v:s));}
+      else{const had=lifted;binTap(s.slice(2));if(had&&!lifted)cur=pool().length?0:Math.max(0,stops().indexOf(s));}
       draw();return true;}
     if(k==="Enter"){kbd=true;check();return true;}
     return false;});
