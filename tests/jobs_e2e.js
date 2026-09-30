@@ -119,6 +119,10 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
           const miss=Decode.check(String(x),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the card "${x}" needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
         (q.marks||[]).forEach(m=>{n.texts++;const miss=Decode.check(String(m.text),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the place "${m.text}" on the map needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
         if(q.to){let c=q.start.c,r=q.start.r;for(const d of q.ans){c+=d==="L"?-1:d==="R"?1:0;r+=d==="U"?-1:d==="D"?1:0;}if(c!==q.to.c||r!==q.to.r)bad.push(`${j.id}/${t.id}: the moves do not end at the stop`);}
+        if(q.kit==="sort"){const it=(q.choices||[]).map(c=>String(c&&typeof c==="object"?c.v:c)),bn=(q.bins||[]).map(b=>String(b.v)),pr=String(q.ans).split("|").map(x=>x.split(":"));
+          if(pr.length!==it.length||new Set(pr.map(x=>x[0])).size!==it.length||pr.some(x=>it.indexOf(x[0])<0||bn.indexOf(x[1])<0))bad.push(`${j.id}/${t.id}: the sort ${q.ans} is not its things ${it} and bins ${bn}`);
+          (q.choices||[]).map(c=>c.text).concat((q.bins||[]).map(b=>b.text)).forEach(x=>{n.texts++;const miss=Decode.check(String(x),tier).filter(y=>!y.ok);
+            if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: "${x}" on a card or a bin needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});}
         if(q.math){const m=q.math,f=w=>String(w).charAt(0).toUpperCase(),want=m.op==="+"?m.a+m.b:m.op==="-"?m.a-m.b:m.op==="×"?m.a*m.b:m.op==="count"?m.n:m.op==="coins"?m.coins.reduce((x,y)=>x+y,0):
             m.op==="house"?m.n:m.op==="place"?m.tens*10+m.ones:m.op==="frac"?m.of:m.op==="time"?m.start+m.add:m.op==="seq"?m.steps.join("|"):
             m.op==="abc"?m.words.slice().sort((x,y)=>f(x)<f(y)?-1:f(x)>f(y)?1:0).join("|"):m.op==="sort"?m.nums.slice().sort((x,y)=>x-y).join("|"):null;
@@ -129,7 +133,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
             if(seen[c+","+r])bad.push(`${j.id}/${t.id}: the path crosses itself`);seen[c+","+r]=1;}}});}}));
     return{bad,kits:[...kits].sort(),n:n.texts};});
   ok(!G.bad.length,`every generated task: ${G.n} reading texts decode at their level, answers right, same seed same task`+(G.bad.length?" — "+G.bad.slice(0,5).join(" | "):""));
-  ok(G.kits.join()==="order,pad,path,pick","the jobs use all four kits: "+G.kits);
+  ok(G.kits.join()==="order,pad,path,pick,sort","the jobs use all five kits: "+G.kits);
   // the Mail carrier's letters at level 3, and the Baker's recipes at level 4, read only words of that level
   const mailWords=await E(()=>{const w=new Set();for(let s=0;s<200;s++)Jobs.list().find(j=>j.id==="mail").tasks.forEach(t=>Jobs.gen("mail",t.id,s,{tier:3,lv:t.lv}).forEach(q=>{
     [q.read?q.text:""].concat((q.choices||[]).map(c=>c&&typeof c==="object"?(c.text||c.art&&(c.art.name||c.art.text)):"")).forEach(x=>Decode.words(String(x||"")).forEach(y=>w.add(y)));}));
@@ -212,7 +216,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     await clockOut();
     ok(await E(()=>state.jobs.current===null&&!document.getElementById("jobsBadge").classList.contains("on")),`${j.name}: Clock out ends the shift`);
   }
-  ok(["pick","pad","path","order"].every(k=>kitsUsed.has(k)),"the shifts used every kit: "+[...kitsUsed].join(", "));
+  ok(["pick","pad","path","order","sort"].every(k=>kitsUsed.has(k)),"the shifts used every kit: "+[...kitsUsed].join(", "));
 
   // 3b. the order kit: cards at least 56 px tall, a placed card tapped goes back, and the keyboard (arrows, Space, Enter);
   //     and the Mail carrier's street map

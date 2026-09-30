@@ -1287,12 +1287,13 @@ body.exploring .slot-empty{display:none}
 .jocheck.ready{box-shadow:0 0 0 4px rgba(255,229,138,.95),0 4px 0 rgba(0,0,0,.2)}.jocheck.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9)}
 @media (max-width:700px){.jorder.wide{flex-direction:column;align-items:stretch}.jorder.wide .jorow,.jorder.wide .jopool{flex:0 0 auto}.jocard,.jorder.wide .jocard{font-size:20px;padding:6px 10px}.jogap{min-width:80px}}
 /* the sort kit: the things to sort in a row, and two or three labelled bins to put them in */
-.jsort{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:760px}
+.jsort{display:flex;flex-direction:column;gap:10px;align-items:stretch;margin:2px auto 0;max-width:760px}
+.jq[data-kit="sort"] .jtext{font-size:27px;padding:8px 14px;margin-bottom:8px}
 .jspool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:88px;padding:4px;border-radius:18px}
 .jsbins{display:flex;gap:12px;justify-content:center;align-items:stretch}
-.jsbin{flex:1 1 0;min-width:0;max-width:280px;min-height:150px;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px;border:3px solid var(--ink);border-radius:18px;
+.jsbin{flex:1 1 0;min-width:0;max-width:280px;min-height:140px;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px;border:3px solid var(--ink);border-radius:18px;
   background:rgba(255,255,255,.6);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.jslab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font-size:26px;font-weight:900;color:var(--ink);pointer-events:none}
+.jslab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:36px;font-size:26px;font-weight:900;color:var(--ink);pointer-events:none}
 .jsic{font-size:32px;line-height:1}.jsic .jword{width:40px;height:40px}
 .jsin{flex:1;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-content:flex-start;min-height:98px;padding:6px;border:3px dashed rgba(59,48,36,.28);border-radius:14px;background:#fff}
 .jscard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:80px;min-height:80px;padding:4px 8px;border:3px solid var(--ink);border-radius:16px;
@@ -10814,6 +10815,67 @@ const JOB_ZOO=(()=>{
       {id:"case",lv:2,name:"two clues in order",gen:(seed,L)=>crack(seed,L.tier)||[]},
       {id:"suspect",lv:3,name:"which animal",gen:(seed,L)=>one(suspect(rnd(seed),L.tier))},
       {id:"word",lv:4,name:"which word",gen:(seed,L)=>one(word(rnd(seed),L.tier))}
+    ]});
+})();
+
+/* ---- 🧭 Park ranger, opens at reading level 3 ----
+   Every task starts with a habitat sign or a feeding chart to read, about his own animals first (the ones in
+   his valley), then the common ones, and only animals whose names he can read. Job level 1 sorts three of
+   them into their two homes by what the sign says ("The fox is in the den. The pig is in the pen. The hen is
+   in the pen."): the pen and the den at level 3, the pond and land from 4 ("lives in" from 5), the sea and
+   land or day and night from 7. Level 2 reads a feeding chart and counts one food ("The hen gets 4 bugs. The
+   cat gets 2 fish. The bat gets 3 bugs." How many bugs in all? Adding within 10, and reading which lines are
+   bugs). Level 3 sorts three animals by what they eat (bugs, fish and nuts at level 3; plants for nuts from 4;
+   "eats" for "gets" from 7). Level 4 reads a sign about one animal ("It is in the den. It gets fish.") and
+   finds it among his animals. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded,Z=JOB_ZOO;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const zoo=tier=>Z.animals(tier,Z.COMMON);
+  const pic=a=>({v:a,text:a,art:{kind:"thing",id:a}});
+  // a sort: the sign's lines, his animals as the things, the facts as the bins
+  function sorting(r,tier,bins,n,say){
+    const s=Z.sort(r,tier,bins,zoo(tier),n);if(!s)return null;
+    return{kit:"sort",track:"reading",read:true,say:[say],text:s.lines.join(" "),choices:s.items.map(pic),
+      bins:s.bins.map(f=>({v:f.id,text:f.id,ic:f.ic})),ans:s.items.map(a=>a+":"+s.bin(a)).join("|")};
+  }
+  // level 1: two homes; the pairs his level can read, the newest a bit more often
+  const HOMES=[["pen","den"],["pond","land"],["sea","land"],["day","night"]];
+  function homes(r,tier){
+    const ok=HOMES.filter(h=>h.every(id=>Z.say(Z.fact(id),"It",tier)));if(!ok.length)return null;
+    for(const h of shuffle(r,ok)){const q=sorting(r,tier,shuffle(r,h),3,"Read the sign. Put each one in its home!");if(q)return q;}
+    return null;
+  }
+  // level 2: a feeding chart, and how many of one food in all
+  const ONE={bugs:"bug",fish:"fish",nuts:"nut",plants:"plant"};
+  function chart(r,tier){
+    const eat=fits("eats",tier)?"eats":"gets",foods=["bugs","fish","nuts","plants"].map(Z.fact).filter(f=>fits(f.id,tier));
+    const who=f=>zoo(tier).filter(a=>Z.has(f,a)&&foods.every(g=>g===f||!Z.has(g,a)));
+    const F=shuffle(r,foods.filter(f=>who(f).length>=2))[0];if(!F)return null;
+    const G=shuffle(r,foods.filter(g=>g!==F&&who(g).length))[0],[x,y]=shuffle(r,who(F)),a=int(r,1,6),b=int(r,1,Math.min(6,10-a));
+    const line=(k,n,f)=>`The ${k} ${eat} ${n} ${n===1?ONE[f.id]:f.id}.`;
+    const lines=[line(x,a,F),line(y,b,F)].concat(G?[line(pick(r,who(G)),int(r,1,5),G)]:[]);
+    const text=shuffle(r,lines).join(" ");if(!fits(text,tier))return null;
+    return{kit:"pad",track:"reading",read:true,say:["Read the chart.",`How many ${F.id} in all?`],text,ans:a+b,math:{op:"+",a,b},also:{track:"math",level:"add10"}};
+  }
+  // level 3: what they eat, three bins
+  const foods=tier=>Z.say(Z.fact("plants"),"It",tier)?["bugs","fish","plants"]:["bugs","fish","nuts"];
+  const feeding=(r,tier)=>sorting(r,tier,shuffle(r,foods(tier)),3,"Read the chart. Put each one by its food!");
+  // level 4: a sign about one animal (where it lives, what it eats), found among his animals
+  function which(r,tier){
+    const c=Z.clue(r,tier,["home","food"],zoo(tier))||Z.clue(r,tier,["home","food","body"],zoo(tier));if(!c)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the sign. Which one is it?"],text:c.text,
+      choices:shuffle(r,[c.ans].concat(c.others)).map(a=>({v:a,art:{kind:"thing",id:a}})),ans:c.ans};
+  }
+  const one=q=>q?[q]:[];
+  Jobs.register({
+    id:"ranger",name:"Park ranger",icon:"🧭",uniform:{id:"rangerhat",name:"ranger hat",ic:"👒"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the park! Read each sign.",
+    tasks:[
+      {id:"homes",lv:1,name:"animal homes",gen:(seed,L)=>one(homes(rnd(seed),L.tier))},
+      {id:"food",lv:2,name:"counting food",gen:(seed,L)=>one(chart(rnd(seed),L.tier))},
+      {id:"feed",lv:3,name:"what they eat",gen:(seed,L)=>one(feeding(rnd(seed),L.tier))},
+      {id:"which",lv:4,name:"which animal",gen:(seed,L)=>one(which(rnd(seed),L.tier))}
     ]});
 })();
 
