@@ -38,7 +38,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click('#ovStore [data-shelf="gear"]');await wait(100);
   c=await cards();
   const sold=HELM.filter(h=>!h.prize);
-  ok(c.length===sold.length+10&&c.every(x=>x.art),`🪙 shelf: ${sold.length} Mine helmets and 10 new things (the Crystal crown is a prize, not sold) (${c.length})`);
+  ok(c.length===sold.length+18&&c.every(x=>x.art),`🪙 shelf: ${sold.length} Mine helmets and 18 new things (the Crystal crown is a prize, not sold) (${c.length})`);
   ok(sold.every(h=>{const x=c.find(y=>y.id===h.id);return x&&(h.cost?x.cost===h.cost+" 🪙":/Yours|Wearing/.test(x.cost));}),"the helmets keep their ids and prices in 🪙; the free two are his");
   ok(!c.some(x=>x.id==="crystal"),"the Crystal crown is not for sale");
   await p.click('#ovStore [data-shelf="outfit"]');await wait(100);
@@ -146,6 +146,15 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(!job("rollingpin").locked&&job("rollingpin").cost==="50 🪙","15 Baker tasks open the rolling pin (50 🪙)");
   ok(await E(()=>["mailbag","mailcart","bakerhat","rollingpin"].every(id=>{const it=Store.get("gear",id);return it.keep==="own"&&!it.wear&&(it.tag==="uniform"||it.tag==="tool");})&&
     Store.gearFor("mail","uniform").id==="mailbag"&&Store.gearFor("baker","tool").id==="rollingpin"),"they are kept in owned, like the other job gear, and are the jobs' uniforms and tools");
+  // the Restaurant's, the Bus driver's, the Detective's and the Park ranger's: a uniform at job level 2, a tool at level 3
+  const W1B=[["servercap","restaurant","🍕 Restaurant uniform",2,20],["tray","restaurant","🍕 Restaurant tool",3,45],["drivercap","bus","🚌 Bus driver uniform",2,20],["whistle","bus","🚌 Bus driver tool",3,40],
+    ["dethat","detective","🕵️ Detective uniform",2,25],["magnifier","detective","🕵️ Detective tool",3,50],["rangerhat","ranger","🧭 Park ranger uniform",2,20],["binoculars","ranger","🧭 Park ranger tool",3,45]];
+  const w1bLabels=[];for(const g of W1B)w1bLabels.push(await label(g[0]));
+  ok(w1bLabels.every((l,i)=>l===W1B[i][2])&&W1B.every(g=>job(g[0]).locked&&job(g[0]).cost==="🔒 Job level "+g[3]),"the four new jobs' gear says whose it is and the job level that opens it: "+w1bLabels.join(" · "));
+  await E(()=>{["restaurant","bus","detective","ranger"].forEach(j=>{state.jobs.xp[j]=15;});Store.open("gear");});await wait(100);
+  c=await cards();
+  ok(W1B.every(g=>!job(g[0]).locked&&job(g[0]).cost===g[4]+" 🪙")&&await E(w=>w.every(g=>Store.gearFor(g[1],g[0]==="tray"||g[0]==="whistle"||g[0]==="magnifier"||g[0]==="binoculars"?"tool":"uniform").id===g[0]),W1B),
+    "15 tasks at each open its uniform and tool: "+W1B.map(g=>g[0]+" "+job(g[0]).cost).join(", "));
   await E(()=>Store.close());
 
   // ---- 6. saved, and still there after a reload ----

@@ -10113,7 +10113,7 @@ const Jobs=(()=>{
   // the job's tool from the Trading Post makes the tip come one task sooner: four right first time in a row instead of five
   const tipAt=j=>gear(j,"tool")?4:5;
   const TIP_LINE={4:"Four in a row! Here is a tip!",5:"Five in a row! Here is a tip!"};
-  const readyLine=it=>"Your "+it.name.toLowerCase()+(/s$/.test(it.name)?" are":" is")+" ready!";
+  const readyLine=it=>"Your "+it.name.toLowerCase()+(/[^s]s$/.test(it.name)?" are":" is")+" ready!";
   // him in his uniform; in the shift header (small) the tool he owns for the job is beside it
   function wearing(j,small){
     const u=uniform(j),tool=small?gear(j,"tool"):null,tp=tool?gearPic(tool):"";
@@ -11571,6 +11571,45 @@ Store.item({id:"mailbag",shelf:"gear",name:"Mail bag",cost:{coins:20},art:"gear_
 Store.item({id:"mailcart",shelf:"gear",name:"Mail cart",cost:{coins:45},art:"gear_mailcart",tag:"tool",unlock:{job:"mail",level:3}});
 Store.item({id:"bakerhat",shelf:"gear",name:"Baker hat",cost:{coins:25},art:"gear_bakerhat",tag:"uniform",unlock:{job:"baker",level:2}});
 Store.item({id:"rollingpin",shelf:"gear",name:"Rolling pin",cost:{coins:50},art:"gear_rollingpin",tag:"tool",unlock:{job:"baker",level:3}});
+// and the Restaurant's, the Bus driver's, the Detective's and the Park ranger's
+Object.assign(Store.JOBS,{restaurant:{name:"Restaurant",ic:"🍕"},bus:{name:"Bus driver",ic:"🚌"},detective:{name:"Detective",ic:"🕵️"},ranger:{name:"Park ranger",ic:"🧭"}});
+Object.assign(ART,{
+  gear_servercap(){return `${OCC}<path d="M12 78 L20 44 Q50 24 80 44 L88 78 Q50 70 12 78Z" fill="${grad("#FFFFFF","v",.05,.16)}"/>
+    <path d="M14 69 Q50 61 86 69 L88 78 Q50 70 12 78Z" fill="${grad("#DC5A4B","v",.25,.2)}"/>
+    <path d="M50 30 L50 64" fill="none" stroke-opacity=".3" stroke-width="2"/>`;},
+  gear_tray(){return `${OCC}<ellipse cx="50" cy="72" rx="44" ry="14" fill="${grad("#C9CED6","v",.3,.2)}"/>
+    <ellipse cx="50" cy="69" rx="35" ry="9" fill="#E8EBEF" stroke="none"/>
+    <path d="M26 66 L28 42 L46 42 L48 66Z" fill="${grad("#FBF6EC","v",.1,.12)}"/><path d="M46 48 Q57 48 55 57 Q53 62 47 61" fill="none" stroke-width="3"/>
+    <ellipse cx="68" cy="64" rx="14" ry="4.5" fill="#FFFFFF"/><path d="M58 62 Q68 44 78 62Z" fill="${grad("#E0A456","v",.2,.2)}"/>`;},
+  gear_drivercap(){return `${OCC}<path d="M20 58 Q18 28 50 26 Q82 28 80 58Z" fill="${grad("#2F5A9C","v",.3,.2)}"/>
+    <path d="M16 55 L84 55 L84 64 L16 64Z" fill="${grad("#1F3E6E","v",.2,.2)}"/>
+    <path d="M20 64 Q50 86 86 66 Q60 72 20 64Z" fill="#2B2B2B"/>
+    <circle cx="50" cy="42" r="7.5" fill="${dome("#FFC53D",36,30)}"/>`;},
+  gear_whistle(){return `${OCC}<path d="M12 14 Q18 42 38 50" fill="none" stroke="#DC5A4B" stroke-width="3.4"/>
+    <path d="M34 50 L72 50 L72 42 L88 42 L88 58 L72 58 Q72 80 53 80 Q34 80 34 64Z" fill="${grad("#C9CED6","h",.3,.2)}"/>
+    <circle cx="52" cy="64" r="6" fill="#8E949C"/><path d="M40 54 L60 54" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-opacity=".7"/>`;},
+  gear_dethat(){return `${OCC}<path d="M22 62 Q22 26 50 24 Q78 26 78 62Z" fill="${grad("#A0703E","v",.25,.2)}"/>
+    <path d="M36 28 L36 62 M50 24 L50 62 M64 28 L64 62 M23 44 L77 44" fill="none" stroke="#6E4A26" stroke-width="2"/>
+    <path d="M8 64 Q30 55 50 61 Q70 55 92 64 Q70 75 50 68 Q30 75 8 64Z" fill="${grad("#8A5E32","v",.2,.2)}"/>
+    <circle cx="50" cy="24" r="3.2" fill="#6E4A26"/>`;},
+  gear_magnifier(){return `${OCC}<path d="M58 60 L86 88" fill="none" stroke-width="13"/><path d="M58 60 L86 88" fill="none" stroke="#9A6436" stroke-width="8" stroke-opacity="1"/>
+    <circle cx="42" cy="42" r="27" fill="${grad("#C9CED6","v",.3,.2)}"/><circle cx="42" cy="42" r="20" fill="#DFF3FB"/>
+    <path d="M29 34 Q33 25 42 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-opacity=".9"/>`;},
+  gear_rangerhat(){return `${OCC}<ellipse cx="50" cy="68" rx="45" ry="12" fill="${grad("#B08850","v",.25,.2)}"/>
+    <path d="M28 66 Q29 42 37 33 Q44 40 50 30 Q56 40 63 33 Q71 42 72 66Z" fill="${grad("#C9A265","v",.25,.2)}"/>
+    <path d="M29 59 L71 59 L72 66 L28 66Z" fill="#3E7A3A"/>`;},
+  gear_binoculars(){return `${OCC}<path d="M42 38 L58 38 L58 58 L42 58Z" fill="#4A4F5A"/>
+    <rect x="14" y="26" width="28" height="46" rx="10" fill="${grad("#3A3F48","v",.3,.2)}"/><rect x="58" y="26" width="28" height="46" rx="10" fill="${grad("#3A3F48","v",.3,.2)}"/>
+    <circle cx="28" cy="74" r="12" fill="${dome("#5CC8DE",36,30)}"/><circle cx="72" cy="74" r="12" fill="${dome("#5CC8DE",36,30)}"/>`;}
+});
+Store.item({id:"servercap",shelf:"gear",name:"Server cap",cost:{coins:20},art:"gear_servercap",tag:"uniform",unlock:{job:"restaurant",level:2}});
+Store.item({id:"tray",shelf:"gear",name:"Tray",cost:{coins:45},art:"gear_tray",tag:"tool",unlock:{job:"restaurant",level:3}});
+Store.item({id:"drivercap",shelf:"gear",name:"Driver cap",cost:{coins:20},art:"gear_drivercap",tag:"uniform",unlock:{job:"bus",level:2}});
+Store.item({id:"whistle",shelf:"gear",name:"Whistle",cost:{coins:40},art:"gear_whistle",tag:"tool",unlock:{job:"bus",level:3}});
+Store.item({id:"dethat",shelf:"gear",name:"Detective hat",cost:{coins:25},art:"gear_dethat",tag:"uniform",unlock:{job:"detective",level:2}});
+Store.item({id:"magnifier",shelf:"gear",name:"Magnifying glass",cost:{coins:50},art:"gear_magnifier",tag:"tool",unlock:{job:"detective",level:3}});
+Store.item({id:"rangerhat",shelf:"gear",name:"Ranger hat",cost:{coins:20},art:"gear_rangerhat",tag:"uniform",unlock:{job:"ranger",level:2}});
+Store.item({id:"binoculars",shelf:"gear",name:"Binoculars",cost:{coins:45},art:"gear_binoculars",tag:"tool",unlock:{job:"ranger",level:3}});
 
 /* ================================================================
    LOOKS — the valley dresses up for a holiday, and keeps it on
