@@ -344,6 +344,48 @@ About 60 new clips: level intros, machine names, tips, "How many altogether?", a
 
 ---
 
+## Jobs backlog (30 Sept 2026)
+Every job keeps the two rules from v10.1: **every task starts with reading at his level** (decode-checked), and the math or science rides along on the kits that exist (`pick`, `pad`, `path`, `order`). A job is data unless it says "new kit". Reading levels are where the reading text decodes, so a job opens when he can read its tasks. Gear goes on the Trading Post's 🪙 shelf like the others. "Reuses" is the part of the game that gives the job its scene and art for free.
+
+### Wave 1 — data only, one agent each, highest value for the cost
+| Job | Opens | Read in every task | Skill (track level) | Kits | Reuses | Gear |
+|---|---|---|---|---|---|---|
+| 👩‍🌾 Farmer | L2 | seed packets and chores ("Plant 4 corn", "Feed the hen") | counting and arrays (rows × columns), the plant life cycle in order, weather words | pad, order, path (drive the tractor) | the Lawn mower grid, the animals, seasons | straw hat, tractor key |
+| 🐾 Vet | L3 | the pet's chart ("Bo has a cut. Get a bandage.") | match the trouble to the care, count doses (add10), body parts | pick, pad | Animal care's animals and care actions | vet coat, stethoscope |
+| 📚 Librarian | L3 | book titles and a reader's request ("I want a book about a fox") | alphabetical order, count to 20, first letters | order, pick | the book shelf and covers | badge, book cart |
+| 🍕 Restaurant | L3 | the order ticket ("2 pizzas with ham") | count toppings, halves and quarters of a pizza, coins to 20¢ | pick, pad, frac | the Shopkeeper's customers, the Feast table's dishes | chef hat (outfit exists), tray |
+| 🚌 Bus driver | L3 | stop signs and passengers' names | on and off (add and take away within 10), the route, o'clock | path, pad, time | the bus and the Adventure map | driver cap, whistle |
+| 🕵️ Detective | L5 | clues ("It starts with /b/ and rhymes with cat") | deduction from sounds and rhymes, ordering clues | pick, order | Word Wilds, the treasure hunt's notes | hat, magnifying glass |
+| 🧭 Park ranger | L3 | the feeding chart and habitat signs | sort animals by kind and home (science), count food | pick, pad, sort (new kit, shared with the Janitor) | his 33 animals and the lands | ranger hat, binoculars |
+
+### Wave 2 — each needs one new kit, then it is data
+| Job | Opens | Read in every task | Skill | New kit | Reuses | Gear |
+|---|---|---|---|---|---|---|
+| 🧹 Janitor | L2 | bin labels and the note on the mop spot | sort recycling, compost and trash | `sort` (drag into bins) | the buildings | mop, gloves |
+| 🎨 Sign painter | L2 | what the customer wants ("A sign that says CAT") | writing the word by hand | `write` (wraps Write it) | Write it, the story signs | paint cap, brush |
+| 🏗️ Construction worker | L4 | a blueprint line ("Put 3 red bricks on top") | measuring in units, longer and shorter, shapes, build order | `build` (stack blocks) | the building plans, Minecraft-style blocks | hard hat, hammer |
+| 🎤 Radio DJ | L4 | a line read aloud on air | reading fluency, heard by the voice mode | `speak` (wraps Talk to me) | the voice mode, Dad's inbox for the best takes | headphones, microphone |
+
+### Wave 3 — bigger scenes, worth it once the above hold him
+| Job | Opens | Read in every task | Skill | Kits | Reuses | Gear |
+|---|---|---|---|---|---|---|
+| 🚀 Rocket captain | L4 | the flight card ("Fly up 3. Land on the moon.") | directions, counting down, time | path, pad, time | the rocket and Races | pilot cap, goggles |
+| 🔬 Scientist | L5 | experiment steps | predict (sink or float), sequence, measure with cups, living or not | order, pick, sort, frac | the Factory's board for a lab bench | lab coat, magnifier |
+| ⚒️ Blacksmith | L5 | a tool order from the Mine | count ores, mix colours as in the Factory, add within 20 | pad, pick | the Mine's smith and the Factory's mixer | apron, tongs |
+| 🏰 Castle guard | L4 | the day's password words and the patrol note | count chain links, patrol path, time | pick, pad, path | the Reading Temple, a Zelda flavour | helmet, shield |
+| 🐝 Beekeeper | L3 | hive labels and the honey order | count bees and jars, the bee life cycle in order | pad, order | the garden and flowers | veil, smoker |
+| 🎪 Ticket taker | L3 | tickets with names and seat numbers | seat numbers (place value), show times | pick, place, time | the postcard theatre | visor, ticket punch |
+| 🏦 Trading Post clerk | L5 | a swap request | count by fives (1 💎 = 5 🪙), money | pad | the Trading Post's exchange | visor |
+
+### Seasonal shifts (one task type each, inside the holiday packs)
+🎃 Pumpkin picker (October: read the size words, count into the cart), ❄️ Snow plow (December: path along the streets, count the driveways), 🐣 Egg collector (spring: read the colour words, sort the eggs). Each is a job the board shows only in its window and pays candy, bulbs or eggs into the pack's own tally.
+
+### Rules for adding one
+- Write the reading texts first and run the decode check at the opening level; if the natural words don't decode (as "please", "right" and "mow" didn't), rewrite or raise the level.
+- Reuse a scene; a job with new art is a v10.x feature, not a job.
+- Pay 3–4 🪙 a task, tip 5–6, levels at 5/15/30/50 tasks, one badge per level, one uniform and one tool on the 🪙 shelf.
+- Add the job's task types to `jobs_e2e` by registering it; the suite walks every job.
+
 ## Part A — Reading levels 13–24 (grades 2–4)
 **Trigger:** he reaches level 9. Includes the placement check and the content-file loader.
 
