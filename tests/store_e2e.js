@@ -38,7 +38,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click('#ovStore [data-shelf="gear"]');await wait(100);
   c=await cards();
   const sold=HELM.filter(h=>!h.prize);
-  ok(c.length===sold.length+10&&c.every(x=>x.art),`🪙 shelf: ${sold.length} Mine helmets and 10 new things (the Crystal crown is a prize, not sold) (${c.length})`);
+  ok(c.length===sold.length+16&&c.every(x=>x.art),`🪙 shelf: ${sold.length} Mine helmets and 16 new things (the Crystal crown is a prize, not sold) (${c.length})`);
   ok(sold.every(h=>{const x=c.find(y=>y.id===h.id);return x&&(h.cost?x.cost===h.cost+" 🪙":/Yours|Wearing/.test(x.cost));}),"the helmets keep their ids and prices in 🪙; the free two are his");
   ok(!c.some(x=>x.id==="crystal"),"the Crystal crown is not for sale");
   await p.click('#ovStore [data-shelf="outfit"]');await wait(100);
@@ -146,6 +146,18 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(!job("rollingpin").locked&&job("rollingpin").cost==="50 🪙","15 Baker tasks open the rolling pin (50 🪙)");
   ok(await E(()=>["mailbag","mailcart","bakerhat","rollingpin"].every(id=>{const it=Store.get("gear",id);return it.keep==="own"&&!it.wear&&(it.tag==="uniform"||it.tag==="tool");})&&
     Store.gearFor("mail","uniform").id==="mailbag"&&Store.gearFor("baker","tool").id==="rollingpin"),"they are kept in owned, like the other job gear, and are the jobs' uniforms and tools");
+  // the Farmer's, the Vet's and the Librarian's: a uniform at job level 2, a tool at level 3, nothing bought here
+  const G3=[["strawhat","tractorkey","farm","👩‍🌾 Farmer",15,40],["vetcoat","stethoscope","vet","🐾 Vet",20,45],["libbadge","bookcart","library","📚 Librarian",20,45]];
+  ok((await Promise.all(G3.map(async g=>await label(g[0])===g[3]+" uniform"&&await label(g[1])===g[3]+" tool"&&job(g[0]).cost==="🔒 Job level 2"&&job(g[1]).cost==="🔒 Job level 3"))).every(Boolean),
+    "the Farmer's, the Vet's and the Librarian's gear says whose it is and the job level that opens it: "+(await Promise.all(G3.map(g=>label(g[0])))).join(" · "));
+  await E(()=>{state.jobs.xp.farm=5;state.jobs.xp.vet=5;state.jobs.xp.library=5;Store.open("gear");});await wait(100);
+  c=await cards();
+  ok(G3.every(g=>!job(g[0]).locked&&job(g[0]).cost===g[4]+" 🪙"&&job(g[1]).locked),"5 tasks at each open its uniform ("+G3.map(g=>job(g[0]).cost).join(", ")+"); the tools wait");
+  await E(()=>{state.jobs.xp.farm=15;state.jobs.xp.vet=15;state.jobs.xp.library=15;Store.open("gear");});await wait(100);
+  c=await cards();
+  ok(G3.every(g=>!job(g[1]).locked&&job(g[1]).cost===g[5]+" 🪙")&&(await purse()).c===85,"15 tasks open its tool ("+G3.map(g=>job(g[1]).cost).join(", ")+"); nothing was taken");
+  ok(await E(G=>G.every(g=>Store.gearFor(g[2],"uniform").id===g[0]&&Store.gearFor(g[2],"tool").id===g[1]&&Store.get("gear",g[0]).keep==="own"&&!Store.get("gear",g[1]).wear),G3),
+    "they are the jobs' uniforms and tools, kept in owned");
   await E(()=>Store.close());
 
   // ---- 6. saved, and still there after a reload ----
