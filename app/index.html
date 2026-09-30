@@ -14057,7 +14057,10 @@ function renderPage(){
 }
 document.getElementById("pageHear").onclick=()=>{const pg=GUARDIANS[bookB].book[state.books[bookB].page];Sound.say("sent:"+pg.s,pg.s,.9);};
 document.getElementById("pagePrev").onclick=()=>{const bk=state.books[bookB];if(bk.page>0){bk.page--;renderPage();Sound.sfx.soft();save();}};
+// one page a tap: the second tap of a double tap would turn a page he never saw and pay for it
+let pageLock=0;
 document.getElementById("pageNext").onclick=()=>{
+  if(Date.now()<pageLock)return;pageLock=Date.now()+600;
   const g=GUARDIANS[bookB], bk=state.books[bookB];
   if(!bk.read.includes(bk.page)){bk.read.push(bk.page);state.gems+=1;floater("+1 💎","#FFE9A8");Quests.hit("sign");}
   Sound.sfx.chime();
