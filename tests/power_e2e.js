@@ -126,6 +126,30 @@ const AUDIO_STUB=()=>{
   await tap();
   ok(await E(()=>!Rest.quiet()&&Nature._ctx().state==="running"),"visible again and touched: the sounds run");
 
+  // ---- 7b. the movers step with a transform (a glide), not a left/top transition ----
+  await tidy();await awake();
+  const gl=await E(()=>{const out={};
+    const anchor=el=>{const r=el.getBoundingClientRect(),t=tilesEl.getBoundingClientRect();return{x:r.left+r.width/2-t.left,y:r.bottom-t.top};};
+    const cr=state.critters.find(c=>c._el);for(const dc of [3,-3,5,-5,7,-7]){const c0=cr.c;moveCritter(cr,dc,0);if(cr.c!==c0)break;}
+    const ca=cr._el.getAnimations().filter(a=>a.effect&&a.effect.getKeyframes().some(k=>/translate/.test(k.transform||"")));
+    out.critGlide=ca.length;out.critTrans=getComputedStyle(cr._el).transitionProperty;
+    const v=state.vehicles.find(x=>x._el&&(VEH(x.id)||{}).move==="road");driveVehicle(v,v.c>10?-3:3,0,.34);
+    out.vehGlide=v._el.getAnimations().filter(a=>a.effect&&a.effect.getKeyframes().some(k=>/translate/.test(k.transform||""))).length;
+    out.vehTrans=getComputedStyle(v._el).transitionProperty;
+    buddyGo(state.buddy.c>10?state.buddy.c-1:state.buddy.c+1,state.buddy.r);
+    const b=document.getElementById("buddyWorld");out.budGlide=b.getAnimations().filter(a=>/translate/.test(JSON.stringify(a.effect.getKeyframes()))).length;
+    out.budTrans=getComputedStyle(b).transitionProperty;
+    window.__glide={cr,v};return out;});
+  ok(gl.critGlide===1&&!/left|top/.test(gl.critTrans),"an animal's step is a transform glide, not a left/top transition "+J(gl));
+  ok(gl.vehGlide===1&&!/left|top/.test(gl.vehTrans),"...a vehicle's drive too");
+  ok(gl.budGlide===1&&!/left|top/.test(gl.budTrans),"...and the buddy's walk");
+  await wait(3600);
+  const land=await E(()=>{const f=el=>{const r=el.getBoundingClientRect(),t=tilesEl.getBoundingClientRect();return[r.left+r.width/2-t.left,r.bottom-t.top];};
+    const want=(x,topPct)=>[x,topPct/100*tilesEl.clientHeight];const {cr,v}=window.__glide;
+    const res=[[cr._el],[v._el],[document.getElementById("buddyWorld")]].map(([el])=>{const a=f(el),w=want(parseFloat(el.style.left),parseFloat(el.style.top));
+      return Math.round(Math.hypot(a[0]-w[0],a[1]-w[1]));});return res;});
+  ok(land.every(d=>d<=2),"each ends standing on its new spot, bottom middle on it (off by "+J(land)+" px)");
+
   // ---- 8. Save battery: half the particles, no blur, plain light layers, glows as a gradient, the front row sways, no wind ----
   const P=["mote","leaf","firefly","flake","petal","seed","lbat","lfall"];
   const looks=()=>E(P=>{const k={};P.forEach(c=>{k[c]=document.querySelectorAll("#stage ."+c).length;});

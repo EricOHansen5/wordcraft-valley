@@ -329,7 +329,7 @@ select{width:auto;max-width:100%}
 .badge.on{display:grid}
 .toolbtn{position:relative}
 /* buddy in the world */
-#buddyWorld{position:absolute;z-index:180;transform:translate(-50%,-100%);transition:left 1.4s cubic-bezier(.3,.8,.4,1),top 1.4s ease,width .5s,height .5s;
+#buddyWorld{position:absolute;z-index:180;transform:translate(-50%,-100%);transform-origin:50% 100%;
   pointer-events:auto;cursor:pointer}
 #buddyWorld svg{width:100%;height:100%;display:block;overflow:visible}
 #buddyWorld .hop{animation:bob 1.2s ease-in-out infinite;transform-origin:50% 100%}
@@ -4236,7 +4236,7 @@ function renderCritters(){
     const el=document.createElement("div");el.className="tile critter";
     el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${size}px;height:${size}px;
       transform:translate(-50%,-100%);z-index:${g.z+5};filter:${atmos(g)};
-      transition:left 1.8s ease,top 1.8s ease,width .6s,height .6s,filter .6s`;
+      transition:filter .6s`;      // its steps are glides (glideTo, below), not left/top transitions
     const meta=CRIT(cr.id);
     if(meta&&meta.rar===3)el.classList.add("legend");else if(meta&&meta.rar===2)el.classList.add("rare");
     if(cr.shiny)el.classList.add("shiny");
@@ -4293,6 +4293,31 @@ function settleMovers(){
     if(x.out===false||isAir(x))return;const f=freeSpot(x.c,x.r,x);x.c=f.c;x.r=f.r;});
   if(state.buddy)Object.assign(state.buddy,freeSpot(state.buddy.c,state.buddy.r,state.buddy));
 }
+/* ---- gliding: the animals, vehicles and buddy step with a transform, not left/top ----
+   A transition on left/top lays the valley out again on every frame of every step (with a few
+   animals and cars about, that was 15-40 layouts a second with nobody touching anything). Now the
+   new spot is set at once, one layout, and the step is drawn as a transform animation from where
+   it was drawn to its resting transform, which the compositor runs without laying anything out.
+   The element rests at translate(-50%,-100%) (its bottom middle on the spot), and .tile's
+   transform-origin is its bottom middle, so a size change between rows is a scale in the same
+   animation. A new step while one is under way starts from where it is drawn now. */
+function glideTo(el,x,topPct,size,secs,ease){
+  if(!el)return;
+  const H=tilesEl.clientHeight||stage.clientHeight||1;
+  const w0=parseFloat(el.style.width),L0=parseFloat(el.style.left),T0=parseFloat(el.style.top)/100*H;
+  let ax=L0,ay=T0,k=w0/size;
+  if(el._glide){      // under way: start from where it is drawn now (its transform is translate(dx,dy) translate(-50%,-100%) scale(k))
+    const m=/matrix\(([^)]+)\)/.exec(getComputedStyle(el).transform||"");
+    if(m){const v=m[1].split(",").map(Number);ax=L0+v[4]+w0/2;ay=T0+v[5]+w0;k=w0*v[0]/size;}
+    try{el._glide.cancel();}catch(e){}el._glide=null;}
+  el.style.left=x+"px";el.style.top=topPct+"%";el.style.width=size+"px";el.style.height=size+"px";
+  if(!secs||!el.isConnected||!(ax===ax&&ay===ay&&k===k)||typeof el.animate!=="function")return;
+  const dx=ax-x,dy=ay-topPct/100*H;
+  if(Math.abs(dx)<.5&&Math.abs(dy)<.5&&Math.abs(k-1)<.01)return;
+  const a=el.animate([{transform:`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) translate(-50%,-100%) scale(${k.toFixed(3)})`},
+    {transform:"translate(-50%,-100%)"}],{duration:secs*1000,easing:ease||"ease"});
+  el._glide=a;a.onfinish=()=>{if(el._glide===a)el._glide=null;};
+}
 function moveCritter(cr,dc,dr,fast=false){
   const firstRow=ROWS_MAX-state.rows;
   let nc=Math.max(0,Math.min(COLS-1,cr.c+dc)), nr=Math.max(firstRow,Math.min(ROWS_MAX-1,cr.r+dr));
@@ -4303,8 +4328,8 @@ function moveCritter(cr,dc,dr,fast=false){
   const g=geom(cr.c,cr.r),size=baseSize()*g.scale*critScale(cr);
   el.classList.toggle("face-r",cr.face==="r");
   el.classList.toggle("moving",fast);
-  el.style.left=g.x+"px";el.style.top=g.y*100+"%";
-  el.style.width=size+"px";el.style.height=size+"px";el.style.zIndex=g.z+5;el.style.filter=atmos(g);
+  glideTo(el,g.x,g.y*100,size,fast?.55:(+el.dataset.pace||1.8),"ease");      // a slow walk sets its own pace (the sloth: 3 s)
+  el.style.zIndex=g.z+5;el.style.filter=atmos(g);
   if(fast)act(cr,"dash");
 }
 function act(cr,what){
@@ -4371,9 +4396,8 @@ function placeVehicle(v,secs){
   const el=v._el;if(!el)return;
   const m=VEH(v.id)||{},g=geom(v.c,v.r),size=baseSize()*g.scale*vehSize(v);
   const alt=m.move==="air"?(v.alt||.2):0;
-  el.style.transition=secs?`left ${secs}s cubic-bezier(.45,.05,.35,1),top ${secs}s ease,width .5s,height .5s`:"none";
-  el.style.left=g.x+"px";el.style.top=Math.max(8,(g.y-alt)*100)+"%";
-  el.style.width=size+"px";el.style.height=size+"px";
+  el.style.transition="none";
+  glideTo(el,g.x,Math.max(8,(g.y-alt)*100),size,secs,"cubic-bezier(.45,.05,.35,1)");      // a glide, not a left/top transition
   el.style.zIndex=m.move==="air"?170:g.z+4;
   el.style.filter=m.move==="air"?"none":atmos(g);
   el.classList.toggle("face-r",v.face==="r");
@@ -6102,8 +6126,8 @@ Object.assign(ANTICS,{
   sloth(cr,lv){ // the slowest yawn in the valley
     Sound.sfx.cry("yawn");vShout(cr,"yaaawn...");cAnim(cr,"c-nap",3000);
     const p=cAt(cr);fx(p.x+10,p.head,"💤",{n:3,ux:12,uy:-25,dx:26,dy:-55,jit:6,stagger:.7,d:1.6,size:18});
-    if(cr._el){cr._el.style.transitionDuration="3s";setTimeout(()=>{moveCritter(cr,cr.c<COLS/2?1:-1,0);},400);
-      setTimeout(()=>cr._el&&(cr._el.style.transitionDuration=""),3500);}
+    if(cr._el){cr._el.dataset.pace="3";setTimeout(()=>{moveCritter(cr,cr.c<COLS/2?1:-1,0);},400);
+      setTimeout(()=>{if(cr._el)delete cr._el.dataset.pace;},3500);}
     return 3600;
   },
   snake(cr,lv){ // slithers and hisses
@@ -13986,18 +14010,20 @@ document.getElementById("chest").onclick=()=>Quests.open();
    ================================================================ */
 let bubbleT=null;
 function renderBuddy(){
-  let el=document.getElementById("buddyWorld");
+  let el=document.getElementById("buddyWorld"),fresh=false;
   if(!el){el=document.createElement("div");el.id="buddyWorld";
     el.innerHTML=`<div class="hop"></div><div class="bubble" id="buddyBubble"></div><div class="hitpad"></div>`;
     el.onclick=e=>{e.stopPropagation();buddyTalk();};
-    tilesEl.appendChild(el);}
-  else if(!el.isConnected)tilesEl.appendChild(el);
+    tilesEl.appendChild(el);fresh=true;}
+  else if(!el.isConnected){tilesEl.appendChild(el);fresh=true;}
   const b=state.buddy;
   const firstRow=ROWS_MAX-state.rows;if(b.r<firstRow)b.r=firstRow;
   const g=geom(b.c,b.r), size=baseSize()*g.scale*.9;
-  el.style.left=g.x+"px";el.style.top=g.y*100+"%";el.style.width=size+"px";el.style.height=size+"px";
+  glideTo(el,g.x,g.y*100,size,fresh?0:1.4,"cubic-bezier(.3,.8,.4,1)");      // a walk is a glide; a new buddy just stands there
   el.style.zIndex=g.z+6;
-  el.querySelector(".hop").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());
+  // his drawing is the same until he grows or changes hats: redraw it only then (a walk used to redraw it each step)
+  const art=stageIdx()+"|"+buddyHat();
+  if(el.dataset.art!==art){el.dataset.art=art;el.querySelector(".hop").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());}
 }
 function buddyGo(c,r){
   state.buddy={c:Math.max(0,Math.min(COLS-1,c)),r:Math.max(ROWS_MAX-state.rows,Math.min(ROWS_MAX-1,r))};
