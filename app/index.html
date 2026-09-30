@@ -1263,6 +1263,11 @@ body.exploring .slot-empty{display:none}
 .jlawn.street .jcell{background:#B8BEC6;border-color:#7E858F}.jlawn.street .jcell.cut{background:#DCE0E4}
 .jlawn.street .start::before{content:"🏤"}.jlawn.street .me::after{content:"🚶"}.jlawn.street.done .me::after{content:"📬"}
 .jlawn .goal::before{content:"🏠";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:26px}.jlawn .me.goal::before{content:none}
+/* the Farmer: the path kit's field (the tractor plants every square it drives over), and order cards that are only a picture */
+.jlawn.field .jcell{background:#B07A45;border-color:#6E4A26}.jlawn.field .jcell.cut{background:#8B5A2B}
+.jlawn.field .jcell.cut::before,.jlawn.field .start::before{content:"🌱";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:24px}
+.jlawn.field .me::before{content:none}
+.jotext:empty{display:none}
 /* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
 .jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
 .jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
@@ -9845,6 +9850,37 @@ const JOB_ART={
   letter:()=>`<div class="jsvg">${S(`<path d="M8 26 L92 26 L92 80 L8 80Z" fill="${grad("#FBF6EC","v",.08,.1)}"/><path d="M8 26 L50 56 L92 26" fill="none"/>
     <path d="M72 32 L86 32 L86 46 L72 46Z" fill="#DC5A4B" stroke-width="1.8"/>`)}</div>`
 };
+// more pictures for the jobs' questions, one job at a time
+Object.assign(JOB_ART,{
+  // the Farmer: a plant as it grows (stage 0 a seed in the soil, 1 a sprout, 2 a plant, 3 in flower), and the day's weather
+  grow:a=>{const k=Math.max(0,Math.min(3,a.stage|0)),green=grad("#6BC25F","v",.25,.2);
+    const leaf=(y,s)=>`<path d="M50 ${y} Q${50+s*12} ${y-14} ${50+s*24} ${y-6} Q${50+s*14} ${y+6} 50 ${y}Z" fill="${green}"/>`;
+    const stem=top=>`<path d="M50 80 Q46 ${(80+top)/2} 50 ${top}" fill="none" stroke="#3E8E3A" stroke-width="4.5"/>`;
+    let g=`${OCC}<path d="M8 84 Q50 68 92 84 L92 90 Q50 95 8 90Z" fill="${grad("#9A6436","v",.2,.25)}"/>`;
+    if(k===0)g+=`<ellipse cx="50" cy="68" rx="16" ry="11" fill="${dome("#C98C4A",36,30)}" transform="rotate(-20 50 68)"/><path d="M42 64 Q48 60 54 62" fill="none" stroke="#FFFFFF" stroke-opacity=".7" stroke-width="2.4"/>`;
+    if(k===1)g+=stem(60)+leaf(62,-1)+leaf(62,1);
+    if(k===2)g+=stem(34)+leaf(70,-1)+leaf(62,1)+leaf(52,-1)+leaf(44,1)+leaf(36,-1);
+    if(k===3){const pink=grad("#F06CA0","v",.3,.2);g+=stem(30)+leaf(70,-1)+leaf(62,1)+leaf(52,-1)+leaf(44,1)+
+      [0,72,144,216,288].map(d=>`<ellipse cx="50" cy="17" rx="7.5" ry="11" fill="${pink}" transform="rotate(${d} 50 28)"/>`).join("")+
+      `<circle cx="50" cy="28" r="6.5" fill="${dome("#FFD34D",36,30)}"/>`;}
+    return`<div class="jsvg">${S(g)}</div>`;},
+  weather:a=>{const w=a.w==="wet"?"rain":a.w,at=(list,f)=>list.map(p=>f(p[0],p[1])).join("");
+    const sky={sun:"#8FD0F2",fog:"#DCE2E8",rain:"#A3B4C4",wind:"#8FCFEF",snow:"#8EAAC4",storm:"#667488"}[w]||"#8FD0F2";
+    const cloud=f=>`<path d="M24 50 Q14 50 14 42 Q14 34 23 33 Q24 22 36 22 Q42 14 52 16 Q62 14 66 24 Q78 23 80 34 Q88 36 86 44 Q84 50 76 50Z" fill="${f}"/>`;
+    let g=`<rect x="5" y="5" width="90" height="90" rx="16" fill="${sky}"/>`;
+    if(w==="sun")g+=at([[0,1],[.7,.7],[1,0],[.7,-.7],[0,-1],[-.7,-.7],[-1,0],[-.7,.7]],(x,y)=>
+      `<path d="M${50+27*x} ${50+27*y} L${50+38*x} ${50+38*y}" fill="none" stroke="#F2A31B" stroke-width="5"/>`)+`<circle cx="50" cy="50" r="19" fill="${dome("#FFD34D",36,30)}"/>`;
+    if(w==="fog")g+=`<circle cx="64" cy="30" r="13" fill="#FFF3C4" stroke="none"/>`+at([[14,42],[24,56],[14,70],[24,84]],(x,y)=>
+      `<path d="M${x} ${y} Q${x+16} ${y-6} ${x+31} ${y} Q${x+46} ${y+6} ${x+62} ${y}" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-opacity="1"/>`);
+    if(w==="rain"||w==="storm")g+=cloud(w==="storm"?"#8A94A3":"#EEF2F5")+at([[30,60],[46,66],[62,60],[78,66],[38,80],[70,80]],(x,y)=>
+      `<path d="M${x} ${y} L${x-5} ${y+10}" fill="none" stroke="#1F6FC0" stroke-width="3.6"/>`);
+    if(w==="storm")g+=`<path d="M54 46 L42 68 L52 68 L46 90 L67 61 L56 61 L63 46Z" fill="#FFD34D"/>`;
+    if(w==="snow")g+=cloud("#FFFFFF")+at([[28,62],[50,70],[72,62],[38,84],[62,84]],(x,y)=>
+      `<path d="M${x-6} ${y} L${x+6} ${y} M${x} ${y-6} L${x} ${y+6} M${x-4} ${y-4} L${x+4} ${y+4} M${x-4} ${y+4} L${x+4} ${y-4}" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-opacity="1"/>`);
+    if(w==="wind")g+=`<path d="M12 34 L58 34 Q70 34 70 25 Q70 17 62 17 Q56 17 55 23 M12 51 L72 51 Q84 51 84 61 Q84 70 76 70 Q70 70 69 64 M12 67 L44 67" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-opacity="1"/>`+
+      `<path d="M24 84 Q31 73 42 80 Q35 91 24 84Z" fill="#6BC25F"/><path d="M58 88 Q66 80 75 88 Q66 95 58 88Z" fill="#E8A92A"/>`;
+    return`<div class="jsvg">${S(g)}</div>`;}
+});
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
   // tasks done to reach job levels 1 to 5
@@ -9919,6 +9955,7 @@ const Jobs=(()=>{
       case"array":return`<div class="jlawn small" style="grid-template-columns:repeat(${a.cols},auto)">${"<i></i>".repeat(a.rows*a.cols)}</div>`;
       case"blocks":case"house":case"cup":case"clock":case"abc":return JOB_ART[a.kind](a);
       case"mailbox":case"sign":case"letter":return JOB_ART[a.kind](a);
+      case"grow":case"weather":return JOB_ART[a.kind](a);
     }
     return"";
   }
@@ -10006,6 +10043,8 @@ const Jobs=(()=>{
     host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
       <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
     const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
+    // a job's own theme (the Farmer's field) is a class on the lawn too, as the Mail carrier's "street" is
+    if(q.theme&&q.theme!=="street")lawnEl.classList.add(String(q.theme));
     function draw(){
       const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
       cellEls.forEach(b=>{const x=+b.dataset.c,y=+b.dataset.r;
@@ -10637,6 +10676,95 @@ Jobs.kit("order",function(host,q,done,opt){
       {id:"cups",lv:3,name:"half and quarter cups",gen:(seed,L)=>{const r=rnd(seed),q=need(r,L.tier);
         return then(q,q&&Tracks.gen("math","frac",seed+":f",{fill:pick(r,FILL)}));}},
       {id:"timer",lv:4,name:"baking time",gen:(seed,L)=>{const q=need(rnd(seed),L.tier);return then(q,q&&Tracks.gen("math","time",seed+":t",{bake:true}));}}
+    ]});
+})();
+
+/* ---- 👩‍🌾 Farmer, opens at reading level 2 ----
+   Every task starts with a chore to read, in words at his level: at level 2 the eggs, the nuts, the hens and the
+   pigs ("Get the eggs.", "Let the pigs dig in the mud."), ducks and chicks from 3, plums and trees from 4, corn from
+   6 ("Plant the corn."), seeds, sheep, cows and "Feed the hens." from 7, pumpkins and lemons from 8. He finds what the
+   chore needs among three pictures. Job level 1 then counts them (to 10; the seeds, "How many seeds?", when he plants).
+   Job level 2 plants two rows by a note instead, driving the tractor as the Lawn mower does ("Go 2 →. Go 1 down.
+   Go 2 ←."; "then" from level 3, left and right as words from 7), then says how many seeds that is (the mower's rows
+   × columns). Job level 3 puts the life cycle in order after the chore: seed, sprout, plant, then its fruit or a
+   flower (for the eggs: egg, chick, hen), in pictures until all the words decode. Job level 4 finds the word for the
+   weather of the day in its picture: sun, fog and wet, wind and snow from 4, storm from 6, and rain for wet from 7. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // a chore, what it needs (a picture), and 1 when he plants (then he counts seeds)
+  const CHORES=[["Get the eggs.","egg"],["Pick up the eggs.","egg"],["Get the eggs from the hens.","egg"],["Get the nuts.","nut"],["Pick up the nuts.","nut"],
+    ["Get the hens in.","hen"],["Let the hens out.","hen"],["Get the pigs in the pen.","pig"],["Let the pigs dig in the mud.","pig"],
+    ["Check the eggs.","egg"],["Get the ducks in the pen.","duck"],["Let the ducks out.","duck"],["Get the chicks in.","chick"],["Check the chicks.","chick"],
+    ["Pick the plums.","plum"],["Get the plums from the tree.","plum"],["Get the nuts from the tree.","nut"],["Plant the trees.","tree"],
+    ["Plant the corn.","corn",1],["Pick the corn.","corn"],["Brush the horses.","horse"],
+    ["Plant the seeds.","seed",1],["Feed the hens.","hen"],["Feed the pigs.","pig"],["Feed the goats.","goat"],["Get the sheep in.","sheep"],
+    ["Milk the cows.","cow"],["Pick the peaches.","peach"],["Check the bees.","bee"],
+    ["Pick the pumpkins.","pumpkin"],["Pick the lemons.","lemon"],["Feed the rabbits.","rabbit"]];
+  const THINGS=["egg","nut","hen","pig","duck","chick","plum","tree","corn","horse","seed","goat","sheep","cow","peach","bee","pumpkin","lemon","rabbit","dog","cat"].filter(w=>WORD_ART[w]);
+  // what it grows into at the end of its life cycle (a seed grows into a flower); the eggs, the hens and the chicks have their own
+  const CROP={nut:"nut",plum:"plum",tree:"tree",corn:"corn",peach:"peach",pumpkin:"pumpkin",lemon:"lemon",seed:"flower"},EGGS=["egg","chick","hen"];
+  const grows=w=>!!CROP[w]||EGGS.indexOf(w)>=0;
+  // cards in a new order, never the right one already
+  const mixed=(r,list)=>{let a=shuffle(r,list);if(a.every((x,i)=>x===list[i]))a=list.slice().reverse();return a;};
+  // the reading step: the chore, and what it needs among three pictures that look different (none of them named in it)
+  function chore(r,tier,only){
+    let list=CHORES.filter(c=>WORD_ART[c[1]]&&fits(c[0],tier)&&(!only||only(c[1])));
+    if(!list.length)list=CHORES.filter(c=>WORD_ART[c[1]]&&fits(c[0],tier));if(!list.length)return null;
+    // most of the time one of the chores with his newest words (the ones that need a level near his)
+    const hard=list.filter(c=>Math.max.apply(null,Decode.check(c[0],MAX_TIER).map(x=>x.t))>=tier-2);if(hard.length&&r()<.6)list=hard;
+    const c=pick(r,list),w=c[1],said=Decode.words(c[0]).map(x=>x.toLowerCase()),named=x=>said.some(s=>s===x||s===x+"s"||s===x+"es");
+    const others=[];shuffle(r,THINGS).forEach(x=>{if(others.length<2&&x!==w&&!named(x)&&WORD_ART[x]!==WORD_ART[w]&&!Read.near(x,w)
+      &&!others.some(y=>WORD_ART[y]===WORD_ART[x]||Read.near(x,y)))others.push(x);});
+    return{w,plant:!!c[2],step:{kit:"pick",track:"reading",read:true,word:w,say:["Read the chore. What do you need?"],text:c[0],
+      choices:shuffle(r,[w].concat(others)).map(x=>({v:x,art:{kind:"word",w:x}})),ans:w}};
+  }
+  // job level 1: count them, or the seeds he plants
+  function count(seed,o){
+    const q=Tracks.gen("math","count10",seed+":n",{thing:o.plant?"seed":o.w});
+    if(q&&o.plant)q.say=["How many seeds?"];
+    return q;
+  }
+  // job level 2: two rows (or two columns) to plant as a snake, along, one over and back, so every square is new;
+  // the square the tractor starts on is planted too, so the field is rows × columns seeds
+  const W=6,H=5;
+  function rows(r,tier){
+    const flat=r()<.5,n=int(r,2,5),w=flat?n:2,h=flat?2:n,x0=int(r,0,W-w),y0=int(r,0,H-h),far=r()<.5,low=r()<.5;
+    const back={L:"R",R:"L",U:"D",D:"U"},a={d:flat?(far?"L":"R"):(low?"U":"D"),n:(flat?w:h)-1},b={d:flat?(low?"U":"D"):(far?"L":"R"),n:1};
+    const legs=[a,b,{d:back[a.d],n:a.n}],words=Decode.tier("left")<=tier&&Decode.tier("right")<=tier;
+    const way=d=>d==="U"?"up":d==="D"?"down":words?(d==="L"?"left":"right"):(d==="L"?"←":"→");
+    // "then" joins the runs from level 3; before that each run is a note of its own
+    const text=fits("then",tier)?legs.map((l,i)=>(i?"then ":"Go ")+l.n+" "+way(l.d)).join(", ")+".":legs.map(l=>"Go "+l.n+" "+way(l.d)+".").join(" ");
+    return{rows:h,cols:w,step:{kit:"path",track:"reading",read:true,say:["Read the note. Plant the seeds!"],text,grid:{w:W,h:H},
+      start:{c:far?x0+w-1:x0,r:low?y0+h-1:y0},theme:"field",ans:legs.map(l=>l.d.repeat(l.n)).join("")}};
+  }
+  // job level 3: how it grows, in order; the cards are pictures, with their words once every one of them decodes
+  function cycle(r,w,tier){
+    const cards=EGGS.indexOf(w)>=0?EGGS.map(x=>[x,{kind:"word",w:x}]):
+      [["seed",{kind:"grow",stage:0}],["sprout",{kind:"grow",stage:1}],["plant",{kind:"grow",stage:2}],
+       [CROP[w]||"flower",CROP[w]&&CROP[w]!=="flower"?{kind:"word",w:CROP[w]}:{kind:"grow",stage:3}]];
+    const words=cards.every(c=>fits(c[0],tier)),list=cards.map(c=>({v:c[0],text:words?c[0]:"",art:c[1]})),ans=cards.map(c=>c[0]);
+    return{kit:"order",track:"math",level:"seq",say:["How does it grow?","Put them in order!"],choices:mixed(r,list),ans,math:{op:"seq",steps:ans}};
+  }
+  // job level 4: the weather of the day; he reads three words and finds the one in the picture
+  const SKY=["sun","fog","wet","wind","snow","storm","rain"];
+  function weather(r,tier){
+    const rain=fits("rain",tier),list=SKY.filter(w=>fits(w,tier)&&!(w==="wet"&&rain)),w=pick(r,list);
+    return{kit:"pick",say:["What is the weather? Find the word!"],art:{kind:"weather",w},word:w,
+      choices:shuffle(r,[w].concat(shuffle(r,list.filter(x=>x!==w)).slice(0,2))),ans:w};
+  }
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"farm",name:"Farmer",icon:"👩‍🌾",uniform:{id:"strawhat",name:"straw hat",ic:"👒"},unlock:{tier:2},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the farm! Read each chore.",
+    customers:["hen","pig","duck","chick","w_cow","w_sheep","w_goat","w_horse","rabbit","dog","cat"],
+    tasks:[
+      {id:"count",lv:1,name:"counting",gen:(seed,L)=>{const o=chore(rnd(seed),L.tier);return then(o&&o.step,o&&count(seed,o));}},
+      {id:"rows",lv:2,name:"planting rows",gen:(seed,L)=>{const p=rows(rnd(seed),L.tier);
+        return[p.step,{kit:"pad",track:"math",level:"array",say:[p.rows,"rows of",p.cols+".","How many seeds?"],
+          text:Array.from({length:p.rows},()=>p.cols).join(" + ")+" = ?",art:{kind:"array",rows:p.rows,cols:p.cols},ans:p.rows*p.cols,math:{op:"×",a:p.rows,b:p.cols}}];}},
+      {id:"grow",lv:3,name:"how it grows",gen:(seed,L)=>{const r=rnd(seed),o=chore(r,L.tier,grows);return then(o&&o.step,o&&cycle(r,o.w,L.tier));}},
+      {id:"weather",lv:4,name:"the weather",gen:(seed,L)=>{const r=rnd(seed),o=chore(r,L.tier);return then(o&&o.step,o&&weather(r,L.tier));}}
     ]});
 })();
 

@@ -129,6 +129,53 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(await E(()=>/\bleft\b|\bright\b/.test([0,1,2,3,4,5,6,7,8,9].map(s=>Jobs.gen("mow","mow",s,{tier:7,lv:1})[0].text).join(" "))),
     "at level 7, where right decodes, the notes say left and right");
 
+  // 1b. the Farmer: every text at level 2 reads only level 2 words; the chore names what it needs, then he counts it; the field
+  //     he plants is rows × columns; the life cycle in order; the weather words
+  const words2=(id,tier)=>E(([id,tier])=>{const w=new Set(),texts=new Set();
+    for(let s=0;s<200;s++)Jobs.get(id).tasks.forEach(t=>Jobs.gen(id,t.id,s,{tier,lv:t.lv}).forEach(q=>{if(q.read)texts.add(q.text);
+      [q.read?q.text:""].concat((q.choices||[]).map(c=>typeof c==="string"?c:c&&(q.kit==="order"?c.text:c.art&&(c.art.name||c.art.text)))).forEach(x=>Decode.words(String(x||"")).forEach(y=>w.add(y)));}));
+    return{words:[...w].sort(),texts:texts.size,worst:Math.max.apply(null,[...w].map(x=>Decode.tier(x)))};},[id,tier]);
+  const FARM=await E(()=>{const j=Jobs.get("farm");return{tier:j.unlock.tier,pay:j.pay,uni:j.uniform.name,tasks:j.tasks.map(t=>t.id+":"+t.lv).join(" "),
+    badges:[2,3,4,5].every(lv=>BADGES.some(b=>b.id==="job_farm_"+lv))};});
+  ok(FARM.tier===2&&FARM.pay.perTask===3&&FARM.pay.streakTip===5&&FARM.uni==="straw hat"&&FARM.badges&&FARM.tasks==="count:1 rows:2 grow:3 weather:4",
+    "the Farmer opens at reading level 2, pays 3 🪙 (tip 5), comes with a straw hat, a badge for job levels 2 to 5: "+FARM.tasks);
+  const farm2=await words2("farm",2);
+  ok(farm2.texts>30&&farm2.worst<=2,`Farmer at level 2: ${farm2.texts} texts to read, ${farm2.words.length} words, all level 2 or below: ${farm2.words.join(" ")}`);
+  const chores=await E(()=>{const bad=[],seen=new Set();for(let tier=2;tier<=MAX_TIER;tier++)for(let s=0;s<60;s++){
+      const st=Jobs.gen("farm","count",s,{tier,lv:1}),a=st[0],b=st[1],said=Decode.words(a.text).map(x=>x.toLowerCase());seen.add(a.text);
+      if(!said.some(x=>x===a.ans||x===a.ans+"s"||x===a.ans+"es"))bad.push(`"${a.text}" does not name ${a.ans}`);
+      if(a.choices.length!==3||a.word!==a.ans)bad.push(`"${a.text}": ${a.choices.length} pictures`);
+      const want=/^Plant the (corn|seeds)/.test(a.text)?"seed":a.ans;
+      if(!b||b.level!=="count10"||b.art.thing!==want||b.ans!==b.art.n||(want==="seed")!==(b.say.join(" ")==="How many seeds?"))bad.push(`"${a.text}" then counts ${b&&b.art.thing}`);}
+    return{bad,n:seen.size};});
+  ok(!chores.bad.length&&chores.n>=25,`a chore names what it needs (one of 3 pictures), then he counts them, or the seeds he plants: ${chores.n} chores`+(chores.bad.length?" — "+chores.bad.slice(0,3).join(" | "):""));
+  const rows=await E(()=>{const bad=[],forms=new Set();for(const tier of [2,3,7])for(let s=0;s<80;s++){
+      const st=Jobs.gen("farm","rows",s,{tier,lv:2}),p=st[0],a=st[1];let c=p.start.c,r=p.start.r;const cells=[c+","+r];
+      for(const d of p.ans){c+=d==="L"?-1:d==="R"?1:0;r+=d==="U"?-1:d==="D"?1:0;cells.push(c+","+r);}
+      const xs=cells.map(k=>+k.split(",")[0]),ys=cells.map(k=>+k.split(",")[1]),w=Math.max.apply(null,xs)-Math.min.apply(null,xs)+1,h=Math.max.apply(null,ys)-Math.min.apply(null,ys)+1;
+      if(p.kit!=="path"||p.theme!=="field"||w*h!==cells.length||h!==a.math.a||w!==a.math.b||a.ans!==w*h||a.level!=="array"||a.say[a.say.length-1]!=="How many seeds?")bad.push(`${p.text}: ${w} × ${h} for ${JSON.stringify(a.math)}`);
+      if((tier===2)===/then/.test(p.text))bad.push(`level ${tier}: ${p.text}`);
+      forms.add(tier+": "+p.text);}
+    return{bad,forms:[...forms].filter((x,i)=>i%40===0)};});
+  ok(!rows.bad.length,"Farmer job level 2: the tractor plants a whole rows × columns field by the note (\"then\" from level 3), and the pad asks how many seeds: "+rows.forms.join(" · ")+(rows.bad.length?" — "+rows.bad.slice(0,3).join(" | "):""));
+  const grow=await E(()=>{const bad=[],out=new Set();for(const tier of [2,3,7,8])for(let s=0;s<60;s++){
+      const st=Jobs.gen("farm","grow",s,{tier,lv:3}),a=st[0],b=st[1],ans=b.ans.join(" "),egg=["egg","chick","hen"].indexOf(a.ans)>=0,words=b.choices.some(c=>c.text);
+      if(egg?ans!=="egg chick hen":!/^seed sprout plant (flower|nut|plum|tree|corn|peach|pumpkin|lemon)$/.test(ans))bad.push(a.text+" → "+ans);
+      if(!egg&&["seed","flower"].indexOf(a.ans)<0&&b.ans[3]!==a.ans)bad.push(a.text+" ends in "+b.ans[3]);
+      if(b.level!=="seq"||(words&&!b.choices.every(c=>c.text===c.v))||words!==b.ans.every(x=>Decode.tier(x)<=tier))bad.push(tier+": words "+words+" for "+ans);
+      out.add(tier+": "+ans+(words?" (words)":" (pictures)"));}
+    return{bad,out:[...out]};});
+  ok(!grow.bad.length&&grow.out.indexOf("2: seed sprout plant nut (pictures)")>=0&&grow.out.indexOf("8: seed sprout plant flower (words)")>=0,
+    "Farmer job level 3: the life cycle of what the chore grows, in pictures until every word decodes: "+grow.out.slice(0,6).join(" · ")+(grow.bad.length?" — "+grow.bad.slice(0,3).join(" | "):""));
+  const sky=await E(()=>{const bad=[],seen={};for(let tier=2;tier<=MAX_TIER;tier++)for(let s=0;s<40;s++){
+      const b=Jobs.gen("farm","weather",s,{tier,lv:4})[1];
+      if(b.kit!=="pick"||b.track||b.art.kind!=="weather"||b.art.w!==b.ans||b.choices.length!==3||new Set(b.choices).size!==3)bad.push(JSON.stringify(b).slice(0,80));
+      if(b.choices.indexOf("wet")>=0&&b.choices.indexOf("rain")>=0)bad.push("wet and rain together");
+      b.choices.forEach(c=>{if(Decode.tier(c)>tier)bad.push(c+" at "+tier);(seen[tier]=seen[tier]||{})[c]=1;});}
+    return{bad,l2:Object.keys(seen[2]).sort().join(),l4:Object.keys(seen[4]).sort().join(),l7:Object.keys(seen[7]).sort().join()};});
+  ok(!sky.bad.length&&sky.l2==="fog,sun,wet"&&sky.l4==="fog,snow,sun,wet,wind"&&sky.l7==="fog,rain,snow,storm,sun,wind",
+    `Farmer job level 4: the word for the weather in the picture, among 3 he can read (level 2: ${sky.l2}; 4: ${sky.l4}; 7: ${sky.l7})`+(sky.bad.length?" — "+sky.bad.slice(0,3).join(" | "):""));
+
   // 2. a locked job says when it opens
   await E(()=>{state.settings.tierOverride=2;});
   await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
@@ -144,6 +191,15 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>/Opens at level 4/.test(c.textContent))),"at level 3 the Mail carrier opens");
   ok(await E(()=>Modes.top()==="job"),"the Job board is the job mode");
   await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
+
+  // 2b. each job opens at its own level, and says so below it
+  const boardAt=async tier=>{await E(t=>{state.settings.tierOverride=t;},tier);await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
+    const c=await E(()=>[...document.querySelectorAll("#ovJob .jcard")].map(c=>({job:c.dataset.job||null,locked:c.classList.contains("locked"),t:c.textContent.replace(/\s+/g," ").trim()})));
+    await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");return c;};
+  const opens=(cards,name,id,lv)=>lv?cards.some(c=>c.locked&&!c.job&&c.t.indexOf(name)>=0&&c.t.indexOf("Opens at level "+lv)>=0):cards.some(c=>c.job===id&&!c.locked);
+  const at1=await boardAt(1),at2=await boardAt(2);
+  ok(opens(at1,"Farmer","farm",2)&&opens(at2,"Farmer","farm"),
+    "the Farmer: “Opens at level 2” at level 1, open at level 2");
 
   // 3. every job × task type: right answers (with a double tap on the last one) pay once
   const kitsUsed=new Set();
