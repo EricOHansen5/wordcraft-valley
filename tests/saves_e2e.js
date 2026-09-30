@@ -113,7 +113,8 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
     ok(t.includes(OLD_BLOCKS(30))&&t.includes(TIDIED),"block era: both tidy-up toasts on the first load "+J(t));
     ok(mastered(s)===4&&s.wordsRead===48&&s.review.length===2,"block era: words read, mastered words and reviews kept");
     ok(same(s.customWords,[{w:"zip",p:["z","i","p"],t:1,custom:true}]),"block era: custom words kept");
-    ok(same(s.settings,{pics:true,tts:true,ambient:false,tierOverride:0,nature:true,speech:false,timer:0,spell:.6,fastTrack:true,voice:null,voicePack:true,voiceRate:1,goal:12,together:""}),
+    ok(same(s.settings,{pics:true,tts:true,ambient:false,tierOverride:0,nature:true,speech:false,timer:0,spell:.6,fastTrack:true,voice:null,voicePack:true,voiceRate:1,goal:12,together:"",
+      talk:false,eyesFree:false}),      // TALK: Talk to me and Eyes-free, off
       "block era: settings kept (ambient off), newer ones get their defaults "+J(s.settings));
     ok(s.mine.coins===0&&s.mine.made===false&&!("w" in s.mine),"block era: the Mine is there with an empty purse, not visited yet");
     ok(same(s.hats,[])&&s.hat===null&&booksDone(s)===0&&same(s.notes,[])&&same(s.vehicles,[]),"block era: no hats, books, notes or vehicles yet");
@@ -148,7 +149,8 @@ const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"}
       `${label}: the Mine keeps coins, pet, pick, width and tunnels`);
     ok(same(s.mine.blocks,{dirt:6,stone:0,sand:0,ladder:4,torch:3,sign:2})&&same(s.mine.vaults,{})&&same(s.mine.stat,{}),`${label}: v9 Mine fields get their defaults`);
     ok(booksDone(s)===3&&same(s.library,V8.library),`${label}: 3 books finished`);
-    ok(same(s.settings,Object.assign({},V8.settings,{fastTrack:true,goal:12,together:""})),`${label}: settings kept (nature off, timer 20, spelling .4, voice), fast track, reading goal and Read together defaulted `+J(s.settings));
+    ok(same(s.settings,Object.assign({},V8.settings,{fastTrack:true,goal:12,together:""},
+      {talk:false,eyesFree:false})),`${label}: settings kept (nature off, timer 20, spelling .4, voice), fast track, reading goal and Read together defaulted `+J(s.settings));
     ok(same(s.customWords,V8.customWords)&&same(s.notes,V8.notes)&&s.noteFrom==="Mom",`${label}: custom words and notes kept`);
     ok(lv(s.critters)==="fox:3 dog:2 wolf:1 frog:1 penguin:2"&&outs(s.critters)==="fox dog frog penguin",`${label}: animals and who is out kept `+lv(s.critters));
     ok(lv(s.vehicles)==="v_car:2 v_rocket:1 v_train:1 v_sled:3"&&outs(s.vehicles)==="v_car v_rocket v_train",`${label}: vehicles kept `+lv(s.vehicles));
