@@ -38,7 +38,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click('#ovStore [data-shelf="gear"]');await wait(100);
   c=await cards();
   const sold=HELM.filter(h=>!h.prize);
-  ok(c.length===sold.length+6&&c.every(x=>x.art),`🪙 shelf: ${sold.length} Mine helmets and 6 new things (the Crystal crown is a prize, not sold) (${c.length})`);
+  ok(c.length===sold.length+10&&c.every(x=>x.art),`🪙 shelf: ${sold.length} Mine helmets and 10 new things (the Crystal crown is a prize, not sold) (${c.length})`);
   ok(sold.every(h=>{const x=c.find(y=>y.id===h.id);return x&&(h.cost?x.cost===h.cost+" 🪙":/Yours|Wearing/.test(x.cost));}),"the helmets keep their ids and prices in 🪙; the free two are his");
   ok(!c.some(x=>x.id==="crystal"),"the Crystal crown is not for sale");
   await p.click('#ovStore [data-shelf="outfit"]');await wait(100);
@@ -112,7 +112,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await E(()=>{state.mine.coins=100;delete state.jobs;Store.open("gear");});await wait(100);
   c=await cards();
   const job=id=>c.find(x=>x.id===id);
-  ok(["apron","gloves","scanner","clippers"].every(id=>job(id).locked&&job(id).act==="locked"),"no jobs yet: the uniforms and tools are locked");
+  ok(["apron","gloves","scanner","clippers","mailbag","mailcart","bakerhat","rollingpin"].every(id=>job(id).locked&&job(id).act==="locked"),"no jobs yet: the uniforms and tools are locked");
   ok(job("apron").cost==="🔒 Job level 2"&&job("scanner").cost==="🔒 Job level 3","locked cards say the job level: "+job("apron").cost+" / "+job("scanner").cost);
   ok(await E(()=>Store.purchase("gear","apron").why)==="locked"&&(await purse()).c===100,"a locked thing can't be bought, nothing taken");
   await listen();await p.click(btn("apron","gear"));await wait(150);
@@ -126,6 +126,26 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await E(()=>{state.jobs.xp.shop=15;state.jobs.xp.mow=4;Store.open("gear");});await wait(100);
   c=await cards();
   ok(!job("scanner").locked&&job("gloves").locked,"15 Shopkeeper tasks open the scanner; 4 mowing tasks don't open the gloves");
+  // the Mail carrier's and the Baker's: a uniform at job level 2, a tool at level 3
+  const label=id=>E(i=>{const d=document.querySelector(`#stGrid .stcard[data-id="${i}"] .job`);return d?d.textContent.trim():"";},id);
+  ok(await label("mailbag")==="📬 Mail carrier uniform"&&await label("mailcart")==="📬 Mail carrier tool"&&await label("bakerhat")==="🧁 Baker uniform"&&await label("rollingpin")==="🧁 Baker tool",
+    "the new gear says whose it is: "+[await label("mailbag"),await label("mailcart"),await label("bakerhat"),await label("rollingpin")].join(" · "));
+  ok(job("mailbag").cost==="🔒 Job level 2"&&job("mailcart").cost==="🔒 Job level 3"&&job("bakerhat").cost==="🔒 Job level 2"&&job("rollingpin").cost==="🔒 Job level 3",
+    "…and the job level that opens it: "+["mailbag","mailcart","bakerhat","rollingpin"].map(id=>job(id).cost).join(" / "));
+  await E(()=>{state.jobs.xp.mail=5;state.jobs.xp.baker=4;Store.open("gear");});await wait(100);
+  c=await cards();
+  ok(!job("mailbag").locked&&job("mailbag").cost==="20 🪙"&&job("mailcart").locked&&job("bakerhat").locked&&job("rollingpin").locked,
+    "5 Mail carrier tasks open the mail bag (20 🪙); the mail cart waits; 4 Baker tasks open nothing");
+  ok(await E(()=>Store.purchase("gear","bakerhat").why)==="locked"&&(await purse()).c===85,"the baker hat can't be bought yet, nothing taken");
+  await E(()=>{state.jobs.xp.mail=15;state.jobs.xp.baker=5;Store.open("gear");});await wait(100);
+  c=await cards();
+  ok(!job("mailcart").locked&&job("mailcart").cost==="45 🪙"&&!job("bakerhat").locked&&job("bakerhat").cost==="25 🪙"&&job("rollingpin").locked,
+    "15 Mail carrier tasks open the mail cart (45 🪙); 5 Baker tasks the baker hat (25 🪙), the rolling pin waits");
+  await E(()=>{state.jobs.xp.baker=15;Store.open("gear");});await wait(100);
+  c=await cards();
+  ok(!job("rollingpin").locked&&job("rollingpin").cost==="50 🪙","15 Baker tasks open the rolling pin (50 🪙)");
+  ok(await E(()=>["mailbag","mailcart","bakerhat","rollingpin"].every(id=>{const it=Store.get("gear",id);return it.keep==="own"&&!it.wear&&(it.tag==="uniform"||it.tag==="tool");})&&
+    Store.gearFor("mail","uniform").id==="mailbag"&&Store.gearFor("baker","tool").id==="rollingpin"),"they are kept in owned, like the other job gear, and are the jobs' uniforms and tools");
   await E(()=>Store.close());
 
   // ---- 6. saved, and still there after a reload ----

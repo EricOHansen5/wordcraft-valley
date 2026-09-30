@@ -55,7 +55,7 @@ const {launch,seed,waitFor,check}=require("./lib");
     await E(()=>document.getElementById("jBoard").click());await waitFor(p,"#ovJob.on .jcard");};
 
   // ---- 1. no gear: the job's own uniform, five in a row ----
-  ok(await E(()=>Store.gearFor("shop","uniform").id==="apron"&&Store.gearFor("shop","tool").id==="scanner"&&Store.gearFor("mow","uniform").id==="gloves"&&Store.gearFor("mow","tool").id==="clippers"&&Store.gearFor("baker","tool")===null),
+  ok(await E(()=>Store.gearFor("shop","uniform").id==="apron"&&Store.gearFor("shop","tool").id==="scanner"&&Store.gearFor("mow","uniform").id==="gloves"&&Store.gearFor("mow","tool").id==="clippers"&&Store.gearFor("mail","uniform").id==="mailbag"&&Store.gearFor("mail","tool").id==="mailcart"&&Store.gearFor("baker","uniform").id==="bakerhat"&&Store.gearFor("baker","tool").id==="rollingpin"&&Store.gearFor("janitor","tool")===null),
     "Store.gearFor finds each job's uniform and tool from the Trading Post's items");
   let i=await intro("shop");
   ok(i.from==="job"&&i.ic==="🎽"&&!i.art&&i.sub==="You put on your shop apron!","Shopkeeper, no gear: the job's own uniform, “"+i.sub+"” "+J(i));

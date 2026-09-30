@@ -1,7 +1,8 @@
 // Jobs: every registered job × task type through its kits (answered via dataset.ans), pay once per task, a double tap
 // ignored, a wrong answer takes nothing away (and the answer glows after a second miss), the tip, clock in and out,
 // the 5-task moment, XP and job levels, the Job board in Adventure, old saves without the fields, and every reading
-// text a generator can make decodes at the job's level. It walks Jobs.list(), so a new job is tested with no new code.
+// text a generator can make decodes at the job's level (the words on order cards, mailboxes and street signs too). It walks
+// Jobs.list(), so a new job is tested with no new code. Also the order kit from the keyboard, and its cards' size.
 const {launch,seed,reload,waitFor,check}=require("./lib");
 (async()=>{
   const T=check("jobs"),ok=T.ok;
@@ -16,19 +17,31 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
       if(k==="pick"){h.querySelector(`[data-w="${a}"]`).click();return k;}
       if(k==="pad"){for(const c of a)h.querySelector(`[data-key="${c}"]`).click();h.querySelector('[data-key="ok"]').click();return k;}
       if(k==="path"){for(const c of a)h.querySelector(`[data-dir="${c}"]`).click();return k;}
+      // order: a placed card in the wrong place goes back, then each empty place gets its card, then ✓
+      if(k==="order"){const A=a.split("|"),slot=i=>h.querySelectorAll(".jorow .joslot")[i];
+        for(let i=0;i<A.length;i++){const c=slot(i).querySelector(".jocard");if(c&&c.dataset.w!==A[i])c.click();}
+        for(let i=0;i<A.length;i++)if(!slot(i).querySelector(".jocard")){const c=[...h.querySelectorAll(".jopool .jocard")].find(x=>x.dataset.w===A[i]);if(c)c.click();}
+        h.querySelector('[data-act="check"]').click();return k;}
       return "none";},
     again(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick")h.querySelector(`[data-w="${a}"]`).click();
       if(k==="pad")h.querySelector('[data-key="ok"]').click();
-      if(k==="path")h.querySelector(`[data-dir="${a.slice(-1)}"]`).click();},
+      if(k==="path")h.querySelector(`[data-dir="${a.slice(-1)}"]`).click();
+      if(k==="order")h.querySelector('[data-act="check"]').click();},
     wrong(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick"){[...h.querySelectorAll(".jopt")].find(b=>b.dataset.w!==a).click();return;}
       if(k==="pad"){for(const c of String((+a+1)%100))h.querySelector(`[data-key="${c}"]`).click();h.querySelector('[data-key="ok"]').click();return;}
-      if(k==="path")h.querySelector(`[data-dir="${["L","R","U","D"].find(x=>x!==a[0])}"]`).click();},
+      if(k==="path")h.querySelector(`[data-dir="${["L","R","U","D"].find(x=>x!==a[0])}"]`).click();
+      // order: the empty places filled back to front, so the first of them is wrong
+      if(k==="order"){const A=a.split("|"),empty=[...h.querySelectorAll(".jorow .joslot")].map((s,i)=>s.querySelector(".jocard")?-1:i).filter(i=>i>=0);
+        empty.map(i=>A[i]).reverse().forEach(v=>{const c=[...h.querySelectorAll(".jopool .jocard")].find(x=>x.dataset.w===v);if(c)c.click();});
+        h.querySelector('[data-act="check"]').click();}},
     hinted(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick")return h.querySelector(`[data-w="${a}"]`).classList.contains("hint");
       if(k==="pad")return !!h.querySelector(`.jkey.hint[data-key="${a[0]}"]`);
       if(k==="path")return !!h.querySelector(`.jarrow.hint[data-dir="${a[0]}"]`);
+      if(k==="order"){const A=a.split("|"),i=[...h.querySelectorAll(".jorow .joslot")].findIndex(s=>!s.querySelector(".jocard"));
+        return i>=0&&!!h.querySelector(`.jopool .jocard.hint[data-w="${CSS.escape(A[i])}"]`);}
       return false;}};});
   await helpers();
   const S=()=>E(()=>Jobs._S());
@@ -63,9 +76,12 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
 
   // 0. the registry
   const JOBS=await E(()=>Jobs.list().map(j=>({id:j.id,name:j.name,tier:j.unlock.tier,pay:j.pay,tasks:j.tasks.map(t=>({id:t.id,lv:t.lv}))})));
-  ok(JOBS.length>=2&&JOBS.some(j=>j.id==="shop"&&j.tier===2)&&JOBS.some(j=>j.id==="mow"&&j.tier===4),
+  ok(JOBS.length>=4&&JOBS.some(j=>j.id==="shop"&&j.tier===2)&&JOBS.some(j=>j.id==="mow"&&j.tier===4)&&JOBS.some(j=>j.id==="mail"&&j.tier===3)&&JOBS.some(j=>j.id==="baker"&&j.tier===4),
     "jobs registered: "+JOBS.map(j=>`${j.id} (level ${j.tier}, ${j.tasks.length} tasks)`).join(", "));
   ok(await E(()=>JSON.stringify(Jobs.LEVELS))==="[0,5,15,30,50]","job levels at 0, 5, 15, 30, 50 tasks");
+  ok(JOBS.find(j=>j.id==="mail").pay.perTask===3&&JOBS.find(j=>j.id==="mail").pay.streakTip===5&&JOBS.find(j=>j.id==="baker").pay.perTask===4&&JOBS.find(j=>j.id==="baker").pay.streakTip===6,
+    "the Mail carrier pays 3 🪙 (tip 5), the Baker 4 🪙 (tip 6)");
+  ok(await E(()=>["mail","baker"].every(id=>[2,3,4,5].every(lv=>BADGES.some(b=>b.id==="job_"+id+"_"+lv)))),"both have a badge for job levels 2 to 5");
   ok(await E(()=>Jobs.canClockIn(Jobs.get("shop"))===true),"clocking in is free (no ticket gate yet)");
   ok(await E(()=>JSON.stringify(state.jobs)===JSON.stringify({current:null,xp:{},tasks:0,streak:0})&&JSON.stringify(state.tracks)==="{}"),
     "the seed save (no jobs or tracks) gets the defaults");
@@ -81,15 +97,32 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
       st.forEach(q=>{kits.add(q.kit);if(!Jobs.KITS[q.kit])bad.push("no kit "+q.kit);
         if(q.read){n.texts++;const miss=Decode.check(q.text,tier).filter(x=>!x.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: "${q.text}" needs ${miss.map(x=>x.w+" ("+x.t+")").join(", ")}`);}
         if(q.kit==="pick"&&!(q.choices||[]).some(c=>String(c&&typeof c==="object"?c.v:c)===String(q.ans)))bad.push(`${j.id}/${t.id}: ${q.ans} not in its choices`);
-        if(q.math){const m=q.math,want=m.op==="+"?m.a+m.b:m.op==="-"?m.a-m.b:m.op==="×"?m.a*m.b:m.op==="count"?m.n:m.op==="coins"?m.coins.reduce((x,y)=>x+y,0):null;
-          if(want!==q.ans)bad.push(`${j.id}/${t.id}: ${JSON.stringify(m)} gives ${want}, not ${q.ans}`);}
+        if(q.kit==="order"){const cv=(q.choices||[]).map(c=>String(c&&typeof c==="object"?c.v:c)),av=[].concat(q.ans).map(String);
+          if(av.length<2||av.length!==cv.length||new Set(cv).size!==cv.length||av.slice().sort().join("|")!==cv.slice().sort().join("|"))bad.push(`${j.id}/${t.id}: the order ${av} is not its cards ${cv}`);
+          if(cv.join("|")===av.join("|"))bad.push(`${j.id}/${t.id}: the cards start out in order`);}
+        (q.choices||[]).map(c=>c&&typeof c==="object"?(q.kit==="order"?c.text:c.art&&(c.art.name||c.art.text)):null).filter(x=>x!=null).forEach(x=>{n.texts++;
+          const miss=Decode.check(String(x),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the card "${x}" needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
+        if(q.math){const m=q.math,f=w=>String(w).charAt(0).toUpperCase(),want=m.op==="+"?m.a+m.b:m.op==="-"?m.a-m.b:m.op==="×"?m.a*m.b:m.op==="count"?m.n:m.op==="coins"?m.coins.reduce((x,y)=>x+y,0):
+            m.op==="house"?m.n:m.op==="place"?m.tens*10+m.ones:m.op==="frac"?m.of:m.op==="time"?m.start+m.add:m.op==="seq"?m.steps.join("|"):
+            m.op==="abc"?m.words.slice().sort((x,y)=>f(x)<f(y)?-1:f(x)>f(y)?1:0).join("|"):m.op==="sort"?m.nums.slice().sort((x,y)=>x-y).join("|"):null;
+          if(want==null||String(want)!==[].concat(q.ans).join("|"))bad.push(`${j.id}/${t.id}: ${JSON.stringify(m)} gives ${want}, not ${q.ans}`);}
         if(q.kit==="path"){let c=q.start.c,r=q.start.r;const seen={};seen[c+","+r]=1;
           for(const d of q.ans){c+=d==="L"?-1:d==="R"?1:0;r+=d==="U"?-1:d==="D"?1:0;
             if(c<0||r<0||c>=q.grid.w||r>=q.grid.h)bad.push(`${j.id}/${t.id}: the path leaves the lawn`);
             if(seen[c+","+r])bad.push(`${j.id}/${t.id}: the path crosses itself`);seen[c+","+r]=1;}}});}}));
     return{bad,kits:[...kits].sort(),n:n.texts};});
   ok(!G.bad.length,`every generated task: ${G.n} reading texts decode at their level, answers right, same seed same task`+(G.bad.length?" — "+G.bad.slice(0,5).join(" | "):""));
-  ok(G.kits.join()==="pad,path,pick","the jobs use all three kits: "+G.kits);
+  ok(G.kits.join()==="order,pad,path,pick","the jobs use all four kits: "+G.kits);
+  // the Mail carrier's letters at level 3, and the Baker's recipes at level 4, read only words of that level
+  const mailWords=await E(()=>{const w=new Set();for(let s=0;s<200;s++)Jobs.list().find(j=>j.id==="mail").tasks.forEach(t=>Jobs.gen("mail",t.id,s,{tier:3,lv:t.lv}).forEach(q=>{
+    [q.read?q.text:""].concat((q.choices||[]).map(c=>c&&typeof c==="object"?(c.text||c.art&&(c.art.name||c.art.text)):"")).forEach(x=>Decode.words(String(x||"")).forEach(y=>w.add(y)));}));
+    return [...w].sort();});
+  ok(mailWords.length>20&&await E(ws=>ws.every(x=>Decode.tier(x)<=3),mailWords)&&mailWords.indexOf("Asher")>=0,
+    `Mail carrier at level 3: ${mailWords.length} words on its letters, mailboxes, signs and notes, all level 3 or below, his own name among them: ${mailWords.slice(0,24).join(" ")}…`);
+  const bake=await E(()=>{const one=Jobs.gen("baker","steps",1,{tier:4,lv:1})[0];return{kit:one.kit,track:one.track,also:one.also,level:one.level||null,n:one.choices.length,
+    texts:[0,1,2,3,4,5,6,7,8,9,10,11].map(s=>Jobs.gen("baker","steps",s,{tier:4,lv:1})[0].text)};});
+  ok(bake.kit==="order"&&bake.track==="reading"&&bake.level===null&&JSON.stringify(bake.also)===JSON.stringify({track:"math",level:"seq"})&&bake.n===3,
+    "the Baker's first task is a recipe's 3 steps to put in order: reading, and Putting steps in order (also) "+JSON.stringify(bake.also)+" · "+[...new Set(bake.texts)].join(", "));
   const words=await E(()=>{const t=new Set();for(let s=0;s<200;s++)t.add(Jobs.gen("mow","mow",s,{tier:4,lv:1})[0].text.replace(/\d/g,"#"));
     const w=new Set();t.forEach(x=>Decode.words(x).forEach(y=>w.add(y.toLowerCase())));return [...w].sort();});
   ok(words.join(",")==="down,go,then,up","Lawn mower at level 4 reads only go, then, up and down (left and right are arrows): "+words.join(","));
@@ -102,6 +135,13 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   const cards=await E(()=>[...document.querySelectorAll("#ovJob .jcard")].map(c=>({job:c.dataset.job||null,locked:c.classList.contains("locked"),t:c.textContent.replace(/\s+/g," ").trim()})));
   ok(cards.some(c=>c.job==="shop"&&!c.locked)&&cards.some(c=>c.locked&&/Lawn mower/.test(c.t)&&/Opens at level 4/.test(c.t)&&!c.job),
     "at level 2 the Shopkeeper is open and the Lawn mower says “Opens at level 4”: "+cards.map(c=>c.t).join(" | "));
+  ok(cards.some(c=>c.locked&&/Mail carrier/.test(c.t)&&/Opens at level 3/.test(c.t)&&!c.job)&&cards.some(c=>c.locked&&/Baker/.test(c.t)&&/Opens at level 4/.test(c.t)&&!c.job),
+    "…the Mail carrier says “Opens at level 3” and the Baker “Opens at level 4”");
+  await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
+  await E(()=>{state.settings.tierOverride=3;});
+  await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
+  ok(await E(()=>!!document.querySelector('#ovJob .jcard[data-job="mail"]')&&!!document.querySelector("#ovJob .jcard.locked")&&
+    [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>/Opens at level 4/.test(c.textContent))),"at level 3 the Mail carrier opens");
   ok(await E(()=>Modes.top()==="job"),"the Job board is the job mode");
   await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
 
@@ -155,7 +195,47 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     await clockOut();
     ok(await E(()=>state.jobs.current===null&&!document.getElementById("jobsBadge").classList.contains("on")),`${j.name}: Clock out ends the shift`);
   }
-  ok(["pick","pad","path"].every(k=>kitsUsed.has(k)),"the shifts used every kit: "+[...kitsUsed].join(", "));
+  ok(["pick","pad","path","order"].every(k=>kitsUsed.has(k)),"the shifts used every kit: "+[...kitsUsed].join(", "));
+
+  // 3b. the order kit: cards at least 56 px tall, a placed card tapped goes back, and the keyboard (arrows, Space, Enter);
+  //     and the Mail carrier's street map
+  await E(()=>{state.settings.tierOverride=3;state.jobs.xp.mail=Jobs.LEVELS[Jobs.LEVELS.length-1];state.jobs.current=null;state.jobs.streak=0;});
+  await clockIn("mail");
+  await E(()=>Jobs._next("walk"));
+  await waitFor(p,()=>{const s=Jobs._S(),h=document.getElementById("jQ");return s&&s.task&&s.task.type==="walk"&&s.task.i===0&&h&&h.dataset.kit==="pick";},{timeout:6000});
+  await E(()=>__job.right(__job.host()));
+  const map=await waitFor(p,()=>{const h=document.getElementById("jQ");return h&&h.dataset.kit==="path"?{street:!!h.querySelector(".jlawn.street"),goal:h.querySelectorAll(".jcell.goal").length,text:h.querySelector(".jtext").textContent.replace(/\s+/g," ").trim()}:false;},{timeout:6000});
+  ok(map&&map.street&&map.goal===1&&/^Go \d/.test(map.text),"Mail carrier level 3: the street map, with the house to walk to — “"+(map&&map.text)+"”");
+  await E(()=>__job.right(__job.host()));
+  await waitFor(p,()=>{const s=Jobs._S();return s&&!s.task||document.getElementById("jGo");},{timeout:6000});
+  await ready();
+  await E(()=>Jobs._next("abc"));
+  await waitFor(p,()=>{const s=Jobs._S(),h=document.getElementById("jQ");return s&&s.task&&s.task.type==="abc"&&s.task.i===0&&h&&h.dataset.kit==="pick";},{timeout:6000});
+  const k0=await E(()=>({coins:state.mine.coins,n:Jobs._S().n}));
+  await E(()=>__job.right(__job.host()));
+  const ord=await waitFor(p,()=>{const h=document.getElementById("jQ");return h&&h.dataset.kit==="order"?h.dataset.ans:false;},{timeout:6000});
+  const A=String(ord).split("|");
+  const sizes=await E(()=>[...document.querySelectorAll("#jQ .jocard,#jQ .jogap")].map(b=>Math.round(b.getBoundingClientRect().height)));
+  ok(A.length===3&&sizes.length===6&&sizes.every(x=>x>=56),"the order kit: 3 cards and 3 places, each at least 56 px tall ("+sizes.join(", ")+")");
+  const slotsNow=()=>E(()=>[...document.querySelectorAll("#jQ .jorow .joslot")].map(s=>{const c=s.querySelector(".jocard");return c?c.dataset.w:"";}));
+  const poolNow=()=>E(()=>[...document.querySelectorAll("#jQ .jopool .jocard")].map(c=>c.dataset.w));
+  // with the arrows to a card, Space puts it in the next place
+  const keyTo=async v=>{for(let k=0;k<8;k++){const at=await E(()=>{const c=document.querySelector("#jQ .jocard.cur");return c?c.dataset.w:null;});if(at===v)return true;await p.keyboard.press("ArrowRight");}return false;};
+  await p.keyboard.press("ArrowRight");
+  const found=await keyTo(A[0]);await p.keyboard.press("Space");
+  let sl=await slotsNow();
+  ok(found&&sl[0]===A[0]&&sl[1]===""&&(await poolNow()).indexOf(A[0])<0,"arrows move the cursor, Space puts the card in the first place: "+sl.join(" | "));
+  // a tap on a placed card puts it back
+  await E(v=>document.querySelector(`#jQ .jorow .jocard[data-w="${CSS.escape(v)}"]`).click(),A[0]);
+  sl=await slotsNow();
+  ok(sl.every(x=>x==="")&&(await poolNow()).indexOf(A[0])>=0,"a tap on a placed card puts it back with the others");
+  for(const v of A){await keyTo(v);await p.keyboard.press("Space");}
+  sl=await slotsNow();
+  ok(sl.join("|")===A.join("|"),"…and the keyboard puts all three in order: "+sl.join(" < "));
+  await p.keyboard.press("Enter");
+  const k1=await waitFor(p,n=>{const s=Jobs._S();return s&&s.n>n?{coins:state.mine.coins,n:s.n}:false;},{arg:k0.n,timeout:6000});
+  ok(k1&&k1.coins===k0.coins+3,"Enter checks: right, and the task pays 3 🪙 ("+(k1&&k1.coins-k0.coins)+")");
+  await clockOut();
 
   // 4. the 5-task moment, a summary at clock out (five right first time: the fifth has a tip)
   await E(()=>{state.settings.tierOverride=2;state.jobs.xp.shop=5;state.jobs.streak=0;});
@@ -208,6 +288,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(await E(()=>(state.modeOpens[today()]||{}).job>=1),"opens of the Job board are counted in modeOpens.job ("+await E(()=>(state.modeOpens[today()]||{}).job)+")");
   ok(await E(()=>{const t=state.tracks.math&&state.tracks.math.stats;return !!(t&&t.count10&&t.count10.seen>0&&t.add10&&t.coins20);}),
     "math answers are kept per level in state.tracks: "+await E(()=>JSON.stringify(state.tracks)));
+  ok(await E(()=>{const t=state.tracks.math.stats;return ["place","alpha","seq","frac","time"].every(k=>t[k]&&t[k].seen>0)&&!(state.tracks.reading&&state.tracks.reading.stats&&state.tracks.reading.stats.seq);}),
+    "…the Mail carrier's and the Baker's too (house numbers, ABC order, the recipe's steps in order, cups, clocks): "+await E(()=>["place","alpha","seq","frac","time"].map(k=>k+" "+JSON.stringify((state.tracks.math.stats[k]||{}).seen)).join(", ")));
 
   // 9. old saves
   const oldSave=async(label,partial,want)=>{
@@ -218,8 +300,10 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   await oldSave("saved nulls are re-made",{jobs:null,tracks:null},{jobs:{current:null,xp:{},tasks:0,streak:0},tracks:{}});
   await oldSave("a part-filled jobs keeps what it has",{jobs:{xp:{shop:7}},tracks:{math:{stats:{add10:{seen:2,right:1}}}}},
     {jobs:{xp:{shop:7},current:null,tasks:0,streak:0},tracks:{math:{stats:{add10:{seen:2,right:1}}}}});
-  await oldSave("a shift at a job this version doesn't have is over, its XP kept",{jobs:{current:"baker",xp:{baker:3},tasks:3,streak:1}},
-    {jobs:{current:null,xp:{baker:3},tasks:3,streak:1},tracks:{}});
+  await oldSave("a shift at a job this version doesn't have is over, its XP kept",{jobs:{current:"janitor",xp:{janitor:3},tasks:3,streak:1}},
+    {jobs:{current:null,xp:{janitor:3},tasks:3,streak:1},tracks:{}});
+  await oldSave("a shift at the Mail carrier is kept",{jobs:{current:"mail",xp:{mail:3},tasks:3,streak:1}},
+    {jobs:{current:"mail",xp:{mail:3},tasks:3,streak:1},tracks:{}});
   ok(await E(()=>state.mine.coins===40),"old saves keep the Mine's purse");
 
   // 10. no errors

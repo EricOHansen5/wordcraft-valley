@@ -1246,6 +1246,46 @@ body.exploring .slot-empty{display:none}
 .jbd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%}
 .jbd span{font-size:34px;background:#C98F4E;border:3px solid var(--ink);border-radius:10px;padding:2px 8px}
 .jbd b{font-size:12px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 5px;margin-top:-3px}
+/* pictures for the grade 1 math: tens and ones, houses with numbers, measuring cups, clocks, the alphabet */
+.jsvg{width:104px;height:104px}.jsvg svg{width:100%;height:100%;display:block}.jart .jsvg{width:112px;height:112px}
+.jblocks{display:flex;gap:5px;align-items:flex-end;padding:8px 12px;border:3px solid var(--ink);border-radius:14px;background:#fff}
+.jblocks .ten{display:block;width:16px;height:104px;border:2px solid var(--ink);border-radius:3px;background:repeating-linear-gradient(180deg,#F6B84B 0 8px,#B9822A 8px 10px)}
+.jblocks .ones{display:grid;grid-template-columns:repeat(3,14px);gap:3px;margin-left:8px;align-content:end}
+.jblocks .ones i{display:block;width:14px;height:14px;border:2px solid var(--ink);border-radius:2px;background:#7CC6EE}
+.jabc{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:640px}
+.jabc i{font-style:normal;font-weight:900;font-size:17px;width:22px;height:26px;display:grid;place-items:center;background:#fff;border:2px solid rgba(59,48,36,.35);border-radius:6px}
+/* the Mail carrier: mailboxes with a name, street signs, and the path kit's lawn as a street map */
+.jmbox{display:flex;flex-direction:column;align-items:center}.jmbox svg{width:92px;height:92px;display:block}
+.jlabel{display:block;margin-top:-12px;background:#fff;border:3px solid var(--ink);border-radius:10px;padding:1px 10px;font-size:22px;font-weight:900;white-space:nowrap;position:relative}
+.jsign{display:flex;flex-direction:column;align-items:center}
+.jsign span{display:block;background:#2F8F4A;color:#fff;font-weight:900;font-size:22px;padding:8px 12px;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 3px var(--ink);white-space:nowrap;margin-top:4px}
+.jsign::after{content:"";display:block;width:10px;height:44px;background:#8E949C;border:2px solid var(--ink);border-top:0}
+.jlawn.street .jcell{background:#B8BEC6;border-color:#7E858F}.jlawn.street .jcell.cut{background:#DCE0E4}
+.jlawn.street .start::before{content:"🏤"}.jlawn.street .me::after{content:"🚶"}.jlawn.street.done .me::after{content:"📬"}
+.jlawn .goal::before{content:"🏠";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:26px}.jlawn .me.goal::before{content:none}
+/* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
+.jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
+.jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
+.jorow{padding:8px;border:3px dashed rgba(59,48,36,.3);border-radius:18px;background:rgba(255,255,255,.45)}
+.jorder.wide{flex-direction:row;align-items:flex-start;max-width:none}
+.jorder.wide .jopool{order:-1}
+.jorder.wide .jorow,.jorder.wide .jopool{flex:1 1 0;min-width:0;flex-direction:column;align-items:stretch;justify-content:flex-start}
+.joslot{display:flex;align-items:center;gap:6px}.jorder.wide .joslot{width:100%}
+.joslot>i{flex:0 0 auto;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:3px solid var(--ink);background:var(--gold);font-style:normal;font-weight:900;font-size:18px}
+.jogap{display:block;flex:1;min-width:110px;min-height:56px;border:3px dashed rgba(59,48,36,.28);border-radius:16px;background:#fff}
+.jocard{display:flex;align-items:center;gap:8px;min-height:56px;min-width:96px;padding:6px 14px;border:3px solid var(--ink);border-radius:16px;background:#fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.2);font-family:inherit;font-size:24px;font-weight:800;color:var(--ink);text-align:left;line-height:1.2}
+.jorder.wide .jocard{width:100%;font-size:22px}.joslot .jocard{flex:1}
+.jocard:active{transform:translateY(3px);box-shadow:none}
+.joart{flex:0 0 auto;display:block;width:46px;height:46px}.joart>*{width:46px!important;height:46px!important;margin:0!important}.joart svg{width:100%;height:100%}
+.jocard.hint{box-shadow:0 0 0 5px rgba(127,176,105,.9);background:#EAF7E2}
+.jocard.cur{outline:4px solid #3F86D2;outline-offset:2px}
+.jorder.right .jocard{background:#DDF3D4;border-color:var(--meadow-deep)}
+@keyframes joshake{0%,100%{transform:none}25%{transform:translateX(-8px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
+.jorder.wrong .jorow,.jorow.nudge{animation:joshake .45s}
+.jochk{margin-top:10px}.jocheck{width:110px;height:62px}
+.jocheck.ready{box-shadow:0 0 0 4px rgba(255,229,138,.95),0 4px 0 rgba(0,0,0,.2)}.jocheck.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9)}
+@media (max-width:700px){.jorder.wide{flex-direction:column;align-items:stretch}.jorder.wide .jorow,.jorder.wide .jopool{flex:0 0 auto}.jocard,.jorder.wide .jocard{font-size:20px;padding:6px 10px}.jogap{min-width:80px}}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -10033,6 +10073,7 @@ const Race=(()=>{
              "right the first time". A wrong answer is never the end: the
              customer waits a moment, the same question stays, and after a
              second miss the right answer glows.
+             A fourth, order (put the cards in order), is added below with Jobs.kit.
      JOBS    data only. Jobs.register({id,name,icon,uniform,unlock:{tier},
              pay:{perTask,streakTip},tasks:[{id,lv,name,gen}]}). A task's
              gen(seed,{tier,lv}) is pure and returns its steps, each one
@@ -10121,6 +10162,37 @@ const Tracks=(()=>{
 // reading steps come from each job's own generator (his word list, decode-checked), so this track has no levels
 Tracks.register({id:"reading",name:"Reading",icon:"📖",levels:[]});
 
+// pictures for the jobs' questions (Jobs.art draws them): for the grade 1 math, tens and ones (rods and cubes),
+// houses with their numbers, measuring cups filled to a half, a quarter or the top, clocks at o'clock, the alphabet
+const JOB_ROOF=["#DC5A4B","#3F86D2","#4FA84A","#9B5CF6","#E8A92A"],JOB_WALL=["#FBF6EC","#FFE39A","#F7D6C4","#D8EEF7","#E4F2D6"];
+const JOB_ART={
+  blocks:a=>`<div class="jblocks">${'<i class="ten"></i>'.repeat(Math.max(0,a.tens|0))}${a.ones?`<span class="ones">${"<i></i>".repeat(a.ones|0)}</span>`:""}</div>`,
+  house:a=>{const k=Math.abs(+a.n|0);return`<div class="jsvg">${S(`${OCC}<path d="M14 50 L50 16 L86 50Z" fill="${grad(JOB_ROOF[k%5],"v",.3,.2)}"/>
+    <path d="M22 46 L78 46 L78 90 L22 90Z" fill="${grad(JOB_WALL[Math.floor(k/5)%5],"v",.15,.12)}"/>
+    <path d="M42 70 L58 70 L58 90 L42 90Z" fill="${grad("#9A6436","v",.2,.2)}"/><circle cx="54.5" cy="80" r="1.6" fill="#FFE39A" stroke="none"/>
+    <rect x="27" y="49" width="46" height="18" rx="4" fill="#FFFFFF"/>
+    <text x="50" y="63" text-anchor="middle" font-size="15" font-weight="900" fill="${INK}" stroke="none">${k}</text>`)}</div>`;},
+  cup:a=>{const f=Math.max(0,Math.min(1,+a.f||0)),T=20,B=88,H=B-T,xl=y=>30-4*(B-y)/H,xr=y=>70+4*(B-y)/H,y=B-H*f,n=v=>v.toFixed(1);
+    return`<div class="jsvg">${S(`${OCC}<path d="M71 36 Q90 36 90 53 Q90 70 70 70" fill="none" stroke-width="6"/>
+      <path d="M26 ${T} L74 ${T} L70 ${B} L30 ${B}Z" fill="#EEF8FC"/>
+      ${f>0?`<path d="M30 ${B} L70 ${B} L${n(xr(y))} ${n(y)} L${n(xl(y))} ${n(y)}Z" fill="${a.fill||"#F2B84B"}" stroke="none"/>`:""}
+      ${[.25,.5,.75].map(k=>{const yy=B-H*k;return`<path d="M${n(xl(yy))} ${n(yy)} L${n(xl(yy)+11)} ${n(yy)}" fill="none" stroke-width="2"/>`;}).join("")}
+      <path d="M26 ${T} L74 ${T} L70 ${B} L30 ${B}Z" fill="none"/>`)}</div>`;},
+  clock:a=>{const h=((Math.round(+a.h||12)-1)%12+12)%12+1,at=(r,k)=>[(50+r*Math.sin(k)).toFixed(1),(50-r*Math.cos(k)).toFixed(1)],hh=at(20,h*Math.PI/6);
+    const nums=Array.from({length:12},(_,i)=>{const p=at(35,(i+1)*Math.PI/6);return`<text x="${p[0]}" y="${(+p[1]+4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="${INK}" stroke="none">${i+1}</text>`;}).join("");
+    return`<div class="jsvg jclock" data-h="${h}">${S(`<circle cx="50" cy="50" r="45" fill="#FFFFFF" stroke-width="3.5"/>${nums}
+      <path d="M50 50 L50 25" fill="none" stroke="#3F86D2" stroke-width="3.2"/><path d="M50 50 L${hh[0]} ${hh[1]}" fill="none" stroke-width="5.5"/>
+      <circle cx="50" cy="50" r="3.6" fill="${INK}"/>`)}</div>`;},
+  abc:()=>`<div class="jabc">${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>`<i>${l}</i>`).join("")}</div>`,
+  // for the Mail carrier: a mailbox with a name on it, a street sign, a letter
+  mailbox:a=>`<div class="jmbox">${S(`${OCC}<path d="M46 56 L54 56 L54 92 L46 92Z" fill="${grad("#9A6436","v",.2,.2)}"/>
+    <path d="M16 60 L16 36 Q16 14 40 14 L60 14 Q84 14 84 36 L84 60Z" fill="${grad("#3F6FB8","v",.28,.2)}"/>
+    <path d="M40 14 Q16 14 16 36 L16 60 L28 60 L28 36 Q28 20 40 14Z" fill="#2F5A9C" stroke="none" opacity=".5"/>
+    <path d="M86 50 L86 20" fill="none" stroke-width="3"/><path d="M86 20 L98 20 L98 30 L86 30Z" fill="#DC5A4B"/>`)}<b class="jlabel">${esc(a.name)}</b></div>`,
+  sign:a=>`<div class="jsign"><span>${esc(a.text)}</span></div>`,
+  letter:()=>`<div class="jsvg">${S(`<path d="M8 26 L92 26 L92 80 L8 80Z" fill="${grad("#FBF6EC","v",.08,.1)}"/><path d="M8 26 L50 56 L92 26" fill="none"/>
+    <path d="M72 32 L86 32 L86 46 L72 46Z" fill="#DC5A4B" stroke-width="1.8"/>`)}</div>`
+};
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
   // tasks done to reach job levels 1 to 5
@@ -10193,6 +10265,8 @@ const Jobs=(()=>{
       case"coins":return`<div class="jcoins">${a.coins.map(c=>`<span class="jcoin ${COIN[c]||"c1"}">${c}¢</span>`).join("")}</div>`;
       case"lawn":return lawn(a);
       case"array":return`<div class="jlawn small" style="grid-template-columns:repeat(${a.cols},auto)">${"<i></i>".repeat(a.rows*a.cols)}</div>`;
+      case"blocks":case"house":case"cup":case"clock":case"abc":return JOB_ART[a.kind](a);
+      case"mailbox":case"sign":case"letter":return JOB_ART[a.kind](a);
     }
     return"";
   }
@@ -10277,13 +10351,13 @@ const Jobs=(()=>{
     host.dataset.kit="path";host.dataset.ans=moves;
     let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="grass"></button>`;
     const arrow=d=>`<button class="jarrow" data-dir="${d}" aria-label="${DIR_NAME[d]}">${ARROW[d]}</button>`;
-    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
+    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
       <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
     const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
     function draw(){
       const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
       cellEls.forEach(b=>{const x=+b.dataset.c,y=+b.dataset.r;
-        b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"");});
+        b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"")+(q.goal&&x===q.goal.c&&y===q.goal.r?" goal":"");});
       arrows.forEach(b=>b.classList.toggle("hint",b.dataset.dir===nx));
     }
     function go(d){
@@ -10425,6 +10499,8 @@ const Jobs=(()=>{
   function stepDone(q,ok){
     const T=S.task;
     if(q.track&&q.level)Tracks.record(q.track,q.level,ok);
+    // and for a second one when it is both (the Baker's recipe steps: reading them, and putting them in order)
+    if(q.also&&q.also.track&&q.also.level)Tracks.record(q.also.track,q.also.level,ok);
     if(q.track==="reading"){if(ok)state.wordsRead++;
       if(q.word){const w=allWords().find(x=>x.w===q.word);if(w)try{Skills.result(w,{ok,help:!ok});}catch(e){}}}
     msg("");T.i++;save();
@@ -10508,9 +10584,86 @@ const Jobs=(()=>{
   return{register,get:id=>BY[id]||null,list:()=>REG.slice(),kit:(name,fn)=>{KITS[name]=fn;},kits:()=>Object.keys(KITS),KITS,
     gen,level:levelOf,xp:xpOf,LEVELS,isOpen,open,close,clockIn,clockOut,canClockIn,talk,voiceLines,art:artHtml,boardAt,
     uniform:j=>uniform(typeof j==="string"?BY[j]:j),tipAt:j=>tipAt(typeof j==="string"?BY[j]:j),
+    // for a kit added from outside (Jobs.kit): the question's top, its wiring (read aloud, 🔊, words to tap), the keyboard
+    ui:{head,wire,keys:f=>{keyFn=f;},hush},
     _S:()=>S&&{job:S.job.id,n:S.n,coins:S.coins,tips:S.tips,task:S.task&&{type:S.task.type.id,i:S.task.i,steps:S.task.steps.length,miss:S.task.miss,seed:S.task.seed}},
     _next:id=>next(id)};
 })();
+
+/* ---- the order kit: put these in order ----
+   Added with Jobs.kit("order",fn); Jobs.ui lends it the question's top, its wiring and the keyboard.
+   q.choices are the cards: a value, or {v, text, art} (the text, with a picture beside it when there
+   is one), shown in the order given (the generators shuffle them, never into the answer). q.ans is
+   the right order, a list of the values. A tap on a card moves it to the next empty place in the
+   answer row, a tap on a placed card puts it back, and ✓ checks. A miss keeps the cards: the ones in
+   the right place stay put, the others go back to try again, and the customer waits (opt.onMiss);
+   after the second miss the next right card glows. dataset.ans is the right order joined with |.
+   done(ok) once, through Read.once, ok being right the first time. Keyboard: the arrows move a
+   cursor over the cards, Space picks, Enter checks. */
+Jobs.kit("order",function(host,q,done,opt){
+  const U=Jobs.ui;done=Read.once(done);opt=opt||{};
+  const val=c=>String(c&&typeof c==="object"?c.v:c);
+  const cards=(q.choices||[]).map(c=>({v:val(c),text:String(c&&typeof c==="object"&&c.text!=null?c.text:val(c)),art:c&&typeof c==="object"&&c.art||null}));
+  const ans=(typeof q.ans==="string"?q.ans.split("|"):[].concat(q.ans==null?[]:q.ans)).map(String);
+  const by={};cards.forEach(c=>{by[c.v]=c;});
+  if(ans.length<2||ans.length!==cards.length||Object.keys(by).length!==cards.length||ans.some(a=>!by[a]))throw new Error("an order answer is every card once, in order");
+  host.dataset.kit="order";host.dataset.ans=ans.join("|");
+  let miss=0,fin=false,hint=!!opt.hint,cur=0,kbd=false;
+  const slots=ans.map(()=>null);
+  // long cards (a recipe's steps) stand in two columns, the cards and the answer; short ones (names, numbers) in rows
+  const wide=cards.some(c=>c.text.length>12);
+  host.innerHTML=U.head(q)+`<div class="jorder${wide?" wide":""}"><div class="jorow"></div><div class="jopool"></div></div>
+    <div class="mrow jochk"><button class="jkey ok jocheck" data-act="check" aria-label="Check">✓</button></div>`;
+  const box=host.querySelector(".jorder"),rowEl=host.querySelector(".jorow"),poolEl=host.querySelector(".jopool"),chk=host.querySelector(".jocheck");
+  const pool=()=>cards.filter(c=>slots.indexOf(c.v)<0);
+  // what the cursor walks over, in the order they stand on the screen
+  const items=()=>{const r=slots.filter(Boolean),p=pool().map(c=>c.v);return wide?p.concat(r):r.concat(p);};
+  const face=c=>(c.art?`<span class="joart">${Jobs.art(c.art)}</span>`:"")+`<span class="jotext">${esc(c.text)}</span>`;
+  function draw(){
+    const gap=slots.indexOf(null),nx=hint&&!fin&&gap>=0?ans[gap]:null,list=items();
+    cur=Math.max(0,Math.min(cur,list.length-1));const at=kbd&&!fin?list[cur]:null;
+    const card=(c,where)=>`<button class="jocard${c.v===nx&&where==="pool"?" hint":""}${c.v===at?" cur":""}" data-w="${esc(c.v)}" data-at="${where}">${face(c)}</button>`;
+    rowEl.innerHTML=slots.map((v,i)=>`<div class="joslot"><i>${i+1}</i>${v?card(by[v],"row"):`<span class="jogap"></span>`}</div>`).join("");
+    poolEl.innerHTML=pool().map(c=>card(c,"pool")).join("");
+    chk.classList.toggle("ready",gap<0);
+    chk.classList.toggle("hint",!!(hint&&!fin&&gap<0&&slots.every((v,i)=>v===ans[i])));
+  }
+  function move(v){
+    if(fin||!by[v])return;const i=slots.indexOf(v);
+    if(i>=0){slots[i]=null;Sound.sfx.soft();}
+    else{const g=slots.indexOf(null);if(g<0)return;slots[g]=v;Sound.sfx.pop();}
+    draw();
+  }
+  function check(){
+    if(fin)return;
+    if(slots.indexOf(null)>=0){Sound.sfx.soft();rowEl.classList.remove("nudge");void rowEl.offsetWidth;rowEl.classList.add("nudge");return;}
+    if(slots.every((v,i)=>v===ans[i])){fin=true;U.keys(null);box.classList.add("right");draw();Sound.sfx.win();setTimeout(()=>done(!miss),900);return;}
+    // the cards stay: the ones in the right place keep it, the others go back to be tried again
+    miss++;if(miss>=2)hint=true;
+    slots.forEach((v,i)=>{if(v!==ans[i])slots[i]=null;});
+    box.classList.remove("wrong");void box.offsetWidth;box.classList.add("wrong");Sound.sfx.nope();draw();
+    if(opt.onMiss)opt.onMiss(miss);
+  }
+  host.addEventListener("click",e=>{
+    const b=e.target&&e.target.closest?e.target.closest(".jocard,.jocheck"):null;if(!b||!host.contains(b))return;
+    // a button keeps no focus, so Space from the keyboard never presses it a second time
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(x){}
+    if(b.classList.contains("jocheck"))check();else move(b.dataset.w);
+  });
+  U.keys(e=>{
+    if(!host.isConnected||fin)return false;const k=e.key,list=items();
+    if(k==="ArrowLeft"||k==="ArrowUp"||k==="ArrowRight"||k==="ArrowDown"){
+      if(kbd&&list.length)cur=(cur+(k==="ArrowLeft"||k==="ArrowUp"?-1:1)+list.length)%list.length;kbd=true;draw();return true;}
+    if(k===" "||k==="Spacebar"||e.code==="Space"){
+      kbd=true;const v=list[cur];if(v==null){draw();return true;}
+      const fromPool=slots.indexOf(v)<0,pi=pool().map(c=>c.v).indexOf(v);move(v);
+      // stay among the cards still to place: the next one along, or the one just put back
+      const p=pool().map(c=>c.v),nx=fromPool&&p.length?p[Math.min(pi,p.length-1)]:v;cur=Math.max(0,items().indexOf(nx));
+      draw();return true;}
+    if(k==="Enter"){kbd=true;check();return true;}
+    return false;});
+  U.wire(host,q);draw();
+});
 
 /* ---- the math track, K–1 ----
    Seven levels, every question generated from a seed and read aloud, so his reading level
@@ -10544,6 +10697,65 @@ const Jobs=(()=>{
       for(let i=0;i<d;i++)coins.push(10);for(let i=0;i<n;i++)coins.push(5);for(let i=0;i<p;i++)coins.push(1);
       return{kit:"pad",say:["How much money is this?"],text:"? ¢",art:{kind:"coins",coins},choices:near(r,T,4,1,20),ans:T,math:{op:"coins",coins}};}}
   ]});
+})();
+
+/* ---- the math track, grade 1: tens and ones, ABC order, steps in order, halves and quarters, o'clock ----
+   Five more levels, for the Mail carrier and the Baker, generated from a seed and read aloud like the
+   ones above (numbers have clips; the words are short fixed pieces). A pick or order question keeps its
+   answer among its choices, and an order question never starts out already in order. A job can pass
+   what it needs in opt:
+     place  {kind:"house"|"blocks", n}   "Which house is 34?" among three houses, or "3 tens and 4 ones" on the pad
+     alpha  {words, n, say, art}         its own words (the Mail carrier's names) to put in ABC order
+     seq    {steps:[{text,art}], say}    its own steps, in the right order (the Baker's recipe)
+     frac   {ans:"1/2"|"1/4"|"1", fill}  which cup to find, and the colour in the cups
+     time   {bake:true}                  "The bread bakes for 1 hour. It went in at 3 o'clock. When is it done?" */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded,L=Tracks.get("math").levels;
+  const hour=h=>((h-1)%12+12)%12+1;
+  // cards in a new order, never the right one already
+  const mixed=(r,list)=>{let a=shuffle(r,list);if(a.every((x,i)=>x===list[i]))a=list.slice().reverse();return a;};
+  // tens and ones: the other houses are the easy mix-ups, the digits swapped and ten more or ten less
+  L.push({id:"place",grade:"1",name:"Tens and ones (house numbers)",gen:(seed,o)=>{o=o||{};const r=rnd(seed);
+    const n=o.n>=10&&o.n<=99?Math.floor(o.n):int(r,11,99),t=Math.floor(n/10),u=n%10;
+    const house=o.kind==="house"||(o.kind!=="blocks"&&r()<.5),art={kind:"blocks",tens:t,ones:u};
+    if(!house)return{kit:"pad",say:[t,t===1?"ten and":"tens and",u,u===1?"one.":"ones.","What number is that?"],art,ans:n,math:{op:"place",tens:t,ones:u}};
+    const alt=[],add=v=>{if(v>=10&&v<=99&&v!==n&&alt.indexOf(v)<0)alt.push(v);};
+    if(u&&u!==t)add(u*10+t);add(r()<.5?n+10:n-10);[n+10,n-10,n+1,n-1].forEach(add);
+    return{kit:"pick",say:["Which house is",n+"?"],art,choices:shuffle(r,[n].concat(alt.slice(0,2))).map(v=>({v,art:{kind:"house",n:v}})),ans:n,math:{op:"house",n}};}});
+  // ABC order by the first letter; every first letter is different
+  const ABC=["cat","dog","pig","sun","hat","bus","fox","hen","map","bed","cup","egg","jet","log","net","pot","rock","van","web","nut","gem"].filter(w=>WORD_ART[w]);
+  const first=w=>String(w).charAt(0).toUpperCase();
+  L.push({id:"alpha",grade:"1",name:"ABC order",gen:(seed,o)=>{o=o||{};const r=rnd(seed),n=o.n===4?4:3;
+    const some=list=>{const got=[];shuffle(r,list).forEach(w=>{w=String(w);if(got.length<n&&/^[A-Z]$/.test(first(w))&&!got.some(x=>first(x)===first(w)))got.push(w);});return got;};
+    let got=o.words&&o.words.length?some(o.words):[];if(got.length<n)got=some(ABC);
+    const ans=got.slice().sort((a,b)=>first(a)<first(b)?-1:first(a)>first(b)?1:0);
+    const art=w=>o.art==="letter"?{kind:"letter"}:WORD_ART[w]?{kind:"word",w}:null;
+    return{kit:"order",say:o.say||["Put them in ABC order!"],art:{kind:"abc"},choices:mixed(r,ans).map(w=>({v:w,text:w,art:art(w)})),ans,math:{op:"abc",words:ans}};}});
+  // steps in order: a job's own (the Baker's recipe), a picture story, or four numbers from the smallest
+  const STORIES=[["egg","chick","hen"],["cloud","rain","rainbow"],["sun","sunset","night"]].filter(s=>s.every(w=>WORD_ART[w]));
+  L.push({id:"seq",grade:"1",name:"Putting steps in order",gen:(seed,o)=>{o=o||{};const r=rnd(seed);
+    if(o.steps&&o.steps.length>=2){const st=o.steps.slice(0,4).map(s=>s&&typeof s==="object"?s:{text:String(s)}),ans=st.map(s=>String(s.text));
+      return{kit:"order",say:o.say||["Put the steps in order!"],choices:mixed(r,st).map(s=>({v:String(s.text),text:String(s.text),art:s.art||null})),ans,math:{op:"seq",steps:ans}};}
+    if((o.kind||(r()<.5?"story":"numbers"))==="story"&&STORIES.length){const s=pick(r,STORIES);
+      return{kit:"order",say:["What comes first?","Put them in order!"],choices:mixed(r,s).map(w=>({v:w,text:w,art:{kind:"word",w}})),ans:s.slice(),math:{op:"seq",steps:s.slice()}};}
+    let nums;
+    if(r()<.5){const a=int(r,1,17);nums=[a,a+1,a+2,a+3];}
+    else{nums=[];for(let k=0;k<80&&nums.length<4;k++){const v=int(r,1,30);if(nums.indexOf(v)<0)nums.push(v);}nums.sort((x,y)=>x-y);}
+    const ans=nums.map(String);
+    return{kit:"order",say:["Put the numbers in order.","Start with the smallest!"],choices:mixed(r,ans).map(v=>({v,text:v})),ans,math:{op:"sort",nums}};}});
+  // halves and quarters: three measuring cups, half full, a quarter full and full to the top
+  const CUPS={"1/2":{f:.5,say:"Which cup is half full?"},"1/4":{f:.25,say:"Which cup is a quarter full?"},"1":{f:1,say:"Which cup is all the way full?"}};
+  L.push({id:"frac",grade:"1",name:"Halves and quarters",gen:(seed,o)=>{o=o||{};const r=rnd(seed),ans=CUPS[o.ans]?String(o.ans):pick(r,["1/2","1/2","1/4","1/4","1"]);
+    return{kit:"pick",say:[CUPS[ans].say],choices:shuffle(r,["1/2","1/4","1"]).map(k=>({v:k,art:{kind:"cup",f:CUPS[k].f,fill:o.fill||null}})),ans,math:{op:"frac",of:ans}};}});
+  // o'clock: which clock says 4 o'clock, or when the bread is done (never past 12, so the hour hand never goes round)
+  const BAKES=["The bread bakes for","The cake bakes for","The buns bake for"];
+  const clocks=(r,h,also)=>{const alt=[];[also,h+1,h-1,h+2,h-2,h+6].forEach(x=>{x=hour(x);if(x!==h&&alt.indexOf(x)<0)alt.push(x);});
+    return shuffle(r,[h].concat(alt.slice(0,2))).map(v=>({v,art:{kind:"clock",h:v}}));};
+  L.push({id:"time",grade:"1",name:"Telling time to the hour",gen:(seed,o)=>{o=o||{};const r=rnd(seed),bake=!!o.bake||(!o.read&&r()<.5);
+    if(!bake){const h=int(r,1,12);return{kit:"pick",say:["Which clock says",h,"o'clock?"],choices:clocks(r,h,h+(r()<.5?1:-1)),ans:h,math:{op:"time",start:h,add:0}};}
+    const d=int(r,1,3),s=int(r,1,12-d),h=s+d;
+    return{kit:"pick",say:[pick(r,BAKES),d,d===1?"hour.":"hours.","It went in at",s,"o'clock.","When is it done?"],art:{kind:"clock",h:s},
+      choices:clocks(r,h,s),ans:h,math:{op:"time",start:s,add:d}};}});
 })();
 
 /* ---- 🛒 Shopkeeper, opens at reading level 2 ----
@@ -10635,6 +10847,144 @@ const Jobs=(()=>{
       {id:"array",lv:4,name:"rows and columns",gen:(seed,L)=>{const r=rnd(seed),m=mow(r,L.tier,int(r,1,2),4),rows=int(r,2,4),cols=int(r,2,5);
         return[m.step,{kit:"pad",track:"math",level:"array",say:[rows,"rows of",cols+".","How many squares?"],
           text:Array.from({length:rows},()=>cols).join(" + ")+" = ?",art:{kind:"array",rows,cols},ans:rows*cols,math:{op:"×",a:rows,b:cols}}];}}
+    ]});
+})();
+
+/* ---- 📬 Mail carrier, opens at reading level 3 ----
+   Every task starts with a letter to read: who it is for and the street ("To Bob on Moss Hill.").
+   The names are short ones he can sound out, his own name, or one of the valley's animals; the street
+   words decode at his level too (at level 3: Fox, Moss, Mill, Log, Dock... with Hill or Path; Elm and
+   Pond from level 4, Lane from 5, Road and Street from 7). He finds the mailbox with that name, and
+   from job level 2 sometimes the street sign instead. Each job level adds a step after it: find the
+   house by its number (tens and ones), walk the street map to the house from a note ("Go 2 →, then
+   1 up."), then put three letters in the bag in ABC order. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const NAMES=["Bob","Sam","Pam","Dan","Max","Tom","Ron","Kim","Tim","Meg","Ben","Ted","Jen","Gus","Liz","Ned","Jim","Viv","Zed","Ken","Val","Hal","Fin","Al","Ed",
+    "Jill","Beth","Seth","Josh","Chad","Tess","Nell","Rick","Nick","Jack","Bess","Fran","Glen","Stan","Brad","Ann"];
+  // the valley's animals get mail too ("To Dog on Fox Hill.")
+  const PETS=["dog","cat","hen","pig","bat","duck","fish","frog","crab","wolf"];
+  const WORDS=["Fox","Moss","Mill","Log","Dock","Hen","Shop","Bus","Sun","Rock","Elm","Pond","Nest","Plum","Frog","Bell","Lake","Pine","Oak","Park","Fern","Moon"];
+  const KINDS=["Hill","Path","Lane","Road","Street"];
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const first=w=>String(w).charAt(0).toUpperCase();
+  // everyone he can read at his level: his own name, the animals, and the people
+  function folks(tier){
+    const me=heroName(),pets=PETS.map(id=>(CRITTERS.find(c=>c.id===id)||{}).name).filter(n=>n&&fits(n,tier));
+    return{me:/^[A-Za-z]/.test(me)&&fits(me,tier)?me:null,pets,people:NAMES.filter(n=>fits(n,tier))};
+  }
+  // n names with different first letters, the first one the name given
+  function others(r,name,list,n){const out=[name];shuffle(r,list).forEach(x=>{if(out.length<n&&!out.some(y=>first(y)===first(x)))out.push(x);});return out;}
+  // the letter, and the step that reads it: find the mailbox with the name on it, or (signs) the street
+  function letter(r,tier,o){
+    const F=folks(tier),k=r(),name=k<.25&&F.me?F.me:k<.5&&F.pets.length?pick(r,F.pets):pick(r,F.people);
+    const words=WORDS.filter(w=>fits(w,tier)),kinds=KINDS.filter(w=>fits(w,tier));
+    const street=pick(r,words)+" "+pick(r,kinds),n=o&&o.n;
+    const text=n?`To ${name} at ${n} ${street}.`:`To ${name} on ${street}.`;
+    const pool=F.people.concat(F.pets,F.me?[F.me]:[]);
+    let step;
+    if(o&&o.signs&&r()<.4){
+      const streets=[street];shuffle(r,words).forEach(w=>{if(streets.length<3&&!streets.some(s=>s.split(" ")[0]===w))streets.push(w+" "+pick(r,kinds));});
+      step={say:["Read the letter. Find the street!"],choices:shuffle(r,streets).map(s=>({v:s,art:{kind:"sign",text:s}})),ans:street};
+    }else{
+      const names=others(r,name,F.people.concat(F.pets),3);
+      step={say:["Read the letter. Find the mailbox!"],choices:shuffle(r,names).map(x=>({v:x,art:{kind:"mailbox",name:x}})),ans:name};
+    }
+    return{name,street,pool,step:Object.assign({kit:"pick",track:"reading",read:true,text,art:{kind:"letter"}},step)};
+  }
+  // the street map: from the post office to the house in two runs that turn at a corner, so the way never crosses itself
+  const W=6,H=5,MOVE={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]};
+  function route(r){
+    for(let k=0;k<200;k++){
+      const start={c:int(r,0,W-1),r:int(r,0,H-1)},legs=[];let c=start.c,y=start.r,flat=r()<.5;
+      for(let i=0;i<2;i++){const room={L:c,R:W-1-c,U:y,D:H-1-y},ds=(flat?["L","R"]:["U","D"]).filter(d=>room[d]>0);
+        if(!ds.length)break;const d=pick(r,ds),n=int(r,1,Math.min(4,room[d]));legs.push({d,n});c+=MOVE[d][0]*n;y+=MOVE[d][1]*n;flat=!flat;}
+      if(legs.length===2)return{start,legs,goal:{c,r:y}};
+    }
+    return{start:{c:0,r:H-1},legs:[{d:"R",n:2},{d:"U",n:2}],goal:{c:2,r:H-3}};
+  }
+  // the note, as the Lawn mower writes it: "up" and "down" are words, left and right are arrows until "right" decodes
+  function walk(r,tier){
+    const p=route(r),words=Decode.tier("left")<=tier&&Decode.tier("right")<=tier;
+    const way=d=>d==="U"?"up":d==="D"?"down":words?(d==="L"?"left":"right"):(d==="L"?"←":"→");
+    return{kit:"path",read:true,say:["Read the note. Take the letter to the house!"],text:p.legs.map((l,i)=>(i?"then ":"Go ")+l.n+" "+way(l.d)).join(", ")+".",
+      grid:{w:W,h:H},start:p.start,goal:p.goal,theme:"street",ans:p.legs.map(l=>l.d.repeat(l.n)).join("")};
+  }
+  Jobs.register({
+    id:"mail",name:"Mail carrier",icon:"📬",uniform:{id:"mailcap",name:"mail cap",ic:"🧢"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Time to bring the mail! Read each letter.",
+    tasks:[
+      {id:"letter",lv:1,name:"letters",gen:(seed,L)=>[letter(rnd(seed),L.tier).step]},
+      {id:"house",lv:2,name:"house numbers",gen:(seed,L)=>{const r=rnd(seed),n=int(r,11,99),m=letter(r,L.tier,{n,signs:true});
+        return[m.step,Tracks.gen("math","place",seed+":p",{kind:"house",n})];}},
+      {id:"walk",lv:3,name:"the street map",gen:(seed,L)=>{const r=rnd(seed),m=letter(r,L.tier,{signs:true});return[m.step,walk(r,L.tier)];}},
+      {id:"abc",lv:4,name:"ABC order",gen:(seed,L)=>{const r=rnd(seed),m=letter(r,L.tier,{signs:true});
+        return[m.step,Tracks.gen("math","alpha",seed+":a",{words:m.pool,art:"letter",say:["Put the letters in the bag in ABC order!"]})];}}
+    ]});
+})();
+
+/* ---- 🧁 Baker, opens at reading level 4 ----
+   Every task starts with a recipe to read, in short lines that decode at his level ("Mix the egg.
+   Add the jam."; "bake" and "cake" wait for level 5, "corn" and "fork" for 6, "spoon" and "peach"
+   for 7, "lemon" for 8). Job level 1 puts a recipe's three steps in order: "Then" and "Last," say
+   which is which, and it counts for reading and for putting steps in order. Level 2 finds the thing a
+   recipe line names among three pictures; level 3 adds which cup is half full, a quarter full or
+   full; level 4 adds when the bread is done, on three clocks. */
+(()=>{
+  const {rnd,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const art=w=>w&&WORD_ART[w]?{kind:"word",w}:null;
+  // a recipe: its name (and picture), and its three steps in order, each [text, picture]
+  const RECIPES=[
+    {name:"Jam buns",steps:[["Get the buns."],["Then cut the buns."],["Last, add the jam."]]},
+    {name:"Egg cups",pic:"egg",steps:[["Crack the eggs.","egg"],["Then fill the cups.","cup"],["Last, set them in the pan.","pan"]]},
+    {name:"Plum mix",pic:"plum",steps:[["Cut the plums.","plum"],["Then add the nuts.","nut"],["Last, mix it in a dish.","dish"]]},
+    {name:"Nut snack",pic:"nut",steps:[["Get a big dish.","dish"],["Then add the nuts.","nut"],["Last, mix and snack!"]]},
+    {name:"Hot eggs",pic:"egg",steps:[["Get a pot.","pot"],["Then add the eggs.","egg"],["Last, let it get hot."]]},
+    {name:"Plum jam",pic:"plum",steps:[["Cut the plums.","plum"],["Then drop them in the pot.","pot"],["Last, fill the cups.","cup"]]},
+    {name:"Milk cups",pic:"cup",steps:[["Get six cups.","cup"],["Then fill them with milk."],["Last, add a pinch of salt."]]},
+    {name:"Nut buns",pic:"nut",steps:[["Cut the buns."],["Then add the jam."],["Last, top them with nuts.","nut"]]},
+    {name:"Egg cake",pic:"cake",steps:[["Mix the eggs.","egg"],["Then add it to the pan.","pan"],["Last, bake the cake.","cake"]]},
+    {name:"Corn cakes",pic:"corn",steps:[["Mix the corn and the eggs.","corn"],["Then stir it with a fork.","fork"],["Last, bake the corn cakes.","cake"]]},
+    {name:"Peach cups",pic:"peach",steps:[["Cut the peach.","peach"],["Then add it to the cups.","cup"],["Last, top it with a spoon of jam.","spoon"]]},
+    {name:"Seed bread",pic:"seed",steps:[["Mix the seeds in.","seed"],["Then shape the bread."],["Last, bake the bread."]]},
+    {name:"Lemon cupcakes",pic:"cupcake",steps:[["Mix the lemon and the sugar.","lemon"],["Then fill the cupcake cups.","cupcake"],["Last, bake them in the oven."]]}
+  ];
+  // a recipe line that names one thing to find: [line, the thing]
+  const LINES=[["Get the pan.","pan"],["Get a big pot.","pot"],["Mix the eggs.","egg"],["Crack the egg.","egg"],["Fill the cup.","cup"],["Chop the nuts.","nut"],
+    ["Add the nuts.","nut"],["Cut the plum.","plum"],["Set it on a dish.","dish"],["Get a dish.","dish"],["Mix it in the pot.","pot"],["Put it in the pan.","pan"],
+    ["Fill the cup. Add the jam.","cup"],["Crack the egg. Mix it.","egg"],["Get the pan. Let it get hot.","pan"],["Chop the nuts. Add the jam.","nut"],["Mix the egg. Add the jam.","egg"],
+    ["Cut the cake.","cake"],["Add the corn.","corn"],["Get a fork.","fork"],["Fill the jar.","jar"],["Dip the fork in the jam.","fork"],
+    ["Get a spoon.","spoon"],["Mix it with a spoon.","spoon"],["Cut the peach.","peach"],["Add the seeds.","seed"],["Add a lemon.","lemon"]];
+  const THINGS=["egg","cup","pan","pot","nut","plum","dish","cake","corn","fork","jar","spoon","peach","seed","lemon"].filter(w=>WORD_ART[w]);
+  const FILL=["#F2B84B","#D9435A","#F28C28","#9A6436"];
+  const recipes=tier=>RECIPES.filter(x=>fits(x.name,tier)&&x.steps.every(s=>fits(s[0],tier)));
+  // level 1: the recipe's steps, shown mixed up, to put in order
+  function steps(seed,tier){
+    const list=recipes(tier);if(!list.length)return null;
+    const x=pick(rnd(seed),list),q=Tracks.gen("math","seq",seed+":s",{steps:x.steps.map(s=>({text:s[0],art:art(s[1])})),say:["Read the recipe. Put the steps in order!"]});
+    if(!q)return null;delete q.level;
+    return Object.assign(q,{track:"reading",read:true,text:x.name,art:art(x.pic),also:{track:"math",level:"seq"}});
+  }
+  // the reading step of levels 2 to 4: read the line, find the thing it names among three that look different
+  function need(r,tier){
+    const ok=LINES.filter(l=>fits(l[0],tier)&&WORD_ART[l[1]]);if(!ok.length)return null;
+    const l=pick(r,ok),w=l[1],said=Decode.words(l[0]).map(x=>x.toLowerCase().replace(/s$/,""));
+    const others=[];shuffle(r,THINGS).forEach(x=>{if(others.length<2&&x!==w&&said.indexOf(x)<0&&WORD_ART[x]!==WORD_ART[w]&&!Read.near(x,w)
+      &&!others.some(y=>WORD_ART[y]===WORD_ART[x]||Read.near(x,y)))others.push(x);});
+    return{kit:"pick",track:"reading",read:true,word:w,say:["Read the recipe. What do you need?"],text:l[0],
+      choices:shuffle(r,[w].concat(others)).map(x=>({v:x,art:{kind:"word",w:x}})),ans:w};
+  }
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"baker",name:"Baker",icon:"🧁",uniform:{id:"mitt",name:"oven mitt",ic:"🧤"},unlock:{tier:4},
+    pay:{perTask:4,streakTip:6},hello:"Welcome to the bakery! Read each recipe.",
+    tasks:[
+      {id:"steps",lv:1,name:"recipe steps",gen:(seed,L)=>then(steps(seed,L.tier))},
+      {id:"things",lv:2,name:"what you need",gen:(seed,L)=>then(need(rnd(seed),L.tier))},
+      {id:"cups",lv:3,name:"half and quarter cups",gen:(seed,L)=>{const r=rnd(seed),q=need(r,L.tier);
+        return then(q,q&&Tracks.gen("math","frac",seed+":f",{fill:pick(r,FILL)}));}},
+      {id:"timer",lv:4,name:"baking time",gen:(seed,L)=>{const q=need(rnd(seed),L.tier);return then(q,q&&Tracks.gen("math","time",seed+":t",{bake:true}));}}
     ]});
 })();
 
@@ -10967,7 +11317,28 @@ Object.assign(ART,{
     <path d="M52 52 L82 14 Q84 8 78 10 L44 46Z" fill="${grad("#C9CED6","h",.3,.2)}"/>
     <path d="M47 54 L28 90 M53 54 L72 90" fill="none" stroke="#2E2620" stroke-width="12"/>
     <path d="M47 54 L28 90 M53 54 L72 90" fill="none" stroke="#DC5A4B" stroke-width="7"/>
-    <circle cx="50" cy="50" r="5.5" fill="${dome("#FFC53D",36,30)}"/>`;}
+    <circle cx="50" cy="50" r="5.5" fill="${dome("#FFC53D",36,30)}"/>`;},
+  // the Mail carrier's and the Baker's gear
+  gear_mailbag(){return `${OCC}<path d="M26 46 Q28 8 50 8 Q72 8 74 46" fill="none" stroke="#7A5230" stroke-width="5"/>
+    <path d="M32 26 L62 22 L66 44 L36 48Z" fill="#FBF6EC"/><path d="M32 26 L50 36 L62 22" fill="none" stroke-width="1.8"/>
+    <path d="M16 42 L84 42 L82 84 Q82 90 76 90 L24 90 Q18 90 18 84Z" fill="${grad("#3F6FB8","v",.25,.2)}"/>
+    <path d="M16 42 L84 42 L82 62 Q50 72 18 62Z" fill="${grad("#2F5A9C","v",.2,.2)}"/>
+    <path d="M45 60 L55 60 L55 71 L45 71Z" fill="${dome("#FFC53D",36,30)}"/>`;},
+  gear_mailcart(){return `${OCC}<path d="M12 24 L22 24 L32 72 L84 72" fill="none" stroke-width="4.5"/>
+    <path d="M40 22 L56 22 L56 40 L40 40Z" fill="#FBF6EC"/><path d="M40 22 L48 30 L56 22" fill="none" stroke-width="1.6"/>
+    <path d="M58 16 L76 16 L76 40 L58 40Z" fill="#FBF6EC"/><path d="M58 16 L67 26 L76 16" fill="none" stroke-width="1.6"/>
+    <path d="M28 38 L86 38 L82 68 L34 68Z" fill="${grad("#DC5A4B","v",.3,.2)}"/>
+    <path d="M40 46 L76 46 M42 56 L74 56" fill="none" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="2.4"/>
+    <circle cx="42" cy="82" r="8" fill="${dome("#4A4F5A",36,30)}"/><circle cx="74" cy="82" r="8" fill="${dome("#4A4F5A",36,30)}"/>`;},
+  gear_bakerhat(){return `${OCC}<path d="M28 88 L28 60 Q12 56 14 38 Q16 20 34 24 Q38 6 50 6 Q62 6 66 24 Q84 20 86 38 Q88 56 72 60 L72 88Z" fill="${grad("#FFFFFF","v",.05,.14)}"/>
+    <path d="M28 68 L72 68 L72 88 L28 88Z" fill="${grad("#F2E6CF","v",.1,.15)}"/>
+    <path d="M40 28 Q42 44 40 60 M60 28 Q58 44 60 60 M50 12 L50 60" fill="none" stroke-opacity=".3" stroke-width="2"/>`;},
+  gear_rollingpin(){return `${OCC}<g transform="rotate(-18 50 55)">
+    <path d="M4 50 Q4 46 8 46 L20 46 L20 64 L8 64 Q4 64 4 60Z" fill="${grad("#A86B34","v",.2,.2)}"/>
+    <path d="M80 46 L92 46 Q96 46 96 50 L96 60 Q96 64 92 64 L80 64Z" fill="${grad("#A86B34","v",.2,.2)}"/>
+    <path d="M24 40 Q20 40 20 44 L20 66 Q20 70 24 70 L76 70 Q80 70 80 66 L80 44 Q80 40 76 40Z" fill="${grad("#E2B27A","v",.25,.2)}"/>
+    <path d="M30 48 Q50 46 70 48 M32 61 Q50 63 68 61" fill="none" stroke-opacity=".3" stroke-width="1.6"/></g>
+    <circle cx="28" cy="84" r="2.2" fill="#FFFFFF" stroke="none"/><circle cx="68" cy="88" r="1.8" fill="#FFFFFF" stroke="none"/><circle cx="46" cy="90" r="1.5" fill="#FFFFFF" stroke="none"/>`;}
 });
 // new on the 💎 shelf: outfits for the buddy, worn like the hats and kept in state.owned
 [{id:"bunny",name:"Bunny ears",gems:10},{id:"beanie",name:"Beanie",gems:15},{id:"shades",name:"Sunglasses",gems:20},
@@ -10980,6 +11351,12 @@ Store.item({id:"apron",shelf:"gear",name:"Apron",cost:{coins:15},art:"gear_apron
 Store.item({id:"gloves",shelf:"gear",name:"Garden gloves",cost:{coins:20},art:"gear_gloves",tag:"uniform",unlock:{job:"mow",level:2}});
 Store.item({id:"scanner",shelf:"gear",name:"Price scanner",cost:{coins:40},art:"gear_scanner",tag:"tool",unlock:{job:"shop",level:3}});
 Store.item({id:"clippers",shelf:"gear",name:"Hedge clippers",cost:{coins:45},art:"gear_clippers",tag:"tool",unlock:{job:"mow",level:3}});
+// and the Mail carrier's and the Baker's
+Object.assign(Store.JOBS,{mail:{name:"Mail carrier",ic:"📬"},baker:{name:"Baker",ic:"🧁"}});
+Store.item({id:"mailbag",shelf:"gear",name:"Mail bag",cost:{coins:20},art:"gear_mailbag",tag:"uniform",unlock:{job:"mail",level:2}});
+Store.item({id:"mailcart",shelf:"gear",name:"Mail cart",cost:{coins:45},art:"gear_mailcart",tag:"tool",unlock:{job:"mail",level:3}});
+Store.item({id:"bakerhat",shelf:"gear",name:"Baker hat",cost:{coins:25},art:"gear_bakerhat",tag:"uniform",unlock:{job:"baker",level:2}});
+Store.item({id:"rollingpin",shelf:"gear",name:"Rolling pin",cost:{coins:50},art:"gear_rollingpin",tag:"tool",unlock:{job:"baker",level:3}});
 
 /* ================================================================
    LOOKS — the valley dresses up for a holiday, and keeps it on
