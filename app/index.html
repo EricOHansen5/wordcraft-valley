@@ -8308,6 +8308,7 @@ const Books=(()=>{
     if(rec)rec.onclick=async()=>{
       if(rec.classList.contains("on")){rec.disabled=true;const blob=await Rec.stop();rec.classList.remove("on");
         if(blob&&blob.size>800){await DB.set("blobs",`story:${book.id}:${page}`,blob);recs++;
+          try{Talk.bankPage(blob,words);}catch(e){}   // TALK: his own voice for the matcher (when Talk to me is on)
           const pl=ov.querySelector(".blisten");pl.classList.add("hear");rec.textContent="🎧 Listening…";
           await playBlob(blob);pl.classList.remove("hear");pl.classList.add("love");Sound.sfx.chime();
           setTimeout(()=>pl.classList.remove("love"),1400);}
@@ -12650,15 +12651,190 @@ const Factory=(()=>{
         its possible answers, when GET /api/hear said {ok:true} in the last 10 minutes.
         A 404, a 503, a failure or no answer in 3.5 s means "no tier A", and it is not asked
         again for 10 minutes (the public copy has no server, so there it just stays off).
-   Talk.hear(blob, expect) is tier A alone: {tier:"A", best, score, text, scores, sure} or null.
-   The address and the token are the backup's (state.sync), so a NAS that takes backups
-   listens with no setup.
+     B  the matcher on the iPad (TalkMatch), when every answer has at least one reference:
+        the game voice's clip of it, or his own banked templates.
+     C  the browser's own recogniser (Speech, the one "Say it" uses).
+     otherwise the screen: he taps.
+   Talk.hear(blob, expect) is tier A alone: {tier:"A", best, score, text, scores, sure} or null;
+   Talk.match(blob, expect) is tier B alone: {tier:"B", best, score, scores, sure, heard, ms} or
+   null; Talk.tier(expect) says which one would listen now. The address and the token are the
+   backup's (state.sync), so a NAS that takes backups listens with no setup.
+   His own voice: a clip the NAS was sure was the right answer, one he tapped the right answer
+   for after "not sure", and each Read-to-your-pet page that splits into as many spoken
+   stretches as it has words are banked as MFCC frames (not audio) in the blobs store under
+   "tpl:<word>:<n>", at most 5 a word: when full, the oldest of the same kind or a weaker kind
+   makes room (a page's stretch < a tapped answer < the NAS's). state.talk.tpl counts them.
    ================================================================ */
+/* ---- tier B: the matcher (no DOM, no Web Audio: plain numbers in, plain numbers out) ----
+   The question always has a few possible answers, so tier B does not transcribe: it compares
+   his clip with recordings of each answer and picks the closest. The old way, and it runs in
+   a moment on an old iPad: MFCCs (13 coefficients and their deltas, 25 ms windows every
+   10 ms, at 16 kHz after resampling), with the silence before and after trimmed by energy,
+   then dynamic time warping in a Sakoe-Chiba band. The references are the game voice's clip
+   of each answer and, much better, his own voice (templates banked when an answer was sure,
+   see Talk). features() also says whether anything was said and for how long. */
+const TalkMatch=(()=>{
+  const SR=16000,WIN=400,HOP=160,NFFT=512,NMEL=26,NCEP=13,LIFT=22,DIM=NCEP*2;
+  // softmax temperature and the lead the best answer needs over the next one to count as sure
+  const TEMP=.35,MARGIN=.3,MAXD=9;
+  let TBL=null;
+  function tables(){
+    if(TBL)return TBL;
+    const ham=new Float32Array(WIN);for(let i=0;i<WIN;i++)ham[i]=.54-.46*Math.cos(2*Math.PI*i/(WIN-1));
+    const mel=f=>2595*Math.log(1+f/700)/Math.LN10,imel=m=>700*(Math.pow(10,m/2595)-1);
+    const lo=mel(100),hi=mel(7600),bins=NFFT/2+1,pts=[];
+    for(let i=0;i<NMEL+2;i++)pts.push(Math.floor((NFFT+1)*imel(lo+(hi-lo)*i/(NMEL+1))/SR));
+    const fb=[];for(let m=1;m<=NMEL;m++){const f=new Float32Array(bins),a=pts[m-1],b=pts[m],c=pts[m+1];
+      for(let k=a;k<b;k++)f[k]=(k-a)/Math.max(1,b-a);for(let k=b;k<=c&&k<bins;k++)f[k]=(c-k)/Math.max(1,c-b);fb.push(f);}
+    const dct=[];for(let n=0;n<NCEP;n++){const r=new Float32Array(NMEL);for(let m=0;m<NMEL;m++)r[m]=Math.cos(Math.PI*n*(m+.5)/NMEL);dct.push(r);}
+    const lift=new Float32Array(NCEP);for(let n=0;n<NCEP;n++)lift[n]=1+LIFT/2*Math.sin(Math.PI*n/LIFT);
+    return TBL={ham,fb,dct,lift,bins};
+  }
+  function fft(re,im){
+    const n=re.length;
+    for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+    for(let len=2;len<=n;len<<=1){const a=-2*Math.PI/len,wr=Math.cos(a),wi=Math.sin(a);
+      for(let i=0;i<n;i+=len){let cr=1,ci=0;
+        for(let k=0;k<len/2;k++){const p=i+k,q=p+len/2,tr=re[q]*cr-im[q]*ci,ti=re[q]*ci+im[q]*cr;
+          re[q]=re[p]-tr;im[q]=im[p]-ti;re[p]+=tr;im[p]+=ti;const nr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=nr;}}}
+  }
+  // to 16 kHz: a windowed-sinc low-pass evaluated where each new sample falls
+  function resample(x,from){
+    if(!x||!x.length||!(from>0))return new Float32Array(0);
+    if(Math.abs(from-SR)<1)return Float32Array.from(x);
+    const step=from/SR,n=Math.floor(x.length/step),out=new Float32Array(n);
+    const fc=Math.min(1,SR/from)*.9,half=Math.ceil(5/fc);
+    for(let i=0;i<n;i++){const t=i*step,c=Math.floor(t);let s=0,w=0;
+      for(let k=c-half+1;k<=c+half;k++){if(k<0||k>=x.length)continue;const d=t-k,u=d/half;if(u<=-1||u>=1)continue;
+        const a=Math.PI*fc*d,h=(Math.abs(a)<1e-6?1:Math.sin(a)/a)*(.5+.5*Math.cos(Math.PI*u));s+=x[k]*h;w+=h;}
+      out[i]=w?s/w:0;}
+    return out;
+  }
+  // per 10 ms frame: 13 liftered cepstra (c0 is the level) and the frame's loudness in dB
+  function cepstra(pcm){
+    const t=tables(),out=[],db=[],re=new Float32Array(NFFT),im=new Float32Array(NFFT),pow=new Float32Array(t.bins),lm=new Float32Array(NMEL);
+    for(let s=0;s+WIN<=pcm.length;s+=HOP){
+      let e=0;for(let i=0;i<WIN;i++){const v=pcm[s+i];e+=v*v;}
+      db.push(10*Math.log(e/WIN+1e-10)/Math.LN10);
+      re.fill(0);im.fill(0);
+      for(let i=0;i<WIN;i++)re[i]=(pcm[s+i]-(s+i>0?.97*pcm[s+i-1]:0))*t.ham[i];
+      fft(re,im);for(let k=0;k<t.bins;k++)pow[k]=(re[k]*re[k]+im[k]*im[k])/NFFT;
+      for(let m=0;m<NMEL;m++){let a=0;const f=t.fb[m];for(let k=0;k<t.bins;k++)if(f[k])a+=f[k]*pow[k];lm[m]=Math.log(a+1e-10);}
+      const c=new Float32Array(NCEP);for(let n=0;n<NCEP;n++){let a=0;const r=t.dct[n];for(let m=0;m<NMEL;m++)a+=r[m]*lm[m];c[n]=a*t.lift[n];}
+      out.push(c);
+    }
+    return{c:out,db};
+  }
+  // where the speech is: frames louder than the room (the quietest tenth plus 12 dB) and within 30 dB of the peak,
+  // three in a row to start; heard when the loudest part stands 12 dB over the room for at least 80 ms
+  function voiced(db){
+    const n=db.length;if(!n)return{a:0,b:-1,heard:false,thr:0,floor:0,peak:-200,on:[]};
+    const s=db.slice().sort((p,q)=>p-q),floor=s[Math.floor(n*.1)],peak=s[n-1];
+    const thr=Math.min(peak-6,Math.max(floor+12,peak-30,-60));
+    const on=db.map(v=>v>thr);let a=-1,b=-1;
+    for(let i=0;i+2<n;i++)if(on[i]&&on[i+1]&&on[i+2]){a=i;break;}
+    for(let i=n-1;i>=2;i--)if(on[i]&&on[i-1]&&on[i-2]){b=i;break;}
+    const count=on.filter(Boolean).length;
+    const heard=a>=0&&b>=a&&peak-floor>=12&&peak>-55&&count>=8;
+    return{a:Math.max(0,a-2),b:Math.min(n-1,b+2),heard,thr,floor,peak,on};
+  }
+  // mean and variance normalised, with deltas: one Float32Array(26) per frame
+  function norm(c){
+    const n=c.length,mu=new Float32Array(NCEP),sd=new Float32Array(NCEP);if(!n)return[];
+    c.forEach(f=>{for(let k=0;k<NCEP;k++)mu[k]+=f[k]/n;});
+    c.forEach(f=>{for(let k=0;k<NCEP;k++){const d=f[k]-mu[k];sd[k]+=d*d/n;}});
+    for(let k=0;k<NCEP;k++)sd[k]=Math.sqrt(sd[k])||1;
+    const z=c.map(f=>{const o=new Float32Array(NCEP);for(let k=0;k<NCEP;k++)o[k]=(f[k]-mu[k])/Math.max(sd[k],.5);return o;});
+    return z.map((f,i)=>{const o=new Float32Array(DIM);o.set(f);
+      const g=j=>z[Math.max(0,Math.min(n-1,j))];
+      for(let k=0;k<NCEP;k++)o[NCEP+k]=(g(i+1)[k]-g(i-1)[k]+2*(g(i+2)[k]-g(i-2)[k]))/10;return o;});
+  }
+  // a clip (mono samples at its own rate) -> {frames, heard, ms}; frames is the trimmed speech, ready to match
+  function features(pcm,rate){
+    const x=resample(pcm,rate||SR),r=cepstra(x),v=voiced(r.db);
+    if(!v.heard)return{frames:[],heard:false,ms:0,peak:v.peak};
+    return{frames:norm(r.c.slice(v.a,v.b+1)),heard:true,ms:(v.b-v.a+1)*10,peak:v.peak};
+  }
+  // the spoken stretches of a longer clip (a book page read aloud): a gap of 150 ms or more splits two words
+  function segments(pcm,rate){
+    const x=resample(pcm,rate||SR),r=cepstra(x),v=voiced(r.db),out=[];if(!v.heard)return out;
+    let s=-1,gap=0;
+    for(let i=0;i<=r.db.length;i++){const o=i<r.db.length&&v.on[i];
+      if(o){if(s<0)s=i;gap=0;}
+      else if(s>=0){gap++;if(gap>=15||i===r.db.length){const e=i-gap;if(e-s+1>=8)out.push({a:Math.max(0,s-2),b:Math.min(r.db.length-1,e+2)});s=-1;gap=0;}}}
+    return out.map(g=>({frames:norm(r.c.slice(g.a,g.b+1)),ms:(g.b-g.a+1)*10}));
+  }
+  // dynamic time warping, symmetric steps, in a band around the diagonal; the cost per step of the path
+  function dtw(A,B,band){
+    const n=A.length,m=B.length;if(!n||!m)return Infinity;
+    if(Math.max(n,m)>3*Math.min(n,m))return Infinity;              // one three times as long as the other: not the same word
+    const r=Math.max(2,Math.ceil((band||.2)*Math.max(n,m))),INF=1e30;
+    let prev=new Float64Array(m+1).fill(INF),cur=new Float64Array(m+1).fill(INF);prev[0]=0;
+    const d=(a,b)=>{let s=0;for(let k=0;k<a.length;k++){const x=a[k]-b[k];s+=x*x;}return Math.sqrt(s);};
+    for(let i=1;i<=n;i++){cur.fill(INF);const mid=Math.round(i*m/n),j0=Math.max(1,mid-r),j1=Math.min(m,mid+r);
+      for(let j=j0;j<=j1;j++){const c=d(A[i-1],B[j-1]);
+        cur[j]=Math.min(prev[j-1]+2*c,prev[j]+c,cur[j-1]+c);}
+      const t=prev;prev=cur;cur=t;}
+    return prev[m]>=INF/2?Infinity:prev[m]/(n+m);
+  }
+  // his clip against each answer's references ({answer:[frames,...]}): the closest reference counts;
+  // score is a softmax over the negative distances, sure when the best leads the next by MARGIN
+  function match(frames,refs){
+    const keys=Object.keys(refs||{}),dist={},scores={};
+    keys.forEach(k=>{let best=Infinity;(refs[k]||[]).forEach(f=>{const x=dtw(frames,f);if(x<best)best=x;});dist[k]=best;});
+    const fin=keys.filter(k=>isFinite(dist[k]));
+    if(!frames||!frames.length||!fin.length){keys.forEach(k=>{scores[k]=0;});return{best:null,score:0,scores,dist,sure:false};}
+    const lo=Math.min.apply(null,fin.map(k=>dist[k]));let sum=0;
+    keys.forEach(k=>{scores[k]=isFinite(dist[k])?Math.exp(-(dist[k]-lo)/TEMP):0;sum+=scores[k];});
+    keys.forEach(k=>{scores[k]=+(scores[k]/sum).toFixed(3);});
+    const order=keys.slice().sort((a,b)=>scores[b]-scores[a]),best=order[0],next=order[1]?scores[order[1]]:0;
+    return{best,score:scores[best],scores,dist,sure:scores[best]-next>=MARGIN&&dist[best]<=MAXD};
+  }
+  // templates are kept as whole numbers (x100), so a banked word is a small plain object
+  const pack=(frames,meta)=>{const q=[];frames.forEach(f=>{for(let k=0;k<DIM;k++)q.push(Math.max(-32767,Math.min(32767,Math.round(f[k]*100))));});
+    return Object.assign({v:1,d:DIM,n:frames.length,q},meta||{});};
+  const unpack=o=>{if(!o||o.v!==1||o.d!==DIM||!Array.isArray(o.q)||o.q.length!==o.n*DIM)return null;const out=[];
+    for(let i=0;i<o.n;i++){const f=new Float32Array(DIM);for(let k=0;k<DIM;k++)f[k]=o.q[i*DIM+k]/100;out.push(f);}return out;};
+
+  /* ---- the same scoring the listener uses on a transcript (server/hear/hear.py), for tier C's words ---- */
+  const NUM={zero:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10",eleven:"11",twelve:"12",
+    thirteen:"13",fourteen:"14",fifteen:"15",sixteen:"16",seventeen:"17",eighteen:"18",nineteen:"19",twenty:"20"};
+  const NUM_SOUND={oh:"0",won:"1",to:"2",too:"2",tu:"2",for:"4",fore:"4",ate:"8",tin:"10",sics:"6",sicks:"6"};
+  const SAME={yeah:"yes",yep:"yes",yup:"yes",yea:"yes",ya:"yes",yah:"yes",yess:"yes",nope:"no",nah:"no",know:"no",noo:"no"};
+  const words=s=>String(s==null?"":s).toLowerCase().replace(/’/g,"'").replace(/[^a-z0-9' ]+/g," ").split(/\s+/).map(w=>w.replace(/^'+|'+$/g,"")).filter(Boolean);
+  function fold(s){s=String(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+    [["ph","f"],["ck","k"],["qu","kw"],["wh","w"],["kn","n"],["wr","r"]].forEach(p=>{s=s.split(p[0]).join(p[1]);});
+    return s.replace(/c(?=[eiy])/g,"s").replace(/c/g,"k").replace(/q/g,"k").replace(/x/g,"ks").replace(/(.)\1+/g,"$1");}
+  function lev(a,b){if(a===b)return 0;if(!a.length||!b.length)return Math.max(a.length,b.length);
+    let prev=[];for(let j=0;j<=b.length;j++)prev.push(j);
+    for(let i=1;i<=a.length;i++){const cur=[i];for(let j=1;j<=b.length;j++)cur.push(Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)));prev=cur;}
+    return prev[b.length];}
+  const close=(a,b)=>{const x=fold(a),y=fold(b);if(!x||!y)return 0;return Math.max(0,1-lev(x,y)/Math.max(x.length,y.length));};
+  function canon(toks,expect){const exp=expect.map(e=>words(e).join(" ")),numeric=exp.every(e=>/^\d+$/.test(e));
+    return toks.map(t=>NUM[t]||(numeric&&NUM_SOUND[t])||(SAME[t]&&exp.indexOf(SAME[t])>=0?SAME[t]:t));}
+  function scoreText(text,expect){
+    const heard=canon(words(text),expect),out={};
+    expect.forEach(e=>{const want=canon(words(e),expect);if(!want.length||!heard.length){out[e]=0;return;}
+      const k=want.length,target=want.join("");let best=0;
+      [Math.max(1,k-1),k,k+1].forEach(n=>{for(let i=0;i<Math.max(1,heard.length-n+1);i++){const piece=heard.slice(i,i+n);if(!piece.length)continue;
+        let c=piece.join(" ")===want.join(" ")?1:close(piece.join(""),target);if(piece.length!==k)c*=.9;c*=.9+.1*piece.length/heard.length;if(c>best)best=c;}});
+      out[e]=Math.round(best*1000)/1000;});
+    return out;
+  }
+  // how sure a set of scores is: the best one close enough, and ahead of the next
+  function sureOf(scores,min,lead){const ks=Object.keys(scores).sort((a,b)=>scores[b]-scores[a]);
+    const b=ks[0],s1=b?scores[b]:0,s2=ks[1]?scores[ks[1]]:0;return{best:s1>0?b:null,score:s1,sure:s1>=min&&s1-s2>=lead};}
+  return{SR,DIM,TEMP,MARGIN,resample,cepstra,voiced,features,segments,dtw,match,pack,unpack,scoreText,sureOf,fold,words};
+})();
+
 const Talk=(()=>{
-  const TEN=10*60e3,A_MS=3500;
+  const TEN=10*60e3,A_MS=3500,TPL_MAX=5,RANK={page:0,tap:1,A:2};
   // how close the NAS's best answer must be, and how far ahead of the next, to count as sure
   const SURE_A=[.75,.2];
   const api={};
+  function T(){let t=state.talk;if(!t||typeof t!=="object"||Array.isArray(t))t=state.talk={log:[],tpl:0};if(!Array.isArray(t.log))t.log=[];return t;}
+  const on=()=>!!(state.settings&&state.settings.talk);
+  const key=w=>VoicePack.norm(w);
 
   /* ---------- tier A: the NAS ---------- */
   const A={ok:0,down:0,probe:null};
@@ -12705,9 +12881,93 @@ const Talk=(()=>{
     return{tier:"A",best:s1>0?order[0]:null,score:s1,text,scores,sure:!!text&&s1>=SURE_A[0]&&s1-s2>=SURE_A[1],heard:!!text};
   }
 
-  Object.assign(api,{hear,probe,
+  /* ---------- tier B: the matcher on the iPad ---------- */
+  function readBlob(b){
+    if(b&&typeof b.arrayBuffer==="function")return b.arrayBuffer();
+    return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsArrayBuffer(b);});
+  }
+  function decode(ab){return new Promise((ok,no)=>{let c;try{c=Sound.ctx();}catch(e){return no(e);}
+    try{const p=c.decodeAudioData(ab,ok,no);if(p&&p.then)p.then(ok,no);}catch(e){no(e);}});}
+  function mono(buf){const n=buf.numberOfChannels||1,len=buf.length,out=new Float32Array(len);
+    for(let c=0;c<n;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)out[i]+=d[i]/n;}return out;}
+  async function featuresOf(blob){const buf=await decode(await readBlob(blob));return TalkMatch.features(mono(buf),buf.sampleRate);}
+  // the game voice's clip of an answer as a reference, decoded once
+  const voiceRef=new Map();
+  async function gameRef(w){
+    let idx=null;try{idx=await VoicePack.load();}catch(e){}
+    const f=idx&&idx[key(w)];if(!f||typeof fetch!=="function")return null;
+    if(!voiceRef.has(f))voiceRef.set(f,fetch("voice/"+f).then(r=>{if(!r.ok)throw new Error("no clip");return r.arrayBuffer();}).then(decode)
+      .then(b=>{const x=TalkMatch.features(mono(b),b.sampleRate);return x.heard?x.frames:null;})
+      .catch(()=>{voiceRef.delete(f);return null;}));
+    return voiceRef.get(f);
+  }
+  // his own templates: which numbers each word has (from the store's keys, once), and their frames
+  let tplIdx=null;const tplMem=new Map();
+  async function tplIndex(){
+    if(tplIdx)return tplIdx;const out={};
+    try{(await DB.keys("blobs")).forEach(k=>{const m=/^tpl:(.+):(\d+)$/.exec(String(k));if(m)(out[m[1]]||(out[m[1]]=[])).push(+m[2]);});}catch(e){}
+    return tplIdx=out;
+  }
+  async function own(w){
+    const k=key(w);if(tplMem.has(k))return tplMem.get(k);
+    const ns=(await tplIndex())[k]||[],out=[];
+    for(const n of ns){let v=null;try{v=await DB.get("blobs","tpl:"+k+":"+n);}catch(e){}
+      const f=TalkMatch.unpack(v);if(f)out.push({n,at:+v.at||0,src:v.src||"",frames:f});}
+    tplMem.set(k,out);return out;
+  }
+  // bank one template for a word: a free number, else the oldest of the same kind or a weaker one (never a better one)
+  async function bank(w,frames,src){
+    const k=key(w);if(!k||!frames||frames.length<5)return false;
+    const have=await own(k),rank=RANK[src]||0;let n=-1;
+    if(have.length<TPL_MAX){const used=have.map(x=>x.n);n=0;while(used.indexOf(n)>=0)n++;}
+    else{const can=have.filter(x=>(RANK[x.src]||0)<=rank).sort((a,b)=>(RANK[a.src]||0)-(RANK[b.src]||0)||a.at-b.at);if(!can.length)return false;n=can[0].n;}
+    const at=Date.now();
+    try{await DB.set("blobs","tpl:"+k+":"+n,TalkMatch.pack(frames,{w:k,src:src||"",at}));}catch(e){return false;}
+    const idx=await tplIndex(),list=idx[k]||(idx[k]=[]);if(list.indexOf(n)<0)list.push(n);
+    tplMem.set(k,have.filter(x=>x.n!==n).concat([{n,at,src:src||"",frames}]));
+    const t=T();t.tpl=(+t.tpl||0)+1;save();
+    return true;
+  }
+  // every answer's references ({answer:[frames...]}), or null when one of them has none
+  async function refs(expect){
+    const out={};
+    for(const w of [].concat(expect||[])){const list=(await own(w)).map(x=>x.frames),g=await gameRef(w);if(g)list.push(g);
+      if(!list.length)return null;out[w]=list;}
+    return out;
+  }
+  // tier B: the clip against each answer's references; null when it can't choose (no references, a clip it can't read)
+  async function match(blob,expect,feat){
+    let f=feat;
+    if(!f){if(!blob)return null;try{f=await featuresOf(blob);}catch(e){return null;}}
+    if(!f.heard)return{tier:"B",best:null,score:0,scores:{},sure:false,heard:false,ms:0,feat:f};
+    const R=await refs(expect);if(!R)return null;
+    const m=TalkMatch.match(f.frames,R);
+    return{tier:"B",best:m.best,score:m.score,scores:m.scores,sure:m.sure,heard:true,ms:f.ms,feat:f};
+  }
+  // Read-to-your-pet: a page read aloud that splits into one spoken stretch per word gives each word a template
+  async function bankPage(blob,text){
+    if(!blob||!on())return 0;
+    const ws=String(text||"").toLowerCase().replace(/’/g,"'").replace(/[^a-z0-9' ]+/g," ").split(/\s+/).map(x=>x.replace(/^'+|'+$/g,"")).filter(Boolean);
+    if(!ws.length||ws.length>12)return 0;
+    let buf;try{buf=await decode(await readBlob(blob));}catch(e){return 0;}
+    const segs=TalkMatch.segments(mono(buf),buf.sampleRate);if(segs.length!==ws.length)return 0;
+    let n=0;for(let i=0;i<ws.length;i++){const g=segs[i];if(g.ms>=120&&g.ms<=2000&&await bank(ws[i],g.frames,"page"))n++;}
+    return n;
+  }
+
+  /* ---------- which tier listens ---------- */
+  const micOk=()=>{try{return Rec.ok();}catch(e){return false;}};
+  // A if the NAS answered in the last 10 minutes (asked now if it is time), B if every answer has a reference,
+  // C if the browser has a recogniser, else the screen
+  async function tier(expect){
+    if(micOk()){if(await probe())return"A";if(await refs(expect))return"B";}
+    try{if(Speech.available())return"C";}catch(e){}
+    return"screen";
+  }
+
+  Object.assign(api,{hear,probe,match,tier,bank,bankPage,featuresOf,
     // for the tests
-    _A:A,_reset:()=>{A.ok=0;A.down=0;A.probe=null;}});
+    _A:A,_refs:refs,_own:own,_reset:()=>{A.ok=0;A.down=0;A.probe=null;voiceRef.clear();tplIdx=null;tplMem.clear();}});
   return api;
 })();
 
