@@ -1311,6 +1311,14 @@ body.exploring .slot-empty{display:none}
 .jsort.wrong .jsbins,.jspool.nudge{animation:joshake .45s}
 @media (max-width:700px){.jsbins{gap:8px}.jsbin{min-height:120px;padding:6px}.jslab{font-size:20px}.jsic{font-size:26px}.jscard{min-width:72px;min-height:72px;font-size:17px}
   .jsart,.jsart>*{width:40px!important;height:40px!important}}
+/* the Restaurant: plates with the order on them, pizzas cut into halves and quarters, prices in coins */
+.jplate{display:flex;flex-wrap:wrap;gap:2px 8px;justify-content:center;align-items:center;align-content:center;width:156px;min-height:104px;padding:14px 16px;border-radius:50%;
+  border:3px solid var(--ink);background:radial-gradient(ellipse at center,#FFFFFF 0 56%,#E4EAEF 57% 63%,#FFFFFF 64%);box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.jpgrp{display:flex;flex-wrap:wrap;justify-content:center;gap:0 2px}
+.jplate img{width:42px;height:42px;display:block;-webkit-user-drag:none}.jplate.many img{width:26px;height:26px}
+.jmenu{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.jmitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border:3px solid var(--ink);border-radius:16px;background:#fff}
+.jmitem img{width:60px;height:60px;display:block}.jmitem b{font-size:26px;font-weight:900}.jmitem .jcoins{gap:4px}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -9870,6 +9878,22 @@ const JOB_ART={
   letter:()=>`<div class="jsvg">${S(`<path d="M8 26 L92 26 L92 80 L8 80Z" fill="${grad("#FBF6EC","v",.08,.1)}"/><path d="M8 26 L50 56 L92 26" fill="none"/>
     <path d="M72 32 L86 32 L86 46 L72 46Z" fill="#DC5A4B" stroke-width="1.8"/>`)}</div>`
 };
+// pictures for the Restaurant: a plate with the order on it, a pizza cut in halves or quarters (or not cut),
+// and the prices of what was ordered, paid in coins. A thing is drawn by its picture id (drawThing), once per
+// id as an image, so a plate of ten buns is ten small images of one picture.
+const JOB_PIC={};
+const jobPic=id=>JOB_PIC[id]||(JOB_PIC[id]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(drawThing(id,1)));
+Object.assign(JOB_ART,{
+  plate:a=>{const items=a.items||[],n=items.reduce((s,x)=>s+(x.n|0),0);
+    return`<div class="jplate${n>4?" many":""}">${items.map(x=>`<span class="jpgrp">${`<img src="${jobPic(x.id)}" alt="" draggable="false">`.repeat(Math.max(0,x.n|0))}</span>`).join("")}</div>`;},
+  pizza:a=>{const f=+a.f||1,cut=deg=>{const t=deg*Math.PI/180,x=(Math.sin(t)*37).toFixed(1),y=(Math.cos(t)*37).toFixed(1),d=`M${50-x} ${50-y} L${50+ +x} ${50+ +y}`;
+      return`<path d="${d}" fill="none" stroke-width="6"/><path d="${d}" fill="none" stroke="#FBF6EC" stroke-width="2.6" stroke-opacity="1"/>`;};
+    const pep=[[36,33],[62,30],[29,55],[53,50],[71,58],[42,72],[63,76]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="5.6" fill="${dome("#C8412F",40,35)}"/>`).join("");
+    return`<div class="jsvg jpizza" data-cut="${esc(a.cut||"")}">${S(`<circle cx="50" cy="50" r="44" fill="${dome("#E0A456",40,35)}"/>
+      <circle cx="50" cy="50" r="37" fill="#E8563F" stroke="none"/><circle cx="50" cy="50" r="34" fill="${dome("#FFD36B",40,35)}" stroke="none"/>${pep}
+      ${(f===.5?[0]:f===.25?[0,90]:[]).map(cut).join("")}`)}</div>`;},
+  menu:a=>`<div class="jmenu">${(a.items||[]).map(x=>`<div class="jmitem"><img src="${jobPic(x.id)}" alt="" draggable="false"><b>${x.cents|0}¢</b>${Jobs.art({kind:"coins",coins:x.coins||[]})}</div>`).join(`<b class="jop">+</b>`)}</div>`
+});
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
   // tasks done to reach job levels 1 to 5
@@ -9945,6 +9969,8 @@ const Jobs=(()=>{
       case"blocks":case"house":case"cup":case"clock":case"abc":return JOB_ART[a.kind](a);
       case"mailbox":case"sign":case"letter":return JOB_ART[a.kind](a);
     }
+    // any other picture a job adds to JOB_ART (the Restaurant's plates and pizzas, and more)
+    if(JOB_ART[a.kind])return JOB_ART[a.kind](a);
     return"";
   }
 
@@ -10449,6 +10475,81 @@ Jobs.kit("sort",function(host,q,done,opt){
     return false;});
   U.wire(host,q);draw();
 });
+
+/* ---- 🍕 Restaurant, opens at reading level 3 ----
+   Every task starts with an order ticket to read: two things on one plate ("Ham on a bun.", "Fish and chips.",
+   "A hot dog and a cup."). He finds the plate with the order on it among three; each of the other two gets
+   one of the things wrong, so both words have to be read. The words decode at his level: at level 3 a hot
+   dog, a bun, ham, eggs, nuts, fish, chips and a cup; plums from level 4, cake from 5, corn from 6, and a
+   burger, an apple or a sandwich from 8. Job level 2 counts: the ticket says how many ("2 buns and 3 eggs.";
+   the other plates have the numbers the other way round, or one thing wrong), then how many things are on
+   the plate (adding within 10). Level 3 reads a ticket, then finds the pizza cut in half, in quarters, or
+   not cut yet (halves and quarters, the Baker's cups with a pizza instead); level 4 reads a ticket, then
+   adds the prices of its two things, shown in coins (to 20¢). */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // the kitchen: how a thing is written for one and for more (ham, fish and corn stay the same; nuts and
+  // chips only come as more than one), and its picture
+  const FOOD=[{id:"hotdog",one:"a hot dog",many:"hot dogs",pic:"w_hotdog"},{id:"bun",one:"a bun",many:"buns",pic:"x_bun"},
+    {id:"ham",one:"ham",pic:"x_ham"},{id:"egg",one:"an egg",many:"eggs",pic:"egg"},{id:"nut",many:"nuts",pic:"nut"},
+    {id:"fish",one:"fish",many:"fish",pic:"fish"},{id:"chip",many:"chips",pic:"chip"},{id:"cup",one:"a cup",many:"cups",pic:"cup"},
+    {id:"plum",one:"a plum",many:"plums",pic:"plum"},{id:"cake",one:"a cake",many:"cakes",pic:"cake"},{id:"corn",one:"corn",pic:"w_corn"},
+    {id:"burger",one:"a burger",many:"burgers",pic:"w_burger"},{id:"apple",one:"an apple",many:"apples",pic:"x_apple"},
+    {id:"sandwich",one:"a sandwich",many:"sandwiches",pic:"w_sandwich"}];
+  const menu=tier=>FOOD.filter(f=>ART[f.pic]&&[f.one,f.many].filter(Boolean).every(x=>fits(x,tier)));
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  const key=p=>p.map(x=>x.id+x.n).join("+");
+  // what the ticket says for a thing ("a bun", "eggs") and how many are on the plate for it
+  function say(r,f){const w=pick(r,[f.one,f.many].filter(Boolean));return{w,n:f.one&&w===f.one?1:2};}
+  // {a} and {b} are the two things; a line is used only when all its words decode at his level
+  const TWO=["{A} and {b}.","{A} with {b}.","Can I get {a} and {b}?","Get me {a} and {b}!"],ON="{A} on {b}.";
+  // the ticket, and the step that reads it: find its plate among three
+  function ticket(r,tier){
+    const M=menu(tier);if(M.length<4)return null;
+    const s=shuffle(r,M),a=s[0],b=s[1],A=say(r,a),B=say(r,b);
+    // ham, fish or an egg can go on a bun
+    const on=b.id==="bun"&&B.n===1&&["ham","fish","egg"].indexOf(a.id)>=0&&A.n===1;
+    const lines=TWO.concat(on?[ON,ON]:[]).map(l=>l.replace("{A}",cap(A.w)).replace("{a}",A.w).replace("{b}",B.w)).filter(l=>fits(l,tier));
+    if(!lines.length)return null;
+    const right=[{id:a.pic,n:A.n},{id:b.pic,n:B.n}],c=s[2],d=s[3];
+    const plates=[right,[{id:c.pic,n:A.n},{id:b.pic,n:B.n}],[{id:a.pic,n:A.n},{id:d.pic,n:B.n}]];
+    return{a,b,step:{kit:"pick",track:"reading",read:true,say:["Read the order. Find the plate!"],text:pick(r,lines),
+      choices:shuffle(r,plates).map(p=>({v:key(p),art:{kind:"plate",items:p}})),ans:key(right)}};
+  }
+  // level 2: how many of each ("2 buns and 3 eggs."), then how many in all on the plate
+  const COUNT=["{n} {a} and {m} {b}.","Can I get {n} {a} and {m} {b}?","Get me {n} {a} and {m} {b}!"];
+  function counted(r,tier){
+    const M=menu(tier).filter(f=>f.one&&f.many&&f.one!==f.many);if(M.length<3)return null;
+    const s=shuffle(r,M),a=s[0],b=s[1],c=s[2],n=int(r,1,5);let m=int(r,1,5);if(m===n)m=m<5?m+1:m-1;
+    const word=(f,k)=>k===1?f.one.replace(/^an? /,""):f.many;
+    const lines=COUNT.map(l=>l.replace("{n}",n).replace("{m}",m).replace("{a}",word(a,n)).replace("{b}",word(b,m))).filter(l=>fits(l,tier));
+    if(!lines.length)return null;
+    const right=[{id:a.pic,n},{id:b.pic,n:m}],plates=[right,[{id:a.pic,n:m},{id:b.pic,n}],[{id:a.pic,n},{id:c.pic,n:m}]];
+    return[{kit:"pick",track:"reading",read:true,say:["Read the order. Find the plate!"],text:pick(r,lines),
+        choices:shuffle(r,plates).map(p=>({v:key(p),art:{kind:"plate",items:p}})),ans:key(right)},
+      {kit:"pad",track:"math",level:"add10",say:[n,"and",m+".","How many in all?"],text:`${n} + ${m} = ?`,art:{kind:"plate",items:right},ans:n+m,math:{op:"+",a:n,b:m}}];
+  }
+  // level 3: the math track's halves and quarters, with pizzas
+  const PIZZA={"1/2":"Which pizza is cut in half?","1/4":"Which pizza is cut in quarters?","1":"Which pizza is not cut yet?"},PART={"1/2":.5,"1/4":.25,"1":1};
+  function pizza(seed){const q=Tracks.gen("math","frac",seed+":f",{});if(!q||!PIZZA[q.ans])return null;
+    return Object.assign(q,{say:[PIZZA[q.ans]],choices:q.choices.map(c=>({v:c.v,art:{kind:"pizza",f:PART[c.v],cut:c.v}}))});}
+  // level 4: the two things' prices in coins (10¢, 5¢ and at most four 1¢), added up
+  const coins=p=>{const out=[];let left=p;if(left>=10){out.push(10);left-=10;}if(left>=5){out.push(5);left-=5;}while(left-->0)out.push(1);return out;};
+  function prices(r,t){const pa=int(r,1,10),pb=int(r,1,10),ca=coins(pa),cb=coins(pb);
+    return{kit:"pad",track:"math",level:"coins20",say:["Add up the prices. How much in all?"],text:`${pa}¢ + ${pb}¢ = ?`,
+      art:{kind:"menu",items:[{id:t.a.pic,cents:pa,coins:ca},{id:t.b.pic,cents:pb,coins:cb}]},ans:pa+pb,math:{op:"coins",coins:ca.concat(cb)}};}
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"restaurant",name:"Restaurant",icon:"🍕",uniform:{id:"servercap",name:"server cap",ic:"🧢"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the restaurant! Read each order.",
+    tasks:[
+      {id:"plate",lv:1,name:"reading orders",gen:(seed,L)=>{const t=ticket(rnd(seed),L.tier);return then(t&&t.step);}},
+      {id:"count",lv:2,name:"counting",gen:(seed,L)=>counted(rnd(seed),L.tier)||[]},
+      {id:"pizza",lv:3,name:"halves and quarters",gen:(seed,L)=>{const t=ticket(rnd(seed),L.tier);return then(t&&t.step,t&&pizza(seed));}},
+      {id:"prices",lv:4,name:"adding prices",gen:(seed,L)=>{const r=rnd(seed),t=ticket(r,L.tier);return then(t&&t.step,t&&prices(r,t));}}
+    ]});
+})();
 
 /* ---- the math track, K–1 ----
    Seven levels, every question generated from a seed and read aloud, so his reading level
