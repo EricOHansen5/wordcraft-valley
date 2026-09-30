@@ -19,6 +19,7 @@ const {launch,reload,waitFor,check}=require("./lib");
   // 1. the table
   const IDS=["valley","read","book","pic","sign","note","story","wild","care","write","maker","mine","adventure","race","dex","craft","album","quests","reward","evo","scene","recap","photo","gate","parent","report","store","other","job","trick","closet"];
   IDS.push("lights");   // LIGHT THE TREE
+  IDS.push("fireworks");   // FIREWORKS
   IDS.push("feast");      // FEAST TABLE
   IDS.push("factory");    // FACTORY
   IDS.push("talk");       // TALK

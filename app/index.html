@@ -1368,6 +1368,49 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 @media (max-width:700px){.ltsheet{padding:14px}.ltsheet .bhead{flex-wrap:wrap}.ltsheet .bhead h2{font-size:21px}
   .ltwrap{flex-direction:column;gap:6px}.lttree{flex-basis:auto;width:200px}.ltlit{font-size:19px}
   .ltdoor{width:48px;height:56px}.ltdoor b{min-width:26px;height:26px;line-height:22px;font-size:14px}.ltq{min-height:0}}
+/* ---- FIREWORKS (Fourth of July): the 🎆 button, the look's sparkles, the night sky and the sparkler race ---- */
+#fireworksBtn{background:linear-gradient(160deg,#6A7BD6,#23307A)}
+.lfall[data-lk="july:sparks"]{animation-name:julyspark;text-shadow:0 0 10px rgba(255,236,160,.95)}
+.lfall[data-lk="july:sparks"]:nth-child(3n){margin-top:10vh;filter:hue-rotate(150deg) saturate(2.2)}
+.lfall[data-lk="july:sparks"]:nth-child(3n+1){margin-top:21vh;filter:hue-rotate(300deg) saturate(2.4)}
+@keyframes julyspark{0%,100%{transform:translate(0,5vh) scale(.2);opacity:0}2%{transform:translate(0,5vh) scale(1.7);opacity:1}
+  6%{transform:translate(0,6vh) scale(1.1);opacity:.85}13%{transform:translate(0,9vh) scale(.8);opacity:0}}
+.fwsheet{max-width:840px;border-color:#23307A;background:linear-gradient(180deg,#E6ECFF,var(--paper) 44%)}
+.fwsheet .bhead h2{color:#23409A}
+.fwstat{font-size:19px;font-weight:900;white-space:nowrap}
+.fwsky{position:relative;height:min(330px,40vh);min-height:190px;border:3px solid var(--ink);border-radius:22px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 125%,#3E53A6 0,#1B2659 46%,#0B1130 100%)}
+.fwsky::before{content:"";position:absolute;inset:0;opacity:.85;pointer-events:none;
+  background-image:radial-gradient(1.5px 1.5px at 8% 14%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 23% 34%,#fff 50%,transparent 60%),
+    radial-gradient(1.6px 1.6px at 41% 9%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 58% 27%,#fff 50%,transparent 60%),
+    radial-gradient(1.5px 1.5px at 74% 12%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 90% 31%,#fff 50%,transparent 60%),
+    radial-gradient(1.2px 1.2px at 33% 52%,#fff 50%,transparent 60%),radial-gradient(1.4px 1.4px at 83% 50%,#fff 50%,transparent 60%)}
+.fwsky canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.fwhills{position:absolute;left:0;right:0;bottom:0;width:100%;height:38%;display:block;pointer-events:none}
+.fwbuddy{position:absolute;left:3%;bottom:5%;width:74px;height:74px;pointer-events:none}.fwbuddy svg{width:100%;height:100%;display:block}
+.fwbig{position:absolute;left:50%;top:38%;font-size:44px;font-weight:900;color:#FFE27A;white-space:nowrap;pointer-events:none;opacity:0;
+  transform:translate(-50%,-50%);text-shadow:0 3px 0 #7A2E2E,0 0 18px rgba(255,210,90,.9)}
+.fwbig.on{animation:fwbig 3.4s ease-out forwards}
+@keyframes fwbig{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}
+  22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+.fwline{font-size:21px;font-weight:900;text-align:center;margin:10px 0 4px}
+.fwmeter{display:flex;gap:4px;justify-content:center;font-size:24px;line-height:1.2}
+.fwmeter i{font-style:normal;filter:grayscale(1);opacity:.32}.fwmeter i.on{filter:none;opacity:1}
+.fwpiece{font-weight:900;font-size:19px;color:#23409A;min-height:24px;margin:4px 0;text-align:center}
+.fwrow{justify-content:center}
+#fwRace.done{background:var(--paper-deep);color:var(--ink-soft)}
+.fwmsg{min-height:26px;font-weight:800;color:#23409A;margin:6px 0 0;text-align:center}
+/* the sparkler race: a night track, and a sparkler trail behind every car (a longer one on a boost) */
+.racesheet.sparkler .track{background:#1B2350}
+.racesheet.sparkler .lane{background:repeating-linear-gradient(90deg,#2A3470 0 40px,#262F66 40px 80px);border-bottom-color:#8FA0E0}
+.racesheet.sparkler .lane.me{background:repeating-linear-gradient(90deg,#3A4180 0 40px,#353C78 40px 80px)}
+.racesheet.sparkler .rcar::before{content:"";position:absolute;right:86%;top:46%;width:44px;height:4px;border-radius:2px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,216,77,0),#FFD84D 62%,#FFFFFF);box-shadow:0 0 8px 2px rgba(255,216,77,.75)}
+.racesheet.sparkler .rcar.boost::before{width:84px}
+.racesheet.sparkler .rcar::after{content:"✨";position:absolute;right:90%;top:22%;font-size:20px;pointer-events:none;animation:fwspark .36s steps(2) infinite}
+@keyframes fwspark{50%{transform:scale(1.4) rotate(28deg);opacity:.55}}
+@media (max-width:700px){.fwsheet{padding:14px}.fwsheet .bhead{flex-wrap:wrap}.fwsheet .bhead h2{font-size:21px}
+  .fwsky{height:220px}.fwbuddy{width:54px;height:54px}.fwbig{font-size:32px}.fwline{font-size:18px}.fwmeter{font-size:19px}}
 /* ---- FEAST TABLE (Thanksgiving): the 🦃 button, the look's falling leaves and the table panel ---- */
 #feastBtn{background:linear-gradient(160deg,#FFD88F,#E0873A)}
 .lfall[data-lk="thanks:leaves"]{animation-name:leafdrift}
@@ -1635,6 +1678,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
     <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
     <button class="toolbtn" id="trickBtn" title="Trick-or-Read" aria-label="Trick-or-Read" style="display:none">🎃<span class="badge" id="trickBadge"></span></button>
     <button class="toolbtn" id="lightsBtn" title="Light the tree" aria-label="Light the tree" style="display:none">❄️<span class="badge" id="lightsBadge"></span></button>
+    <button class="toolbtn" id="fireworksBtn" title="Fireworks" aria-label="Fireworks" style="display:none">🎆<span class="badge" id="fireworksBadge"></span></button>
     <button class="toolbtn" id="feastBtn" title="Feast table" aria-label="Feast table" style="display:none">🦃<span class="badge" id="feastBadge"></span></button>
   </div>
 </div>
@@ -3956,6 +4000,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   trick:{day:"",doors:[],candy:0,nights:0},
   // LIGHT THE TREE (Winter): today's date with its bulbs lit and the star, the advent doors opened this December, look pieces asked for
   lights:{day:"",bulbs:0,star:false,doors:[],granted:0},
+  // FIREWORKS (Fourth of July): today's date with the fireworks launched that day (words read) and whether its grand finale
+  // has asked for its look piece, and the date of the last sparkler race run to the end
+  july:{day:"",shots:0,finale:false,race:""},
   // FEAST TABLE (Thanksgiving): the table's date, the dishes put on it that day, full tables in all
   feast:{day:"",dishes:[],tables:0},
   // FACTORY: levels finished (0-12), best stars per level {"F3":2}, his own factory as a short string (null until
@@ -4826,6 +4873,7 @@ const Modes=(()=>{
     maker:{name:"My own book",reading:true},
     trick:{name:"Trick-or-Read",reading:true},        // TRICK-OR-READ: a knock on a Halloween door
     lights:{name:"Light the tree",reading:true},       // LIGHT THE TREE: the Winter tree and its advent doors
+    fireworks:{name:"Fireworks",reading:true},         // FIREWORKS: the Fourth of July sky (and its sparkler race, a race)
     feast:{name:"Feast table",reading:true},           // FEAST TABLE: a Thanksgiving dish to read
     factory:{name:"Factory",reading:false},            // FACTORY: the board, its levels and his own factory
     talk:{name:"Talk to me",reading:true},             // TALK: he answers out loud
@@ -11113,6 +11161,17 @@ Object.assign(ART,{
     <circle cx="85" cy="38" r="6.5" fill="${dome("#FBF6EC",36,30)}"/>
     ${HI(40,17,6,3,.35)}</g>`;}
 });
+// the star hat (the Fourth of July look, FIREWORKS): a tall striped hat with a blue band and a gold star
+Object.assign(ART,{hat_star(){let st="";for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?2.5:5.8;
+    st+=(i?"L":"M")+(50+Math.cos(a)*rr).toFixed(1)+" "+(26.6+Math.sin(a)*rr).toFixed(1);}
+  return `<g data-hat="star"><path d="M12 33 Q50 44 88 33 Q82 26 50 26 Q18 26 12 33Z" fill="${grad("#2D4FA3","v",.3,.2)}"/>
+    <path d="M33 30 L35 4 Q50 1 65 4 L67 30 Q50 34 33 30Z" fill="${grad("#FBF6EC","v",.12,.14)}"/>
+    <path d="M38.4 3.2 L42.8 2.5 L43 32.6 L39 31.8Z M47.8 2 L52.2 2 L52.2 33.2 L47.8 33.2Z M57.2 2.5 L61.6 3.2 L61 31.8 L57 32.6Z" fill="#D8343F" stroke="none"/>
+    <path d="M33 30 L35 4 Q50 1 65 4 L67 30" fill="none"/>
+    <path d="M33.6 21 Q50 24.5 66.4 21 L67 30 Q50 34 33 30Z" fill="${grad("#2D4FA3","v",.3,.2)}"/>
+    <path d="${st}Z" fill="#FFD24D" stroke-width="1.3"/>
+    <circle cx="39.5" cy="25.6" r="1.3" fill="#FFFFFF" stroke="none"/><circle cx="60.5" cy="25.6" r="1.3" fill="#FFFFFF" stroke="none"/>
+    ${HI(41,12,2.4,7,.35,0)}</g>`;}});
 // the pilgrim hat (the Thanksgiving look, FEAST TABLE): a tall hat with a gold buckle and a leaf tucked in the band
 Object.assign(ART,{hat_pilgrim(){return `<g data-hat="pilgrim"><path d="M12 33 Q50 44 88 33 Q82 26 50 26 Q18 26 12 33Z" fill="${grad("#3A302C","v",.3,.2)}"/>
     <path d="M32 30 L35 5 Q50 2 65 5 L68 30 Q50 34 32 30Z" fill="${grad("#4A3F3A","v",.32,.2)}"/>
@@ -11731,6 +11790,363 @@ const Lights=(()=>{
     get bulbs(){return bulbs();},get star(){return star();},get opened(){return opened();},get ready(){return ready();},
     _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";hud();if(isOpen()){if(!live())close();else render();}},
     _q:()=>cur&&{n:cur.n,kind:cur.kind,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece};
+})();
+/* ================================================================
+   FIREWORKS — the Fourth of July look and a sky full of his reading, 28 June to 4 July (v10.3)
+   The Fourth of July look ("july", 🎆) joins LOOKS here as data (Looks.add). Its pieces, in the
+   order earned: little flags along a white fence, red, white and blue bunting on a small garage,
+   firework sparkles popping in the sky, and a star hat for the buddy (ART.hat_star, with the other
+   look hats). While it is worn the tint turns a deep-blue evening.
+   The mini-game exists only in the look's window, 28 June to 4 July: Looks.inWindow("july"), or
+   the same dates here. In the window a 🎆 button sits in the tool bar (never a gate), with the
+   fireworks still to go for today's finale on its badge. It opens a night sky over the valley:
+     the sky     every word he reads anywhere in the game that day launches a firework: what
+                 Quests.hit("read", n) counts, the same reads that light Light the tree's bulbs.
+                 A finished book (Quests.hit("book")), a sign or keeper page (Quests.hit("sign")),
+                 a Picture it sentence or a sentence in the shared builder (Read.sentence) sends
+                 up a big one. The ones launched while the sky is shut wait and go up when he
+                 opens it (after a reload today's go up again, twelve at most). One canvas, drawn
+                 with requestAnimationFrame only while the sky is open and something is in the
+                 air: a rocket climbs and bursts into dots that spread, drop a little and fade.
+     the finale  ten fireworks in a day (ten reads) make the grand finale: a fanfare, "Grand
+                 finale!" and a sky full of big bursts, then the next piece of the look
+                 (Looks.grant("july"), which says and shows it itself; the panel repeats it).
+                 One finale a day. When the tenth read comes somewhere else (a crate, a book) the
+                 cheer waits until he is back in the valley (or the piece is given at once if the
+                 app is put away), and the sky plays the finale the next time he opens it.
+     the race    ✨ Sparkler race: the usual race (Race.start, the engine Adventure's races run
+                 on) on a night track with sparkler trails behind the cars, in his own car. It
+                 pays what a race pays (6, 3 or 2 💎 by place) and runs once a day; a race left
+                 before the finish line doesn't count, so he can start it again.
+   Save: state.july = {day (the date of today's fireworks), shots (fireworks launched that day, one
+   a word read), finale (that day's finale has asked for its piece), race (the date of the last
+   sparkler race run to the end)}. Nothing is written outside the window, or before a read in it.
+   ================================================================ */
+Looks.add({id:"july",name:"Fourth of July",ic:"🎆",window:{from:[6,28],to:[7,4]},
+  tint:"linear-gradient(180deg,rgba(16,28,104,.36),rgba(48,66,164,.25) 55%,rgba(214,70,92,.1))",
+  particles:"sparks",drift:"✨",
+  props:[{id:"flags",at:{c:9,r:7},size:1.15},{id:"bunting",at:{c:13.5,r:6},size:1.2}],
+  hat:"star",
+  greet:"Happy Fourth of July! Watch the sky tonight.",
+  pieces:["flags","bunting","sparks","hat"],
+  names:{flags:"flags",bunting:"bunting",sparks:"firework sparkles",hat:"star hat"},
+  css:{hud:"linear-gradient(180deg,#DDE6FF,rgba(221,230,255,0))",
+    trim:"repeating-linear-gradient(90deg,#D8343F 0 14px,#FFFFFF 14px 22px,#2D4FA3 22px 36px,#FFFFFF 36px 44px)",
+    edge:"#2D4FA3",crate:"linear-gradient(160deg,#F0F4FF,#BFD0F2)"}});
+/* ---- the Fourth of July look's props (the same 100-box and ink as the seasonal builds) ---- */
+// a five-pointed star path: centre, outer and inner radius
+const fwStar=(x,y,R,r)=>{let d="";for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,k=i%2?r:R;d+=(i?"L":"M")+(x+Math.cos(a)*k).toFixed(1)+" "+(y+Math.sin(a)*k).toFixed(1);}return d+"Z";};
+Object.assign(ART,{
+  // little flags on sticks along a white picket fence, each waving a little differently
+  look_flags(r){
+    const posts=[16,38,60,82];let pk="",fl="";
+    posts.forEach((x,i)=>{
+      pk+=`<path d="M${x-5} 92 L${x-5} 60 L${x} 54 L${x+5} 60 L${x+5} 92Z" fill="${grad("#F4EEDF","h",.2,.18)}"/>`;
+      const y=16+(i%2)*9,w=+((r()-.5)*2.4).toFixed(1),sx=x+1;
+      const edge=yy=>`M${sx} ${yy} Q${sx+6} ${(yy-2.4+w).toFixed(1)} ${sx+11} ${yy} T${sx+22} ${yy}`;
+      const band=(y0,y1)=>`${edge(y0)} L${sx+22} ${y1} Q${sx+16} ${(y1+2.4-w).toFixed(1)} ${sx+11} ${y1} T${sx} ${y1}Z`;
+      fl+=`<path d="M${x} ${y-1} L${x} 58" fill="none" stroke-width="2.2"/><circle cx="${x}" cy="${y-2.6}" r="2.2" fill="#FFD24D" stroke-width="1.2"/>
+        <path d="${band(y,y+14)}" fill="#D8343F" stroke="none"/>
+        <path d="${band(y+3.6,y+5.8)}" fill="#FFFFFF" stroke="none"/><path d="${band(y+8.2,y+10.4)}" fill="#FFFFFF" stroke="none"/>
+        <path d="M${sx} ${y} Q${sx+4} ${(y-1.6+w/2).toFixed(1)} ${sx+9} ${(y-.6).toFixed(1)} L${sx+9} ${y+7.4} L${sx} ${y+7.6}Z" fill="#2D4FA3" stroke="none"/>
+        <circle cx="${sx+3}" cy="${y+2.6}" r=".9" fill="#FFFFFF" stroke="none"/><circle cx="${sx+6.4}" cy="${y+4.8}" r=".9" fill="#FFFFFF" stroke="none"/>
+        <path d="${band(y,y+14)}" fill="none" stroke-width="1.6"/>`;
+    });
+    return S(`${OCC}<path d="M6 66 L94 66 L94 72 L6 72Z" fill="${grad("#EDE4D0","v",.2,.2)}"/><path d="M6 80 L94 80 L94 86 L6 86Z" fill="${grad("#EDE4D0","v",.2,.2)}"/>${pk}${fl}`);
+  },
+  // red, white and blue bunting fans along the front of a small garage, a gold star on the roof
+  look_bunting(){
+    const fan=c=>`<path d="M${c-10} 52 A10 10 0 0 0 ${c+10} 52Z" fill="#D8343F" stroke-width="1.6"/>
+      <path d="M${c-6.6} 52 A6.6 6.6 0 0 0 ${c+6.6} 52Z" fill="#FFFFFF" stroke="none"/><path d="M${c-3.4} 52 A3.4 3.4 0 0 0 ${c+3.4} 52Z" fill="#2D4FA3" stroke="none"/>
+      <path d="M${c} 52 L${c} 61.5 M${c} 52 L${c-7} 59 M${c} 52 L${c+7} 59" fill="none" stroke-opacity=".3" stroke-width="1.2"/>`;
+    return S(`${OCC}<path d="M20 92 L20 50 L80 50 L80 92Z" fill="${grad("#E9DFCC","h",.2,.2)}"/>
+      <path d="M12 52 L50 28 L88 52Z" fill="${grad("#B85C44","v",.25,.25)}"/>
+      <path d="M31 92 L31 66 L69 66 L69 92Z" fill="${grad("#C7CDD6","v",.2,.2)}"/>
+      <path d="M31 73 L69 73 M31 80 L69 80 M31 87 L69 87" fill="none" stroke-opacity=".35" stroke-width="1.4"/>
+      ${fan(30)}${fan(50)}${fan(70)}<path d="${fwStar(50,40,5.4,2.3)}" fill="#FFD24D" stroke-width="1.2"/>${HI(26,74,2.4,9,.25,0)}`);
+  }
+});
+const Fireworks=(()=>{
+  const FINALE=10,LOOK="july",REPLAY=12,QMAX=40,
+    COLORS=["#FF5252","#FFFFFF","#5AA9FF","#FFD84D","#FF7AD9","#7CF29A","#FF9F43"];
+  let fake=null,ov=null,cv=null,cx=null,W=0,H=0,raf=0,last=0,next=0,fast=0,lastBoom=0,queue=[],rockets=[],dots=[],flashes=[],
+    seen=0,seenDay="",bigs=0,finaleSeen="",owed=false,pending=false,lastPiece=null,pieceDay="",greeted="",lastKey="",hooked=false;
+  const count={launched:0,burst:0,big:0,finales:0};
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const day=()=>fake||today();
+  // pure: is this date ("YYYY-MM-DD" or a Date) from 28 June to 4 July?
+  function inWindow(d){
+    let m,dd;
+    if(d instanceof Date){m=d.getMonth()+1;dd=d.getDate();}
+    else{const s=String(d==null?day():d);if(!/^\d{4}-\d{2}-\d{2}/.test(s))return false;m=+s.slice(5,7);dd=+s.slice(8,10);}
+    return (m===6&&dd>=28&&dd<=30)||(m===7&&dd>=1&&dd<=4);
+  }
+  // the Look system (LOOKS), when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the Look system's window, then the dates above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow(LOOK);}catch(e){}}
+    return inWindow(today());
+  }
+
+  /* ---------- the save (reading it never writes to it) ---------- */
+  const blank=()=>({day:"",shots:0,finale:false,race:""});
+  const saved=()=>isObj(state.july)?state.july:blank();
+  const shots=()=>{const j=saved();return j.day===day()?Math.max(0,Math.floor(+j.shots||0)):0;};
+  const finaled=()=>{const j=saved();return j.day===day()&&!!j.finale;};
+  const raced=()=>saved().race===day();
+  const toGo=()=>Math.max(0,FINALE-shots());
+  // the finale is due: ten today, and today's piece not asked for yet
+  const due=()=>live()&&shots()>=FINALE&&!finaled();
+  // for writing: a new day starts an empty sky (the race keeps its own date)
+  function J(){
+    if(!isObj(state.july))state.july=blank();
+    const j=state.july;
+    if(j.day!==day()){j.day=day();j.shots=0;j.finale=false;}
+    if(typeof j.race!=="string")j.race="";
+    return j;
+  }
+  // what the sky remembers is for one day: a new day forgets what went up
+  function fresh(){if(seenDay!==day()){seenDay=day();seen=0;bigs=0;queue=[];finaleSeen="";}}
+
+  /* ---------- what he reads, anywhere ---------- */
+  // k and n as Quests.hit gets them ("read" and the words, "book", "sign"), or "sentence" from the reading builder
+  function heard(k,n){
+    if(!live())return;
+    let add=0,big=false;
+    if(k==="read"){add=n==null?1:Math.max(0,Math.floor(+n||0));
+      const pic=document.getElementById("ovPic");if(pic&&pic.classList.contains("on"))big=true;}   // Picture it: he read a sentence
+    else if(k==="book"||k==="sign"||k==="sentence")big=true;
+    else return;
+    if(!add&&!big)return;
+    fresh();
+    if(add){const j=J();j.shots=Math.min(99999,(+j.shots||0)+add);save();}
+    if(big)bigs++;
+    count.launched+=add+(big?1:0);
+    hud();
+    if(isOpen()){pump();render();}
+    if(due())finale();
+  }
+  // the reads the daily quests and today's goal count go through Quests.hit, which is declared further down the
+  // page: hooked once the page has loaded (and again from the minute tick, in case), as Light the tree does
+  function hook(){
+    if(hooked)return;
+    try{if(typeof Quests==="undefined"||!Quests||typeof Quests.hit!=="function")return;}catch(e){return;}
+    hooked=true;
+    const hit0=Quests.hit;
+    Quests.hit=function(k,by){const r=hit0.apply(this,arguments);try{heard(k,by);}catch(e){}return r;};
+  }
+  // a sentence read in the shared builder (story quests, Trick-or-Read, the advent doors) sends up a big one
+  if(typeof Read!=="undefined"&&Read&&typeof Read.sentence==="function"){
+    const sent0=Read.sentence;
+    Read.sentence=function(host,done,bg){
+      return sent0.call(this,host,function(){
+        try{if(host&&String(host.dataset.ans||"")[0]==="#")heard("sentence");}catch(e){}
+        return typeof done==="function"?done.apply(this,arguments):undefined;},bg);
+    };
+  }
+
+  /* ---------- the sky: one canvas, drawn only while it is open and something is in the air ---------- */
+  function size(){
+    if(!cv||!cx)return;
+    const r=cv.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+    W=Math.max(1,r.width);H=Math.max(1,r.height);
+    cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+    try{cx.setTransform(dpr,0,0,dpr,0,0);}catch(e){}
+  }
+  // today's fireworks he hasn't seen go into the sky's queue (twelve at most at a time), then the big ones
+  function pump(){
+    fresh();
+    const n=shots()-seen;
+    if(n>0){for(let i=0;i<Math.min(n,REPLAY);i++)queue.push({big:false});seen=shots();}
+    for(;bigs>0;bigs--)queue.push({big:true});
+    if(queue.length>QMAX)queue.splice(0,queue.length-QMAX);
+    kick();
+  }
+  function kick(){
+    if(raf||!isOpen()||!cx||(!queue.length&&!rockets.length&&!dots.length&&!flashes.length))return;
+    last=0;raf=requestAnimationFrame(frame);
+  }
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  function launch(f){
+    const big=!!f.big;
+    rockets.push({x:W*(.12+Math.random()*.76),y:H+4,v:H*(1.05+Math.random()*.3),top:H*(big?.16+Math.random()*.14:.24+Math.random()*.26),
+      big,c:pick(COLORS),c2:pick(COLORS)});
+  }
+  // a burst: a flash, and dots flung out to fill a ball (a big one has a heart of another colour)
+  function burst(r){
+    const n=r.big?72:40,sp=Math.min(W,H)*(r.big?.68:.48);
+    for(let i=0;i<n;i++){const a=i/n*Math.PI*2+Math.random()*.25,inner=r.big&&i%3===0,v=sp*(inner?.28+Math.random()*.24:.55+Math.random()*.45);
+      dots.push({x:r.x,y:r.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,life:(r.big?1.9:1.35)*(.8+Math.random()*.4),c:inner?r.c2:r.c,s:r.big?3.4:3});}
+    flashes.push({x:r.x,y:r.y,t:0,r:r.big?30:20,c:r.c});
+    count.burst++;if(r.big)count.big++;
+    const t=Date.now();if(t-lastBoom>150){lastBoom=t;try{Sound.sfx.drum();}catch(e){}}
+  }
+  function frame(t){
+    raf=0;
+    if(!isOpen()||!cx){rockets=[];dots=[];flashes=[];return;}
+    const dt=last?Math.min(.05,(t-last)/1000):1/60;last=t;
+    if(queue.length&&t>=next){launch(queue.shift());next=t+(fast>0?170:340);if(fast>0)fast--;}
+    for(let i=rockets.length-1;i>=0;i--){const r=rockets[i];r.y-=r.v*dt;if(r.y<=r.top){rockets.splice(i,1);burst(r);}}
+    const k=Math.exp(-2.3*dt);
+    for(let i=dots.length-1;i>=0;i--){const d=dots[i];d.t+=dt;if(d.t>=d.life){dots.splice(i,1);continue;}
+      d.vx*=k;d.vy=d.vy*k+48*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;}
+    for(let i=flashes.length-1;i>=0;i--){flashes[i].t+=dt;if(flashes[i].t>=.24)flashes.splice(i,1);}
+    cx.clearRect(0,0,W,H);
+    flashes.forEach(f=>{cx.globalAlpha=.45*(1-f.t/.24);cx.fillStyle=f.c;cx.beginPath();cx.arc(f.x,f.y,f.r*(.6+f.t*2.5),0,Math.PI*2);cx.fill();});
+    cx.fillStyle="#FFF3C4";
+    rockets.forEach(r=>{cx.globalAlpha=1;cx.fillRect(r.x-2,r.y-2,4,4);cx.globalAlpha=.55;cx.fillRect(r.x-1.2,r.y+4,2.4,6);cx.globalAlpha=.25;cx.fillRect(r.x-1,r.y+12,2,7);});
+    dots.forEach(d=>{const a=1-d.t/d.life;cx.globalAlpha=a*a;cx.fillStyle=d.c;cx.fillRect(d.x-d.s/2,d.y-d.s/2,d.s,d.s);});
+    cx.globalAlpha=1;
+    if(queue.length||rockets.length||dots.length||flashes.length)raf=requestAnimationFrame(frame);
+  }
+
+  /* ---------- the grand finale: ten today ---------- */
+  function finale(){
+    if(pending||!due())return;
+    if(isOpen())cheer();
+    else if(!owed){owed=true;setTimeout(settle,1200);}
+  }
+  // the tenth read came in a crate or a book: the cheer waits until he is back in the valley (or the sky)
+  function settle(){
+    if(!owed||pending)return;
+    if(!due()){owed=false;return;}
+    const top=Modes.top();
+    if(top==="valley"||top==="fireworks")cheer();
+    else setTimeout(settle,1500);
+  }
+  // the sky's finale: a dozen big ones, quickly, and the words
+  function show(){
+    for(let i=0;i<12;i++)queue.push({big:true});fast=12;
+    const b=ov&&ov.querySelector("#fwBig");if(b){b.classList.remove("on");void b.offsetWidth;b.classList.add("on");}
+    kick();
+  }
+  function cheer(){
+    if(pending||!due())return;
+    pending=true;owed=false;
+    Sound.sfx.fanfare();
+    if(isOpen()){finaleSeen=day();show();}
+    else{try{confetti();}catch(e){}toast("🎆 Grand finale! Ten fireworks today!");}
+    try{buddyCheer();buddySay("Grand finale!");}catch(e){}
+    const said=Sound.speak("Grand finale! Ten fireworks!",.95);
+    // the look piece comes after the cheer (the Look system says a line of its own), or at once if the app is put away
+    const give=()=>{if(pending){pending=false;grant();}};
+    Promise.resolve(said).then(()=>setTimeout(give,250),give);setTimeout(give,5000);
+    if(isOpen())render();
+  }
+  // today's piece: asked for once, marked in the save first
+  function grant(){
+    if(!live()||finaled()||shots()<FINALE)return;
+    const j=J();j.finale=true;save();
+    count.finales++;
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant(LOOK);}catch(e){p=null;}}
+    lastPiece=p||null;hud();
+    if(isOpen())render();
+    if(!p)return;
+    let nm=String(p);
+    try{const LK=L.get&&L.get(LOOK);if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(e){}   // the piece's shown name ("star hat")
+    // the Look system toasts and speaks this line itself when it grants; the panel only repeats it
+    pieceDay=day();
+    const el=ov&&ov.querySelector("#fwPiece");if(el)el.textContent="🎁 You got the "+nm+"! Look in your closet 🎨";
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&(pending||owed)&&due()){pending=false;owed=false;grant();try{saveNow();}catch(e){}}});
+
+  /* ---------- the panel ---------- */
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+  const msg=t=>{const m=ov&&ov.querySelector("#fwMsg");if(m)m.textContent=t||"";};
+  // the valley at night along the bottom of the sky: two hills, houses with a lit window, pines and a flag
+  const HILLS=`<svg class="fwhills" viewBox="0 0 800 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <path d="M0 70 Q90 38 190 58 Q300 80 400 50 Q500 22 610 52 Q710 78 800 46 L800 120 L0 120Z" fill="#1E2C5C"/>
+    <path d="M0 92 Q120 70 250 86 Q380 102 500 80 Q640 60 800 84 L800 120 L0 120Z" fill="#141F42"/>
+    <path d="M300 90 L300 68 L316 56 L332 68 L332 90Z M520 84 L520 64 L534 53 L548 64 L548 84Z M140 94 L152 62 L164 94Z M660 92 L671 64 L682 92Z M690 94 L700 70 L710 94Z" fill="#0E1631"/>
+    <path d="M311 73h9v8h-9Z M530 68h8v7h-8Z" fill="#FFD86B"/>
+    <path d="M430 88 L430 50" stroke="#0E1631" stroke-width="3"/><path d="M431 50 L453 54 L431 59Z" fill="#D8343F"/></svg>`;
+  function build(){
+    ov=document.createElement("div");ov.className="overlay";ov.id="ovFireworks";
+    ov.innerHTML=`<div class="sheet fwsheet"><div class="bhead"><h2>🎆 Fireworks</h2><b class="fwstat" id="fwStat"></b><button class="bx" id="fwX" aria-label="Close">✕</button></div>
+      <div class="fwsky" id="fwSky"><canvas id="fwCanvas" aria-hidden="true"></canvas>${HILLS}<div class="fwbuddy" id="fwBuddy"></div><b class="fwbig" id="fwBig">Grand finale!</b></div>
+      <p class="fwline" id="fwLine" aria-live="polite"></p><div class="fwmeter" id="fwMeter" aria-hidden="true"></div><p class="fwpiece" id="fwPiece"></p>
+      <div class="mrow fwrow"><button class="btn primary big" id="fwRace">✨ Sparkler race</button></div><p class="fwmsg" id="fwMsg" aria-live="polite"></p></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#fwX").onclick=close;
+    ov.querySelector("#fwRace").onclick=()=>race();
+    cv=ov.querySelector("#fwCanvas");try{cx=cv.getContext("2d");}catch(e){cx=null;}
+    window.addEventListener("resize",()=>{if(isOpen())size();});
+  }
+  function render(){
+    if(!ov)return;
+    const n=shots(),fin=finaled()||pending,done=raced();
+    ov.querySelector("#fwStat").textContent="🎆 "+n;
+    ov.querySelector("#fwLine").textContent=fin?"🎇 Grand finale! Every word you read still sends one up."
+      :n?`🎆 ${n} ${n===1?"firework":"fireworks"} today. ${toGo()} more for the grand finale!`:"Read a word to launch your first firework!";
+    let m="";for(let i=0;i<FINALE;i++)m+=`<i class="${i<n?"on":""}">🎆</i>`;
+    ov.querySelector("#fwMeter").innerHTML=m;
+    const rb=ov.querySelector("#fwRace");
+    rb.textContent=done?"✨ Raced today!":"✨ Sparkler race";rb.classList.toggle("done",done);
+  }
+  // the 🎆 button: the sky, and what has gone up since he last looked
+  function open(){
+    if(!live())return false;
+    hook();fresh();
+    if(!ov)build();
+    if(!isOpen()){ov.classList.add("on");Modes.open("fireworks",ov);Sound.sfx.pop();msg("");
+      if(pieceDay!==day())ov.querySelector("#fwPiece").textContent="";}
+    try{ov.querySelector("#fwBuddy").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());}catch(e){}
+    size();render();
+    if(greeted!==day()){greeted=day();const n=shots();
+      setTimeout(()=>{if(isOpen()&&!pending)Sound.speak(n>=FINALE?"What a sky! Keep reading for more fireworks!":"Every word you read today launches a firework!",.95);},400);}
+    // a finale that came while he was reading somewhere else plays for him now
+    if(finaled()&&finaleSeen!==day()){finaleSeen=day();show();}
+    pump();
+    if(due())finale();
+    return true;
+  }
+  function close(){if(!ov)return;Modes.shut(ov);if(raf){cancelAnimationFrame(raf);raf=0;}rockets=[];dots=[];flashes=[];Sound.sfx.soft();}
+
+  /* ---------- the sparkler race: the usual race, once a day ---------- */
+  // his own car: a ground vehicle, the one out and of the highest level first; the starter car when he has none
+  function car(){
+    const ok=v=>!!v&&!!VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"&&!!ART[v.id];
+    const mine=(state.vehicles||[]).filter(ok).sort((a,b)=>((b.out!==false)-(a.out!==false))||((b.lv||1)-(a.lv||1)));
+    return mine[0]||{id:"v_car"};
+  }
+  function race(){
+    if(!live())return false;
+    if(raced()){Sound.sfx.soft();msg("You raced today! Another sparkler race tomorrow ✨");
+      Sound.speak("You raced today! Come back tomorrow for another sparkler race.",.95);return false;}
+    msg("");
+    // Race pays as it always does; done() marks today's race once it has
+    try{Race.start(car(),{cls:"sparkler",title:"✨ Sparkler race!",once:true,done:()=>{J().race=day();save();hud();render();}});}catch(e){return false;}
+    return Modes.top()==="race";
+  }
+
+  /* ---------- the tool bar ---------- */
+  function hud(){
+    const b=document.getElementById("fireworksBtn");if(!b)return;
+    const on=live();b.style.display=on?"":"none";
+    const n=document.getElementById("fireworksBadge");
+    if(n){const k=on&&!finaled()?toGo():0;n.textContent=k?String(k):"";n.classList.toggle("on",k>0);}
+  }
+  // the window opens and closes at midnight and a new day starts an empty sky; a finale still owed
+  // (the app was closed before it came) is given the next time round
+  function tick(){
+    hook();fresh();hud();
+    const k=live()+"|"+day();
+    if(k!==lastKey){lastKey=k;if(isOpen()){if(!live())close();else render();}}
+    if(due()&&!pending&&!owed)finale();
+  }
+  document.getElementById("fireworksBtn").onclick=()=>open();
+  setInterval(tick,60000);setTimeout(tick,0);setTimeout(tick,1500);setTimeout(tick,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
+
+  return{inWindow,live,open,close,hud,race,FINALE,
+    get shots(){return shots();},get finale(){return finaled();},get raced(){return raced();},get toGo(){return toGo();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";owed=false;tick();},
+    _bursts:()=>({launched:count.launched,burst:count.burst,big:count.big,finales:count.finales,queued:queue.length,air:rockets.length+dots.length+flashes.length}),
+    _piece:()=>lastPiece,_waiting:()=>owed||pending};
 })();
 /* ================================================================
    FACTORY — drills, belts and machines fill the truck's order (after Lean Mine)
@@ -15543,6 +15959,7 @@ NULL_IS_MISSING.push("owned");      // TRADING POST
 NULL_IS_MISSING.push("look","looks");      // LOOKS
 NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
+NULL_IS_MISSING.push("july");      // FIREWORKS
 NULL_IS_MISSING.push("feast");      // FEAST TABLE
 NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTORY
 NULL_IS_MISSING.push("talk");      // TALK
