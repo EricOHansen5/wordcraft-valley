@@ -176,6 +176,31 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(!sky.bad.length&&sky.l2==="fog,sun,wet"&&sky.l4==="fog,snow,sun,wet,wind"&&sky.l7==="fog,rain,snow,storm,sun,wind",
     `Farmer job level 4: the word for the weather in the picture, among 3 he can read (level 2: ${sky.l2}; 4: ${sky.l4}; 7: ${sky.l7})`+(sky.bad.length?" — "+sky.bad.slice(0,3).join(" | "):""));
 
+  // 1c. the Vet: every text at level 3 reads only level 3 words; the chart names the pet (one of his own animals when he has
+  //     one he can read) and what is wrong; the drops add up; the part it looks at; the visit in order
+  const VET=await E(()=>{const j=Jobs.get("vet");return{tier:j.unlock.tier,pay:j.pay,uni:j.uniform.name,tasks:j.tasks.map(t=>t.id+":"+t.lv).join(" "),
+    badges:[2,3,4,5].every(lv=>BADGES.some(b=>b.id==="job_vet_"+lv))};});
+  ok(VET.tier===3&&VET.pay.perTask===3&&VET.pay.streakTip===5&&VET.uni==="vet coat"&&VET.badges&&VET.tasks==="chart:1 drops:2 parts:3 visit:4",
+    "the Vet opens at reading level 3, pays 3 🪙 (tip 5), comes with a vet coat, a badge for job levels 2 to 5: "+VET.tasks);
+  const vet3=await words2("vet",3);
+  ok(vet3.texts>40&&vet3.worst<=3,`Vet at level 3: ${vet3.texts} texts to read, ${vet3.words.length} words, all level 3 or below: ${vet3.words.join(" ")}`);
+  const charts=await E(()=>{const keep=state.critters;state.critters=[{id:"pig",seed:7,c:5,r:8},{id:"croc",seed:2,c:6,r:8}];
+    const CARE={bandage:/cut/,water:/hot/,hug:/sad/,nap:/nap|sleepy/,drops:/sick/},bad=[],who={};
+    for(let tier=3;tier<=MAX_TIER;tier++)for(let s=0;s<60;s++){const a=Jobs.gen("vet","chart",s,{tier,lv:1})[0];who[a.who+"@"+(tier<4?3:4)]=1;
+      if(!CARE[a.ans]||!CARE[a.ans].test(a.text)||a.choices.length!==3||!a.choices.every(c=>c.art.kind==="vetcare"))bad.push(`"${a.text}" → ${a.ans}`);
+      if(a.who==="pig"&&a.whoSeed!==7)bad.push("his pig is not drawn as his");}
+    const d=Jobs.gen("vet","drops",5,{tier:3,lv:2})[1],pt=[];for(let s=0;s<60;s++){const b=Jobs.gen("vet","parts",s,{tier:3,lv:3})[1];pt.push(b);}
+    const v3=Jobs.gen("vet","visit",1,{tier:3,lv:4})[1],v8=[];for(let s=0;s<30;s++)v8.push(Jobs.gen("vet","visit",s,{tier:8,lv:4})[1].ans.join(" "));
+    state.critters=keep;
+    return{bad,who:Object.keys(who).sort(),drops:d.ans===d.math.a+d.math.b&&d.art.am===d.math.a&&d.art.pm===d.math.b&&d.ans<=10&&d.level==="add10",say:d.say.join(" "),
+      parts:[...new Set(pt.map(b=>b.ans))].sort().join(),partsOk:pt.every(b=>!b.track&&b.read&&b.text==="Look at its "+b.ans+"."&&b.choices.length===3&&b.choices.every(c=>c.art.kind==="petpart"&&c.art.part===c.v)),
+      v3:v3.ans.join(" "),v8:[...new Set(v8)].sort().join(" | ")};});
+  ok(!charts.bad.length&&charts.who.indexOf("pig@3")>=0&&charts.who.indexOf("croc@3")<0&&charts.who.indexOf("croc@4")>=0,
+    "the chart names what is wrong and he picks what helps; the pet is his own pig (drawn as his), his croc once “croc” decodes at 4: "+charts.who.join(" ")+(charts.bad.length?" — "+charts.bad.slice(0,3).join(" | "):""));
+  ok(charts.drops&&/drops? in the morning and \d at night\. How many drops\?$/.test(charts.say),"Vet job level 2: “"+charts.say+"” adds up (within 10)");
+  ok(charts.partsOk&&charts.parts==="back,neck,paw","Vet job level 3: “Look at its paw.” among three pictures of a pet, each showing one part (level 3: "+charts.parts+")");
+  ok(charts.v3==="look fix hug"&&/look listen fix hug/.test(charts.v8),"Vet job level 4: the visit in order — level 3: "+charts.v3+"; level 8: "+charts.v8);
+
   // 2. a locked job says when it opens
   await E(()=>{state.settings.tierOverride=2;});
   await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
@@ -200,6 +225,16 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   const at1=await boardAt(1),at2=await boardAt(2);
   ok(opens(at1,"Farmer","farm",2)&&opens(at2,"Farmer","farm"),
     "the Farmer: “Opens at level 2” at level 1, open at level 2");
+
+  const at3=await boardAt(3);
+  ok(opens(at2,"Vet","vet",3)&&opens(at3,"Vet","vet"),"the Vet: “Opens at level 3” at level 2, open at level 3");
+  // the patient on the chart is the customer at the counter
+  await E(()=>{state.jobs.xp.vet=0;state.jobs.current=null;});
+  await p.click("#jobsBtn");await waitFor(p,'#ovJob.on .jcard[data-job="vet"]');await p.click('#ovJob .jcard[data-job="vet"]');await waitFor(p,"#ovJob #jIn");await p.click("#ovJob #jIn");
+  const face=await waitFor(p,()=>{const s=Jobs._S(),f=document.querySelector("#jCust .jface");if(!s||!s.task||!f)return false;
+    const q=Jobs.gen("vet",s.task.type,s.task.seed,{tier:currentTier(),lv:Jobs.level("vet")})[0];return{who:f.dataset.who||"",want:q.who,text:q.text};},{timeout:8000});
+  ok(face&&face.who&&face.who===face.want,"the Vet: the pet on the chart is at the counter — “"+(face&&face.text)+"”, "+(face&&face.who));
+  await waitFor(p,"#jOut");await E(()=>document.getElementById("jOut").click());await waitFor(p,"#ovJob #jHome");await E(()=>document.getElementById("jHome").click());await waitFor(p,()=>Modes.top()==="valley");
 
   // 3. every job × task type: right answers (with a double tap on the last one) pay once
   const kitsUsed=new Set();

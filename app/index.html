@@ -1268,6 +1268,10 @@ body.exploring .slot-empty{display:none}
 .jlawn.field .jcell.cut::before,.jlawn.field .start::before{content:"🌱";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:24px}
 .jlawn.field .me::before{content:none}
 .jotext:empty{display:none}
+/* the Vet: the drops in the morning and at night */
+.jdrops{display:flex;align-items:center;gap:10px;justify-content:center}
+.jdgrp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 12px;border:3px solid var(--ink);border-radius:14px;background:#fff}
+.jdgrp>i{font-style:normal;font-size:30px;line-height:1}.jdgrp>span{display:flex;gap:4px}.jdrop{display:block;width:20px;height:28px}
 /* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
 .jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
 .jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
@@ -9879,6 +9883,41 @@ Object.assign(JOB_ART,{
       `<path d="M${x-6} ${y} L${x+6} ${y} M${x} ${y-6} L${x} ${y+6} M${x-4} ${y-4} L${x+4} ${y+4} M${x-4} ${y+4} L${x+4} ${y-4}" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-opacity="1"/>`);
     if(w==="wind")g+=`<path d="M12 34 L58 34 Q70 34 70 25 Q70 17 62 17 Q56 17 55 23 M12 51 L72 51 Q84 51 84 61 Q84 70 76 70 Q70 70 69 64 M12 67 L44 67" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-opacity="1"/>`+
       `<path d="M24 84 Q31 73 42 80 Q35 91 24 84Z" fill="#6BC25F"/><path d="M58 88 Q66 80 75 88 Q66 95 58 88Z" fill="#E8A92A"/>`;
+    return`<div class="jsvg">${S(g)}</div>`;},
+  // the Vet: what helps (a bandage, water, a hug, a nap, drops) and the visit (look, listen), a picture each
+  vetcare:a=>{let g="";
+    if(a.c==="bandage")g=`<g transform="rotate(-30 50 50)"><rect x="8" y="35" width="84" height="30" rx="15" fill="${grad("#F2C9A0","v",.2,.15)}"/>
+      <rect x="37" y="37" width="26" height="26" rx="5" fill="#FBE7D2"/>${[[19,44],[25,55],[17,56],[81,44],[75,55],[83,56],[28,44],[72,56]].map(p=>
+      `<circle cx="${p[0]}" cy="${p[1]}" r="1.8" fill="#C98C5A" stroke="none"/>`).join("")}</g>`;
+    if(a.c==="water")g=`${OCC}<path d="M50 8 Q63 27 63 35 A13 13 0 0 1 37 35 Q37 27 50 8Z" fill="${grad("#6EC3F2","v",.3,.2)}"/>
+      <path d="M12 60 L88 60 L79 88 L21 88Z" fill="${grad("#3F86D2","v",.25,.2)}"/><ellipse cx="50" cy="60" rx="38" ry="8" fill="#A8DDF3"/>`;
+    if(a.c==="hug")g=`${OCC}<path d="M50 86 Q12 62 12 38 Q12 18 31 18 Q44 18 50 31 Q56 18 69 18 Q88 18 88 38 Q88 62 50 86Z" fill="${grad("#E0344B","v",.3,.2)}"/>${HI(32,34,8,5,.55)}`;
+    if(a.c==="nap")g=`${OCC}<ellipse cx="46" cy="72" rx="40" ry="16" fill="${grad("#9B5CF6","v",.3,.2)}"/><ellipse cx="46" cy="68" rx="28" ry="8" fill="#CDB6FF"/>
+      <text x="58" y="46" font-size="20" font-weight="900" fill="#3F86D2" stroke="none">z</text><text x="70" y="28" font-size="27" font-weight="900" fill="#3F86D2" stroke="none">Z</text>`;
+    if(a.c==="drops")g=`${OCC}<ellipse cx="42" cy="17" rx="9" ry="10" fill="${dome("#DC5A4B",36,30)}"/><rect x="35" y="25" width="14" height="12" rx="2" fill="#4A4F5A"/>
+      <rect x="23" y="35" width="38" height="53" rx="9" fill="${grad("#B5652B","v",.25,.2)}"/><rect x="28" y="51" width="28" height="21" rx="4" fill="#FBF6EC"/>
+      <path d="M42 55 L42 68 M35.5 61.5 L48.5 61.5" fill="none" stroke="#DC5A4B" stroke-width="3.6"/>
+      <path d="M77 34 Q87 49 87 55 A10 10 0 0 1 67 55 Q67 49 77 34Z" fill="${grad("#6EC3F2","v",.3,.2)}"/>`;
+    if(a.c==="look")g=`${OCC}<path d="M58 58 L84 84" fill="none" stroke-width="13"/><path d="M58 58 L84 84" fill="none" stroke="#9A6436" stroke-width="7.5"/>
+      <circle cx="40" cy="40" r="26" fill="#D8EEF7" stroke-width="5"/>${HI(31,31,8,5,.75)}`;
+    if(a.c==="listen")g=`${OCC}<path d="M28 12 Q20 44 38 54 Q50 60 62 54 Q80 44 72 12" fill="none" stroke="#4A4F5A" stroke-width="5"/>
+      <circle cx="28" cy="11" r="4.5" fill="#C9CED6"/><circle cx="72" cy="11" r="4.5" fill="#C9CED6"/>
+      <path d="M50 58 Q50 78 64 80" fill="none" stroke="#4A4F5A" stroke-width="5"/><circle cx="71" cy="79" r="12" fill="${dome("#C9CED6",36,30)}"/><circle cx="71" cy="79" r="5" fill="#8E949C"/>`;
+    return`<div class="jsvg">${S(g)}</div>`;},
+  // drops in the morning (the sun) and at night (the moon), to add
+  drops:a=>{const d=`<svg class="jdrop" viewBox="0 0 20 28"><path d="M10 2 Q18 14 18 19 A8 8 0 0 1 2 19 Q2 14 10 2Z" fill="#4DB3F0" stroke="${INK}" stroke-width="1.8"/></svg>`;
+    const side=(ic,n)=>`<span class="jdgrp"><i>${ic}</i><span>${d.repeat(Math.max(0,n|0))}</span></span>`;
+    return`<div class="jdrops">${side("☀️",a.am)}<b class="jop">+</b>${side("🌙",a.pm)}</div>`;},
+  // a pet with one part shown: the paw, the neck, the back, the nose, the ear or the tail
+  petpart:a=>{const on=a.part,fur="#E8B872",hot="#FF7A59",f=p=>p===on?hot:fur;
+    const ring={paw:[67,86,10],neck:[68,45,11],back:[44,38,12],nose:[90,37,9],ear:[73,17,10],tail:[14,37,12]}[on];
+    const leg=(x,paw)=>`<rect x="${x}" y="60" width="10" height="25" rx="4" fill="${fur}"/><ellipse cx="${x+5}" cy="86" rx="7.5" ry="4.5" fill="${paw?f("paw"):fur}"/>`;
+    const g=`${OCC}<path d="M24 50 Q7 46 8 29 Q14 27 16 32 Q17 43 27 46Z" fill="${f("tail")}"/>${leg(22)}${leg(33)}
+      <ellipse cx="45" cy="54" rx="27" ry="15" fill="${fur}"/>${on==="back"?`<path d="M21 50 Q44 29 69 46 Q46 41 21 55Z" fill="${hot}"/>`:""}${leg(51)}${leg(62,1)}
+      <path d="M57 50 L66 33 L81 39 L73 59Z" fill="${f("neck")}"/><circle cx="76" cy="33" r="12" fill="${fur}"/>
+      <path d="M68 25 Q62 10 72 11 Q80 15 80 26Z" fill="${f("ear")}"/><ellipse cx="87" cy="38" rx="8.5" ry="6" fill="${f("nose")}"/>
+      <circle cx="93" cy="36" r="3.3" fill="${INK}"/><circle cx="78" cy="30" r="2.2" fill="${INK}" stroke="none"/>
+      ${ring?`<circle cx="${ring[0]}" cy="${ring[1]}" r="${ring[2]}" fill="none" stroke="#F2A31B" stroke-width="3" stroke-dasharray="4 3" stroke-opacity="1"/>`:""}`;
     return`<div class="jsvg">${S(g)}</div>`;}
 });
 const Jobs=(()=>{
@@ -9956,6 +9995,7 @@ const Jobs=(()=>{
       case"blocks":case"house":case"cup":case"clock":case"abc":return JOB_ART[a.kind](a);
       case"mailbox":case"sign":case"letter":return JOB_ART[a.kind](a);
       case"grow":case"weather":return JOB_ART[a.kind](a);
+      case"vetcare":case"drops":case"petpart":return JOB_ART[a.kind](a);
     }
     return"";
   }
@@ -10172,6 +10212,8 @@ const Jobs=(()=>{
     S.task={type:t,seed,steps,i:0,miss:0};
     const who=(j.customers||CUSTOMERS).filter(id=>ART[id]),cu=$("#jCust");
     if(cu&&who.length)cu.innerHTML=`<div class="jface">${drawThing(who[Math.floor(Math.random()*who.length)],(Math.random()*9)|0)}</div>`;
+    // a task can bring its own customer: its first step's who (an ART id, the Vet's patient), drawn with whoSeed as his own animal is
+    const own=steps[0]&&steps[0].who;if(cu&&own&&ART[own])cu.innerHTML=`<div class="jface" data-who="${esc(own)}">${drawThing(own,+steps[0].whoSeed||0)}</div>`;
     msg("");step();
   }
   function step(){
@@ -10765,6 +10807,78 @@ Jobs.kit("order",function(host,q,done,opt){
           text:Array.from({length:p.rows},()=>p.cols).join(" + ")+" = ?",art:{kind:"array",rows:p.rows,cols:p.cols},ans:p.rows*p.cols,math:{op:"×",a:p.rows,b:p.cols}}];}},
       {id:"grow",lv:3,name:"how it grows",gen:(seed,L)=>{const r=rnd(seed),o=chore(r,L.tier,grows);return then(o&&o.step,o&&cycle(r,o.w,L.tier));}},
       {id:"weather",lv:4,name:"the weather",gen:(seed,L)=>{const r=rnd(seed),o=chore(r,L.tier);return then(o&&o.step,o&&weather(r,L.tier));}}
+    ]});
+})();
+
+/* ---- 🐾 Vet, opens at reading level 3 ----
+   Every task starts with a pet's chart to read: "Rex has a cut.", "The cat is so hot.", "The pup is sad and sobs.",
+   "Bo had no nap.", "The hen is a bit sick." The pet is one of his own animals (Animal care's) whose word decodes at
+   his level, most of the time, or else a dog, a cat, a pup, a hen, a pig, a duck or a fox; it is the customer at the
+   counter (drawn as his own animal is), and about one chart in three gives it a pet name (Bo, Max, Rex, Dot...). He
+   picks what will help among three pictures: a bandage for a cut, water when it is hot, a hug when it is sad, a nap,
+   drops when it is sick ("sleepy" waits for level 10). Each job level adds a step after it: the drops (2 in the
+   morning and 3 at night: adding within 10); the part of the pet the vet looks at ("Look at its paw."; the neck and
+   the back too, the nose from level 5, the ear and the tail from 7) among three pictures of a pet, each showing one
+   part; the visit in order (look at the pet, fix it up, hug it and let it go; from level 4 four steps, with "Then
+   check its chest." and "Last,", and "listen" from 8). */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // what is wrong ({P} is the pet: "The fox", "Rex"), by what helps
+  const CARE={
+    bandage:["{P} has a cut.","{P} cut its leg.","{P} got a cut on its paw."],
+    water:["{P} is hot.","{P} is so hot.","{P} ran in the sun and got hot."],
+    hug:["{P} is sad.","{P} is so sad.","{P} is sad and sobs.","{P} is sad and has no pal."],
+    nap:["{P} had no nap.","{P} did not get a nap.","{P} is so sleepy."],
+    drops:["{P} is sick.","{P} got sick.","{P} is a bit sick."]};
+  const NAMES=["Bo","Max","Rex","Dot","Pip","Sox","Gus","Bud","Kit","Zip","Jet","Fuzz","Puff","Chip"];
+  // when none of his own animals can be read at his level: [the picture, the word]
+  const PETS=[["dog","dog"],["cat","cat"],["x_puppy","pup"],["hen","hen"],["pig","pig"],["duck","duck"],["fox","fox"]];
+  // cards in a new order, never the right one already
+  const mixed=(r,list)=>{let a=shuffle(r,list);if(a.every((x,i)=>x===list[i]))a=list.slice().reverse();return a;};
+  // the patient: one of his own animals (seven times in ten when he has one he can read), drawn as his is
+  function patient(r,tier){
+    const mine=(state.critters||[]).filter(c=>c&&CRIT(c.id)&&ART[c.id]&&/^[a-z]+$/.test(c.id)&&fits(c.id,tier)).map(c=>({who:c.id,word:c.id,seed:+c.seed||0}));
+    const his=id=>(state.critters||[]).find(c=>c&&c.id===id),any=PETS.filter(p=>ART[p[0]]&&fits(p[1],tier)).map(p=>({who:p[0],word:p[1],seed:his(p[0])?+his(p[0]).seed||0:0}));
+    const p=mine.length&&r()<.7?pick(r,mine):pick(r,any),name=r()<.35?pick(r,NAMES.filter(n=>fits(n,tier))):null;
+    return{who:p.who,seed:p.seed,P:name||"The "+p.word};
+  }
+  // the reading step: the chart, and what helps among three pictures
+  function chart(r,tier){
+    const p=patient(r,tier),helps=Object.keys(CARE),c=pick(r,helps);
+    const lines=CARE[c].map(l=>l.replace("{P}",p.P)).filter(l=>fits(l,tier));
+    const others=shuffle(r,helps.filter(x=>x!==c)).slice(0,2);
+    return{kit:"pick",track:"reading",read:true,say:["Read the chart. What will help?"],text:pick(r,lines.length?lines:[p.P+" is sad."]),who:p.who,whoSeed:p.seed,
+      choices:shuffle(r,[c].concat(others)).map(x=>({v:x,art:{kind:"vetcare",c:x}})),ans:c};
+  }
+  // job level 2: the drops, in the morning and at night
+  function drops(r){const a=int(r,1,5),b=int(r,1,5);
+    return{kit:"pad",track:"math",level:"add10",say:[a,a===1?"drop in the morning and":"drops in the morning and",b,"at night.","How many drops?"],
+      text:`${a} + ${b} = ?`,art:{kind:"drops",am:a,pm:b},ans:a+b,math:{op:"+",a,b}};}
+  // job level 3: the part the vet looks at, among three pictures of a pet that each show one part
+  const PARTS=["paw","neck","back","nose","ear","tail"];
+  function part(r,tier){
+    const list=PARTS.filter(x=>fits(x,tier)),w=pick(r,list);
+    return{kit:"pick",read:true,say:["Where does the vet look? Find it!"],text:`Look at its ${w}.`,
+      choices:shuffle(r,[w].concat(shuffle(r,list.filter(x=>x!==w)).slice(0,2))).map(x=>({v:x,art:{kind:"petpart",part:x}})),ans:w};}
+  // job level 4: the visit, in order; "Then" and "Last," say which is which, as in the Baker's recipes
+  const VISITS=[
+    [["Look at the pet.","look"],["Then fix it up.","fix"],["Hug it and let it go.","hug"]],
+    [["Look at the pet.","look"],["Then check its chest.","listen"],["Then fix it up.","fix"],["Last, hug it and let it go.","hug"]],
+    [["Look at the pet.","look"],["Then listen to its chest.","listen"],["Then fix it up.","fix"],["Last, hug it and let it go.","hug"]]];
+  const SEEN={look:"look",listen:"listen",fix:"bandage",hug:"hug"};
+  function visit(r,tier){
+    const v=pick(r,VISITS.filter(x=>x.every(s=>fits(s[0],tier)))),cards=v.map(s=>({v:s[1],text:s[0],art:{kind:"vetcare",c:SEEN[s[1]]}})),ans=cards.map(c=>c.v);
+    return{kit:"order",track:"math",level:"seq",say:["Put the visit in order!"],choices:mixed(r,cards),ans,math:{op:"seq",steps:ans}};}
+  Jobs.register({
+    id:"vet",name:"Vet",icon:"🐾",uniform:{id:"vetcoat",name:"vet coat",ic:"🥼"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the vet! Read each chart.",
+    customers:["dog","cat","hen","pig","duck","fox","rabbit"],
+    tasks:[
+      {id:"chart",lv:1,name:"pet charts",gen:(seed,L)=>[chart(rnd(seed),L.tier)]},
+      {id:"drops",lv:2,name:"counting drops",gen:(seed,L)=>{const r=rnd(seed);return[chart(r,L.tier),drops(r)];}},
+      {id:"parts",lv:3,name:"the parts of a pet",gen:(seed,L)=>{const r=rnd(seed);return[chart(r,L.tier),part(r,L.tier)];}},
+      {id:"visit",lv:4,name:"the visit",gen:(seed,L)=>{const r=rnd(seed);return[chart(r,L.tier),visit(r,L.tier)];}}
     ]});
 })();
 
