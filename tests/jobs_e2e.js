@@ -276,8 +276,9 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
 
   // 7. the Job board in Adventure
   await p.click("#advBtn");await waitFor(p,()=>Modes.top()==="adventure");
+  await waitFor(p,".tile.spot.jboard",{timeout:10000});   // the signpost is drawn a moment after Adventure opens
   await E(()=>{const b=Jobs.boardAt();Adv._P.c=b.c;Adv._P.r=b.r;});
-  const lab=await waitFor(p,()=>/Job board/.test(document.getElementById("advAct").textContent)&&document.getElementById("advAct").textContent);
+  const lab=await waitFor(p,()=>/Job board/.test(document.getElementById("advAct").textContent)&&document.getElementById("advAct").textContent,{timeout:10000});
   ok(lab&&await E(()=>!!document.querySelector(".tile.spot.jboard")),"Adventure has a Job board signpost: "+lab);
   await p.click("#advAct");
   ok(await waitFor(p,()=>Modes.stack().join(">")==="adventure>job"),"walking up to it opens the Job board: "+await E(()=>Modes.stack().join(">")));
