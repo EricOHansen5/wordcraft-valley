@@ -68,7 +68,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const q1=await E(()=>{const h=document.getElementById("fsQ");return{opts:[...h.querySelectorAll(".wpic[data-w]")].map(b=>b.dataset.w),word:(h.querySelector(".wword")||{}).textContent,
     prompt:(h.querySelector(".wp")||{}).textContent,foods:Feast.foods(),q:Feast._q()};});
   ok(a1&&q1.opts.indexOf(a1)>=0&&q1.opts.length===3&&q1.word===a1&&/Tap its picture/.test(q1.prompt),"a Picture it: the word, three pictures, dataset.ans and data-w on the answers "+J(q1));
-  ok(q1.foods.indexOf(a1)>=0&&["egg","nut","fish","chip","plum"].indexOf(a1)>=0,"the first dish is a food word at his level: "+a1);
+  ok(q1.foods.indexOf(a1)>=0&&["egg","nut","fish","chip","plum","jam","bun","ham"].indexOf(a1)>=0,"the first dish is a food word at his level: "+a1);
   await wait(450);
   let s=await said();
   ok(s.indexOf("Let's set the feast table! Read each word and tap its picture.")>=0&&!s.some(x=>x==="say:word:"+a1||x===a1),"it says what to do, and never the word he has to read "+J(s));
@@ -175,8 +175,10 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     out[t]={f,ok:f.every(x=>{const w=allWords().find(y=>y.w===x);return !!w&&!w.tricky&&w.t<=t&&!!WORD_ART[x]&&Decode.check(x,t).every(c=>c.ok);})};});
     state.settings.tierOverride=4;return out;});
   ok(Object.keys(lv).every(t=>lv[t].ok&&lv[t].f.length>=6),"every level: six or more words, each in his list at or below his level and decodable there "+J(lv));
-  ok(J(lv[4].f.slice(0,5).sort())===J(["chip","egg","fish","nut","plum"])&&lv[4].f[5]==="pot","level 4: the five foods he can read, then a pot "+J(lv[4].f));
-  ok(J(lv[1].f.slice(0,2))===J(["pot","pan"])&&lv[1].f.every(x=>!["cat","dog","bat","fox"].includes(x)),"level 1 (no foods yet): a pot, a pan, then other words at his level, never an animal "+J(lv[1].f));
+  ok(J(lv[4].f.slice().sort())===J(["bun","chip","egg","fish","ham","jam","nut","plum"]),"level 4: the eight foods he can read, and no pots or pans needed "+J(lv[4].f));
+  ok(J(lv[1].f.slice(0,4))===J(["jam","ham","pot","pan"])&&lv[1].f.every(x=>!["cat","dog","bat","fox"].includes(x)),"level 1: jam and ham, then a pot, a pan and other words at his level, never an animal "+J(lv[1].f));
+  ok(J(lv[2].f.slice(0,5).sort())===J(["bun","egg","ham","jam","nut"])&&lv[2].f[5]==="pot"&&J(lv[3].f.slice().sort())===J(["bun","chip","egg","fish","ham","jam","nut"]),
+    "level 2: five foods (bun from here) and a pot; level 3: seven foods and no pots or pans "+J([lv[2].f,lv[3].f]));
   ok(lv[6].f.indexOf("corn")>=0&&lv[6].f.indexOf("cake")>=0&&lv[8].f.indexOf("pumpkin")>=0,"corn and cake from level 5–6, pumpkin at 8");
   ok(await E(x=>x.every(a=>Decode.check(a,4).every(c=>c.ok)&&Feast.foods().indexOf(a)>=0),asked)&&asked.length===20,
     "every word the table asked for was one of his foods and decodes at level 4 "+J(asked));
