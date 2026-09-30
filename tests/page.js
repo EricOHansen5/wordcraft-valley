@@ -82,5 +82,13 @@ if(require.main===module)(async()=>{
   ok((await get(b,"sw.js")).code===200&&!isPage(await get(b,"sw.js"))&&(await get(b,"nope.txt")).code===404&&(await get(b,"..%2Fpackage.json")).code===404,
     "page: static serves real files and 404s the rest");
   a.close();b.close();
+  // a data file that did not arrive: the page says so (and stops) instead of showing a blank valley
+  if(src.length){const {JSDOM,VirtualConsole}=require("jsdom"),vc=new VirtualConsole(),errs=[];
+    vc.on("jsdomError",e=>errs.push(String(e&&(e.cause&&e.cause.message||e.message)||e)));
+    const dom=new JSDOM(html({leaveOut:[src[src.length-1]]}),{runScripts:"dangerously",virtualConsole:vc});
+    const box=dom.window.document.getElementById("dataMissing");
+    ok(box&&/The game's files did not load\. Reload once online\./.test(box.textContent)&&box.querySelector("button")&&errs.some(e=>/did not load/.test(e)),
+      `page: without ${src[src.length-1]} it says "The game's files did not load. Reload once online." and stops (${errs[0]||"no error"})`);
+    dom.window.close();}
   console.log(`page.js: ${fails?"failed":"all passed"}`);
 })().catch(e=>{console.log("FAIL page.js crashed: "+(e&&e.stack||e));process.exit(1);});
