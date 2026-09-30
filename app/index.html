@@ -1246,6 +1246,29 @@ body.exploring .slot-empty{display:none}
 .jbd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%}
 .jbd span{font-size:34px;background:#C98F4E;border:3px solid var(--ink);border-radius:10px;padding:2px 8px}
 .jbd b{font-size:12px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 5px;margin-top:-3px}
+/* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
+.jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
+.jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
+.jorow{padding:8px;border:3px dashed rgba(59,48,36,.3);border-radius:18px;background:rgba(255,255,255,.45)}
+.jorder.wide{flex-direction:row;align-items:flex-start;max-width:none}
+.jorder.wide .jopool{order:-1}
+.jorder.wide .jorow,.jorder.wide .jopool{flex:1 1 0;min-width:0;flex-direction:column;align-items:stretch;justify-content:flex-start}
+.joslot{display:flex;align-items:center;gap:6px}.jorder.wide .joslot{width:100%}
+.joslot>i{flex:0 0 auto;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:3px solid var(--ink);background:var(--gold);font-style:normal;font-weight:900;font-size:18px}
+.jogap{display:block;flex:1;min-width:110px;min-height:56px;border:3px dashed rgba(59,48,36,.28);border-radius:16px;background:#fff}
+.jocard{display:flex;align-items:center;gap:8px;min-height:56px;min-width:96px;padding:6px 14px;border:3px solid var(--ink);border-radius:16px;background:#fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.2);font-family:inherit;font-size:24px;font-weight:800;color:var(--ink);text-align:left;line-height:1.2}
+.jorder.wide .jocard{width:100%;font-size:22px}.joslot .jocard{flex:1}
+.jocard:active{transform:translateY(3px);box-shadow:none}
+.joart{flex:0 0 auto;display:block;width:46px;height:46px}.joart>*{width:46px!important;height:46px!important;margin:0!important}.joart svg{width:100%;height:100%}
+.jocard.hint{box-shadow:0 0 0 5px rgba(127,176,105,.9);background:#EAF7E2}
+.jocard.cur{outline:4px solid #3F86D2;outline-offset:2px}
+.jorder.right .jocard{background:#DDF3D4;border-color:var(--meadow-deep)}
+@keyframes joshake{0%,100%{transform:none}25%{transform:translateX(-8px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
+.jorder.wrong .jorow,.jorow.nudge{animation:joshake .45s}
+.jochk{margin-top:10px}.jocheck{width:110px;height:62px}
+.jocheck.ready{box-shadow:0 0 0 4px rgba(255,229,138,.95),0 4px 0 rgba(0,0,0,.2)}.jocheck.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9)}
+@media (max-width:700px){.jorder.wide{flex-direction:column;align-items:stretch}.jocard,.jorder.wide .jocard{font-size:20px;padding:6px 10px}.jogap{min-width:80px}}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -10508,9 +10531,86 @@ const Jobs=(()=>{
   return{register,get:id=>BY[id]||null,list:()=>REG.slice(),kit:(name,fn)=>{KITS[name]=fn;},kits:()=>Object.keys(KITS),KITS,
     gen,level:levelOf,xp:xpOf,LEVELS,isOpen,open,close,clockIn,clockOut,canClockIn,talk,voiceLines,art:artHtml,boardAt,
     uniform:j=>uniform(typeof j==="string"?BY[j]:j),tipAt:j=>tipAt(typeof j==="string"?BY[j]:j),
+    // for a kit added from outside (Jobs.kit): the question's top, its wiring (read aloud, 🔊, words to tap), the keyboard
+    ui:{head,wire,keys:f=>{keyFn=f;},hush},
     _S:()=>S&&{job:S.job.id,n:S.n,coins:S.coins,tips:S.tips,task:S.task&&{type:S.task.type.id,i:S.task.i,steps:S.task.steps.length,miss:S.task.miss,seed:S.task.seed}},
     _next:id=>next(id)};
 })();
+
+/* ---- the order kit: put these in order ----
+   Added with Jobs.kit("order",fn); Jobs.ui lends it the question's top, its wiring and the keyboard.
+   q.choices are the cards: a value, or {v, text, art} (the text, with a picture beside it when there
+   is one), shown in the order given (the generators shuffle them, never into the answer). q.ans is
+   the right order, a list of the values. A tap on a card moves it to the next empty place in the
+   answer row, a tap on a placed card puts it back, and ✓ checks. A miss keeps the cards: the ones in
+   the right place stay put, the others go back to try again, and the customer waits (opt.onMiss);
+   after the second miss the next right card glows. dataset.ans is the right order joined with |.
+   done(ok) once, through Read.once, ok being right the first time. Keyboard: the arrows move a
+   cursor over the cards, Space picks, Enter checks. */
+Jobs.kit("order",function(host,q,done,opt){
+  const U=Jobs.ui;done=Read.once(done);opt=opt||{};
+  const val=c=>String(c&&typeof c==="object"?c.v:c);
+  const cards=(q.choices||[]).map(c=>({v:val(c),text:String(c&&typeof c==="object"&&c.text!=null?c.text:val(c)),art:c&&typeof c==="object"&&c.art||null}));
+  const ans=(typeof q.ans==="string"?q.ans.split("|"):[].concat(q.ans==null?[]:q.ans)).map(String);
+  const by={};cards.forEach(c=>{by[c.v]=c;});
+  if(ans.length<2||ans.length!==cards.length||Object.keys(by).length!==cards.length||ans.some(a=>!by[a]))throw new Error("an order answer is every card once, in order");
+  host.dataset.kit="order";host.dataset.ans=ans.join("|");
+  let miss=0,fin=false,hint=!!opt.hint,cur=0,kbd=false;
+  const slots=ans.map(()=>null);
+  // long cards (a recipe's steps) stand in two columns, the cards and the answer; short ones (names, numbers) in rows
+  const wide=cards.some(c=>c.text.length>12);
+  host.innerHTML=U.head(q)+`<div class="jorder${wide?" wide":""}"><div class="jorow"></div><div class="jopool"></div></div>
+    <div class="mrow jochk"><button class="jkey ok jocheck" data-act="check" aria-label="Check">✓</button></div>`;
+  const box=host.querySelector(".jorder"),rowEl=host.querySelector(".jorow"),poolEl=host.querySelector(".jopool"),chk=host.querySelector(".jocheck");
+  const pool=()=>cards.filter(c=>slots.indexOf(c.v)<0);
+  // what the cursor walks over, in the order they stand on the screen
+  const items=()=>{const r=slots.filter(Boolean),p=pool().map(c=>c.v);return wide?p.concat(r):r.concat(p);};
+  const face=c=>(c.art?`<span class="joart">${Jobs.art(c.art)}</span>`:"")+`<span class="jotext">${esc(c.text)}</span>`;
+  function draw(){
+    const gap=slots.indexOf(null),nx=hint&&!fin&&gap>=0?ans[gap]:null,list=items();
+    cur=Math.max(0,Math.min(cur,list.length-1));const at=kbd&&!fin?list[cur]:null;
+    const card=(c,where)=>`<button class="jocard${c.v===nx&&where==="pool"?" hint":""}${c.v===at?" cur":""}" data-w="${esc(c.v)}" data-at="${where}">${face(c)}</button>`;
+    rowEl.innerHTML=slots.map((v,i)=>`<div class="joslot"><i>${i+1}</i>${v?card(by[v],"row"):`<span class="jogap"></span>`}</div>`).join("");
+    poolEl.innerHTML=pool().map(c=>card(c,"pool")).join("");
+    chk.classList.toggle("ready",gap<0);
+    chk.classList.toggle("hint",!!(hint&&!fin&&gap<0&&slots.every((v,i)=>v===ans[i])));
+  }
+  function move(v){
+    if(fin||!by[v])return;const i=slots.indexOf(v);
+    if(i>=0){slots[i]=null;Sound.sfx.soft();}
+    else{const g=slots.indexOf(null);if(g<0)return;slots[g]=v;Sound.sfx.pop();}
+    draw();
+  }
+  function check(){
+    if(fin)return;
+    if(slots.indexOf(null)>=0){Sound.sfx.soft();rowEl.classList.remove("nudge");void rowEl.offsetWidth;rowEl.classList.add("nudge");return;}
+    if(slots.every((v,i)=>v===ans[i])){fin=true;U.keys(null);box.classList.add("right");draw();Sound.sfx.win();setTimeout(()=>done(!miss),900);return;}
+    // the cards stay: the ones in the right place keep it, the others go back to be tried again
+    miss++;if(miss>=2)hint=true;
+    slots.forEach((v,i)=>{if(v!==ans[i])slots[i]=null;});
+    box.classList.remove("wrong");void box.offsetWidth;box.classList.add("wrong");Sound.sfx.nope();draw();
+    if(opt.onMiss)opt.onMiss(miss);
+  }
+  host.addEventListener("click",e=>{
+    const b=e.target&&e.target.closest?e.target.closest(".jocard,.jocheck"):null;if(!b||!host.contains(b))return;
+    // a button keeps no focus, so Space from the keyboard never presses it a second time
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(x){}
+    if(b.classList.contains("jocheck"))check();else move(b.dataset.w);
+  });
+  U.keys(e=>{
+    if(!host.isConnected||fin)return false;const k=e.key,list=items();
+    if(k==="ArrowLeft"||k==="ArrowUp"||k==="ArrowRight"||k==="ArrowDown"){
+      if(kbd&&list.length)cur=(cur+(k==="ArrowLeft"||k==="ArrowUp"?-1:1)+list.length)%list.length;kbd=true;draw();return true;}
+    if(k===" "||k==="Spacebar"||e.code==="Space"){
+      kbd=true;const v=list[cur];if(v==null){draw();return true;}
+      const fromPool=slots.indexOf(v)<0,pi=pool().map(c=>c.v).indexOf(v);move(v);
+      // stay among the cards still to place: the next one along, or the one just put back
+      const p=pool().map(c=>c.v),nx=fromPool&&p.length?p[Math.min(pi,p.length-1)]:v;cur=Math.max(0,items().indexOf(nx));
+      draw();return true;}
+    if(k==="Enter"){kbd=true;check();return true;}
+    return false;});
+  U.wire(host,q);draw();
+});
 
 /* ---- the math track, K–1 ----
    Seven levels, every question generated from a seed and read aloud, so his reading level
