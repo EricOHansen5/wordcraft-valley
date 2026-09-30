@@ -1,10 +1,6 @@
 // Hero name: the books say {hero}; the Grown-up setting changes it everywhere, escaped, and Decode reads it as a level-1 word.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs"),path=require("path");
-const APP=path.join(__dirname,"../app");
-const TYPES={".html":"text/html",".json":"application/json",".js":"text/javascript",".mp3":"audio/mpeg",".webmanifest":"application/manifest+json",".png":"image/png"};
-const srv=http.createServer((q,r)=>{let f=decodeURIComponent(q.url.split("?")[0]);if(f.endsWith("/"))f+="index.html";
-  const fp=path.join(APP,f);if(!fp.startsWith(APP)||!fs.existsSync(fp)){r.writeHead(404);r.end();return;}
-  r.writeHead(200,{"content-type":TYPES[path.extname(fp)]||"application/octet-stream"});r.end(fs.readFileSync(fp));}).listen(8815,async()=>{
+const srv=require("./page").serveApp({port:8815,static:true},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const ctx=await b.newContext({viewport:{width:1180,height:820},serviceWorkers:"block"});
   const p=await ctx.newPage();const errs=[];p.on("pageerror",e=>errs.push(e.message));

@@ -1,7 +1,7 @@
 // Retention reads: a tricky (heart) word is checked again 30 crates after it is mastered and
 // 90 after that; a missed check sends it back to review (still mastered) until it is read clean.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8814,async()=>{
+const srv=require("./page").serveApp({port:8814},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   // this test server answers every path with the page, so keep the service worker out of it (its script would be HTML)
   const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true,serviceWorkers:"block"});

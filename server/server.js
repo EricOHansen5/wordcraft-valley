@@ -18,6 +18,8 @@ const SNAP=path.join(DATA,"snapshots"),BLOB=path.join(DATA,"blobs");
 [SNAP,BLOB].forEach(d=>fs.mkdirSync(d,{recursive:true}));
 const TYPES={".mp3":"audio/mpeg",".html":"text/html; charset=utf-8",".js":"text/javascript",".json":"application/json",".webmanifest":"application/manifest+json",
   ".png":"image/png",".svg":"image/svg+xml",".ico":"image/x-icon",".css":"text/css"};
+// the game's data (app/art/, app/content/) changes with each release, like index.html, so it is revalidated too (as app/_headers says)
+const DATA_DIRS=["art","content"];
 // text is sent gzipped when the browser accepts it (the game file shrinks about 4x)
 const send=(res,code,body,type="application/json")=>{let b=typeof body==="string"||Buffer.isBuffer(body)?body:JSON.stringify(body);
   const h={"Content-Type":type,"Cache-Control":"no-store"};if(res.gz&&b.length>1024){b=zlib.gzipSync(b);h["Content-Encoding"]="gzip";}
@@ -112,8 +114,9 @@ http.createServer(async(req,res)=>{
   let f=path.normalize(path.join(APP,p.endsWith("/")?p+"index.html":p));
   if(!f.startsWith(path.normalize(APP)))return send(res,403,"no","text/plain");
   fs.readFile(f,(err,buf)=>{if(err)return send(res,404,"not found","text/plain");
+    const data=DATA_DIRS.includes(path.relative(path.normalize(APP),f).split(path.sep)[0]);
     const type=TYPES[path.extname(f)]||"application/octet-stream",h={"Content-Type":type,
-      "Cache-Control":f.endsWith("sw.js")||f.endsWith(".html")||f.endsWith("index.json")?"no-cache":f.includes(path.sep+"voice"+path.sep)?"max-age=31536000, immutable":"max-age=86400"};
+      "Cache-Control":f.endsWith("sw.js")||f.endsWith(".html")||f.endsWith("index.json")||data?"no-cache":f.includes(path.sep+"voice"+path.sep)?"max-age=31536000, immutable":"max-age=86400"};
     if(res.gz&&/text|json|javascript|svg|manifest/.test(type)&&buf.length>1024){buf=gzFile(f,buf);h["Content-Encoding"]="gzip";}
     res.writeHead(200,h);res.end(buf);});
 }).listen(PORT,()=>console.log(`Wordcraft server on :${PORT} (data ${DATA}, app ${APP}${TOKEN?", token on":""}, listener ${HEAR_URL||"off"})`));

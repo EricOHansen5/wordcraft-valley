@@ -15,10 +15,9 @@ const SW_NOISE=/unsupported MIME type/;
 // in September the season's free plan (Pumpkin patch) is added to the plans when the valley loads,
 // after the Factory's free plan (given once, in bootFixups, to every save that doesn't have it)
 const SEASON_PLAN="pumpkinpatch",FACTORY_PLAN="factory";
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});
+const srv=require("./page").serveApp({port:PORT,before(q,r){
   // a page on the same origin with no game on it, for writing a save before the game starts
-  if(q.url.startsWith("/blank")){r.end("<!doctype html><title>blank</title>");return;}
-  r.end(fs.readFileSync(path.join(__dirname,"../app/index.html")));}).listen(PORT,async()=>{
+  if(!q.url.startsWith("/blank"))return false;r.writeHead(200,{"content-type":"text/html"});r.end("<!doctype html><title>blank</title>");return true;}},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   let failed=0;const ok=(c,m)=>{if(!c)failed++;console.log((c?"PASS ":"FAIL ")+m);};
   const J=x=>JSON.stringify(x);

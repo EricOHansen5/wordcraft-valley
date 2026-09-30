@@ -1,9 +1,11 @@
 // Wordcraft Valley service worker: offline app shell, stale-while-revalidate.
-// Bump VERSION whenever you replace index.html so the iPad picks up the new build.
+// Bump VERSION (npm run release) whenever anything in app/ changes (index.html, art/, content/) so the iPad picks up the new build.
 const VERSION = "wcv-2026-09-30a";
 // the game voice lives in its own cache so a new build doesn't re-download it
 const VOICE = "wcv-voice-1";
 const SHELL = ["./", "index.html", "manifest.webmanifest",
+  // the game's data, loaded by index.html's <script src> tags before its script (tests/version_check.js checks the two agree)
+  "art/openmoji.js", "art/fluent.js", "content/words.js", "content/books.js", "content/sentences.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

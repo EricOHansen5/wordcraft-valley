@@ -4,7 +4,7 @@
 // what a job passes (its house number, its names, its steps, the bread) is used. Also Read.once, and Jobs.register / Jobs.gen skipping
 // a step whose kit or track this version doesn't have, with a console warning and no crash.
 const fs=require("fs"),path=require("path"),{JSDOM}=require("jsdom"),fdb=require("fake-indexeddb");
-const html=fs.readFileSync(path.join(__dirname,"../app/index.html"),"utf8"),errors=[],warns=[];
+const html=require("./page").html(),errors=[],warns=[];
 const dom=new JSDOM(html,{runScripts:"dangerously",pretendToBeVisual:true,beforeParse(w){
   w.indexedDB=fdb.indexedDB;w.IDBKeyRange=fdb.IDBKeyRange;
   const P=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}});

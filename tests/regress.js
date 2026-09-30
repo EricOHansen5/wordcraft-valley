@@ -1,5 +1,5 @@
 const fs=require("fs"),{JSDOM}=require("jsdom"),fdb=require("fake-indexeddb");
-const html=fs.readFileSync(require("path").join(__dirname,"../app/index.html"),"utf8");
+const html=require("./page").html();
 const errors=[],spoken=[];let phonicsCalls=[];
 const dom=new JSDOM(html,{runScripts:"dangerously",pretendToBeVisual:true,beforeParse(w){
   w.indexedDB=fdb.indexedDB;w.IDBKeyRange=fdb.IDBKeyRange;

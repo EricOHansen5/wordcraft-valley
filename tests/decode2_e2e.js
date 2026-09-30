@@ -1,7 +1,7 @@
 // Decoding help in the crate loop: a connected ("mmmaaat") blend, "try the other sound"
 // from level 5, and a miss on a one-sound-away word names both sounds.
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8820,async()=>{
+const srv=require("./page").serveApp({port:8820},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true,serviceWorkers:"block"});
   const p=await ctx.newPage();const errs=[];p.on("pageerror",e=>errs.push(e.message));

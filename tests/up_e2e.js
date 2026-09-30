@@ -1,5 +1,5 @@
 const fs=require("fs"),{JSDOM}=require("jsdom"),fdb=require("fake-indexeddb");
-const html=fs.readFileSync(require("path").join(__dirname,"../app/index.html"),"utf8");
+const html=require("./page").html();
 const errors=[];
 const crowded={tour:99,wordsRead:60,gems:500,rows:7,biome:3,vehStarter:true,seasonSeen:"autumn",
   blueprints:["lantern","garage","well","campfire","market","barn","pumpkinpatch"],

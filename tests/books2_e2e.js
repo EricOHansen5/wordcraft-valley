@@ -6,7 +6,7 @@ const NEW=["zap_fox","map_x","bob_logs","red_egg","log_hut","den_bug","dock_whal
 const texts=JSON.parse(fs.readFileSync(path.join(__dirname,"../tools/voice/voice_texts.json"),"utf8"));
 const norm=t=>String(t).toLowerCase().replace(/[’]/g,"'").replace(/[^a-z0-9' ]+/g," ").replace(/\s+/g," ").trim();
 const listed=new Set(texts.sents.concat(texts.words).map(norm));
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(path.join(__dirname,"../app/index.html")));}).listen(8816,async()=>{
+const srv=require("./page").serveApp({port:8816},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const ctx=await b.newContext({viewport:{width:1180,height:820},serviceWorkers:"block"});
   const p=await ctx.newPage();const errs=[];p.on("pageerror",e=>errs.push(e.message));

@@ -5,7 +5,7 @@ const st={tour:99,guardians:[0,1,2,3],wordsRead:60,gems:100,rows:7,biome:3,vehSt
   grid:{"3,8":{id:"well",seed:1},"14,8":{id:"barn",seed:3}},inventory:{lantern:{n:1,lv:1}},
   critters:CR.map((id,i)=>({id,seed:i,c:(i*3)%22,r:8-(i%4)})),
   vehicles:VS.map((id,i)=>({u:"u"+i,id,c:(i*5+2)%22,r:8-(i%3),face:i%2?"r":"l"}))};
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8772,async()=>{
+const srv=require("./page").serveApp({port:8772},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const p=await b.newPage({viewport:{width:1180,height:820}});
   const errs=[];p.on("pageerror",e=>errs.push(e.message));p.on("console",m=>{if(m.type()==="error")errs.push(m.text());});

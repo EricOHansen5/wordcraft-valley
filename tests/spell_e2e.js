@@ -1,5 +1,5 @@
 const fs=require("fs"),{JSDOM}=require("jsdom"),fdb=require("fake-indexeddb");
-const html=fs.readFileSync(require("path").join(__dirname,"../app/index.html"),"utf8");
+const html=require("./page").html();
 const errors=[];
 // a player part-way up the ladder: some words new, some at find-it, some at build, some at read-it
 const stats={};["cat","hat","bat","map","cap"].forEach(w=>stats[w]={seen:3,first:3,miss:0,rung:0,rungClean:1});

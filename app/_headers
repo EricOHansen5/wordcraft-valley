@@ -25,6 +25,13 @@
 /index.html
   ! Cache-Control
   Cache-Control: no-cache
+# The game's data (art/, content/) changes with each release, just like index.html.
+/art/*
+  ! Cache-Control
+  Cache-Control: no-cache
+/content/*
+  ! Cache-Control
+  Cache-Control: no-cache
 /sw.js
   ! Cache-Control
   Cache-Control: no-cache

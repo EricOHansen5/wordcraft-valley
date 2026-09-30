@@ -4,7 +4,7 @@ const VS=["v_digger","v_tram","v_dumptruck","v_bulldozer","v_mixer","v_crane","v
 const BL=["lighthouse","castle","treasure","tiki","coaster","volcano","mine","dinonest"];
 const mk=(biome,extra)=>Object.assign({tour:99,guardians:[0,1,2,3,4,5,6],wordsRead:200,gems:500,rows:9,biome,vehStarter:true,seasonSeen:"autumn",phase:0,
   grid:Object.fromEntries(BL.map((id,i)=>[(2+i*2.5|0)+","+(i%2?6:4),{id,seed:i}])),inventory:{},critters:[],vehicles:[],lastWord:"ship"},extra||{});
-const srv=http.createServer((q,r)=>{r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(require("path").join(__dirname,"../app/index.html")));}).listen(8776,async()=>{
+const srv=require("./page").serveApp({port:8776},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
   const p=await b.newPage({viewport:{width:1180,height:820}});
   const errs=[];p.on("pageerror",e=>errs.push(e.message));
