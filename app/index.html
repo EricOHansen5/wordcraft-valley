@@ -12789,15 +12789,18 @@ const TalkMatch=(()=>{
         for(let k=0;k<len/2;k++){const p=i+k,q=p+len/2,tr=re[q]*cr-im[q]*ci,ti=re[q]*ci+im[q]*cr;
           re[q]=re[p]-tr;im[q]=im[p]-ti;re[p]+=tr;im[p]+=ti;const nr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=nr;}}}
   }
-  // to 16 kHz: a windowed-sinc low-pass evaluated where each new sample falls
+  // to 16 kHz: a windowed-sinc low-pass evaluated where each new sample falls (the kernel from a table, 128 steps a sample)
+  const KRES=128,kernels={};
+  function kernel(fc,half){const k=fc+":"+half;if(kernels[k])return kernels[k];const t=new Float32Array(2*half*KRES+1);
+    for(let i=0;i<t.length;i++){const d=i/KRES-half,u=d/half,a=Math.PI*fc*d;t[i]=Math.abs(u)>=1?0:(Math.abs(a)<1e-6?1:Math.sin(a)/a)*(.5+.5*Math.cos(Math.PI*u));}
+    return kernels[k]=t;}
   function resample(x,from){
     if(!x||!x.length||!(from>0))return new Float32Array(0);
     if(Math.abs(from-SR)<1)return Float32Array.from(x);
     const step=from/SR,n=Math.floor(x.length/step),out=new Float32Array(n);
-    const fc=Math.min(1,SR/from)*.9,half=Math.ceil(5/fc);
+    const fc=Math.min(1,SR/from)*.9,half=Math.ceil(5/fc),K=kernel(fc,half);
     for(let i=0;i<n;i++){const t=i*step,c=Math.floor(t);let s=0,w=0;
-      for(let k=c-half+1;k<=c+half;k++){if(k<0||k>=x.length)continue;const d=t-k,u=d/half;if(u<=-1||u>=1)continue;
-        const a=Math.PI*fc*d,h=(Math.abs(a)<1e-6?1:Math.sin(a)/a)*(.5+.5*Math.cos(Math.PI*u));s+=x[k]*h;w+=h;}
+      for(let k=c-half+1;k<=c+half;k++){if(k<0||k>=x.length)continue;const h=K[Math.round((t-k+half)*KRES)];s+=x[k]*h;w+=h;}
       out[i]=w?s/w:0;}
     return out;
   }
