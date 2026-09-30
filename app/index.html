@@ -1319,6 +1319,12 @@ body.exploring .slot-empty{display:none}
 .jmenu{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
 .jmitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border:3px solid var(--ink);border-radius:16px;background:#fff}
 .jmitem img{width:60px;height:60px;display:block}.jmitem b{font-size:26px;font-weight:900}.jmitem .jcoins{gap:4px}
+/* the Bus driver: the street map with the valley's buildings as stops, and the bus */
+.jlawn.bus .jcell{width:56px;height:56px}
+.jlawn.bus .start::before{content:"🚏"}.jlawn.bus .me::after,.jlawn.street.bus.done .me::after{content:"🚌";font-size:34px}
+.jmark{position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:1px;pointer-events:none}
+.jmark .jword{width:34px;height:34px}.jmark b{display:block;margin-top:-3px;padding:0 4px;border-radius:6px;background:#fff;border:2px solid var(--ink);font-size:13px;font-weight:900;line-height:1.1;color:var(--ink)}
+@media (max-width:700px){.jlawn.bus .jcell{width:44px;height:44px}.jmark .jword{width:26px;height:26px}.jmark b{font-size:11px}}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -9884,6 +9890,8 @@ const JOB_ART={
 const JOB_PIC={};
 const jobPic=id=>JOB_PIC[id]||(JOB_PIC[id]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(drawThing(id,1)));
 Object.assign(JOB_ART,{
+  // one thing by its ART id: the Bus driver's stops (the valley's buildings), the animals
+  thing:a=>`<div class="jword">${drawThing(a.id,1)}</div>`,
   plate:a=>{const items=a.items||[],n=items.reduce((s,x)=>s+(x.n|0),0);
     return`<div class="jplate${n>4?" many":""}">${items.map(x=>`<span class="jpgrp">${`<img src="${jobPic(x.id)}" alt="" draggable="false">`.repeat(Math.max(0,x.n|0))}</span>`).join("")}</div>`;},
   pizza:a=>{const f=+a.f||1,cut=deg=>{const t=deg*Math.PI/180,x=(Math.sin(t)*37).toFixed(1),y=(Math.cos(t)*37).toFixed(1),d=`M${50-x} ${50-y} L${50+ +x} ${50+ +y}`;
@@ -10051,22 +10059,28 @@ const Jobs=(()=>{
     done=Read.once(done);opt=opt||{};const moves=String(q.ans||""),g=q.grid||{w:6,h:5},st=q.start||{c:0,r:0};
     if(!/^[LRUD]+$/.test(moves))throw new Error("a path answer is a list of moves (L, R, U, D)");
     let miss=0,fin=false,i=0,c=st.c,r=st.r,hint=!!opt.hint;const cut={};
+    // q.to: drive to that square by any shortest way, so a step is right when it gets closer (the moves in q.ans are one
+    // such way); q.marks [{c,r,text,art}] name places on the map (the Bus driver's stops)
+    const to=q.to&&q.to.c>=0?q.to:null,far=(x,y)=>Math.abs(x-to.c)+Math.abs(y-to.r),
+      closer=d=>{const x=c+STEP[d][0],y=r+STEP[d][1];return x>=0&&y>=0&&x<g.w&&y<g.h&&far(x,y)<far(c,r);},
+      want=()=>!to?moves.charAt(i):moves.charAt(i)&&closer(moves.charAt(i))?moves.charAt(i):["L","R","U","D"].find(closer)||"";
+    const mark=(x,y)=>(q.marks||[]).find(m=>m.c===x&&m.r===y),markHtml=m=>`<span class="jmark">${m.art?artHtml(m.art):""}<b>${esc(m.text)}</b></span>`;
     host.dataset.kit="path";host.dataset.ans=moves;
-    let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="grass"></button>`;
+    let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const m=mark(x,y);cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="${m?esc(m.text):"grass"}">${m?markHtml(m):""}</button>`;}
     const arrow=d=>`<button class="jarrow" data-dir="${d}" aria-label="${DIR_NAME[d]}">${ARROW[d]}</button>`;
-    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
+    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":q.theme==="bus"?" street bus":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
       <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
     const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
     function draw(){
-      const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
+      const nx=hint&&!fin?want():"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
       cellEls.forEach(b=>{const x=+b.dataset.c,y=+b.dataset.r;
         b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"")+(q.goal&&x===q.goal.c&&y===q.goal.r?" goal":"");});
       arrows.forEach(b=>b.classList.toggle("hint",b.dataset.dir===nx));
     }
     function go(d){
       if(fin||!STEP[d])return;
-      if(d===moves.charAt(i)){c+=STEP[d][0];r+=STEP[d][1];cut[c+","+r]=1;i++;Sound.sfx.pop();
-        if(i>=moves.length){fin=true;keyFn=null;lawnEl.classList.add("done");Sound.sfx.win();setTimeout(()=>done(!miss),900);}
+      if(to?closer(d):d===moves.charAt(i)){c+=STEP[d][0];r+=STEP[d][1];cut[c+","+r]=1;i++;Sound.sfx.pop();
+        if(to?c===to.c&&r===to.r:i>=moves.length){fin=true;keyFn=null;lawnEl.classList.add("done");Sound.sfx.win();setTimeout(()=>done(!miss),900);}
         draw();return;}
       miss++;if(miss>=2)hint=true;lawnEl.classList.remove("bump");void lawnEl.offsetWidth;lawnEl.classList.add("bump");Sound.sfx.nope();draw();
       if(opt.onMiss)opt.onMiss(miss);
@@ -10548,6 +10562,81 @@ Jobs.kit("sort",function(host,q,done,opt){
       {id:"count",lv:2,name:"counting",gen:(seed,L)=>counted(rnd(seed),L.tier)||[]},
       {id:"pizza",lv:3,name:"halves and quarters",gen:(seed,L)=>{const t=ticket(rnd(seed),L.tier);return then(t&&t.step,t&&pizza(seed));}},
       {id:"prices",lv:4,name:"adding prices",gen:(seed,L)=>{const r=rnd(seed),t=ticket(r,L.tier);return then(t&&t.step,t&&prices(r,t));}}
+    ]});
+})();
+
+/* ---- 🚌 Bus driver, opens at reading level 3 ----
+   Every task starts with a passenger's note or a stop sign to read ("Sam gets off at the hill.", "Go to
+   the shop."; "Stop at the pond." from level 4, "Take me to the well!" from 5), and he drives the bus on the
+   Mail carrier's street map to the stop it names. The stops are the valley's own buildings with the name on
+   them (the mill, the shed, the shop, the hut, the hill, the dock at level 3; the pond, the nest and the tent
+   from 4; the well, the mine and the bell from 5; the castle from 8), three on each map, and any way that
+   gets closer to the stop is right. Job level 2 adds who gets on and off ("3 get on. Then 2 get off. How many
+   are on the bus?", adding and taking away within 10); level 3 the timetable ("The bus comes at 3
+   o'clock.", find the clock); level 4 puts three stops in the order a note gives ("Go to the hill, then the
+   shop, then the mill."), which counts for reading and for putting steps in order. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const STOPS=[{w:"mill",art:"windmill"},{w:"shed",art:"barn"},{w:"shop",art:"market"},{w:"hut",art:"tiki"},{w:"hill",art:"volcano"},
+    {w:"dock",art:"lighthouse"},{w:"pond",art:"gardenpond"},{w:"nest",art:"dinonest"},{w:"tent",art:"tent"},{w:"well",art:"well"},
+    {w:"mine",art:"mine"},{w:"bell",art:"bell"},{w:"castle",art:"castle"}];
+  const stops=(r,tier)=>shuffle(r,STOPS.filter(s=>ART[s.art]&&fits(s.w,tier)));
+  const NAMES=["Sam","Pam","Bob","Dan","Max","Tom","Kim","Tim","Meg","Ben","Ted","Jen","Gus","Liz","Ned","Jim","Ann","Seth","Beth","Josh"];
+  // who the note is from: his own name on about one note in four
+  function who(r,tier){const me=heroName(),ok=NAMES.filter(n=>fits(n,tier));return /^[A-Za-z]/.test(me)&&fits(me,tier)&&r()<.25?me:pick(r,ok);}
+  const NOTE=["{who} gets off at the {stop}.","{who} gets on at the {stop}.","Go to the {stop}.","{who} is at the {stop}.",
+    "Stop at the {stop}.","Next stop: the {stop}!","Take me to the {stop}!"];
+  // the street map: the depot, the stop to drive to and two more stops, none of them on a shortest way there
+  const W=6,H=5;
+  function drive(r,tier){
+    const S=stops(r,tier);if(S.length<3)return null;
+    for(let k=0;k<300;k++){
+      const st={c:int(r,0,W-1),r:int(r,0,H-1)},to={c:int(r,0,W-1),r:int(r,0,H-1)},d=Math.abs(st.c-to.c)+Math.abs(st.r-to.r);
+      if(d<2||d>6)continue;
+      const inBox=p=>p.c>=Math.min(st.c,to.c)&&p.c<=Math.max(st.c,to.c)&&p.r>=Math.min(st.r,to.r)&&p.r<=Math.max(st.r,to.r);
+      const others=[];
+      for(let j=0;j<60&&others.length<2;j++){const p={c:int(r,0,W-1),r:int(r,0,H-1)};
+        if(!inBox(p)&&![st,to].concat(others).some(q=>Math.abs(q.c-p.c)+Math.abs(q.r-p.r)<2))others.push(p);}
+      if(others.length<2)continue;
+      const across=(to.c>st.c?"R":"L").repeat(Math.abs(to.c-st.c)),down=(to.r>st.r?"D":"U").repeat(Math.abs(to.r-st.r));
+      const lines=NOTE.map(l=>l.replace("{who}",()=>who(r,tier)).replace("{stop}",S[0].w)).filter(l=>fits(l,tier));
+      if(!lines.length)return null;
+      return{kit:"path",track:"reading",read:true,say:["Read the note. Drive the bus to the stop!"],text:pick(r,lines),grid:{w:W,h:H},start:st,to,theme:"bus",
+        marks:[to].concat(others).map((p,i)=>({c:p.c,r:p.r,text:S[i].w,art:{kind:"thing",id:S[i].art}})),ans:r()<.5?across+down:down+across};
+    }
+    return null;
+  }
+  // level 2: on and off ("3 get on. Then 2 get off. How many are on the bus?")
+  const RIDERS=["dog","cat","pig","hen","duck","fox"].filter(w=>WORD_ART[w]);
+  function riders(seed){
+    const r=rnd(seed+":b"),t=pick(r,RIDERS),more=r()<.5;let a,b;
+    if(more){a=int(r,1,7);b=int(r,1,Math.min(5,10-a));}else{a=int(r,2,10);b=int(r,1,a-1);}
+    return{kit:"pad",track:"math",level:more?"add10":"sub10",say:[a,a===1?"gets on.":"get on.","Then",b,more?(b===1?"more gets on.":"more get on."):(b===1?"gets off.":"get off."),"How many are on the bus?"],
+      text:more?`${a} + ${b} = ?`:`${a} − ${b} = ?`,art:more?{kind:"groups",groups:[{thing:t,n:a},{thing:t,n:b}],op:"+"}:{kind:"take",thing:t,n:a,gone:b},
+      ans:more?a+b:a-b,math:{op:more?"+":"-",a,b}};
+  }
+  // level 3: the timetable, a clock to the hour
+  function timetable(seed){const q=Tracks.gen("math","time",seed+":t",{read:true});if(!q)return null;
+    return Object.assign(q,{say:["The bus comes at",q.ans,"o'clock.","Find the clock!"]});}
+  // level 4: three stops in the order the note gives
+  const ROUTE=["Go to the {a}, then the {b}, then the {c}.","Stop at the {a}, then the {b}, then the {c}.","First the {a}, then the {b}, last the {c}."];
+  function route(seed,tier){
+    const r=rnd(seed),S=stops(r,tier).slice(0,3);if(S.length<3)return null;
+    const lines=ROUTE.map(l=>l.replace("{a}",S[0].w).replace("{b}",S[1].w).replace("{c}",S[2].w)).filter(l=>fits(l,tier));if(!lines.length)return null;
+    const q=Tracks.gen("math","seq",seed+":s",{steps:S.map(s=>({text:s.w,art:{kind:"thing",id:s.art}})),say:["Read the note. Put the stops in order!"]});
+    if(!q)return null;delete q.level;
+    return Object.assign(q,{track:"reading",read:true,text:pick(r,lines),also:{track:"math",level:"seq"}});
+  }
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"bus",name:"Bus driver",icon:"🚌",uniform:{id:"drivercap",name:"driver cap",ic:"🧢"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"All aboard! Read each note.",
+    tasks:[
+      {id:"drive",lv:1,name:"driving to the stop",gen:(seed,L)=>then(drive(rnd(seed),L.tier))},
+      {id:"riders",lv:2,name:"getting on and off",gen:(seed,L)=>{const d=drive(rnd(seed),L.tier);return then(d,d&&riders(seed));}},
+      {id:"clock",lv:3,name:"the bus times",gen:(seed,L)=>{const d=drive(rnd(seed),L.tier);return then(d,d&&timetable(seed));}},
+      {id:"route",lv:4,name:"the stops in order",gen:(seed,L)=>then(route(seed,L.tier))}
     ]});
 })();
 

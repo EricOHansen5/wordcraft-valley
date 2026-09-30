@@ -38,7 +38,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     wrong(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick"){[...h.querySelectorAll(".jopt")].find(b=>b.dataset.w!==a).click();return;}
       if(k==="pad"){for(const c of String((+a+1)%100))h.querySelector(`[data-key="${c}"]`).click();h.querySelector('[data-key="ok"]').click();return;}
-      if(k==="path")h.querySelector(`[data-dir="${["L","R","U","D"].find(x=>x!==a[0])}"]`).click();
+      // path: the way back from the first move (a drive to a stop takes any way that gets closer)
+      if(k==="path")h.querySelector(`[data-dir="${{L:"R",R:"L",U:"D",D:"U"}[a[0]]}"]`).click();
       // order: the empty places filled back to front, so the first of them is wrong
       if(k==="order"){const A=a.split("|"),empty=[...h.querySelectorAll(".jorow .joslot")].map((s,i)=>s.querySelector(".jocard")?-1:i).filter(i=>i>=0);
         empty.map(i=>A[i]).reverse().forEach(v=>{const c=[...h.querySelectorAll(".jopool .jocard")].find(x=>x.dataset.w===v);if(c)c.click();});
@@ -116,6 +117,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
           if(cv.join("|")===av.join("|"))bad.push(`${j.id}/${t.id}: the cards start out in order`);}
         (q.choices||[]).map(c=>c&&typeof c==="object"?(q.kit==="order"?c.text:c.art&&(c.art.name||c.art.text)):null).filter(x=>x!=null).forEach(x=>{n.texts++;
           const miss=Decode.check(String(x),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the card "${x}" needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
+        (q.marks||[]).forEach(m=>{n.texts++;const miss=Decode.check(String(m.text),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the place "${m.text}" on the map needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
+        if(q.to){let c=q.start.c,r=q.start.r;for(const d of q.ans){c+=d==="L"?-1:d==="R"?1:0;r+=d==="U"?-1:d==="D"?1:0;}if(c!==q.to.c||r!==q.to.r)bad.push(`${j.id}/${t.id}: the moves do not end at the stop`);}
         if(q.math){const m=q.math,f=w=>String(w).charAt(0).toUpperCase(),want=m.op==="+"?m.a+m.b:m.op==="-"?m.a-m.b:m.op==="×"?m.a*m.b:m.op==="count"?m.n:m.op==="coins"?m.coins.reduce((x,y)=>x+y,0):
             m.op==="house"?m.n:m.op==="place"?m.tens*10+m.ones:m.op==="frac"?m.of:m.op==="time"?m.start+m.add:m.op==="seq"?m.steps.join("|"):
             m.op==="abc"?m.words.slice().sort((x,y)=>f(x)<f(y)?-1:f(x)>f(y)?1:0).join("|"):m.op==="sort"?m.nums.slice().sort((x,y)=>x-y).join("|"):null;
