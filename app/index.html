@@ -1449,6 +1449,11 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 @media (max-width:700px){.vmsheet{padding:14px}.vmsheet .bhead{flex-wrap:wrap}.vmsheet .bhead h2{font-size:21px}
   .vmslot{width:28px;height:22px}.vmslot.on::after{font-size:11px}.vmbagart{width:40px;height:40px;flex-basis:40px}
   .vmpaper .btext{font-size:26px}.vmstamp{width:44px;height:44px;flex-basis:44px}}
+/* ---- EGG HUNT (Easter): the look's blossom ---- */
+.lfall[data-lk="easter:blossom"]{animation-name:ehdrift;filter:drop-shadow(0 1px 1px rgba(255,255,255,.6))}
+.lfall[data-lk="easter:blossom"]:nth-child(2n){filter:hue-rotate(-24deg) saturate(.8) brightness(1.1)}
+@keyframes ehdrift{0%{transform:translate(0,-20px) rotate(0)}30%{transform:translate(-26px,34vh) rotate(80deg)}60%{transform:translate(18px,70vh) rotate(170deg)}
+  100%{transform:translate(-6px,120vh) rotate(300deg)}}
 /* ---------------- FACTORY: the board beside the order card (above it in portrait) ---------------- */
 .fcsheet{max-width:1000px;padding:14px;border-color:#5B4A3A;background:linear-gradient(180deg,#F4EAD6,var(--paper) 40%)}
 .fcsheet .bhead{top:-14px}.fcsheet .bhead h2{color:#8C4A1E;font-size:24px}
@@ -11165,6 +11170,17 @@ Object.assign(ART,{hat_pilgrim(){return `<g data-hat="pilgrim"><path d="M12 33 Q
 Object.assign(ART,{hat_heart(){return `<g data-hat="heart"><path d="M39 26 Q33 21 36 17 Q39 13 32 12" fill="none" stroke-width="2.6"/><path d="M61 26 Q67 21 64 17 Q61 13 68 12" fill="none" stroke-width="2.6"/>
     <path d="M27 34 Q50 16 73 34" fill="none" stroke-width="7.4"/><path d="M27 34 Q50 16 73 34" fill="none" stroke="#F47FA4" stroke-width="4.2"/>
     ${loveHeart(31,9,6.5,"#E8445A")}${loveHeart(69,9,6.5,"#F47FA4")}${HI(28.4,6.4,2.2,1.3,.7)}${HI(66.4,6.4,2.2,1.3,.7)}</g>`;}});
+// the chick hat of the Easter look (EGG HUNT): a chick peeping out of half a painted eggshell
+Object.assign(ART,{hat_chick(){return `<g data-hat="chick"><path d="M38 19 Q36 4 50 3 Q64 4 62 19 Q62 29 50 30 Q38 29 38 19Z" fill="${dome("#FFD84D",40,30)}"/>
+    <path d="M47.5 3.5 Q48.5 -1 51 .8 M50.5 3.5 Q53.5 -.2 55.5 1.8" fill="none" stroke-width="2"/>
+    <circle cx="45.5" cy="12.5" r="2" fill="${INK}" stroke="none"/><circle cx="54.5" cy="12.5" r="2" fill="${INK}" stroke="none"/>
+    <circle cx="44.8" cy="11.8" r=".7" fill="#FFFFFF" stroke="none"/><circle cx="53.8" cy="11.8" r=".7" fill="#FFFFFF" stroke="none"/>
+    <path d="M47 15.5 L50 19.5 L53 15.5Z" fill="#F2913A" stroke-width="1.4"/>
+    <ellipse cx="42" cy="17" rx="2.4" ry="1.4" fill="#F7B6CB" stroke="none" opacity=".85"/><ellipse cx="58" cy="17" rx="2.4" ry="1.4" fill="#F7B6CB" stroke="none" opacity=".85"/>
+    <path d="M28 22 L33 17 L38 22 L43 17 L50 22 L57 17 L62 22 L67 17 L72 22 L72 26 Q70 36 50 36 Q30 36 28 26Z" fill="${grad("#FBF6EC","v",.08,.14)}"/>
+    <path d="M32 28 Q41 31 50 29 Q59 31 68 28" fill="none" stroke="#9FD4F5" stroke-width="2.6"/>
+    <circle cx="40" cy="32.5" r="1.5" fill="#F7B6CB" stroke="none"/><circle cx="50" cy="33.5" r="1.5" fill="#FFE27A" stroke="none"/><circle cx="60" cy="32.5" r="1.5" fill="#F7B6CB" stroke="none"/>
+    ${HI(44,7.5,4,2,.45)}</g>`;}});
 // the hat the buddy shows: a worn look's hat once he has earned it, otherwise his wardrobe hat.
 // A function declaration, so the drawings that run before this section is reached can call it.
 function buddyHat(){try{return Looks.hat();}catch(e){return state.hat;}}
@@ -15206,6 +15222,101 @@ const Mail=(()=>{
     _q:()=>cur&&{k:cur.k,id:cur.L.id,kind:cur.L.kind,ans:cur.L.ans,opts:cur.L.opts.slice(),text:cur.L.lines.concat(cur.L.ask).join(" "),miss:cur.miss,paid:cur.paid},
     _piece:()=>lastPiece,_friend:()=>lastFriend&&lastFriend.id};
 })();
+
+/* ================================================================
+   EGG HUNT — Easter, the two weeks before Easter Sunday to Easter Monday (v10.3)
+   The Easter look ("easter", 🐣) joins LOOKS here as data (Looks.add),
+   earned one piece at a time, in this order: painted eggs in the grass,
+   a bunny by a bush, blossom drifting down, and a chick hat for the
+   buddy (hat_chick, drawn with the witch hat). While it is worn the
+   tint turns a fresh green, the HUD gets a spring wash with a pastel
+   trim, and plain crates a green edge and a 🐣.
+   Its window moves with Easter: from 14 days before Easter Sunday to
+   Easter Monday, both counted (easterDay(year), the anonymous Gregorian
+   algorithm). In 2027 that is 14 to 29 March.
+   ================================================================ */
+// Easter Sunday in year y, [month, day]: the anonymous Gregorian algorithm (Meeus/Jones/Butcher)
+function easterDay(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+    h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  return[Math.floor((h+l-7*m+114)/31),(h+l-7*m+114)%31+1];
+}
+// the look's window: 14 days before Easter Sunday to Easter Monday, both counted. A function, since Easter moves each year;
+// its `from` is only for the Closet, which names the month on a look not earned yet: the month the next window opens
+const EASTER_WINDOW=d=>{
+  const y=d.getFullYear(),e=easterDay(y),t=new Date(y,d.getMonth(),d.getDate()).getTime();
+  return t>=new Date(y,e[0]-1,e[1]-14).getTime()&&t<=new Date(y,e[0]-1,e[1]+1).getTime();
+};
+Object.defineProperty(EASTER_WINDOW,"from",{get(){
+  const now=new Date(),y=now.getFullYear(),e=easterDay(y),yy=now<=new Date(y,e[0]-1,e[1]+1,23,59,59)?y:y+1,ee=easterDay(yy),
+    start=new Date(yy,ee[0]-1,ee[1]-14);
+  return[start.getMonth()+1,start.getDate()];}});
+/* ---- painted eggs: for the look, the marks of the hunt and the egg he finds ---- */
+// the pastel of egg i
+function eggCol(i){const c=["#9FD4F5","#F7B6CB","#FFE27A","#B9E4A0","#D8B4F5"];return c[((Math.floor(+i)||0)%c.length+c.length)%c.length];}
+// the pattern on an egg, drawn over its middle (the egg clips it): 0 a zigzag, 1 dots, 2 two bands
+function eggPattern(cx,cy,rx,ry,fill,pat){
+  const f=n=>+n.toFixed(1),dark=shade(fill,-.32);
+  if(pat===1)return[[-.45,-.35],[.1,-.5],[.5,-.15],[-.2,.05],[.35,.35],[-.5,.4],[0,.6]].map(p=>`<circle cx="${f(cx+p[0]*rx)}" cy="${f(cy+p[1]*ry)}" r="${f(rx*.13)}" fill="${p[1]<0?"#FFFFFF":dark}"/>`).join("");
+  if(pat===2)return`<path d="M${f(cx-rx*1.2)} ${f(cy-ry*.46)} L${f(cx+rx*1.2)} ${f(cy-ry*.46)} L${f(cx+rx*1.2)} ${f(cy-ry*.28)} L${f(cx-rx*1.2)} ${f(cy-ry*.28)}Z" fill="${dark}"/>
+    <path d="M${f(cx-rx*1.2)} ${f(cy+ry*.22)} L${f(cx+rx*1.2)} ${f(cy+ry*.22)} L${f(cx+rx*1.2)} ${f(cy+ry*.42)} L${f(cx-rx*1.2)} ${f(cy+ry*.42)}Z" fill="#FFFFFF" opacity=".8"/>`;
+  let z=`M${f(cx-rx*1.2)} ${f(cy)}`;for(let i=1;i<=8;i++)z+=` L${f(cx-rx*1.2+rx*2.4*i/8)} ${f(cy+(i%2?-ry*.2:ry*.08))}`;
+  return`<path d="${z}" fill="none" stroke="${dark}" stroke-width="${f(ry*.13)}" stroke-linejoin="round"/>`;
+}
+// a painted egg, a bit narrower at the top, centred on cx,cy
+function paintedEgg(cx,cy,rx,ry,fill,pat,rot){
+  const f=n=>+n.toFixed(1),d=`M${f(cx)} ${f(cy-ry)} C${f(cx+rx*.62)} ${f(cy-ry)} ${f(cx+rx)} ${f(cy-ry*.35)} ${f(cx+rx)} ${f(cy+ry*.15)} C${f(cx+rx)} ${f(cy+ry*.7)} ${f(cx+rx*.55)} ${f(cy+ry)} ${f(cx)} ${f(cy+ry)} C${f(cx-rx*.55)} ${f(cy+ry)} ${f(cx-rx)} ${f(cy+ry*.7)} ${f(cx-rx)} ${f(cy+ry*.15)} C${f(cx-rx)} ${f(cy-ry*.35)} ${f(cx-rx*.62)} ${f(cy-ry)} ${f(cx)} ${f(cy-ry)}Z`;
+  const id="eg"+(_gid++);_defs.push(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
+  return`<g${rot?` transform="rotate(${rot} ${f(cx)} ${f(cy)})"`:""}><path d="${d}" fill="${dome(fill,36,28)}"/><g clip-path="url(#${id})" stroke="none">${eggPattern(cx,cy,rx,ry,fill,pat)}</g>
+    <path d="${d}" fill="none"/>${HI(f(cx-rx*.38),f(cy-ry*.45),f(rx*.2),f(ry*.26),.5)}</g>`;
+}
+// the bottom of an egg that has cracked open along a zigzag (in a 100-box), for the egg he has just found
+function eggShell(fill,pat){
+  const d="M14 50 L22 42 L30 51 L39 41 L48 51 L57 41 L66 51 L75 42 L86 50 C88 72 72 94 50 94 C28 94 12 72 14 50Z";
+  const id="eg"+(_gid++);_defs.push(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
+  return`<path d="${d}" fill="${dome(fill,36,20)}"/><g clip-path="url(#${id})" stroke="none">${eggPattern(50,70,38,30,fill,pat)}</g><path d="${d}" fill="none"/>`;
+}
+/* ---- the look's props (the same 100-box and ink as the seasonal builds) ---- */
+Object.assign(ART,{
+  // four painted eggs hidden in a tuft of grass
+  look_eggs(r){
+    const tuft=(x,y)=>`<path d="M${x-9} ${y} Q${x-8} ${y-10} ${x-10} ${y-17} Q${x-3} ${y-9} ${x-2} ${y}Z M${x-1} ${y} Q${x} ${y-13} ${x+2} ${y-20} Q${x+5} ${y-10} ${x+4} ${y}Z M${x+5} ${y} Q${x+9} ${y-9} ${x+13} ${y-14} Q${x+11} ${y-5} ${x+11} ${y}Z" fill="${grad("#6FB558","v",.2,.2)}" stroke-width="1.6"/>`;
+    const k=Math.floor(r()*5);
+    return S(`${OCC}<ellipse cx="50" cy="88" rx="40" ry="8" fill="#8FD06A" stroke="none" opacity=".55"/>
+      ${paintedEgg(62,66,9,12,eggCol(k+4),1,12)}${paintedEgg(29,72,10,13,eggCol(k),0,-14)}${paintedEgg(49,76,10.5,13.5,eggCol(k+1),2,4)}${paintedEgg(73,80,8,10.5,eggCol(k+2),0,18)}
+      ${tuft(18,93)}${tuft(42,94)}${tuft(64,94)}${tuft(84,93)}`);
+  },
+  // a white bunny sitting by a round bush in flower
+  look_bunny(r){
+    return S(`${OCC}<path d="${blob(66,66,29,24,r,10,.1)}" fill="${dome("#5FA84F",36,26)}"/>
+      <path d="${blob(76,56,13,11,r,8,.14)}" fill="${shade("#5FA84F",.18)}" stroke="none" opacity=".7"/>
+      <circle cx="58" cy="52" r="3" fill="#F7B6CB" stroke-width="1.2"/><circle cx="80" cy="70" r="3" fill="#FFE27A" stroke-width="1.2"/>
+      <circle cx="86" cy="52" r="2.6" fill="#FFFFFF" stroke-width="1.2"/><circle cx="68" cy="80" r="2.6" fill="#F7B6CB" stroke-width="1.2"/>
+      <path d="M26 45 Q20 25 23 12 Q29 7 32 20 Q34 32 33 45Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+      <path d="M26.5 39 Q23.5 26 26 17 Q29 16 29.5 25 Q30.5 33 29.5 39Z" fill="#F7B6CB" stroke="none"/>
+      <path d="M36 45 Q38 27 44 17 Q50 14 48 27 Q46 37 42 47Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+      <path d="M39 40 Q41 29 45 21 Q47.5 21 46 29 Q44 36 41 41Z" fill="#F7B6CB" stroke="none"/>
+      <path d="${blob(42,77,19,15,r,9,.07)}" fill="${dome("#FBF6EC",34,26)}"/>
+      <circle cx="61" cy="80" r="5.5" fill="#FFFFFF"/>
+      <path d="${blob(33,56,13,11.5,r,9,.06)}" fill="${dome("#FBF6EC",34,26)}"/>
+      <ellipse cx="28.5" cy="53.5" rx="2" ry="2.7" fill="${INK}" stroke="none"/><circle cx="27.8" cy="52.6" r=".8" fill="#FFFFFF" stroke="none"/>
+      <path d="M20.5 58 Q22 56 23.5 58 Q22 60.5 20.5 58Z" fill="#F07A9A" stroke-width="1.2"/>
+      <path d="M21.5 61.5 Q24.5 63.5 27.5 61.5" fill="none" stroke-width="1.4"/>
+      <ellipse cx="32.5" cy="60" rx="3" ry="2" fill="#F7B6CB" stroke="none" opacity=".75"/>
+      <path d="M30 91 Q36 94 42 91 M45 91 Q50 94 55 91" fill="none" stroke-width="1.6"/>
+      ${HI(38,68,6,4,.35)}`);
+  }
+});
+Looks.add({id:"easter",name:"Easter",ic:"🐣",window:EASTER_WINDOW,
+  tint:"linear-gradient(180deg,rgba(196,236,150,.16),rgba(130,204,110,.18) 55%,rgba(255,236,160,.14))",
+  particles:"blossom",drift:"🌸",
+  props:[{id:"eggs",at:{c:8.5,r:7},size:.9},{id:"bunny",at:{c:13.5,r:6},size:1.1}],
+  hat:"chick",
+  greet:"Happy Easter! Eggs are hiding in the valley.",
+  pieces:["eggs","bunny","blossom","hat"],
+  names:{eggs:"painted eggs",bunny:"bunny",blossom:"blossom",hat:"chick hat"},
+  css:{hud:"linear-gradient(180deg,#E6F7D2,rgba(230,247,210,0))",trim:"repeating-linear-gradient(90deg,#8CCB5E 0 14px,#FFE27A 14px 28px,#F7B6CB 28px 42px,#9FD4F5 42px 56px)",
+    edge:"#4F9A3E",crate:"linear-gradient(160deg,#F2FBE6,#C8EBA4)"}});
 
 /* ================================================================
    7m. LISTEN-AND-PICK  ("Hear it")
