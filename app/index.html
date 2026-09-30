@@ -12644,6 +12644,74 @@ const Factory=(()=>{
     _finish:()=>finish(),_pick:pick,_place:(i,d)=>place(i,d),_view:()=>view};
 })();
 /* ================================================================
+   TALK — "Talk to me": he answers out loud, and a misheard answer is never wrong
+   Listening comes in three tiers, chosen at run time:
+     A  the NAS: POST /api/hear on the home server (server/hear/, Whisper) with the clip and
+        its possible answers, when GET /api/hear said {ok:true} in the last 10 minutes.
+        A 404, a 503, a failure or no answer in 3.5 s means "no tier A", and it is not asked
+        again for 10 minutes (the public copy has no server, so there it just stays off).
+   Talk.hear(blob, expect) is tier A alone: {tier:"A", best, score, text, scores, sure} or null.
+   The address and the token are the backup's (state.sync), so a NAS that takes backups
+   listens with no setup.
+   ================================================================ */
+const Talk=(()=>{
+  const TEN=10*60e3,A_MS=3500;
+  // how close the NAS's best answer must be, and how far ahead of the next, to count as sure
+  const SURE_A=[.75,.2];
+  const api={};
+
+  /* ---------- tier A: the NAS ---------- */
+  const A={ok:0,down:0,probe:null};
+  const base=()=>((state.sync&&state.sync.url)||location.origin).replace(/\/+$/,"");
+  const tok=()=>(state.sync&&state.sync.token)||"";
+  // fetch with a time limit (and without AbortController on a Safari that has none)
+  function timed(url,opt,ms){
+    let ctl=null;try{ctl=new AbortController();}catch(e){}
+    const t=setTimeout(()=>{try{if(ctl)ctl.abort();}catch(e){}},ms);
+    const go=fetch(url,Object.assign({},opt||{},ctl?{signal:ctl.signal}:{}));
+    return Promise.race([go,new Promise((_,no)=>setTimeout(()=>no(new Error("timeout")),ms+50))])
+      .then(r=>{clearTimeout(t);return r;},e=>{clearTimeout(t);throw e;});
+  }
+  const aLive=()=>Date.now()-A.ok<TEN,aDown=()=>Date.now()-A.down<TEN;
+  function down(){A.ok=0;A.down=Date.now();}
+  // is the NAS listening? asked at most once every 10 minutes after a no
+  function probe(){
+    if(aLive())return Promise.resolve(true);
+    if(aDown())return Promise.resolve(false);
+    if(A.probe)return A.probe;
+    if(typeof fetch!=="function"){down();return Promise.resolve(false);}
+    A.probe=timed(base()+"/api/hear",{headers:{"X-Token":tok()},cache:"no-store"},A_MS)
+      .then(r=>r.ok?r.json():null).then(j=>{if(j&&j.ok===true){A.ok=Date.now();A.down=0;return true;}down();return false;},()=>{down();return false;})
+      .then(v=>{A.probe=null;return v;});
+    return A.probe;
+  }
+  // tier A: the clip to the NAS with its possible answers; null means no tier A (and not again for 10 minutes)
+  async function hear(blob,expect){
+    if(!blob||aDown()||typeof fetch!=="function")return null;
+    const ex=[].concat(expect||[]).map(String).slice(0,6);if(!ex.length)return null;
+    let r;
+    try{r=await timed(base()+"/api/hear",{method:"POST",body:blob,cache:"no-store",
+      headers:{"Content-Type":blob.type||"application/octet-stream","X-Token":tok(),"X-Expect":encodeURIComponent(JSON.stringify(ex))}},A_MS);}
+    catch(e){down();return null;}
+    // a clip it couldn't use is this clip's problem, not the NAS's
+    if(r.status===400||r.status===413||r.status===422){A.ok=Date.now();return{tier:"A",best:null,score:0,text:"",scores:{},sure:false,heard:true};}
+    if(!r.ok){down();return null;}
+    let j=null;try{j=await r.json();}catch(e){}
+    if(!j||!j.scores||typeof j.scores!=="object"){down();return null;}
+    A.ok=Date.now();A.down=0;
+    const scores={};ex.forEach(k=>{scores[k]=+j.scores[k]||0;});
+    const order=ex.slice().sort((a,b)=>scores[b]-scores[a]),s1=scores[order[0]]||0,s2=order[1]?scores[order[1]]:0;
+    const text=String(j.text||"").trim();
+    return{tier:"A",best:s1>0?order[0]:null,score:s1,text,scores,sure:!!text&&s1>=SURE_A[0]&&s1-s2>=SURE_A[1],heard:!!text};
+  }
+
+  Object.assign(api,{hear,probe,
+    // for the tests
+    _A:A,_reset:()=>{A.ok=0;A.down=0;A.probe=null;}});
+  return api;
+})();
+
+/* ================================================================
    HOME-SERVER BACKUP
    A copy of everything (progress, his recordings, your voice) is sent to
    the small server in wordcraft-server/ running on the home NAS. By
