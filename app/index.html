@@ -1246,6 +1246,14 @@ body.exploring .slot-empty{display:none}
 .jbd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%}
 .jbd span{font-size:34px;background:#C98F4E;border:3px solid var(--ink);border-radius:10px;padding:2px 8px}
 .jbd b{font-size:12px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 5px;margin-top:-3px}
+/* pictures for the grade 1 math: tens and ones, houses with numbers, measuring cups, clocks, the alphabet */
+.jsvg{width:104px;height:104px}.jsvg svg{width:100%;height:100%;display:block}.jart .jsvg{width:112px;height:112px}
+.jblocks{display:flex;gap:5px;align-items:flex-end;padding:8px 12px;border:3px solid var(--ink);border-radius:14px;background:#fff}
+.jblocks .ten{display:block;width:16px;height:104px;border:2px solid var(--ink);border-radius:3px;background:repeating-linear-gradient(180deg,#F6B84B 0 8px,#B9822A 8px 10px)}
+.jblocks .ones{display:grid;grid-template-columns:repeat(3,14px);gap:3px;margin-left:8px;align-content:end}
+.jblocks .ones i{display:block;width:14px;height:14px;border:2px solid var(--ink);border-radius:2px;background:#7CC6EE}
+.jabc{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:640px}
+.jabc i{font-style:normal;font-weight:900;font-size:17px;width:22px;height:26px;display:grid;place-items:center;background:#fff;border:2px solid rgba(59,48,36,.35);border-radius:6px}
 /* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
 .jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
 .jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
@@ -10144,6 +10152,29 @@ const Tracks=(()=>{
 // reading steps come from each job's own generator (his word list, decode-checked), so this track has no levels
 Tracks.register({id:"reading",name:"Reading",icon:"📖",levels:[]});
 
+// pictures for the jobs' questions (Jobs.art draws them): for the grade 1 math, tens and ones (rods and cubes),
+// houses with their numbers, measuring cups filled to a half, a quarter or the top, clocks at o'clock, the alphabet
+const JOB_ROOF=["#DC5A4B","#3F86D2","#4FA84A","#9B5CF6","#E8A92A"],JOB_WALL=["#FBF6EC","#FFE39A","#F7D6C4","#D8EEF7","#E4F2D6"];
+const JOB_ART={
+  blocks:a=>`<div class="jblocks">${'<i class="ten"></i>'.repeat(Math.max(0,a.tens|0))}${a.ones?`<span class="ones">${"<i></i>".repeat(a.ones|0)}</span>`:""}</div>`,
+  house:a=>{const k=Math.abs(+a.n|0);return`<div class="jsvg">${S(`${OCC}<path d="M14 50 L50 16 L86 50Z" fill="${grad(JOB_ROOF[k%5],"v",.3,.2)}"/>
+    <path d="M22 46 L78 46 L78 90 L22 90Z" fill="${grad(JOB_WALL[Math.floor(k/5)%5],"v",.15,.12)}"/>
+    <path d="M42 70 L58 70 L58 90 L42 90Z" fill="${grad("#9A6436","v",.2,.2)}"/><circle cx="54.5" cy="80" r="1.6" fill="#FFE39A" stroke="none"/>
+    <rect x="27" y="49" width="46" height="18" rx="4" fill="#FFFFFF"/>
+    <text x="50" y="63" text-anchor="middle" font-size="15" font-weight="900" fill="${INK}" stroke="none">${k}</text>`)}</div>`;},
+  cup:a=>{const f=Math.max(0,Math.min(1,+a.f||0)),T=20,B=88,H=B-T,xl=y=>30-4*(B-y)/H,xr=y=>70+4*(B-y)/H,y=B-H*f,n=v=>v.toFixed(1);
+    return`<div class="jsvg">${S(`${OCC}<path d="M71 36 Q90 36 90 53 Q90 70 70 70" fill="none" stroke-width="6"/>
+      <path d="M26 ${T} L74 ${T} L70 ${B} L30 ${B}Z" fill="#EEF8FC"/>
+      ${f>0?`<path d="M30 ${B} L70 ${B} L${n(xr(y))} ${n(y)} L${n(xl(y))} ${n(y)}Z" fill="${a.fill||"#F2B84B"}" stroke="none"/>`:""}
+      ${[.25,.5,.75].map(k=>{const yy=B-H*k;return`<path d="M${n(xl(yy))} ${n(yy)} L${n(xl(yy)+11)} ${n(yy)}" fill="none" stroke-width="2"/>`;}).join("")}
+      <path d="M26 ${T} L74 ${T} L70 ${B} L30 ${B}Z" fill="none"/>`)}</div>`;},
+  clock:a=>{const h=((Math.round(+a.h||12)-1)%12+12)%12+1,at=(r,k)=>[(50+r*Math.sin(k)).toFixed(1),(50-r*Math.cos(k)).toFixed(1)],hh=at(20,h*Math.PI/6);
+    const nums=Array.from({length:12},(_,i)=>{const p=at(35,(i+1)*Math.PI/6);return`<text x="${p[0]}" y="${(+p[1]+4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="${INK}" stroke="none">${i+1}</text>`;}).join("");
+    return`<div class="jsvg jclock" data-h="${h}">${S(`<circle cx="50" cy="50" r="45" fill="#FFFFFF" stroke-width="3.5"/>${nums}
+      <path d="M50 50 L50 25" fill="none" stroke="#3F86D2" stroke-width="3.2"/><path d="M50 50 L${hh[0]} ${hh[1]}" fill="none" stroke-width="5.5"/>
+      <circle cx="50" cy="50" r="3.6" fill="${INK}"/>`)}</div>`;},
+  abc:()=>`<div class="jabc">${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>`<i>${l}</i>`).join("")}</div>`
+};
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
   // tasks done to reach job levels 1 to 5
@@ -10216,6 +10247,7 @@ const Jobs=(()=>{
       case"coins":return`<div class="jcoins">${a.coins.map(c=>`<span class="jcoin ${COIN[c]||"c1"}">${c}¢</span>`).join("")}</div>`;
       case"lawn":return lawn(a);
       case"array":return`<div class="jlawn small" style="grid-template-columns:repeat(${a.cols},auto)">${"<i></i>".repeat(a.rows*a.cols)}</div>`;
+      case"blocks":case"house":case"cup":case"clock":case"abc":return JOB_ART[a.kind](a);
     }
     return"";
   }
@@ -10644,6 +10676,65 @@ Jobs.kit("order",function(host,q,done,opt){
       for(let i=0;i<d;i++)coins.push(10);for(let i=0;i<n;i++)coins.push(5);for(let i=0;i<p;i++)coins.push(1);
       return{kit:"pad",say:["How much money is this?"],text:"? ¢",art:{kind:"coins",coins},choices:near(r,T,4,1,20),ans:T,math:{op:"coins",coins}};}}
   ]});
+})();
+
+/* ---- the math track, grade 1: tens and ones, ABC order, steps in order, halves and quarters, o'clock ----
+   Five more levels, for the Mail carrier and the Baker, generated from a seed and read aloud like the
+   ones above (numbers have clips; the words are short fixed pieces). A pick or order question keeps its
+   answer among its choices, and an order question never starts out already in order. A job can pass
+   what it needs in opt:
+     place  {kind:"house"|"blocks", n}   "Which house is 34?" among three houses, or "3 tens and 4 ones" on the pad
+     alpha  {words, n, say, art}         its own words (the Mail carrier's names) to put in ABC order
+     seq    {steps:[{text,art}], say}    its own steps, in the right order (the Baker's recipe)
+     frac   {ans:"1/2"|"1/4"|"1", fill}  which cup to find, and the colour in the cups
+     time   {bake:true}                  "The bread bakes for 1 hour. It went in at 3 o'clock. When is it done?" */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded,L=Tracks.get("math").levels;
+  const hour=h=>((h-1)%12+12)%12+1;
+  // cards in a new order, never the right one already
+  const mixed=(r,list)=>{let a=shuffle(r,list);if(a.every((x,i)=>x===list[i]))a=list.slice().reverse();return a;};
+  // tens and ones: the other houses are the easy mix-ups, the digits swapped and ten more or ten less
+  L.push({id:"place",grade:"1",name:"Tens and ones (house numbers)",gen:(seed,o)=>{o=o||{};const r=rnd(seed);
+    const n=o.n>=10&&o.n<=99?Math.floor(o.n):int(r,11,99),t=Math.floor(n/10),u=n%10;
+    const house=o.kind==="house"||(o.kind!=="blocks"&&r()<.5),art={kind:"blocks",tens:t,ones:u};
+    if(!house)return{kit:"pad",say:[t,t===1?"ten and":"tens and",u,u===1?"one.":"ones.","What number is that?"],art,ans:n,math:{op:"place",tens:t,ones:u}};
+    const alt=[],add=v=>{if(v>=10&&v<=99&&v!==n&&alt.indexOf(v)<0)alt.push(v);};
+    if(u&&u!==t)add(u*10+t);add(r()<.5?n+10:n-10);[n+10,n-10,n+1,n-1].forEach(add);
+    return{kit:"pick",say:["Which house is",n+"?"],art,choices:shuffle(r,[n].concat(alt.slice(0,2))).map(v=>({v,art:{kind:"house",n:v}})),ans:n,math:{op:"house",n}};}});
+  // ABC order by the first letter; every first letter is different
+  const ABC=["cat","dog","pig","sun","hat","bus","fox","hen","map","bed","cup","egg","jet","log","net","pot","rock","van","web","nut","gem"].filter(w=>WORD_ART[w]);
+  const first=w=>String(w).charAt(0).toUpperCase();
+  L.push({id:"alpha",grade:"1",name:"ABC order",gen:(seed,o)=>{o=o||{};const r=rnd(seed),n=o.n===4?4:3;
+    const some=list=>{const got=[];shuffle(r,list).forEach(w=>{w=String(w);if(got.length<n&&/^[A-Z]$/.test(first(w))&&!got.some(x=>first(x)===first(w)))got.push(w);});return got;};
+    let got=o.words&&o.words.length?some(o.words):[];if(got.length<n)got=some(ABC);
+    const ans=got.slice().sort((a,b)=>first(a)<first(b)?-1:first(a)>first(b)?1:0);
+    const art=w=>o.art==="letter"?{kind:"letter"}:WORD_ART[w]?{kind:"word",w}:null;
+    return{kit:"order",say:o.say||["Put them in ABC order!"],art:{kind:"abc"},choices:mixed(r,ans).map(w=>({v:w,text:w,art:art(w)})),ans,math:{op:"abc",words:ans}};}});
+  // steps in order: a job's own (the Baker's recipe), a picture story, or four numbers from the smallest
+  const STORIES=[["egg","chick","hen"],["cloud","rain","rainbow"],["sun","sunset","night"]].filter(s=>s.every(w=>WORD_ART[w]));
+  L.push({id:"seq",grade:"1",name:"Putting steps in order",gen:(seed,o)=>{o=o||{};const r=rnd(seed);
+    if(o.steps&&o.steps.length>=2){const st=o.steps.slice(0,4).map(s=>s&&typeof s==="object"?s:{text:String(s)}),ans=st.map(s=>String(s.text));
+      return{kit:"order",say:o.say||["Put the steps in order!"],choices:mixed(r,st).map(s=>({v:String(s.text),text:String(s.text),art:s.art||null})),ans,math:{op:"seq",steps:ans}};}
+    if((o.kind||(r()<.5?"story":"numbers"))==="story"&&STORIES.length){const s=pick(r,STORIES);
+      return{kit:"order",say:["What comes first?","Put them in order!"],choices:mixed(r,s).map(w=>({v:w,text:w,art:{kind:"word",w}})),ans:s.slice(),math:{op:"seq",steps:s.slice()}};}
+    let nums;
+    if(r()<.5){const a=int(r,1,17);nums=[a,a+1,a+2,a+3];}
+    else{nums=[];for(let k=0;k<80&&nums.length<4;k++){const v=int(r,1,30);if(nums.indexOf(v)<0)nums.push(v);}nums.sort((x,y)=>x-y);}
+    const ans=nums.map(String);
+    return{kit:"order",say:["Put the numbers in order.","Start with the smallest!"],choices:mixed(r,ans).map(v=>({v,text:v})),ans,math:{op:"sort",nums}};}});
+  // halves and quarters: three measuring cups, half full, a quarter full and full to the top
+  const CUPS={"1/2":{f:.5,say:"Which cup is half full?"},"1/4":{f:.25,say:"Which cup is a quarter full?"},"1":{f:1,say:"Which cup is all the way full?"}};
+  L.push({id:"frac",grade:"1",name:"Halves and quarters",gen:(seed,o)=>{o=o||{};const r=rnd(seed),ans=CUPS[o.ans]?String(o.ans):pick(r,["1/2","1/2","1/4","1/4","1"]);
+    return{kit:"pick",say:[CUPS[ans].say],choices:shuffle(r,["1/2","1/4","1"]).map(k=>({v:k,art:{kind:"cup",f:CUPS[k].f,fill:o.fill||null}})),ans,math:{op:"frac",of:ans}};}});
+  // o'clock: which clock says 4 o'clock, or when the bread is done (never past 12, so the hour hand never goes round)
+  const BAKES=["The bread bakes for","The cake bakes for","The buns bake for"];
+  const clocks=(r,h,also)=>{const alt=[];[also,h+1,h-1,h+2,h-2,h+6].forEach(x=>{x=hour(x);if(x!==h&&alt.indexOf(x)<0)alt.push(x);});
+    return shuffle(r,[h].concat(alt.slice(0,2))).map(v=>({v,art:{kind:"clock",h:v}}));};
+  L.push({id:"time",grade:"1",name:"Telling time to the hour",gen:(seed,o)=>{o=o||{};const r=rnd(seed),bake=!!o.bake||(!o.read&&r()<.5);
+    if(!bake){const h=int(r,1,12);return{kit:"pick",say:["Which clock says",h,"o'clock?"],choices:clocks(r,h,h+(r()<.5?1:-1)),ans:h,math:{op:"time",start:h,add:0}};}
+    const d=int(r,1,3),s=int(r,1,12-d),h=s+d;
+    return{kit:"pick",say:[pick(r,BAKES),d,d===1?"hour.":"hours.","It went in at",s,"o'clock.","When is it done?"],art:{kind:"clock",h:s},
+      choices:clocks(r,h,s),ans:h,math:{op:"time",start:s,add:d}};}});
 })();
 
 /* ---- 🛒 Shopkeeper, opens at reading level 2 ----
