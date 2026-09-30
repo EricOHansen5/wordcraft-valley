@@ -1254,6 +1254,15 @@ body.exploring .slot-empty{display:none}
 .jblocks .ones i{display:block;width:14px;height:14px;border:2px solid var(--ink);border-radius:2px;background:#7CC6EE}
 .jabc{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:640px}
 .jabc i{font-style:normal;font-weight:900;font-size:17px;width:22px;height:26px;display:grid;place-items:center;background:#fff;border:2px solid rgba(59,48,36,.35);border-radius:6px}
+/* the Mail carrier: mailboxes with a name, street signs, and the path kit's lawn as a street map */
+.jmbox{display:flex;flex-direction:column;align-items:center}.jmbox svg{width:92px;height:92px;display:block}
+.jlabel{display:block;margin-top:-12px;background:#fff;border:3px solid var(--ink);border-radius:10px;padding:1px 10px;font-size:22px;font-weight:900;white-space:nowrap;position:relative}
+.jsign{display:flex;flex-direction:column;align-items:center}
+.jsign span{display:block;background:#2F8F4A;color:#fff;font-weight:900;font-size:22px;padding:8px 12px;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 3px var(--ink);white-space:nowrap;margin-top:4px}
+.jsign::after{content:"";display:block;width:10px;height:44px;background:#8E949C;border:2px solid var(--ink);border-top:0}
+.jlawn.street .jcell{background:#B8BEC6;border-color:#7E858F}.jlawn.street .jcell.cut{background:#DCE0E4}
+.jlawn.street .start::before{content:"🏤"}.jlawn.street .me::after{content:"🚶"}.jlawn.street.done .me::after{content:"📬"}
+.jlawn .goal::before{content:"🏠";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font-size:26px}.jlawn .me.goal::before{content:none}
 /* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
 .jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
 .jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
@@ -10173,7 +10182,15 @@ const JOB_ART={
     return`<div class="jsvg jclock" data-h="${h}">${S(`<circle cx="50" cy="50" r="45" fill="#FFFFFF" stroke-width="3.5"/>${nums}
       <path d="M50 50 L50 25" fill="none" stroke="#3F86D2" stroke-width="3.2"/><path d="M50 50 L${hh[0]} ${hh[1]}" fill="none" stroke-width="5.5"/>
       <circle cx="50" cy="50" r="3.6" fill="${INK}"/>`)}</div>`;},
-  abc:()=>`<div class="jabc">${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>`<i>${l}</i>`).join("")}</div>`
+  abc:()=>`<div class="jabc">${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>`<i>${l}</i>`).join("")}</div>`,
+  // for the Mail carrier: a mailbox with a name on it, a street sign, a letter
+  mailbox:a=>`<div class="jmbox">${S(`${OCC}<path d="M46 56 L54 56 L54 92 L46 92Z" fill="${grad("#9A6436","v",.2,.2)}"/>
+    <path d="M16 60 L16 36 Q16 14 40 14 L60 14 Q84 14 84 36 L84 60Z" fill="${grad("#3F6FB8","v",.28,.2)}"/>
+    <path d="M40 14 Q16 14 16 36 L16 60 L28 60 L28 36 Q28 20 40 14Z" fill="#2F5A9C" stroke="none" opacity=".5"/>
+    <path d="M86 50 L86 20" fill="none" stroke-width="3"/><path d="M86 20 L98 20 L98 30 L86 30Z" fill="#DC5A4B"/>`)}<b class="jlabel">${esc(a.name)}</b></div>`,
+  sign:a=>`<div class="jsign"><span>${esc(a.text)}</span></div>`,
+  letter:()=>`<div class="jsvg">${S(`<path d="M8 26 L92 26 L92 80 L8 80Z" fill="${grad("#FBF6EC","v",.08,.1)}"/><path d="M8 26 L50 56 L92 26" fill="none"/>
+    <path d="M72 32 L86 32 L86 46 L72 46Z" fill="#DC5A4B" stroke-width="1.8"/>`)}</div>`
 };
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
@@ -10248,6 +10265,7 @@ const Jobs=(()=>{
       case"lawn":return lawn(a);
       case"array":return`<div class="jlawn small" style="grid-template-columns:repeat(${a.cols},auto)">${"<i></i>".repeat(a.rows*a.cols)}</div>`;
       case"blocks":case"house":case"cup":case"clock":case"abc":return JOB_ART[a.kind](a);
+      case"mailbox":case"sign":case"letter":return JOB_ART[a.kind](a);
     }
     return"";
   }
@@ -10332,13 +10350,13 @@ const Jobs=(()=>{
     host.dataset.kit="path";host.dataset.ans=moves;
     let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="grass"></button>`;
     const arrow=d=>`<button class="jarrow" data-dir="${d}" aria-label="${DIR_NAME[d]}">${ARROW[d]}</button>`;
-    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
+    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
       <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
     const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
     function draw(){
       const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
       cellEls.forEach(b=>{const x=+b.dataset.c,y=+b.dataset.r;
-        b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"");});
+        b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"")+(q.goal&&x===q.goal.c&&y===q.goal.r?" goal":"");});
       arrows.forEach(b=>b.classList.toggle("hint",b.dataset.dir===nx));
     }
     function go(d){
@@ -10826,6 +10844,79 @@ Jobs.kit("order",function(host,q,done,opt){
       {id:"array",lv:4,name:"rows and columns",gen:(seed,L)=>{const r=rnd(seed),m=mow(r,L.tier,int(r,1,2),4),rows=int(r,2,4),cols=int(r,2,5);
         return[m.step,{kit:"pad",track:"math",level:"array",say:[rows,"rows of",cols+".","How many squares?"],
           text:Array.from({length:rows},()=>cols).join(" + ")+" = ?",art:{kind:"array",rows,cols},ans:rows*cols,math:{op:"×",a:rows,b:cols}}];}}
+    ]});
+})();
+
+/* ---- 📬 Mail carrier, opens at reading level 3 ----
+   Every task starts with a letter to read: who it is for and the street ("To Bob on Moss Hill.").
+   The names are short ones he can sound out, his own name, or one of the valley's animals; the street
+   words decode at his level too (at level 3: Fox, Moss, Mill, Log, Dock... with Hill or Path; Elm and
+   Pond from level 4, Lane from 5, Road and Street from 7). He finds the mailbox with that name, and
+   from job level 2 sometimes the street sign instead. Each job level adds a step after it: find the
+   house by its number (tens and ones), walk the street map to the house from a note ("Go 2 →, then
+   1 up."), then put three letters in the bag in ABC order. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const NAMES=["Bob","Sam","Pam","Dan","Max","Tom","Ron","Kim","Tim","Meg","Ben","Ted","Jen","Gus","Liz","Ned","Jim","Viv","Zed","Ken","Val","Hal","Fin","Al","Ed",
+    "Jill","Beth","Seth","Josh","Chad","Tess","Nell","Rick","Nick","Jack","Bess","Fran","Glen","Stan","Brad","Ann"];
+  // the valley's animals get mail too ("To Dog on Fox Hill.")
+  const PETS=["dog","cat","hen","pig","bat","duck","fish","frog","crab","wolf"];
+  const WORDS=["Fox","Moss","Mill","Log","Dock","Hen","Shop","Bus","Sun","Rock","Elm","Pond","Nest","Plum","Frog","Bell","Lake","Pine","Oak","Park","Fern","Moon"];
+  const KINDS=["Hill","Path","Lane","Road","Street"];
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const first=w=>String(w).charAt(0).toUpperCase();
+  // everyone he can read at his level: his own name, the animals, and the people
+  function folks(tier){
+    const me=heroName(),pets=PETS.map(id=>(CRITTERS.find(c=>c.id===id)||{}).name).filter(n=>n&&fits(n,tier));
+    return{me:/^[A-Za-z]/.test(me)&&fits(me,tier)?me:null,pets,people:NAMES.filter(n=>fits(n,tier))};
+  }
+  // n names with different first letters, the first one the name given
+  function others(r,name,list,n){const out=[name];shuffle(r,list).forEach(x=>{if(out.length<n&&!out.some(y=>first(y)===first(x)))out.push(x);});return out;}
+  // the letter, and the step that reads it: find the mailbox with the name on it, or (signs) the street
+  function letter(r,tier,o){
+    const F=folks(tier),k=r(),name=k<.25&&F.me?F.me:k<.5&&F.pets.length?pick(r,F.pets):pick(r,F.people);
+    const words=WORDS.filter(w=>fits(w,tier)),kinds=KINDS.filter(w=>fits(w,tier));
+    const street=pick(r,words)+" "+pick(r,kinds),n=o&&o.n;
+    const text=n?`To ${name} at ${n} ${street}.`:`To ${name} on ${street}.`;
+    const pool=F.people.concat(F.pets,F.me?[F.me]:[]);
+    let step;
+    if(o&&o.signs&&r()<.4){
+      const streets=[street];shuffle(r,words).forEach(w=>{if(streets.length<3&&!streets.some(s=>s.split(" ")[0]===w))streets.push(w+" "+pick(r,kinds));});
+      step={say:["Read the letter. Find the street!"],choices:shuffle(r,streets).map(s=>({v:s,art:{kind:"sign",text:s}})),ans:street};
+    }else{
+      const names=others(r,name,F.people.concat(F.pets),3);
+      step={say:["Read the letter. Find the mailbox!"],choices:shuffle(r,names).map(x=>({v:x,art:{kind:"mailbox",name:x}})),ans:name};
+    }
+    return{name,street,pool,step:Object.assign({kit:"pick",track:"reading",read:true,text,art:{kind:"letter"}},step)};
+  }
+  // the street map: from the post office to the house in two runs that turn at a corner, so the way never crosses itself
+  const W=6,H=5,MOVE={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]};
+  function route(r){
+    for(let k=0;k<200;k++){
+      const start={c:int(r,0,W-1),r:int(r,0,H-1)},legs=[];let c=start.c,y=start.r,flat=r()<.5;
+      for(let i=0;i<2;i++){const room={L:c,R:W-1-c,U:y,D:H-1-y},ds=(flat?["L","R"]:["U","D"]).filter(d=>room[d]>0);
+        if(!ds.length)break;const d=pick(r,ds),n=int(r,1,Math.min(4,room[d]));legs.push({d,n});c+=MOVE[d][0]*n;y+=MOVE[d][1]*n;flat=!flat;}
+      if(legs.length===2)return{start,legs,goal:{c,r:y}};
+    }
+    return{start:{c:0,r:H-1},legs:[{d:"R",n:2},{d:"U",n:2}],goal:{c:2,r:H-3}};
+  }
+  // the note, as the Lawn mower writes it: "up" and "down" are words, left and right are arrows until "right" decodes
+  function walk(r,tier){
+    const p=route(r),words=Decode.tier("left")<=tier&&Decode.tier("right")<=tier;
+    const way=d=>d==="U"?"up":d==="D"?"down":words?(d==="L"?"left":"right"):(d==="L"?"←":"→");
+    return{kit:"path",read:true,say:["Read the note. Take the letter to the house!"],text:p.legs.map((l,i)=>(i?"then ":"Go ")+l.n+" "+way(l.d)).join(", ")+".",
+      grid:{w:W,h:H},start:p.start,goal:p.goal,theme:"street",ans:p.legs.map(l=>l.d.repeat(l.n)).join("")};
+  }
+  Jobs.register({
+    id:"mail",name:"Mail carrier",icon:"📬",uniform:{id:"mailcap",name:"mail cap",ic:"🧢"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Time to bring the mail! Read each letter.",
+    tasks:[
+      {id:"letter",lv:1,name:"letters",gen:(seed,L)=>[letter(rnd(seed),L.tier).step]},
+      {id:"house",lv:2,name:"house numbers",gen:(seed,L)=>{const r=rnd(seed),n=int(r,11,99),m=letter(r,L.tier,{n,signs:true});
+        return[m.step,Tracks.gen("math","place",seed+":p",{kind:"house",n})];}},
+      {id:"walk",lv:3,name:"the street map",gen:(seed,L)=>{const r=rnd(seed),m=letter(r,L.tier,{signs:true});return[m.step,walk(r,L.tier)];}},
+      {id:"abc",lv:4,name:"ABC order",gen:(seed,L)=>{const r=rnd(seed),m=letter(r,L.tier,{signs:true});
+        return[m.step,Tracks.gen("math","alpha",seed+":a",{words:m.pool,art:"letter",say:["Put the letters in the bag in ABC order!"]})];}}
     ]});
 })();
 
