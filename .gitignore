@@ -10,3 +10,5 @@ tools/voice/out/
 .DS_Store
 *.log
 tests/*.png
+# the listener's Whisper model, downloaded on its first start (server/docker-compose.yml)
+server/hear-cache/
