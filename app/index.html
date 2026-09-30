@@ -1272,6 +1272,16 @@ body.exploring .slot-empty{display:none}
 .jdrops{display:flex;align-items:center;gap:10px;justify-content:center}
 .jdgrp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 12px;border:3px solid var(--ink);border-radius:14px;background:#fff}
 .jdgrp>i{font-style:normal;font-size:30px;line-height:1}.jdgrp>span{display:flex;gap:4px}.jdrop{display:block;width:20px;height:28px}
+/* the Librarian: covers from his shelf, a shelf of books to count, and the path kit's library floor for the book cart */
+.jbook{display:flex;flex-direction:column;align-items:center;gap:4px;width:112px;min-height:134px;padding:8px 6px 8px 16px;border:3px solid var(--ink);border-radius:6px 14px 14px 6px;box-shadow:inset 10px 0 0 rgba(0,0,0,.18);color:#fff}
+.jbook.light{color:var(--ink)}.jbook .jbpic{display:block;width:72px;height:72px;padding:4px;background:rgba(255,255,255,.92);border-radius:12px}
+.jbook .jbpic svg,.jbook .jbpic img{width:100%;height:100%;display:block;object-fit:contain}.jbook b{font-size:14px;line-height:1.15;text-align:center;font-weight:900}
+.jbook.mini{width:46px;height:46px;min-height:0;padding:3px 3px 3px 9px;border-width:2px;box-shadow:inset 6px 0 0 rgba(0,0,0,.18)}.jbook.mini .jbpic{width:30px;height:30px;padding:2px;border-radius:7px}
+.jshelf{display:flex;flex-direction:column;padding:6px 10px 0;border:3px solid var(--ink);border-radius:10px;background:#C98C4E}
+.jsrow{display:flex;align-items:flex-end;gap:3px;min-height:54px;padding:4px 8px 0;border-bottom:8px solid #8B5A2B}
+.jsrow i{display:block;width:16px;border:2px solid var(--ink);border-radius:3px 3px 1px 1px}.jsrow i:nth-child(5n){margin-right:10px}
+.jlawn.library .jcell{background:#E7CFA2;border-color:#A77B45}.jlawn.library .jcell.cut{background:#F7E8C8}
+.jlawn.library .me::after{content:"🛒"}.jlawn.library .goal::before{content:"📚"}.jlawn.library.done .me::after{content:"📚"}
 /* the order kit: the answer row (numbered places) and the cards still to place; long cards in two columns */
 .jorder{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin:4px auto 0;max-width:660px}
 .jorow,.jopool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:62px}
@@ -9918,7 +9928,14 @@ Object.assign(JOB_ART,{
       <path d="M68 25 Q62 10 72 11 Q80 15 80 26Z" fill="${f("ear")}"/><ellipse cx="87" cy="38" rx="8.5" ry="6" fill="${f("nose")}"/>
       <circle cx="93" cy="36" r="3.3" fill="${INK}"/><circle cx="78" cy="30" r="2.2" fill="${INK}" stroke="none"/>
       ${ring?`<circle cx="${ring[0]}" cy="${ring[1]}" r="${ring[2]}" fill="none" stroke="#F2A31B" stroke-width="3" stroke-dasharray="4 3" stroke-opacity="1"/>`:""}`;
-    return`<div class="jsvg">${S(g)}</div>`;}
+    return`<div class="jsvg">${S(g)}</div>`;},
+  // the Librarian: a book with its cover picture from his shelf, its title and a colour (mini: a small one, no title), and a shelf of books
+  bookcover:a=>{const hue=/^#[0-9A-Fa-f]{6}$/.test(a.hue||"")?a.hue:"#DC5A4B",n=parseInt(hue.slice(1),16),light=((n>>16&255)*.299+(n>>8&255)*.587+(n&255)*.114)/255>.62;
+    let pic="";try{pic=a.cover?Books.art(a.cover,1):"";}catch(e){}
+    return`<div class="jbook${a.mini?" mini":""}${light?" light":""}" style="background:${hue}"><span class="jbpic">${pic}</span>${a.mini||!a.text?"":`<b>${esc(a.text)}</b>`}</div>`;},
+  bookshelf:a=>{const n=Math.max(0,a.n|0),r=mulberry(hashStr("shelf:"+(a.mix|0))),HUES=["#DC5A4B","#3F86D2","#F2C94C","#4FA84A","#9B5CF6","#F28C28","#F28DB2","#9A6436"];
+    const row=k=>`<div class="jsrow">${Array.from({length:k},()=>`<i style="height:${34+Math.floor(r()*13)}px;background:${HUES[Math.floor(r()*HUES.length)]}"></i>`).join("")}</div>`;
+    return`<div class="jshelf">${row(Math.min(10,n))}${n>10?row(n-10):""}</div>`;}
 });
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
@@ -9996,6 +10013,7 @@ const Jobs=(()=>{
       case"mailbox":case"sign":case"letter":return JOB_ART[a.kind](a);
       case"grow":case"weather":return JOB_ART[a.kind](a);
       case"vetcare":case"drops":case"petpart":return JOB_ART[a.kind](a);
+      case"bookcover":case"bookshelf":return JOB_ART[a.kind](a);
     }
     return"";
   }
@@ -10879,6 +10897,90 @@ Jobs.kit("order",function(host,q,done,opt){
       {id:"drops",lv:2,name:"counting drops",gen:(seed,L)=>{const r=rnd(seed);return[chart(r,L.tier),drops(r)];}},
       {id:"parts",lv:3,name:"the parts of a pet",gen:(seed,L)=>{const r=rnd(seed);return[chart(r,L.tier),part(r,L.tier)];}},
       {id:"visit",lv:4,name:"the visit",gen:(seed,L)=>{const r=rnd(seed);return[chart(r,L.tier),visit(r,L.tier)];}}
+    ]});
+})();
+
+/* ---- 📚 Librarian, opens at reading level 3 ----
+   Every task starts with what a reader asks for, in words at his level: "Can I get the one with a fox?", "I wish I
+   had the red one.", "Is the pig one in?" ("book" waits for level 7: "Can I get the red book?"; "about" for 9 and
+   "want" for 10: "I want a book about a fox."). He finds it among three covers from his own shelf (the real books:
+   their picture and their title, which decode at his level, each cover in a colour; red, blue and yellow at level 3,
+   pink and black from 4, white from 5, green and brown from 7, purple from 8, orange from 10, never two that look
+   alike). Each job level adds a step after it: put three books on the shelf in ABC order (each by the one-word name
+   of its picture: Bus, Fox, Pig); count the books on a shelf (to 20: a full shelf of ten, and the rest); push the
+   book cart to the shelf by the note, as the Mail carrier walks ("Go 2 →, then 1 up."). */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // a cover's picture as a word he can ask for; a cover with none is only ever one of the other books
+  const NAME={cat:"cat",fox:"fox",map:"map",pig:"pig",bus:"bus",egg:"egg",cottage:"hut",bug:"bug",fish:"fish",shop:"shop",whale:"whale",chick:"chick",
+    frog:"frog",truck:"truck",croc:"croc",plum:"plum",kite:"kite",snake:"snake",gate:"gate",star:"star",horse:"horse",eagle:"bird",goat:"goat",
+    robot:"robot",dragon:"dragon",puppy:"pup",snowman:"snowman",sailboat:"boat",phone:"phone"};
+  const COLOURS=[["red","#DC5A4B"],["blue","#3F86D2"],["yellow","#F2C94C"],["pink","#F28DB2"],["black","#4A4F5A"],["white","#FBF6EC"],
+    ["green","#4FA84A"],["brown","#9A6436"],["purple","#9B5CF6"],["orange","#F28C28"]];
+  const ALIKE=[["red","pink"],["red","orange"],["yellow","orange"],["blue","purple"],["black","brown"],["pink","purple"],["yellow","white"]];
+  const alike=(a,b)=>ALIKE.some(p=>p.indexOf(a)>=0&&p.indexOf(b)>=0);
+  const THING=["Can I get the one with {a}?","Do you have the one with {a}?","I wish I had the one with {a}.","Is the {w} one in?",
+    "Can I get a book with {a} in it?","I need the {w} book.","Do you have a book about {a}?","I want a book about {a}."];
+  const COLOUR=["Can I get the {c} one?","I wish I had the {c} one.","Is the {c} one in?","Can I get the {c} book?","I need the {c} book.","I want the {c} book."];
+  const an=w=>(/^[aeiou]/.test(w)?"an ":"a ")+w;
+  const title=b=>Books.fill(b.title,b.t);
+  const named=(b,tier)=>!!NAME[b.cover]&&fits(NAME[b.cover],tier);
+  // three colours he can read, none two alike
+  function hues(r,tier){const out=[];shuffle(r,COLOURS.filter(c=>fits(c[0],tier))).forEach(c=>{if(out.length<3&&!out.some(h=>alike(h[0],c[0])))out.push(c);});return out;}
+  // the reading step: the request, and the book among three covers with different pictures
+  function ask(r,tier){
+    const books=BOOKS.filter(b=>!b.mine&&b.cover&&fits(title(b),tier)),byColour=r()<.4;
+    const can=byColour?books.filter(b=>!Decode.words(title(b)).some(x=>COLOURS.some(c=>c[0]===x.toLowerCase()))):books.filter(b=>named(b,tier));if(!can.length)return null;
+    const ans=pick(r,can),three=[ans],w0=NAME[ans.cover],says=b=>Decode.words(title(b)).map(x=>x.toLowerCase());
+    // no other cover may name what is asked for: not the thing ("Frog and Croc" when he wants the frog), not a colour ("The Red Bus")
+    const clash=b=>byColour?says(b).some(x=>COLOURS.some(c=>c[0]===x)):says(b).indexOf(w0)>=0;
+    shuffle(r,books).forEach(b=>{if(three.length<3&&!clash(b)&&!three.some(x=>x.cover===b.cover||(NAME[x.cover]&&NAME[x.cover]===NAME[b.cover])))three.push(b);});
+    const hs=hues(r,tier);if(three.length<3||hs.length<3)return null;
+    const w=NAME[ans.cover],c=hs[0][0];
+    const lines=(byColour?COLOUR:THING).map(l=>l.replace("{a}",an(w||"")).replace("{w}",w||"").replace("{c}",c)).filter(l=>fits(l,tier));
+    return{kit:"pick",track:"reading",read:true,word:byColour?c:w,say:["Read what the reader wants. Find the book!"],text:pick(r,lines),
+      choices:shuffle(r,three.map((b,i)=>({v:b.id,art:{kind:"bookcover",cover:b.cover,text:title(b),hue:hs[i][1]}}))),ans:ans.id};
+  }
+  // job level 2: three books to put on the shelf in ABC order, by the names of their pictures
+  function abc(seed,r,tier){
+    const words=[],cover={};Object.keys(NAME).forEach(k=>{const w=NAME[k];if(BOOKS.some(b=>!b.mine&&b.cover===k)&&fits(w,tier)&&!cover[w]){cover[w]=k;words.push(w);}});
+    const q=Tracks.gen("math","alpha",seed+":a",{words,say:["Put the books on the shelf in ABC order!"]}),hs=hues(r,tier);
+    if(!q)return null;
+    q.choices=q.choices.map((c,i)=>Object.assign({},c,{text:c.v.charAt(0).toUpperCase()+c.v.slice(1),
+      art:cover[c.v]?{kind:"bookcover",cover:cover[c.v],hue:(hs[i%hs.length]||COLOURS[0])[1],mini:true}:c.art}));
+    return q;
+  }
+  // job level 3: the books on a shelf, to 20
+  function count(seed){
+    const q=Tracks.gen("math","count20",seed+":n");
+    return q&&Object.assign(q,{say:["How many books are on the shelf?"],art:{kind:"bookshelf",n:q.ans,mix:int(rnd(seed+":c"),0,999)}});
+  }
+  // job level 4: the book cart to the shelf, in two runs that turn at a corner (the Mail carrier's street map, a library floor)
+  const W=6,H=5,MOVE={L:[-1,0],R:[1,0],U:[0,-1],D:[0,1]};
+  function cart(r,tier){
+    let p=null;
+    for(let k=0;k<200&&!p;k++){
+      const start={c:int(r,0,W-1),r:int(r,0,H-1)},legs=[];let c=start.c,y=start.r,flat=r()<.5;
+      for(let i=0;i<2;i++){const room={L:c,R:W-1-c,U:y,D:H-1-y},ds=(flat?["L","R"]:["U","D"]).filter(d=>room[d]>0);
+        if(!ds.length)break;const d=pick(r,ds),n=int(r,1,Math.min(4,room[d]));legs.push({d,n});c+=MOVE[d][0]*n;y+=MOVE[d][1]*n;flat=!flat;}
+      if(legs.length===2)p={start,legs,goal:{c,r:y}};
+    }
+    if(!p)p={start:{c:0,r:H-1},legs:[{d:"R",n:2},{d:"U",n:2}],goal:{c:2,r:H-3}};
+    const words=Decode.tier("left")<=tier&&Decode.tier("right")<=tier;
+    const way=d=>d==="U"?"up":d==="D"?"down":words?(d==="L"?"left":"right"):(d==="L"?"←":"→");
+    return{kit:"path",read:true,say:["Read the note. Push the cart to the shelf!"],text:p.legs.map((l,i)=>(i?"then ":"Go ")+l.n+" "+way(l.d)).join(", ")+".",
+      grid:{w:W,h:H},start:p.start,goal:p.goal,theme:"library",ans:p.legs.map(l=>l.d.repeat(l.n)).join("")};
+  }
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"library",name:"Librarian",icon:"📚",uniform:{id:"libbadge",name:"library badge",ic:"📛"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the library! Read what each reader wants.",
+    tasks:[
+      {id:"find",lv:1,name:"finding books",gen:(seed,L)=>then(ask(rnd(seed),L.tier))},
+      {id:"abc",lv:2,name:"ABC order",gen:(seed,L)=>{const r=rnd(seed),a=ask(r,L.tier);return then(a,a&&abc(seed,r,L.tier));}},
+      {id:"count",lv:3,name:"counting books",gen:(seed,L)=>{const a=ask(rnd(seed),L.tier);return then(a,a&&count(seed));}},
+      {id:"cart",lv:4,name:"the book cart",gen:(seed,L)=>{const r=rnd(seed),a=ask(r,L.tier);return then(a,a&&cart(r,L.tier));}}
     ]});
 })();
 

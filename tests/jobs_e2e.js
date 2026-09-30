@@ -201,6 +201,31 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(charts.partsOk&&charts.parts==="back,neck,paw","Vet job level 3: “Look at its paw.” among three pictures of a pet, each showing one part (level 3: "+charts.parts+")");
   ok(charts.v3==="look fix hug"&&/look listen fix hug/.test(charts.v8),"Vet job level 4: the visit in order — level 3: "+charts.v3+"; level 8: "+charts.v8);
 
+  // 1d. the Librarian: every text at level 3 reads only level 3 words; the request matches one real cover from his shelf, by
+  //     its picture or its colour, and no other cover names it; ABC order; the books on a shelf; the cart to the shelf
+  const LIB=await E(()=>{const j=Jobs.get("library");return{tier:j.unlock.tier,pay:j.pay,uni:j.uniform.name,tasks:j.tasks.map(t=>t.id+":"+t.lv).join(" "),
+    badges:[2,3,4,5].every(lv=>BADGES.some(b=>b.id==="job_library_"+lv))};});
+  ok(LIB.tier===3&&LIB.pay.perTask===3&&LIB.pay.streakTip===5&&LIB.uni==="library badge"&&LIB.badges&&LIB.tasks==="find:1 abc:2 count:3 cart:4",
+    "the Librarian opens at reading level 3, pays 3 🪙 (tip 5), comes with a library badge, a badge for job levels 2 to 5: "+LIB.tasks);
+  const lib3=await words2("library",3);
+  ok(lib3.texts>60&&lib3.worst<=3,`Librarian at level 3: ${lib3.texts} texts to read (requests and titles), ${lib3.words.length} words, all level 3 or below: ${lib3.words.join(" ")}`);
+  const asks=await E(()=>{const bad=[],kinds={},COL=["red","blue","yellow","pink","black","white","green","brown","purple","orange"];
+    for(let tier=3;tier<=MAX_TIER;tier++)for(let s=0;s<60;s++){const a=Jobs.gen("library","find",s,{tier,lv:1})[0],said=Decode.words(a.text).map(x=>x.toLowerCase());
+      const books=a.choices.map(c=>BOOKS.find(b=>b.id===c.v)),col=COL.filter(c=>said.indexOf(c)>=0);
+      if(books.some(b=>!b)||a.choices.some((c,i)=>c.art.kind!=="bookcover"||c.art.cover!==books[i].cover||c.art.text!==Books.fill(books[i].title,books[i].t)))bad.push("not his shelf: "+a.text);
+      if(new Set(a.choices.map(c=>c.art.cover)).size!==3||new Set(a.choices.map(c=>c.art.hue)).size!==3)bad.push("covers alike: "+a.text);
+      if(col.length){kinds.colour=1;if(a.word!==col[0])bad.push(a.text);}else{kinds.picture=1;if(said.indexOf(a.word)<0)bad.push(a.text+" / "+a.word);}
+      a.choices.filter(c=>c.v!==a.ans).forEach(c=>{const t=Decode.words(c.art.text).map(x=>x.toLowerCase());if(t.indexOf(a.word)>=0)bad.push(`"${a.text}" next to "${c.art.text}"`);});}
+    const ab=Jobs.gen("library","abc",4,{tier:3,lv:2})[1],sh=[];for(let s=0;s<40;s++)sh.push(Jobs.gen("library","count",s,{tier:3,lv:3})[1]);
+    const ct=Jobs.gen("library","cart",2,{tier:3,lv:4})[1];
+    return{bad,kinds:Object.keys(kinds).sort().join(),abc:ab.level==="alpha"&&ab.choices.every(c=>c.art.kind==="bookcover"&&c.art.mini&&c.text===c.v.charAt(0).toUpperCase()+c.v.slice(1))?ab.ans.join(" < "):"",
+      shelf:sh.every(q=>q.level==="count20"&&q.art.kind==="bookshelf"&&q.art.n===q.ans&&q.ans>=11&&q.ans<=20&&q.say[0]==="How many books are on the shelf?"),
+      cart:ct.kit==="path"&&ct.theme==="library"&&!!ct.goal&&!ct.track&&ct.read?ct.text:""};});
+  ok(!asks.bad.length&&asks.kinds==="colour,picture","the reader asks for one of three real covers from his shelf, by its picture or its colour, and no other cover names it"+(asks.bad.length?" — "+asks.bad.slice(0,3).join(" | "):""));
+  ok(!!asks.abc,"Librarian job level 2: three books in ABC order by their names — "+asks.abc);
+  ok(asks.shelf,"Librarian job level 3: how many books are on the shelf (11 to 20)");
+  ok(!!asks.cart,"Librarian job level 4: the book cart to the shelf by the note — “"+asks.cart+"”");
+
   // 2. a locked job says when it opens
   await E(()=>{state.settings.tierOverride=2;});
   await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
@@ -228,6 +253,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
 
   const at3=await boardAt(3);
   ok(opens(at2,"Vet","vet",3)&&opens(at3,"Vet","vet"),"the Vet: “Opens at level 3” at level 2, open at level 3");
+  ok(opens(at2,"Librarian","library",3)&&opens(at3,"Librarian","library"),"the Librarian: “Opens at level 3” at level 2, open at level 3");
   // the patient on the chart is the customer at the counter
   await E(()=>{state.jobs.xp.vet=0;state.jobs.current=null;});
   await p.click("#jobsBtn");await waitFor(p,'#ovJob.on .jcard[data-job="vet"]');await p.click('#ovJob .jcard[data-job="vet"]');await waitFor(p,"#ovJob #jIn");await p.click("#ovJob #jIn");
