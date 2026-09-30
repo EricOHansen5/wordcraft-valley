@@ -13195,6 +13195,7 @@ const Talk=(()=>{
   // 5. An open question after a book: never judged, recorded for Dad's inbox
   const OPEN=["What was your favorite part of the story?","What do you think happens next?","Who was in the story?","How would you feel in this story?"];
   function mkOpen(tier){
+    if(!micOk())return null;   // it needs a recording
     const B=BOOKS.filter(b=>!b.mine&&b.t<=tier&&b.pages&&b.pages.length);if(!B.length)return null;
     const lib=state.library||{},read=B.filter(b=>(lib[b.id]||{}).done),b=any(read.length&&Math.random()<.7?read:B);
     return{kind:"open",book:b,q:any(OPEN),ans:"",expect:[],choices:[],reading:false};
@@ -13243,7 +13244,7 @@ const Talk=(()=>{
     $("#tkMic").onclick=()=>{const Q=S&&S.Q;if(!Q)return;
       if($("#tkMic").dataset.st==="listen"){if(capStop)capStop();else{try{Speech.stop();}catch(e){}}return;}
       if(Q.done)return;
-      if(eyes()&&!Q.busy)return ask(Q,true);   // eyes-free: the big button asks again, then listens
+      if(eyes()&&!Q.busy){Q.gen++;return ask(Q,true);}   // eyes-free: the big button asks again, then listens
       listen(Q);};
     $("#tkNext").onclick=()=>{Sound.sfx.pop();next();};
     probe();
@@ -13282,7 +13283,7 @@ const Talk=(()=>{
     h.querySelectorAll(".tkopt").forEach(b=>b.onclick=()=>tap(Q,b));
   }
   // the choices on screen and tappable (after "not sure", a sure wrong answer, or a right one)
-  function reveal(Q){const h=$("#tkQ");if(!h||S.Q!==Q)return;h.classList.remove("ask");h.querySelectorAll(".tkopt").forEach(b=>{b.disabled=false;});
+  function reveal(Q){const h=$("#tkQ");if(!h||!S||S.Q!==Q)return;h.classList.remove("ask");h.querySelectorAll(".tkopt").forEach(b=>{b.disabled=false;});
     const later=h.querySelector(".tklater");if(later)later.classList.remove("tklater");}
   const sayWord=w=>Sound.say("word:"+w,w,.9);
   // the question, spoken; then eyes-free listens by itself
