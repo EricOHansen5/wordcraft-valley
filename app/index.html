@@ -1877,6 +1877,15 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div class="row"><div class="grow"><div class="lbl">Save battery</div>
       <div class="meta">Half the fireflies and leaves, simpler light and glass, only the front trees sway, and no wind sound (the birds and crickets stay). Everything still works. Turn it off for the full look.</div></div>
       <label class="switch"><input type="checkbox" id="optSaver" checked></label></div>
+    <div class="row" id="batRow"><div class="grow"><div class="lbl">Battery check</div>
+      <div class="meta" id="batMeta"></div>
+      <div id="batAsk" style="display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="meta" id="batQ">Battery now, from the top of the screen:</span>
+        <input type="number" id="batPct" inputmode="numeric" pattern="[0-9]*" min="0" max="100" step="1" aria-label="Battery percent"
+          style="width:84px;font:inherit;padding:8px;border:3px solid var(--ink);border-radius:14px;background:var(--paper);color:var(--ink)"> %
+        <button class="btn primary" id="batOk" style="min-height:44px;padding:6px 16px">OK</button>
+        <button class="btn ghost" id="batNo" style="min-height:44px;padding:6px 14px">Cancel</button></div></div>
+      <button class="btn soft" id="batBtn" style="min-height:44px;padding:8px 14px">Start</button></div>
     <div class="row"><div class="grow"><div class="lbl">Game voice</div>
       <div class="meta" id="packMeta">One natural voice for every word, book and story — the same on every device. Your Voice Studio recordings still come first.</div>
       <button class="btn soft" id="packDl" style="min-height:40px;padding:6px 12px;margin-top:6px">⬇️ Save for offline</button></div>
@@ -4006,6 +4015,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TALK: each sure answer and tap, {d, tier: "A" "B" "C" or "tap", ok} (the last 200), his voice templates banked in all,
   // and Dad's inbox: his answers to open questions, [{id, d, at, q, book, ms, text}] (the clips are blobs "inbox:<id>")
   talk:{log:[],tpl:0,inbox:[]},
+  // BATTERY CHECK: the grown-up's checks (the last 30), the check under way (null when none), and the
+  // game's own clues per day (60 days): minutes on screen and resting, running animations, frame times
+  power:{checks:[],days:{},cur:null},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -5078,6 +5090,138 @@ const Rest=(()=>{
   R.on=()=>on;R.quiet=()=>on||hidden();R.poke=poke;R.check=check;
   R.onWake=fn=>{wakers.push(fn);};
   return R;
+})();
+
+/* ================================================================
+   BATTERY CHECK — how fast the game uses the battery
+   An iPad gives a web page no battery level, so a grown-up types it in:
+   Grown-up menu → Settings → Battery check → Start asks for the percent
+   in the status bar and keeps {t0, pct0, saver, ver} (and the minutes by
+   mode so far today) in state.power.cur; Stop asks again and files
+   {d, min, pct0, pct1, pctPerHour, saver, ver, modes} in
+   state.power.checks (the last 30), modes being the top three by minutes
+   during the check (from state.modeMin). A check that went over 12 hours,
+   or where the percent went up (it was charging), is not kept, and says so
+   kindly; so is one under 5 minutes (too short to tell).
+   The game keeps its own clues too, per day in state.power.days (60 days),
+   from the minutes tick (minuteTick), a few dozen bytes a day:
+     on      minutes on screen (visible, touched or not)
+     rest    of those, minutes resting (REST)
+     an, n   running animations, summed over n one-a-minute samples
+     fm, fs, fn   the median frame interval (ms) and the share of frames
+             over 34 ms, each summed over fn samples of 30 frames
+   The Grown-up report shows the last five checks and this week's clues
+   under "Battery", after "Where the time goes"; so does tools/progress.js.
+   For the tests: Power.now() (the clock; replace it), Power._tick() (a
+   minute's sample now; a promise), Power.start(pct), Power.stop(pct).
+   ================================================================ */
+const Power=(()=>{
+  const P={now:()=>Date.now()};
+  const obj=o=>!!o&&typeof o==="object"&&!Array.isArray(o);
+  function S(){
+    if(!obj(state.power))state.power={checks:[],days:{},cur:null};
+    const s=state.power;if(!Array.isArray(s.checks))s.checks=[];if(!obj(s.days))s.days={};if(s.cur!==null&&!obj(s.cur))s.cur=null;
+    return s;
+  }
+  // a percent as typed: a whole number 0-100, or null
+  const pct=v=>{const t=String(v==null?"":v).trim(),n=+t;return t!==""&&isFinite(n)&&n>=0&&n<=100?Math.round(n):null;};
+  const clock=t=>{const d=new Date(t);let h=d.getHours();const m=d.getMinutes(),ap=h>=12?"pm":"am";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+ap;};
+  const nameOf=id=>{const L=Modes.list();return Object.prototype.hasOwnProperty.call(L,id)?L[id].name:String(id);};
+  let note="";      // what the last Stop said, until the next Start
+  function start(v){
+    const p=pct(v);if(p==null)return false;
+    const s=S(),d=today();
+    s.cur={t0:P.now(),pct0:p,saver:saverOn(),ver:APP_VERSION,d0:d,m0:Object.assign({},(state.modeMin||{})[d]||{})};
+    note="";save();render();return true;
+  }
+  // the minutes by mode since the check began: modeMin from its first day on, less what that day held at the start
+  function modesSince(c){
+    const mm=state.modeMin||{},tot={};
+    Object.keys(mm).filter(d=>d>=c.d0).forEach(d=>{const x=mm[d]||{};Object.keys(x).forEach(k=>{tot[k]=(tot[k]||0)+(+x[k]||0)-(d===c.d0?(+(c.m0||{})[k]||0):0);});});
+    const out={};Object.keys(tot).filter(k=>tot[k]>0).sort((a,b)=>tot[b]-tot[a]).slice(0,3).forEach(k=>{out[k]=tot[k];});
+    return out;
+  }
+  function stop(v){
+    const s=S(),c=s.cur;if(!c)return null;
+    const p=pct(v);if(p==null)return null;
+    s.cur=null;
+    const min=Math.round((P.now()-c.t0)/60000);let res;
+    if(p>c.pct0){res={kept:false,why:"up"};note="The battery went up, so the iPad was charging. That check was not kept; try one off the charger.";}
+    else if(min>12*60){res={kept:false,why:"long"};note="That check ran over 12 hours, so it was not kept. Start one when he sits down to play.";}
+    else if(min<5){res={kept:false,why:"short"};note="That was under 5 minutes, too short to tell. Half an hour or more works best.";}
+    else{
+      const rec={d:today(),min,pct0:c.pct0,pct1:p,pctPerHour:Math.round((c.pct0-p)/(min/60)*10)/10,saver:!!c.saver,ver:c.ver||"",modes:modesSince(c)};
+      s.checks.push(rec);if(s.checks.length>30)s.checks.splice(0,s.checks.length-30);
+      res={kept:true,rec};note="Kept: "+line(rec)+".";
+    }
+    save();render();return res;
+  }
+  const modeList=m=>Object.keys(m||{}).map(k=>nameOf(k).toLowerCase()+" "+m[k]+" min").join(", ");
+  const line=c=>`about ${c.pctPerHour}% an hour (Save battery ${c.saver?"on":"off"}), ${c.min} minutes${Object.keys(c.modes||{}).length?", "+modeList(c.modes):""}`;
+
+  // ---------- the settings row ----------
+  let asking="";      // "start" or "stop" while the number box is up
+  const $=id=>document.getElementById(id);
+  function render(){
+    const meta=$("batMeta");if(!meta)return;
+    const s=S(),c=s.cur,last=s.checks[s.checks.length-1];
+    $("batAsk").style.display=asking?"flex":"none";$("batBtn").style.display=asking?"none":"";
+    $("batBtn").textContent=c?"Stop":"Start";
+    if(c)meta.textContent=`Checking since ${clock(c.t0)}, ${c.pct0}%. Tap Stop when he is done and type the percent again.`;
+    else meta.textContent=(note?note+" ":"")+(note?"":"How fast does the game use the battery? Tap Start and type the percent from the top of the screen, let him play (half an hour or more), then tap Stop and type it again."+
+      (last?` Last check: ${line(last)}.`:""));
+  }
+  function ask(what){asking=what;render();const i=$("batPct");i.value="";try{i.focus();}catch(e){}}
+  if($("batBtn")){
+    $("batBtn").onclick=()=>ask(S().cur?"stop":"start");
+    $("batNo").onclick=()=>{asking="";render();};
+    const ok=()=>{const v=$("batPct").value;if(pct(v)==null){$("batQ").textContent="A number from 0 to 100, please:";return;}
+      $("batQ").textContent="Battery now, from the top of the screen:";
+      const was=asking;asking="";if(was==="start")start(v);else stop(v);};
+    $("batOk").onclick=ok;
+    $("batPct").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();ok();}});
+  }
+
+  // ---------- the daily clues ----------
+  function day(){
+    const s=S(),d=today();
+    const cut=new Date();cut.setDate(cut.getDate()-59);const oldest=ymd(cut);
+    Object.keys(s.days).forEach(k=>{if(k<oldest)delete s.days[k];});
+    return s.days[d]||(s.days[d]={on:0,rest:0,an:0,n:0,fm:0,fs:0,fn:0});
+  }
+  // 30 frame intervals: the median and the share over 34 ms (two frames' time at 60 Hz)
+  function frames(){
+    if(typeof requestAnimationFrame!=="function")return Promise.resolve(null);
+    // a slow page may not give 30 frames in 3 s: then what it did give, if that is 5 or more
+    const sum=t=>{const q=t.slice().sort((a,b)=>a-b),m=q.length>>1;return{med:q.length%2?q[m]:(q[m-1]+q[m])/2,slow:t.filter(v=>v>34).length/t.length};};
+    return new Promise(res=>{const t=[];let last=0,done=false;
+      const give=setTimeout(()=>{done=true;res(t.length>=5?sum(t):null);},3000);
+      const f=now=>{if(done)return;if(last)t.push(now-last);last=now;
+        if(t.length<30){requestAnimationFrame(f);return;}
+        done=true;clearTimeout(give);res(sum(t));};
+      requestAnimationFrame(f);});
+  }
+  function tick(){
+    if(document.visibilityState!=="visible")return Promise.resolve(false);
+    const x=day();x.on++;if(Rest.on())x.rest++;
+    let run=0;try{run=document.getAnimations().filter(a=>a.playState==="running").length;}catch(e){}
+    x.an+=run;x.n++;
+    saveIdle();
+    return frames().then(f=>{if(f){x.fm=Math.round((x.fm+f.med)*10)/10;x.fs=Math.round((x.fs+f.slow)*100)/100;x.fn++;}return true;});
+  }
+
+  // ---------- the Grown-up report ----------
+  function report(days){
+    const s=S(),ch=s.checks.slice(-5).reverse(),wk=(days||[]).map(d=>s.days[d]).filter(Boolean);
+    const t=k=>wk.reduce((a,x)=>a+(+x[k]||0),0),on=t("on");
+    let h=`<h3>Battery</h3>`;
+    h+=ch.length?`<div class="rbat">${ch.map(c=>`<p class="rnote">${esc(c.d)}: ${esc(line(c))}.</p>`).join("")}</div>`
+      :`<p class="rnote">No battery checks yet. Grown-up menu → Settings → Battery check: type the percent at the start and the end of a session.</p>`;
+    if(on)h+=`<p class="rnote" id="rPower">This week: rest ${Math.round(t("rest")/on*100)}% of screen time, ~${t("n")?Math.round(t("an")/t("n")):0} animations, frames ${t("fn")?(t("fm")/t("fn")).toFixed(1):"–"} ms${t("fn")?` (${Math.round(t("fs")/t("fn")*100)}% slow)`:""}.</p>`;
+    return h;
+  }
+  P.start=start;P.stop=stop;P.tick=tick;P._tick=tick;P.render=render;P.report=report;P.line=line;
+  return P;
 })();
 
 /* ================================================================
@@ -8466,6 +8610,7 @@ function openPicIt(){
 let lastTouch=Date.now();
 document.addEventListener("pointerdown",()=>{lastTouch=Date.now();},true);
 function minuteTick(){
+  try{Power.tick();}catch(e){}      // BATTERY CHECK: on screen, resting, animations, frames (on screen even untouched)
   if(document.visibilityState!=="visible"||Date.now()-lastTouch>90000)return;
   state.minutes[today()]=(state.minutes[today()]||0)+1;
   Modes.credit();save();
@@ -8545,6 +8690,7 @@ function openReport(){
     ${gT||gN?`<p class="rnote rgoal">Reading goal reached <b>${gN} of 7</b> days this week${gT?` (${gT} words a day, or a whole book)`:" (the goal is off now)"}.</p>`:""}
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}
+    ${Power.report(days)}
     ${Talk.report(days)}
     ${Reread.report(days)}
     ${Tracks.report(days)}
@@ -15626,6 +15772,7 @@ function renderSettings(){
   document.getElementById("optAmbient").checked=state.settings.ambient;
   document.getElementById("optNature").checked=state.settings.nature!==false;
   document.getElementById("optSaver").checked=saverOn();
+  try{Power.render();}catch(e){}      // BATTERY CHECK
   document.getElementById("optSpell").value=String(state.settings.spell!=null?state.settings.spell:.6);
   renderVoicePicker();
   document.getElementById("optSpeech").checked=!!state.settings.speech;
@@ -15768,6 +15915,7 @@ NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
 NULL_IS_MISSING.push("feast");      // FEAST TABLE
 NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTORY
 NULL_IS_MISSING.push("talk");      // TALK
+NULL_IS_MISSING.push("power","power.checks","power.days");      // BATTERY CHECK (power.cur null is "no check under way")
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];

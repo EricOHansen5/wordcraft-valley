@@ -1,4 +1,4 @@
-// Battery: REST (the game holds still after 45 s with nobody touching it) and Save battery.
+// Battery: REST (the game holds still after 45 s with nobody touching it), Save battery, and the Battery check.
 // Rest._idleMs is set short and Rest.check() asked, instead of waiting 45 s.
 // The audio contexts are a stub that records suspend() and resume().
 const {launch,waitFor,check}=require("./lib");
@@ -42,14 +42,16 @@ const AUDIO_STUB=()=>{
   // idle time made short; ask now, and again after the timer would have
   const goIdle=async ms=>{await E(m=>{Rest._idleMs=m;},ms||300);await wait((ms||300)+150);await E(()=>Rest.check());};
   const awake=()=>E(()=>{Rest._idleMs=45000;Rest.poke();});
-  const tap=async()=>{const b=await E(()=>{const r=document.getElementById("hudMid").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};});
+  // a touch; the idle time goes back to 45 s first (a rest already on stays on until the touch), so a slow runner
+  // cannot rest again between the touch and the next check
+  const tap=async()=>{const b=await E(()=>{Rest._idleMs=45000;const r=document.getElementById("hudMid").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};});
     await p.touchscreen.tap(b.x,b.y);await wait(150);};
   await tidy();
   await tap();      // a first touch starts the nature sounds (and is his input)
   ok(await E(()=>Nature._started()&&Nature._ctx().state==="running"),"the nature sounds start on the first touch (the audio stub is running)");
 
   // ---- 1. it comes on after the idle time, and not before ----
-  await E(()=>{Rest._idleMs=2000;Rest.check();});await wait(200);
+  await E(()=>{Rest._idleMs=8000;Rest.check();});await wait(200);
   ok(!(await resting()),"no rest a moment after a touch");
   const a0=await anims();
   ok(a0.run>20&&a0.paused===0,"awake: the valley's decorative loops run "+J(a0));
@@ -128,15 +130,16 @@ const AUDIO_STUB=()=>{
 
   // ---- 7b. the movers step with a transform (a glide), not a left/top transition ----
   await tidy();await awake();
+  await E(()=>{window.__quiet=Rest.quiet;Rest.quiet=()=>true;});      // the wander ticks hold off: only these steps move
   const gl=await E(()=>{const out={};
     const anchor=el=>{const r=el.getBoundingClientRect(),t=tilesEl.getBoundingClientRect();return{x:r.left+r.width/2-t.left,y:r.bottom-t.top};};
     const cr=state.critters.find(c=>c._el);for(const dc of [3,-3,5,-5,7,-7]){const c0=cr.c;moveCritter(cr,dc,0);if(cr.c!==c0)break;}
     const ca=cr._el.getAnimations().filter(a=>a.effect&&a.effect.getKeyframes().some(k=>/translate/.test(k.transform||"")));
     out.critGlide=ca.length;out.critTrans=getComputedStyle(cr._el).transitionProperty;
-    const v=state.vehicles.find(x=>x._el&&(VEH(x.id)||{}).move==="road");driveVehicle(v,v.c>10?-3:3,0,.34);
+    const v=state.vehicles.find(x=>x._el&&(VEH(x.id)||{}).move==="road");v.busy=0;for(const dc of [3,-3,5,-5,7,-7]){const c0=v.c;driveVehicle(v,dc,0,.34);if(v.c!==c0)break;}
     out.vehGlide=v._el.getAnimations().filter(a=>a.effect&&a.effect.getKeyframes().some(k=>/translate/.test(k.transform||""))).length;
     out.vehTrans=getComputedStyle(v._el).transitionProperty;
-    buddyGo(state.buddy.c>10?state.buddy.c-1:state.buddy.c+1,state.buddy.r);
+    for(const dc of [2,-2,4,-4,6,-6]){const c0=state.buddy.c;buddyGo(c0+dc,state.buddy.r);if(state.buddy.c!==c0)break;}
     const b=document.getElementById("buddyWorld");out.budGlide=b.getAnimations().filter(a=>/translate/.test(JSON.stringify(a.effect.getKeyframes()))).length;
     out.budTrans=getComputedStyle(b).transitionProperty;
     window.__glide={cr,v};return out;});
@@ -148,6 +151,7 @@ const AUDIO_STUB=()=>{
     const want=(x,topPct)=>[x,topPct/100*tilesEl.clientHeight];const {cr,v}=window.__glide;
     const res=[[cr._el],[v._el],[document.getElementById("buddyWorld")]].map(([el])=>{const a=f(el),w=want(parseFloat(el.style.left),parseFloat(el.style.top));
       return Math.round(Math.hypot(a[0]-w[0],a[1]-w[1]));});return res;});
+  await E(()=>{Rest.quiet=window.__quiet;});
   ok(land.every(d=>d<=2),"each ends standing on its new spot, bottom middle on it (off by "+J(land)+" px)");
 
   // ---- 8. Save battery: half the particles, no blur, plain light layers, glows as a gradient, the front row sways, no wind ----
@@ -183,6 +187,82 @@ const AUDIO_STUB=()=>{
   await require("./lib").seed(p,fx,{base:null});
   const st=await E(()=>({saver:state.settings.saver,nature:state.settings.nature,timer:state.settings.timer,cls:document.body.classList.contains("saver")&&document.body.classList.contains("flat")}));
   ok(st.saver===true&&st.nature===fx.settings.nature&&st.timer===fx.settings.timer&&st.cls,"an old save (v8) gets Save battery with its default, on, and keeps its own settings "+J(st));
+
+  // ---- 10. Battery check: the percent at the start and the end, as a grown-up types them ----
+  await E(()=>{window.__now=Date.now();Power.now=()=>window.__now;});
+  const row=()=>E(()=>({meta:document.getElementById("batMeta").textContent,btn:document.getElementById("batBtn").textContent,
+    asking:getComputedStyle(document.getElementById("batAsk")).display!=="none",q:document.getElementById("batQ").textContent}));
+  const type=v=>E(v=>{document.getElementById("batPct").value=v;document.getElementById("batOk").click();},v);
+  await E(()=>renderSettings());
+  let r=await row();
+  ok(r.btn==="Start"&&!r.asking&&/Tap Start/.test(r.meta),"Battery check: a Start button, and what it is for "+J(r));
+  await E(()=>document.getElementById("batBtn").click());r=await row();
+  ok(r.asking&&/Battery now/.test(r.q),"Start asks for the percent from the status bar");
+  await type("lots");r=await row();
+  ok(r.asking&&/0 to 100/.test(r.q)&&!(await E(()=>state.power.cur)),"a percent that is not a number is asked for again, nothing started");
+  await type("82");r=await row();
+  const cur=await E(()=>state.power.cur);
+  ok(cur&&cur.pct0===82&&cur.saver===true&&cur.ver===await E(()=>APP_VERSION)&&typeof cur.t0==="number","82%: the check starts {t0, pct0, saver, ver} "+J(cur));
+  ok(r.btn==="Stop"&&/^Checking since \d{1,2}:\d\d (am|pm), 82%/.test(r.meta),"...and the row says so: "+r.meta);
+  // an hour of play: 30 minutes reading, 20 in the Mine, 10 in the valley, 2 in the closet
+  await E(()=>{window.__now+=60*60000;const d=today(),m=state.modeMin[d]||(state.modeMin[d]={});
+    [["read",30],["mine",20],["valley",10],["closet",2]].forEach(([k,n])=>{m[k]=(m[k]||0)+n;});});
+  await E(()=>document.getElementById("batBtn").click());await type("74");
+  const rec=await E(()=>state.power.checks[state.power.checks.length-1]);r=await row();
+  ok(rec&&rec.min===60&&rec.pct0===82&&rec.pct1===74&&rec.pctPerHour===8&&rec.saver===true&&rec.d===await E(()=>today()),"74% an hour later: 8% an hour, kept "+J(rec));
+  ok(rec&&J(rec.modes)===J({read:30,mine:20,valley:10}),"...with the top three modes of the check "+J(rec&&rec.modes));
+  ok(r.btn==="Start"&&/about 8% an hour \(Save battery on\), 60 minutes/.test(r.meta),"...and the row says what it found: "+r.meta);
+  // a rise: it was charging
+  const n0=await E(()=>state.power.checks.length);
+  await E(()=>document.getElementById("batBtn").click());await type("50");
+  await E(()=>{window.__now+=40*60000;});await E(()=>document.getElementById("batBtn").click());await type("55");r=await row();
+  ok(await E(()=>state.power.checks.length)===n0&&/charging/.test(r.meta)&&/not kept/.test(r.meta)&&!(await E(()=>state.power.cur)),"a rise (50% to 55%) is not kept, and the row says kindly why: "+r.meta);
+  // over 12 hours
+  await E(()=>document.getElementById("batBtn").click());await type("90");
+  await E(()=>{window.__now+=13*60*60000;});await E(()=>document.getElementById("batBtn").click());await type("30");r=await row();
+  ok(await E(()=>state.power.checks.length)===n0&&/12 hours/.test(r.meta),"a check over 12 hours is not kept: "+r.meta);
+  // Cancel leaves it as it was
+  await E(()=>document.getElementById("batBtn").click());await E(()=>document.getElementById("batNo").click());r=await row();
+  ok(!r.asking&&r.btn==="Start"&&!(await E(()=>state.power.cur)),"Cancel puts the box away, nothing started");
+  // the list keeps the last 30
+  await E(()=>{for(let i=0;i<32;i++){Power.start(90);window.__now+=30*60000;Power.stop(87);}});
+  ok(await E(()=>state.power.checks.length)===30,"the checks kept are the last 30");
+
+  // ---- 11. the game's own clues, a day at a time ----
+  const d0=await E(()=>JSON.parse(JSON.stringify(state.power.days[today()]||{on:0,rest:0,an:0,n:0,fm:0,fn:0})));
+  await E(()=>Power._tick());
+  let d1=await E(()=>state.power.days[today()]);
+  ok(d1.on===d0.on+1&&d1.n===d0.n+1&&d1.fn===d0.fn+1&&d1.rest===d0.rest&&d1.an>d0.an&&d1.fm>d0.fm,"a minute's tick: on screen +1, the running animations and a frame sample written "+J(d1));
+  await goIdle();ok(await resting(),"(resting)");
+  await E(()=>Power._tick());const d2=await E(()=>state.power.days[today()]);
+  ok(d2.on===d1.on+1&&d2.rest===d1.rest+1,"a tick while resting counts a resting minute "+J(d2));
+  await tap();await awake();
+  const dayJ=await E(()=>JSON.stringify(state.power.days[today()]));
+  ok(dayJ.length<200,"a day's clues are a few dozen bytes: "+dayJ);
+  await E(()=>{const d=new Date();d.setDate(d.getDate()-70);state.power.days[ymd(d)]={on:1,rest:0,an:0,n:1,fm:16,fs:0,fn:1};});
+  await E(()=>Power._tick());
+  ok(await E(()=>Object.keys(state.power.days).every(k=>k>=ymd(new Date(Date.now()-60*864e5)))),"days older than 60 are dropped");
+  ok(await E(()=>typeof minuteTick==="function"&&/Power\.tick/.test(minuteTick.toString())),"the clues come from the minutes tick");
+
+  // ---- 12. the Grown-up report and the progress tool show them ----
+  await E(()=>openReport());await wait(300);
+  const rep=await E(()=>{const o=document.getElementById("ovReport"),h=[...o.querySelectorAll("h3")].map(x=>x.textContent),i=h.indexOf("Battery");
+    return{h,i,where:h.indexOf("Where the time goes"),text:o.textContent,power:(document.getElementById("rPower")||{}).textContent||""};});
+  ok(rep.i>0&&rep.i===rep.where+1,"the report has a Battery block right after Where the time goes "+J(rep.h));
+  ok(/about 6% an hour \(Save battery on\), 30 minutes/.test(rep.text)&&(rep.text.match(/% an hour/g)||[]).length===5,"...the last five checks, as about N% an hour (saver), minutes");
+  ok(/rest \d+% of screen time, ~\d+ animations, frames \d+\.\d ms/.test(rep.power),"...and this week's clues in one line: "+rep.power);
+  await tidy();
+  const fsn=require("fs"),os=require("os"),pth=require("path"),snap=pth.join(os.tmpdir(),"wcv-power-"+process.pid+".json");
+  fsn.writeFileSync(snap,JSON.stringify({savedAt:"test",state:await E(()=>JSON.parse(JSON.stringify(state)))}));
+  const out=require("child_process").spawnSync("node",[pth.join(__dirname,"../tools/progress.js"),"--file",snap],{encoding:"utf8"});
+  try{fsn.unlinkSync(snap);}catch(e){}
+  ok(out.status===0&&/Battery checks \(the last 5\)/.test(out.stdout)&&/about 6% an hour \(save battery on\)/.test(out.stdout)&&/battery clues: on screen \d+ min, resting \d+%/.test(out.stdout),
+    "tools/progress.js has a Battery section: "+J((out.stdout.split("Battery checks")[1]||out.stderr||"").slice(0,240)));
+
+  // ---- 13. old saves: no power yet, or a null one ----
+  await require("./lib").seed(p,Object.assign({},fx,{power:null}),{base:null});
+  const pw=await E(()=>({checks:state.power.checks,cur:state.power.cur,days:typeof state.power.days}));
+  ok(J(pw)===J({checks:[],cur:null,days:"object"}),"an old save (and one with power: null) gets the Battery check's defaults "+J(pw));
 
   ok(!errs.length,"no page or console errors: "+errs.join(" | "));
   await close();T.done();

@@ -88,7 +88,18 @@ function report(snap){
   const hol=[];if(s.trick&&s.trick.nights)hol.push("Trick-or-Read nights "+s.trick.nights);if(s.feast&&s.feast.tables)hol.push("feast tables "+s.feast.tables);if(s.lights&&s.lights.doors&&s.lights.doors.length)hol.push("advent doors "+s.lights.doors.length);
   if(hol.length)p("Holidays: ",hol.join(", "));
   p("Valley: ",(s.critters||[]).length," animals, ",(s.vehicles||[]).length," vehicles, ",Object.keys(s.grid||{}).length," buildings, ",(s.badges||[]).length," badges");
-  p("Settings: goal ",(s.settings||{}).goal," words, fast track ",(s.settings||{}).fastTrack?"on":"off",", say it ",(s.settings||{}).speech?"on":"off",", talk to me ",(s.settings||{}).talk?"on":"off");
+  p("Settings: goal ",(s.settings||{}).goal," words, fast track ",(s.settings||{}).fastTrack?"on":"off",", say it ",(s.settings||{}).speech?"on":"off",", talk to me ",(s.settings||{}).talk?"on":"off",
+    ", save battery ",(s.settings||{}).saver===false?"off":"on");
+  // ---- battery: the grown-up's checks (Grown-up menu → Settings → Battery check) and the game's own clues ----
+  const pw=s.power||{},ck=(pw.checks||[]).slice(-5).reverse();
+  p("");
+  p("Battery checks (the last 5): ",ck.length?"":"none yet");
+  ck.forEach(c=>p("  ",c.d,"  about ",c.pctPerHour,"% an hour (save battery ",c.saver?"on":"off",")  ",c.min," min, ",c.pct0,"% to ",c.pct1,"%  ",
+    Object.entries(c.modes||{}).map(([k,v])=>(NAMES[k]||k)+" "+v).join(", "),c.ver?"  ["+c.ver+"]":""));
+  if(pw.cur)p("  a check is under way: since ",new Date(pw.cur.t0).toLocaleString()," at ",pw.cur.pct0,"%");
+  const wk=days7.map(d=>(pw.days||{})[d]).filter(Boolean),t=k=>wk.reduce((a,x)=>a+(+x[k]||0),0),on=t("on");
+  if(on)p("This week's battery clues: on screen ",on," min, resting ",Math.round(t("rest")/on*100),"% of it, ~",t("n")?Math.round(t("an")/t("n")):0," animations running, frames ",
+    t("fn")?(t("fm")/t("fn")).toFixed(1)+" ms ("+Math.round(t("fs")/t("fn")*100)+"% over 34 ms)":"not measured");
   return L.join("\n");
 }
 
