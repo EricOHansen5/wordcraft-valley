@@ -1602,6 +1602,19 @@ body.flat #grade,body.flat #glow,body.flat #sunbeam,body.flat #seasonTint{mix-bl
 body.flat{--glass:rgba(255,252,246,.9)}
 body.flat .iconbtn,body.flat .pan,body.flat .slot,body.flat .overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
 body.flat .overlay{background:rgba(40,32,22,.58)}
+/* body.saver: the Save battery setting (Grown-up menu → Settings, on by default; SAVE BATTERY in the
+   script). It is body.flat all the time, and the glows on things always in view are a soft light
+   painted behind them (a gradient, drawn once) instead of a drop-shadow filter, which is worked out
+   again every frame the drawing inside it moves (an animal's hop, a car's rumble). */
+body.saver .critter.legend .body,body.saver .vehicle.legend .body{filter:none;
+  background:radial-gradient(ellipse 50% 44% at 50% 62%,rgba(255,214,110,.55),rgba(255,214,110,0) 72%)}
+body.saver .critter.rare .body,body.saver .vehicle.rare .body{filter:none;
+  background:radial-gradient(ellipse 50% 44% at 50% 62%,rgba(123,91,224,.38),rgba(123,91,224,0) 72%)}
+body.saver .critter.shiny .body{filter:hue-rotate(160deg) saturate(1.4)!important;
+  background:radial-gradient(ellipse 50% 44% at 50% 62%,rgba(255,243,160,.6),rgba(255,243,160,0) 72%)}
+body.saver .tile.glow::before{content:"";position:absolute;left:-35%;right:-35%;top:-25%;bottom:-12%;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(255,214,110,.62),rgba(255,214,110,0) 70%)}
+body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,.8)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1861,6 +1874,9 @@ body.flat .overlay{background:rgba(40,32,22,.58)}
     <div class="row"><div class="grow"><div class="lbl">Weather and lighting</div>
       <div class="meta">Sunset and night, fireflies, drifting leaves, rain.</div></div>
       <label class="switch"><input type="checkbox" id="optAmbient" checked></label></div>
+    <div class="row"><div class="grow"><div class="lbl">Save battery</div>
+      <div class="meta">Half the fireflies and leaves, simpler light and glass, only the front trees sway, and no wind sound (the birds and crickets stay). Everything still works. Turn it off for the full look.</div></div>
+      <label class="switch"><input type="checkbox" id="optSaver" checked></label></div>
     <div class="row"><div class="grow"><div class="lbl">Game voice</div>
       <div class="meta" id="packMeta">One natural voice for every word, book and story — the same on every device. Your Voice Studio recordings still come first.</div>
       <button class="btn soft" id="packDl" style="min-height:40px;padding:6px 12px;margin-top:6px">⬇️ Save for offline</button></div>
@@ -3915,7 +3931,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TALK adds talk ("Talk to me" is on) and eyesFree (its car mode)
   settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true,
     voice:null,voicePack:true,voiceRate:1,goal:12,together:"",
-    talk:false,eyesFree:false},customWords:[],pace:{},
+    talk:false,eyesFree:false,
+    // SAVE BATTERY: the lighter valley (fewer particles, plain light layers, no blur, no wind), on by default
+    saver:true},customWords:[],pace:{},
   modeMin:{},modeOpens:{},
   // BOOT: the block-era tidy-up has said "Tidied up!"
   tidied:false,
@@ -4159,7 +4177,8 @@ function renderScenery(){
       const inner=document.createElement("div");
       inner.style.cssText="width:100%;height:100%";
       if(["tree","pine","flower","bush","grass","palm","herb","hibiscus","flame"].includes(id)){
-        inner.className="sway";inner.style.animationDelay=(rnd()*4).toFixed(2)+"s";}
+        const dl=(rnd()*4).toFixed(2)+"s";
+        if(!saverOn()||r===ROWS_MAX-1){inner.className="sway";inner.style.animationDelay=dl;}}      // SAVE BATTERY: the front row only
       inner.innerHTML=drawThing(id,Math.floor(rnd()*9999));
       el.appendChild(inner);el.insertAdjacentHTML("beforeend",'<div class="hitpad"></div>');tilesEl.appendChild(el);
     }
@@ -4191,7 +4210,7 @@ function renderWorld(){
         el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${tsz}px;height:${tsz}px;
           transform:translate(-50%,-100%);z-index:${g.z};filter:${f}`;
         const inner=document.createElement("div");inner.style.cssText="width:100%;height:100%";
-        if(["tree","pine","flower","bush","grass"].includes(t.id)){
+        if(["tree","pine","flower","bush","grass"].includes(t.id)&&(!saverOn()||r===ROWS_MAX-1)){      // SAVE BATTERY: the front row only
           inner.className="sway";inner.style.animationDelay=(hashStr(key)%3000)/1000+"s";}
         inner.innerHTML=drawThing(t.id,t.seed);
         el.appendChild(inner);el.insertAdjacentHTML("beforeend",'<div class="hitpad"></div>');
@@ -4436,12 +4455,12 @@ function driveVehicle(v,dc,dr,perCell){
   const secs=Math.min(3.2,cells*(perCell||.34)/(1+.3*((v.lv||1)-1)));   // upgraded ones are quicker
   placeVehicle(v,secs);
   if((v.lv||1)>=3)for(let i=0;i<3;i++)setTimeout(()=>{if(!v._el)return;const a=vehAnchor(v);
-    puffAt(a.rear,a.top-3,"rgba(255,214,90,.95)",2,{dy:-8,size:7,d:.6});},i*secs*300);
+    puffAt(a.rear,a.top-3,"rgba(255,214,90,.95)",fewer(2),{dy:-8,size:7,d:.6});},i*secs*300);
   if(v._el){v._el.classList.add("driving");setTimeout(()=>v._el&&v._el.classList.remove("driving"),secs*1000);}
   // exhaust, smoke, spray or snow behind it
   const trail={road:["rgba(150,150,150,.55)",3],rail:["rgba(90,90,95,.6)",5],water:["rgba(210,240,255,.9)",4],snow:["rgba(255,255,255,.95)",4]}[m.move];
   if(trail){const steps=Math.min(4,cells);for(let i=0;i<steps;i++)setTimeout(()=>{if(!v._el)return;
-    const a=vehAnchor(v);puffAt(a.rear,a.top-(m.move==="rail"?10:1),trail[0],trail[1],{dy:m.move==="rail"?-60:-14,dx:-a.dir*16,size:m.move==="rail"?20:10});},i*secs*250);}
+    const a=vehAnchor(v);puffAt(a.rear,a.top-(m.move==="rail"?10:1),trail[0],fewer(trail[1]),{dy:m.move==="rail"?-60:-14,dx:-a.dir*16,size:m.move==="rail"?20:10});},i*secs*250);}
   return secs;
 }
 function say_(text,word){setTimeout(()=>Sound.say("word:"+word,text,.95),650);}
@@ -4718,16 +4737,16 @@ document.getElementById("buddyBtn").onclick=()=>{
 const PHASES=[
   {id:"day",  icon:"☀️", grade:"transparent", gradeOp:0,
    glow:"radial-gradient(ellipse 60% 44% at 72% 4%,rgba(255,232,168,.55),transparent 70%)", glowOp:.9, beam:.5,
-   flat:{gradeOp:0,glowOp:.7,beam:.38}},
+   flat:{gradeOp:0,glowOp:.55,beam:.3}},
   {id:"dusk", icon:"🌇", grade:"linear-gradient(180deg,#FFB06B,#C06A8E 60%,#6B5A9E)", gradeOp:.42,
    glow:"radial-gradient(ellipse 70% 40% at 24% 16%,rgba(255,150,90,.6),transparent 70%)", glowOp:.85, beam:.75,
-   flat:{grade:"linear-gradient(180deg,#E08A4E,#9E4F78 60%,#4A3F7E)",gradeOp:.3,glowOp:.66,beam:.55}},
+   flat:{grade:"linear-gradient(180deg,#C86A30,#8C4058 60%,#4A3A60)",gradeOp:.35,glowOp:.5,beam:.65}},
   {id:"night",icon:"🌙", grade:"linear-gradient(180deg,#2A3470,#1B2148)", gradeOp:.62,
    glow:"radial-gradient(ellipse 40% 26% at 76% 10%,rgba(180,210,255,.4),transparent 70%)", glowOp:.7, beam:.12,
-   flat:{grade:"linear-gradient(180deg,#1B2148,#11152E)",gradeOp:.55,glowOp:.55,beam:.1}},
+   flat:{grade:"linear-gradient(180deg,#151A38,#0E1124)",gradeOp:.65,glowOp:.9,beam:.15}},
   {id:"dawn", icon:"🌅", grade:"linear-gradient(180deg,#9FB6E8,#E8B0A0 70%)", gradeOp:.34,
    glow:"radial-gradient(ellipse 62% 36% at 30% 12%,rgba(255,200,170,.6),transparent 70%)", glowOp:.8, beam:.55,
-   flat:{grade:"linear-gradient(180deg,#7F93C4,#C48E80 70%)",gradeOp:.25,glowOp:.62,beam:.42}}
+   flat:{grade:"linear-gradient(180deg,#40495D,#5D4640 70%)",gradeOp:.15,glowOp:.45,beam:.25}}
 ];
 function phase(){return PHASES[(state.phase||0)%PHASES.length];}
 document.getElementById("timeBtn").onclick=()=>{
@@ -4741,19 +4760,35 @@ function applyNight(){
   document.getElementById("timeBtn").textContent=p.icon;
   Nature.retune();if(p.id==="night")state.sawNight=true;
   // lanterns and crystals light up after dark
-  const lit=p.id==="night"||p.id==="dusk";
-  document.querySelectorAll('.tile[data-lum="1"]').forEach(el=>
-    el.style.filter=(el.dataset.baseFilter||"")+(lit?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""));
+  const lit=p.id==="night"||p.id==="dusk",sv=saverOn();
+  document.querySelectorAll('.tile[data-lum="1"]').forEach(el=>{
+    el.style.filter=(el.dataset.baseFilter||"")+(lit&&!sv?" drop-shadow(0 0 14px rgba(255,214,110,.95))":"");
+    el.classList.toggle("glow",lit&&sv);});      // SAVE BATTERY: a gradient behind it instead
   updateFireflies();
 }
 /* The light layers: #grade (multiply) and #glow, #sunbeam (screen) give the time of day, #seasonTint
    (multiply) the season or the look. On the iPad a blended layer the size of the valley is a whole
-   extra pass every frame anything under it moves, so in body.flat (REST) they are laid on as plain
-   alpha instead: each phase's "flat" values were picked to look close to the blended ones (compared
-   on screenshots at noon, sunset and night). A switch between the two is instant, not a 2 s fade. */
+   extra pass every frame anything under it moves, so in body.flat (REST, Save battery) they are laid on as plain
+   alpha instead: each phase's "flat" values were fitted to the blended look on screenshots of the whole
+   valley (mean colour error, noon 5.8, sunset 10.6, night 5.1, dawn 7.4 out of 255), keeping the sun's
+   glow at noon and dawn where the plain fit would drop it. A switch between the two is instant, not a
+   2 s fade. */
 const FLAT_TINT=.7;      // #seasonTint's strength when it is plain alpha
+/* ---- SAVE BATTERY (Grown-up menu → Settings, state.settings.saver, on by default) ----
+   The valley as it is, made lighter to draw, even while he plays: half the particles (fewer()),
+   the wind bed off (the chirps and crickets stay), the light layers as plain alpha and no blur
+   behind the glass (body.flat, as in REST), the drop-shadow glows on the animals, vehicles and
+   lanterns as a gradient behind them (CSS body.saver), and only the front row of trees and grass
+   sways. Off: the full look. */
+const saverOn=()=>!!(state.settings&&state.settings.saver!==false);
+const fewer=n=>saverOn()?Math.ceil(n/2):n;
+function applySaver(){
+  renderWorld();seedParticles();      // renderWorld ends in applyNight: the classes, the light layers, the fireflies
+  try{Nature.wind(!saverOn());}catch(e){}
+}
 function applyGrade(){
-  const p=phase(),amb=state.settings.ambient,b=document.body,fl=b.classList.contains("rest");
+  const p=phase(),amb=state.settings.ambient,b=document.body,fl=b.classList.contains("rest")||saverOn();
+  b.classList.toggle("saver",saverOn());
   const was=b.classList.contains("flat");b.classList.toggle("flat",fl);
   const F=fl?p.flat:null,g=document.getElementById("grade"),gl=document.getElementById("glow"),
     sb=document.getElementById("sunbeam"),st=document.getElementById("seasonTint"),L=[g,gl,sb,st];
@@ -4767,7 +4802,7 @@ function applyGrade(){
 function updateFireflies(){
   document.querySelectorAll(".firefly").forEach(n=>n.remove());
   if(phase().id!=="night"||!state.settings.ambient)return;
-  for(let i=0;i<16;i++){
+  for(let i=0;i<fewer(16);i++){
     const f=document.createElement("div");f.className="firefly";
     f.style.cssText=`left:${8+Math.random()*84}%;top:${38+Math.random()*52}%;
       animation-delay:${Math.random()*3.4}s;z-index:250`;
@@ -4779,7 +4814,7 @@ function updateFireflies(){
 function seedParticles(){
   const P=document.getElementById("particles");P.innerHTML="";
   if(!state.settings.ambient)return;
-  for(let i=0;i<18;i++){
+  for(let i=0;i<fewer(18);i++){
     const m=document.createElement("div");m.className="mote";
     const s=2+Math.random()*4;
     m.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${30+Math.random()*66}%;
@@ -4789,7 +4824,7 @@ function seedParticles(){
   seedSeasonParticles(P);
   try{Looks.particles(P);}catch(e){}
   const leafCols=["#8FBE6E","#E8B33D","#E08A4B","#C96B86"];
-  for(let i=0;i<(season().id==="autumn"?11:4);i++){
+  for(let i=0;i<fewer(season().id==="autumn"?11:4);i++){
     const l=document.createElement("div");l.className="leaf";
     l.style.cssText=`left:${20+Math.random()*80}%;top:${20+Math.random()*30}%;
       background:${leafCols[i%4]};animation-duration:${8+Math.random()*7}s;
@@ -4809,7 +4844,7 @@ function floater(text,color){
   setTimeout(()=>f.remove(),1300);
 }
 function sparkleBurst(xPct,yPct,n=10){
-  const host=document.getElementById("floaters");
+  const host=document.getElementById("floaters");n=fewer(n);
   for(let i=0;i<n;i++){
     const s=document.createElement("div");s.className="sparkle";
     s.style.cssText=`left:${xPct+(Math.random()-.5)*16}%;top:${yPct+(Math.random()-.5)*14}%;
@@ -4825,7 +4860,7 @@ function setStreak(n){
 setInterval(()=>{
   if(!state.settings.ambient||Rest.quiet()||Math.random()>.18)return;      // REST: no rain for nobody
   const W=document.getElementById("weather");
-  for(let i=0;i<40;i++){const d=document.createElement("div");d.className="drop";
+  for(let i=0;i<fewer(40);i++){const d=document.createElement("div");d.className="drop";
     d.style.cssText=`left:${Math.random()*100}%;top:${-20+Math.random()*40}%;
       animation-delay:${Math.random()}s;animation-duration:${.7+Math.random()*.5}s`;W.appendChild(d);}
   setTimeout(()=>W.innerHTML="",22000);
@@ -11350,7 +11385,8 @@ const Looks=(()=>{
       const el=document.createElement("div");el.className="tile lookprop";el.dataset.prop=p.id;el.dataset.look=L.id;
       el.dataset.baseFilter=f;if(p.lum)el.dataset.lum="1";
       el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${size}px;height:${size}px;transform:translate(-50%,-100%);
-        z-index:${g.z-1};filter:${f}${p.lum&&lit?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""}`;
+        z-index:${g.z-1};filter:${f}${p.lum&&lit&&!saverOn()?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""}`;
+      if(p.lum&&lit&&saverOn())el.classList.add("glow");      // SAVE BATTERY: a gradient behind it instead
       const inner=document.createElement("div");inner.style.cssText="width:100%;height:100%";
       if(p.sway){inner.className="sway";inner.style.animationDelay=(hashStr(p.id)%3000)/1000+"s";}
       inner.innerHTML=artOf(L,p);el.appendChild(inner);
@@ -11361,7 +11397,7 @@ const Looks=(()=>{
   const BAT=`<svg viewBox="0 0 40 22" aria-hidden="true"><path d="M20 7 L18.2 3.6 L17.2 7.4 Q12 4 7 5.4 Q3.6 3 .8 4.6 Q4.4 8.2 3.6 13 Q7.6 10.4 10.8 13.4 Q13.6 10.6 16.6 14 Q18.4 13 20 17.6 Q21.6 13 23.4 14 Q26.4 10.6 29.2 13.4 Q32.4 10.4 36.4 13 Q35.6 8.2 39.2 4.6 Q36.4 3 33 5.4 Q28 4 22.8 7.4 L21.8 3.6Z" fill="#3B2A4A"/>
     <circle cx="18.6" cy="9.4" r="1.1" fill="#FFD86B"/><circle cx="21.4" cy="9.4" r="1.1" fill="#FFD86B"/></svg>`;
   const PARTS={
-    bats(P){for(let i=0;i<7;i++){const b=document.createElement("div");b.className="lookp lbat";const w=26+Math.random()*18;
+    bats(P){for(let i=0;i<fewer(7);i++){const b=document.createElement("div");b.className="lookp lbat";const w=26+Math.random()*18;
       b.style.cssText=`top:${5+Math.random()*32}%;width:${w}px;height:${w*.55}px;animation-duration:${13+Math.random()*10}s;animation-delay:${-Math.random()*20}s`;
       b.innerHTML=BAT;P.appendChild(b);}}};
   // the look's particles, once it has earned them; left alone when they are already the right ones
@@ -11373,7 +11409,7 @@ const Looks=(()=>{
     [].slice.call(P.querySelectorAll(".lookp")).forEach(n=>n.remove());
     if(!want)return;
     if(PARTS[L.particles])PARTS[L.particles](P);
-    else if(L.drift)for(let i=0;i<12;i++){const d=document.createElement("div");d.className="lookp lfall";d.textContent=L.drift;
+    else if(L.drift)for(let i=0;i<fewer(12);i++){const d=document.createElement("div");d.className="lookp lfall";d.textContent=L.drift;
       d.style.cssText=`left:${Math.random()*100}%;top:-4%;font-size:${12+Math.random()*10}px;animation-duration:${10+Math.random()*9}s;animation-delay:${-Math.random()*14}s`;P.appendChild(d);}
     [].slice.call(P.querySelectorAll(".lookp")).forEach(n=>{n.dataset.lk=want;});
   }
@@ -14072,19 +14108,31 @@ const Nature=(()=>{
     try{
       ctx=new (window.AudioContext||window.webkitAudioContext)();
       master=ctx.createGain();master.gain.value=.0;master.connect(ctx.destination);
-      const len=ctx.sampleRate*2, buf=ctx.createBuffer(1,len,ctx.sampleRate), d=buf.getChannelData(0);
-      let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}
-      wind=ctx.createBufferSource();wind.buffer=buf;wind.loop=true;
-      const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=420;
       windGain=ctx.createGain();windGain.gain.value=.08;   // half the old .16: the wind sits under the chirps rather than beside them
-      wind.connect(lp).connect(windGain).connect(master);wind.start();
-      // slow swell so the wind breathes
-      const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.08;lg.gain.value=.03;   // the swell scales with the wind
-      lfo.connect(lg).connect(windGain.gain);lfo.start();
+      windGain.connect(master);
+      if(!saverOn())windOn();      // SAVE BATTERY: no wind bed, the chirps and crickets stay
       master.gain.linearRampToValueAtTime(.55,ctx.currentTime+3);
       started=true;
       if(holds.size)ctx.suspend();else schedule();
     }catch(e){}
+  }
+  // the wind: looped filtered noise with a slow swell (an LFO on its gain)
+  let wbuf=null,lfo=null;
+  function windOn(){
+    if(wind)return;
+    if(!wbuf){const len=ctx.sampleRate*2,d=(wbuf=ctx.createBuffer(1,len,ctx.sampleRate)).getChannelData(0);
+      let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}}
+    wind=ctx.createBufferSource();wind.buffer=wbuf;wind.loop=true;
+    const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=420;
+    wind.connect(lp).connect(windGain);wind.start();
+    // slow swell so the wind breathes
+    const lg=ctx.createGain();lfo=ctx.createOscillator();lfo.frequency.value=.08;lg.gain.value=.03;   // the swell scales with the wind
+    lfo.connect(lg).connect(windGain.gain);lfo.start();
+  }
+  function windOff(){
+    if(!wind)return;
+    try{wind.stop();lfo.stop();wind.disconnect();lfo.disconnect();}catch(e){}
+    wind=null;lfo=null;
   }
   function hold(why,on){
     const was=holds.size>0;
@@ -14124,8 +14172,11 @@ const Nature=(()=>{
     try{master.gain.linearRampToValueAtTime(0,ctx.currentTime+.8);setTimeout(()=>{ctx.close();},1000);}catch(e){}
     clearTimeout(timer);started=false;
   }
-  return{start,stop,hold,kick,retune:()=>{if(started){windGain.gain.value=phase().id==="night"?.09:.16;}},
-    _ctx:()=>ctx,_started:()=>started};
+  // stop() closes the context: a later start() makes new nodes, the wind too
+  function stopAll(){stop();wind=null;lfo=null;wbuf=null;}
+  return{start,stop:stopAll,hold,kick,retune:()=>{if(started){windGain.gain.value=phase().id==="night"?.09:.16;}},
+    wind:on=>{if(!started)return;try{if(on)windOn();else windOff();}catch(e){}},
+    _ctx:()=>ctx,_started:()=>started,_wind:()=>!!wind};
 })();
 
 
@@ -14344,11 +14395,11 @@ function applySeason(){
 const seasonWords=()=>season().words;
 function seedSeasonParticles(P){
   const z=season();
-  if(z.id==="winter")for(let i=0;i<24;i++){const f=document.createElement("div");f.className="flake";f.textContent="❄";
+  if(z.id==="winter")for(let i=0;i<fewer(24);i++){const f=document.createElement("div");f.className="flake";f.textContent="❄";
     f.style.cssText=`left:${Math.random()*100}%;top:-4%;font-size:${9+Math.random()*10}px;animation-duration:${9+Math.random()*9}s;animation-delay:${-Math.random()*14}s`;P.appendChild(f);}
-  if(z.id==="spring")for(let i=0;i<14;i++){const p=document.createElement("div");p.className="petal";
+  if(z.id==="spring")for(let i=0;i<fewer(14);i++){const p=document.createElement("div");p.className="petal";
     p.style.cssText=`left:${20+Math.random()*80}%;top:${10+Math.random()*30}%;animation-duration:${8+Math.random()*7}s;animation-delay:${-Math.random()*12}s`;P.appendChild(p);}
-  if(z.id==="summer")for(let i=0;i<10;i++){const d=document.createElement("div");d.className="seed";
+  if(z.id==="summer")for(let i=0;i<fewer(10);i++){const d=document.createElement("div");d.className="seed";
     d.style.cssText=`left:${Math.random()*100}%;top:${40+Math.random()*50}%;animation-duration:${12+Math.random()*8}s;animation-delay:${-Math.random()*16}s`;P.appendChild(d);}
 }
 
@@ -15548,6 +15599,7 @@ function renderSettings(){
   document.getElementById("optTTS").checked=state.settings.tts;
   document.getElementById("optAmbient").checked=state.settings.ambient;
   document.getElementById("optNature").checked=state.settings.nature!==false;
+  document.getElementById("optSaver").checked=saverOn();
   document.getElementById("optSpell").value=String(state.settings.spell!=null?state.settings.spell:.6);
   renderVoicePicker();
   document.getElementById("optSpeech").checked=!!state.settings.speech;
@@ -15586,6 +15638,7 @@ document.getElementById("optRate").oninput=e=>{state.settings.voiceRate=+e.targe
 document.getElementById("optRate").onchange=()=>Sound.speak("The dog had a nap in the sun.",1);
 document.getElementById("optNature").onchange=e=>{state.settings.nature=e.target.checked;
   if(e.target.checked)Nature.start();else Nature.stop();save();};
+document.getElementById("optSaver").onchange=e=>{state.settings.saver=e.target.checked;applySaver();save();};
 document.getElementById("optSpeech").onchange=e=>{state.settings.speech=e.target.checked;save();};
 document.getElementById("optFast").onchange=e=>{state.settings.fastTrack=e.target.checked;save();};
 document.getElementById("optGoal").onchange=e=>{state.settings.goal=+e.target.value;Goal.render();save();};

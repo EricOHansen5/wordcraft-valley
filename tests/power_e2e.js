@@ -1,4 +1,4 @@
-// Battery: REST (the game holds still after 45 s with nobody touching it).
+// Battery: REST (the game holds still after 45 s with nobody touching it) and Save battery.
 // Rest._idleMs is set short and Rest.check() asked, instead of waiting 45 s.
 // The audio contexts are a stub that records suspend() and resume().
 const {launch,waitFor,check}=require("./lib");
@@ -27,8 +27,10 @@ const AUDIO_STUB=()=>{
   const T=check("power"),ok=T.ok,J=x=>JSON.stringify(x);
   // a valley with animals and vehicles out, at night (fireflies), the nature sounds on
   const {page:p,errs,close,E}=await launch({viewport:{width:1024,height:768},init:AUDIO_STUB,
-    seed:{phase:2,settings:{goal:0,ambient:true,nature:true},
-      critters:[{id:"dog",seed:1,c:4,r:8,lv:1,out:true,since:1},{id:"fox",seed:2,c:12,r:8,lv:2,out:true,since:2},{id:"frog",seed:3,c:18,r:7,lv:1,out:true,since:3}],
+    // Save battery off here: the rest checks compare with the full look (section 8 turns it on)
+    seed:{phase:2,settings:{goal:0,ambient:true,nature:true,saver:false},
+      critters:[{id:"dog",seed:1,c:4,r:8,lv:1,out:true,since:1},{id:"fox",seed:2,c:12,r:8,lv:2,out:true,since:2},{id:"frog",seed:3,c:18,r:7,lv:1,out:true,since:3},
+        {id:"wolf",seed:4,c:15,r:6,lv:1,out:true,since:4}],
       vehicles:[{u:"v1",id:"v_car",c:9,r:8,lv:1,out:true,since:1},{u:"v2",id:"v_train",c:2,r:7,lv:1,out:true,since:2}]}});
   const wait=ms=>p.waitForTimeout(ms);
   const tidy=()=>E(()=>document.querySelectorAll(".overlay.on").forEach(o=>Modes.shut(o)));
@@ -104,6 +106,7 @@ const AUDIO_STUB=()=>{
   // ---- 6. Adventure: walking counts as input; the parked loop starts again on a touch ----
   await p.click("#advBtn");await wait(700);
   ok(await E(()=>Modes.top()==="adventure"),"Adventure is open");
+  await E(()=>{Wild.start=()=>{};});      // no wild animal out of the tall grass (a reading mode: it would rightly hold rest off)
   await E(()=>{Adv._in.jx=1;});      // a held joystick sends no events: only the walking says he is there
   await goIdle(600);await wait(300);await E(()=>Rest.check());
   ok(!(await resting()),"no rest while Ash walks, with no input events");
@@ -122,6 +125,40 @@ const AUDIO_STUB=()=>{
   await E(()=>{Object.defineProperty(document,"visibilityState",{configurable:true,get:()=>"visible"});document.dispatchEvent(new Event("visibilitychange"));});
   await tap();
   ok(await E(()=>!Rest.quiet()&&Nature._ctx().state==="running"),"visible again and touched: the sounds run");
+
+  // ---- 8. Save battery: half the particles, no blur, plain light layers, glows as a gradient, the front row sways, no wind ----
+  const P=["mote","leaf","firefly","flake","petal","seed","lbat","lfall"];
+  const looks=()=>E(P=>{const k={};P.forEach(c=>{k[c]=document.querySelectorAll("#stage ."+c).length;});
+    const cs=(s,p)=>getComputedStyle(document.querySelector(s))[p];
+    k.blur=cs("#parentBtn","backdropFilter");k.panBlur=cs("#panR","backdropFilter");k.blend=cs("#grade","mixBlendMode");
+    k.sway=document.querySelectorAll("#tiles .sway").length;
+    k.swayBack=[...document.querySelectorAll("#tiles .tile.scn > .sway")].filter(e=>!/^8:/.test(e.parentNode.dataset.key||"")).length;
+    const w=document.querySelector('.critter[data-critter="wolf"] .body');k.rare=w?cs('.critter[data-critter="wolf"] .body',"filter")+" | "+cs('.critter[data-critter="wolf"] .body',"backgroundImage").slice(0,15):"none";
+    k.wind=Nature._wind();k.saver=document.body.classList.contains("saver");return k;},P);
+  const setSaver=on=>E(on=>{const b=document.getElementById("optSaver");b.checked=on;b.dispatchEvent(new Event("change"));},on);
+  await tidy();await wait(300);
+  const full=await looks();
+  ok(!full.saver&&full.blur!=="none"&&full.blend==="multiply"&&full.wind&&/drop-shadow/.test(full.rare),"Save battery off: today's look (blur, blending, the wind, the rare wolf's drop-shadow glow) "+J(full));
+  await setSaver(true);await wait(300);
+  const lite=await looks();
+  const halves=P.every(c=>lite[c]===Math.ceil(full[c]/2));
+  ok(halves&&full.firefly===16&&full.mote===18,"Save battery on: half the particles "+J(P.map(c=>c+" "+full[c]+"→"+lite[c])));
+  ok(lite.saver&&lite.blur==="none"&&lite.panBlur==="none","...no backdrop blur on the glass");
+  ok(lite.blend==="normal","...the light layers are plain alpha");
+  ok(lite.sway>0&&lite.sway<full.sway&&lite.swayBack===0,"...only the front row sways ("+full.sway+" → "+lite.sway+")");
+  ok(/^none/.test(lite.rare)&&/gradient/.test(lite.rare),"...the rare wolf's glow is a gradient behind it, not a filter ("+lite.rare+")");
+  ok(!lite.wind&&await E(()=>Nature._ctx().state==="running"),"...the wind bed is off, the nature sounds (chirps) still on");
+  ok(await E(()=>state.settings.saver===true),"...and it is saved in the settings");
+  await setSaver(false);await wait(300);
+  const back=await looks();
+  ok(P.every(c=>back[c]===full[c])&&back.blur===full.blur&&back.blend==="multiply"&&back.sway===full.sway&&back.wind&&/drop-shadow/.test(back.rare),
+    "Save battery off again: everything as it was "+J(back));
+
+  // ---- 9. an old save gets Save battery, on ----
+  const fx=JSON.parse(require("fs").readFileSync(require("path").join(__dirname,"fixtures/v8-era.json"),"utf8"));
+  await require("./lib").seed(p,fx,{base:null});
+  const st=await E(()=>({saver:state.settings.saver,nature:state.settings.nature,timer:state.settings.timer,cls:document.body.classList.contains("saver")&&document.body.classList.contains("flat")}));
+  ok(st.saver===true&&st.nature===fx.settings.nature&&st.timer===fx.settings.timer&&st.cls,"an old save (v8) gets Save battery with its default, on, and keeps its own settings "+J(st));
 
   ok(!errs.length,"no page or console errors: "+errs.join(" | "));
   await close();T.done();
