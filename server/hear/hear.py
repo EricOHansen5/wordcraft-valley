@@ -14,6 +14,8 @@ text: picking one of three words is a much easier job than transcribing.
                                URI-encoded or not) and an optional X-Prompt; or multipart/form-data
                                with the fields audio, expect (JSON list or "a, b, c") and prompt
                             -> {text, best, scores:{answer: 0..1}, ms}
+                               An empty list ([]) only writes down what was said (an open question
+                               for Dad's inbox): scores {}, best null, the prompt as the context.
 
 Nothing is stored: the clip is transcribed in memory and let go.
 Environment: HEAR_PORT (9000), HEAR_MODEL (base.en), HEAR_THREADS (2).
@@ -161,6 +163,8 @@ def load():
 
 def default_prompt(expect):
     """'Cat. Cot. Cap.': the answers as short sentences (it worked best on the game's own word clips)"""
+    if not expect:
+        return None
     return " ".join(e[:1].upper() + e[1:] + ("" if e.endswith((".", "?", "!")) else ".") for e in expect)
 
 
@@ -183,6 +187,8 @@ def parse_expect(raw):
     if isinstance(raw, bytes):
         raw = raw.decode("utf-8", "replace")
     raw = raw.strip()
+    if not raw:
+        return []
     for cand in (raw, urllib.parse.unquote(raw)):
         try:
             v = json.loads(cand)
@@ -254,9 +260,9 @@ class Handler(BaseHTTPRequestHandler):
             audio, expect = body, parse_expect(self.headers.get("X-Expect"))
         if prompt:
             prompt = urllib.parse.unquote(prompt)[:200]
-        if not isinstance(expect, list) or not 1 <= len(expect) <= 6 or \
+        if not isinstance(expect, list) or not 0 <= len(expect) <= 6 or \
                 not all(isinstance(e, (str, int)) and 0 < len(str(e).strip()) <= 40 for e in expect):
-            return self.send(400, {"error": "expect is a list of 1 to 6 answers"})
+            return self.send(400, {"error": "expect is a list of up to 6 answers"})
         expect = [str(e).strip() for e in expect]
         if not audio:
             return self.send(400, {"error": "no audio"})
@@ -304,7 +310,9 @@ def selftest():
     s = score("ice cream", ["ice cream", "cream"])
     ok(s["ice cream"] == 1 and s["cream"] < 1, "hear.py: a two-word answer beats the part of it " + json.dumps(s))
     ok(fold("buzz") == "buz" and fold("kick") == "kik" and fold("city") == "sity", "hear.py: the fold")
-    ok(default_prompt(["cat", "cot", "3"]) == "Cat. Cot. 3.", "hear.py: the prompt is the answers as short sentences")
+    ok(default_prompt(["cat", "cot", "3"]) == "Cat. Cot. 3." and default_prompt([]) is None, "hear.py: the prompt is the answers as short sentences (none for an open answer)")
+    s = score("I liked the pig", [])
+    ok(s == {} and best_of(s, []) is None and parse_expect("[]") == [] and parse_expect("") == [], "hear.py: an open answer has no scores and no best")
     ok(parse_expect('["a","b"]') == ["a", "b"] and parse_expect(urllib.parse.quote('["a b","c"]')) == ["a b", "c"]
        and parse_expect("a, b") == ["a", "b"], "hear.py: expect as JSON, URI-encoded JSON, or a list with commas")
     print(f"hear.py selftest: {fails} failed")

@@ -1478,6 +1478,11 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .talksheet.eyes .tkmic{min-height:140px;min-width:min(420px,80vw);font-size:34px;border-radius:40px}
 .talksheet.eyes #tkNext{display:none}
 @media (max-width:600px){.tkq .tkword{font-size:48px}.tkmic{min-width:200px}}
+.tkq.ask.kind-open .tkyq{visibility:hidden}
+.tkq.kind-open .tkbook.done~.tkyq{visibility:visible}
+.inboxsheet{max-width:720px}
+.ibrow{align-items:center;gap:8px}.ibrow .btn{min-height:48px}
+.ibtext{margin-top:6px;font-style:italic;color:var(--ink)}
 /* ================================================================
    VIEWPORT — iPad first (9th generation: 1024×768 landscape, 768×1024 portrait)
    The tool bar fits in one row in landscape and wraps to rows in portrait;
@@ -1742,6 +1747,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
       <button class="btn primary" id="reportBtn">📊 Full reading report</button>
       <button class="btn soft" id="recapBtn">Show today's recap</button>
       <button class="btn soft" id="tourBtn">Replay the tour</button>
+      <button class="btn soft" id="inboxBtn" style="display:none">🎤 Dad's inbox</button>
     </div>
     <div class="lbl" style="margin:6px 0 8px">Last 7 days</div>
     <div class="chart" id="dailyChart"></div>
@@ -1825,7 +1831,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
       <div class="meta">Adds a "Say it" button on Read-it words. Needs HTTPS and internet on iPad.</div></div>
       <label class="switch"><input type="checkbox" id="optSpeech"></label></div>
     <div class="row"><div class="grow"><div class="lbl">Talk to me</div>
-      <div class="meta">A 🎤 Talk to me button in the crates: he answers out loud and the buddy listens. At home the NAS listens (server/README.md, "The listener"); anywhere else the iPad matches his voice to the answers; the browser's recogniser is the last resort. A misheard answer costs nothing: he taps instead.</div></div>
+      <div class="meta">A 🎤 Talk to me button in the crates: he answers out loud and the buddy listens. At home the NAS listens (server/README.md, "The listener"); anywhere else the iPad matches his voice to the answers; the browser's recogniser is the last resort. A misheard answer costs nothing: he taps instead. After some stories it asks what he thinks, never judged; his answers wait for you in Progress → 🎤 inbox.</div></div>
       <label class="switch"><input type="checkbox" id="optTalk"></label></div>
     <div class="row" id="rowEyes"><div class="grow"><div class="lbl">Eyes-free</div>
       <div class="meta">For the car: every question is spoken, listening starts by itself, one big button, and the next question comes by itself.</div></div>
@@ -4273,8 +4279,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // FACTORY: levels finished (0-12), best stars per level {"F3":2}, his own factory as a short string (null until
   // he builds), and today's paid side orders {day, paid}
   factory:{lvl:0,stars:{},sandbox:null,orders:{day:"",paid:0}},
-  // TALK: each sure answer and tap, {d, tier: "A" "B" "C" or "tap", ok} (the last 200), and his voice templates banked in all
-  talk:{log:[],tpl:0},
+  // TALK: each sure answer and tap, {d, tier: "A" "B" "C" or "tap", ok} (the last 200), his voice templates banked in all,
+  // and Dad's inbox: his answers to open questions, [{id, d, at, q, book, ms, text}] (the clips are blobs "inbox:<id>")
+  talk:{log:[],tpl:0,inbox:[]},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -12714,6 +12721,12 @@ const Factory=(()=>{
              yes/no question (the books' own quiz items).
      number  A Jobs math question from Tracks: count to 10 or add within 10 (eyes-free, only the
              adding, which is all spoken); the choices are the answers.
+     open    An open question after the buddy reads a book ("What do you think happens next?").
+             Never judged: his answer (up to 8 s) is thanked, pays +1 💎 once, and goes to Dad's
+             inbox (the name is the Notes' "From"): the clip in blobs "inbox:<id>", and
+             state.talk.inbox [{id, d, at, q, book, ms, text}], the last 30. text is what the NAS
+             heard, when it was listening (written down in the background, never waited for).
+             Grown-up menu → Progress → 🎤 Dad's inbox plays them back.
    Kind rules: a sure match of the right answer pays +2 💎 (a tap +1), once a question, and the
    reading questions (not numbers) count as a word read (wordsRead, Quests.hit("read")). Not
    sure, or nothing heard: "I didn't quite catch that. Tap the one you said." and the choices
@@ -12723,7 +12736,7 @@ const Factory=(()=>{
    {d, tier: A B C or tap, ok}) for the report's line. While it thinks, the buddy says "hmm"
    (3 s at most). Eyes-free: every prompt is spoken, listening starts by itself, one big button
    (it asks again), and the next question comes by itself (after two misses too).
-   Save: state.talk {log, tpl}; state.settings.talk and eyesFree.
+   Save: state.talk {log, tpl, inbox}; state.settings.talk and eyesFree.
    Listening comes in three tiers, chosen at run time:
      A  the NAS: POST /api/hear on the home server (server/hear/, Whisper) with the clip and
         its possible answers, when GET /api/hear said {ok:true} in the last 10 minutes.
@@ -12908,11 +12921,11 @@ const TalkMatch=(()=>{
 })();
 
 const Talk=(()=>{
-  const TEN=10*60e3,A_MS=3500,TPL_MAX=5,RANK={page:0,tap:1,A:2},LOG_MAX=200,HMM=3000;
+  const TEN=10*60e3,A_MS=3500,TPL_MAX=5,RANK={page:0,tap:1,A:2},LOG_MAX=200,HMM=3000,INBOX_MAX=30;
   // how close the NAS's (and the browser's) best answer must be, and how far ahead of the next, to count as sure
   const SURE_A=[.75,.2],SURE_C=[.8,.2];
   const api={};
-  function T(){let t=state.talk;if(!t||typeof t!=="object"||Array.isArray(t))t=state.talk={log:[],tpl:0};if(!Array.isArray(t.log))t.log=[];return t;}
+  function T(){let t=state.talk;if(!t||typeof t!=="object"||Array.isArray(t))t=state.talk={log:[],tpl:0,inbox:[]};if(!Array.isArray(t.log))t.log=[];return t;}
   const on=()=>!!(state.settings&&state.settings.talk);
   const eyes=()=>on()&&!!state.settings.eyesFree;
   const key=w=>VoicePack.norm(w);
@@ -12960,6 +12973,16 @@ const Talk=(()=>{
     const order=ex.slice().sort((a,b)=>scores[b]-scores[a]),s1=scores[order[0]]||0,s2=order[1]?scores[order[1]]:0;
     const text=String(j.text||"").trim();
     return{tier:"A",best:s1>0?order[0]:null,score:s1,text,scores,sure:!!text&&s1>=SURE_A[0]&&s1-s2>=SURE_A[1],heard:!!text};
+  }
+
+  // an open answer written down by the NAS: no answers to score, the question as the prompt, 12 s, and a no
+  // here doesn't turn tier A off (it is only ever asked in the background)
+  async function transcribe(blob,prompt){
+    if(!blob||aDown()||typeof fetch!=="function")return"";
+    try{const r=await timed(base()+"/api/hear",{method:"POST",body:blob,cache:"no-store",headers:{"Content-Type":blob.type||"application/octet-stream",
+        "X-Token":tok(),"X-Expect":encodeURIComponent("[]"),"X-Prompt":encodeURIComponent(String(prompt||"").slice(0,200))}},12000);
+      if(!r.ok)return"";const j=await r.json();return String(j&&j.text||"").trim().slice(0,400);}
+    catch(e){return"";}
   }
 
   /* ---------- tier B: the matcher on the iPad ---------- */
@@ -13169,8 +13192,15 @@ const Talk=(()=>{
     const expect=ch.slice(0,6);
     return{kind:"number",m:q,ans:String(q.ans),expect,choices:expect.map(v=>({v})),reading:false};
   }
-  const MAKE={say:mkSay,start:mkStart,rhyme:mkRhyme,yesno:mkBook,number:mkNumber};
-  const MIX=[["say",.4],["start",.15],["rhyme",.15],["yesno",.15],["number",.15]];
+  // 5. An open question after a book: never judged, recorded for Dad's inbox
+  const OPEN=["What was your favorite part of the story?","What do you think happens next?","Who was in the story?","How would you feel in this story?"];
+  function mkOpen(tier){
+    const B=BOOKS.filter(b=>!b.mine&&b.t<=tier&&b.pages&&b.pages.length);if(!B.length)return null;
+    const lib=state.library||{},read=B.filter(b=>(lib[b.id]||{}).done),b=any(read.length&&Math.random()<.7?read:B);
+    return{kind:"open",book:b,q:any(OPEN),ans:"",expect:[],choices:[],reading:false};
+  }
+  const MAKE={say:mkSay,start:mkStart,rhyme:mkRhyme,yesno:mkBook,number:mkNumber,open:mkOpen};
+  const MIX=[["say",.37],["start",.15],["rhyme",.15],["yesno",.13],["number",.12],["open",.08]];
   function make(kind){
     const tier=currentTier();
     if(kind&&MAKE[kind]){const Q=MAKE[kind](tier);if(Q)return Q;}
@@ -13245,7 +13275,7 @@ const Talk=(()=>{
       :`<p class="wp">Read it out loud!</p><div class="wword tkword">${esc(Q.ans)}</div>`;
     else if(Q.kind==="start")top=`<p class="wp">Which one starts with <b class="tksnd">${esc(tileText(Q.tile))}</b>?</p>`;
     else if(Q.kind==="rhyme")top=`<p class="wp">Which one rhymes with <b class="tksnd">${esc(Q.w.w)}</b>?</p>`;
-    else if(Q.kind==="yesno")top=`<div class="tkbook"></div><p class="wp tkyq">${esc(Q.q)}</p>`;
+    else if(Q.kind==="yesno"||Q.kind==="open")top=`<div class="tkbook"></div><p class="wp tkyq">${esc(Q.q)}</p>`;
     else if(Q.kind==="number")top=(Q.m.art?`<div class="jart">${Jobs.art(Q.m.art)}</div>`:"")+(Q.m.text?`<div class="jsum">${esc(Q.m.text)}</div>`:"");
     const opt=c=>`<button class="${c.pic?"wpic":"wwopt"} tkopt" data-w="${esc(c.v)}" disabled>${c.pic&&WORD_ART[c.v]?drawWord(c.v,"q")+`<span class="tkcap">${esc(c.v)}</span>`:esc(c.label||c.v)}</button>`;
     h.innerHTML=top+`<div class="wopts tkopts">${Q.choices.map(opt).join("")}</div>`;
@@ -13267,14 +13297,15 @@ const Talk=(()=>{
       if(Q.kind==="start"){await Sound.speak("Which one starts with",.95);if(!ok())return;await Sound.say("sound:"+Q.tile,Q.tile);await wait(160);}
       else{await Sound.speak("Which one rhymes with",.95);if(!ok())return;await sayWord(Q.w.w);}
       if(!ok())return;await sayWord(Q.expect[0]);if(!ok())return;await Sound.speak("or",.95);if(!ok())return;await sayWord(Q.expect[1]);
-    }else if(Q.kind==="yesno"){
+    }else if(Q.kind==="yesno"||Q.kind==="open"){
       const b=Q.book,host=$("#tkQ .tkbook");
       if(!again){await Sound.speak("Listen to the story.",.95);
         for(let i=0;i<b.pages.length;i++){if(!ok())return;const [text,items]=b.pages[i],words=Books.fill(text,b.t);
           if(host)host.innerHTML=`${Books.scene(b.bg,items,b.t)}<div class="btext">${esc(words)}</div>`;
           await Sound.say("sent:"+words,words,.9);await wait(300);}
         if(!ok())return;if(host)host.classList.add("done");}
-      await Sound.say("sent:"+Q.q,Q.q,.9);if(!ok())return;await Sound.speak("Yes or no?",.95);
+      if(Q.kind==="open")await Sound.speak(Q.q,.95);   // (OPEN's lines are in voiceLines, for their clips)
+      else{await Sound.say("sent:"+Q.q,Q.q,.9);if(!ok())return;await Sound.speak("Yes or no?",.95);}
     }else if(Q.kind==="number"){try{await Jobs.talk(Q.m.say);}catch(e){}}
     if(!ok())return;
     if(eyes())listen(Q);
@@ -13282,6 +13313,7 @@ const Talk=(()=>{
   }
   async function listen(Q){
     if(!live(Q)||Q.done||Q.busy)return;
+    if(Q.kind==="open")return listenOpen(Q);
     Q.busy=true;const g=++Q.gen,ok=()=>live(Q,g)&&!Q.done;
     try{VoicePack.stop();}catch(e){}
     const mb=$("#tkMic");if(mb)mb.classList.remove("nudge");
@@ -13302,6 +13334,65 @@ const Talk=(()=>{
     mic("idle");face("","");
     result(Q,r);
   }
+  // an open answer: up to 8 s, thanked, never judged, into Dad's inbox
+  async function listenOpen(Q){
+    Q.busy=true;const g=++Q.gen,ok=()=>live(Q,g)&&!Q.done;
+    try{VoicePack.stop();}catch(e){}
+    const mb=$("#tkMic");if(mb)mb.classList.remove("nudge");
+    mic("listen");face("ears","I'm listening…");
+    let cap=null;try{cap=await api._record({max:8000,wait:6000});}catch(e){cap=null;}
+    if(!ok())return;
+    Q.busy=false;mic("idle");face("","");
+    if(!cap||!cap.blob||cap.heard===false){Q.unsure++;
+      if(eyes())return moveOn(Q);
+      face("","Tap 🎤 and tell me!");return;}
+    Q.done=true;
+    await inboxAdd(Q,cap);
+    if(!Q.paid){Q.paid=true;state.gems+=1;if(S)S.gems+=1;save();try{renderHUD();}catch(e){}gemsUI();}
+    face("yay","Thank you for telling me!");Sound.sfx.chime();
+    const my=S&&S.run;
+    await Sound.speak("Thank you for telling me!",.95);
+    await wait(eyes()?700:500);if(S&&S.run===my&&S.Q===Q)next();
+  }
+  function IB(){const t=T();if(!Array.isArray(t.inbox))t.inbox=[];return t.inbox;}
+  async function inboxAdd(Q,cap){
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    try{await DB.set("blobs","inbox:"+id,cap.blob);}catch(e){}
+    const it={id,d:today(),at:Date.now(),q:Q.q,book:Q.book&&Q.book.id||"",ms:+cap.ms||0,text:""},list=IB();
+    list.push(it);
+    while(list.length>INBOX_MAX){const old=list.shift();try{DB.del("blobs","inbox:"+old.id);}catch(e){}}
+    save();
+    // what the NAS heard, when it is listening; nothing waits for it
+    if(aLive())transcribe(cap.blob,Q.q).then(t=>{if(t){it.text=t;save();}}).catch(()=>{});
+    return it;
+  }
+  // Grown-up menu → Progress → 🎤 Dad's inbox: each answer with its question, book and day, to play or remove
+  let ib=null;
+  const inboxName=()=>String(state.noteFrom||"Dad").trim()||"Dad";
+  function inboxOpen(){
+    if(!ib){ib=document.createElement("div");ib.className="overlay";ib.id="ovInbox";document.body.appendChild(ib);}
+    const list=IB().slice().reverse(),title=b=>{const x=BOOKS.find(k=>k.id===b);return x?Books.fill(x.title,x.t):"";};
+    ib.innerHTML=`<div class="sheet inboxsheet"><div class="bhead"><h2>🎤 ${esc(inboxName())}'s inbox</h2><button class="bx" id="ibX" aria-label="Close">✕</button></div>
+      <p class="sub">What he said when Talk to me asked him an open question after a story. Nothing here is marked right or wrong.${aLive()?"":" When the home server's listener is on, it writes down what it heard too."}</p>
+      ${list.length?list.map(it=>`<div class="row ibrow" data-id="${esc(it.id)}"><div class="grow"><div class="lbl">${esc(it.q)}</div>
+        <div class="meta">${esc(it.d)}${title(it.book)?" · "+esc(title(it.book)):""}${it.ms?" · "+Math.max(1,Math.round(it.ms/1000))+" s":""}</div>
+        ${it.text?`<div class="ibtext">“${esc(it.text)}”</div>`:""}</div>
+        <button class="btn soft ibplay">▶ Play</button><button class="btn ghost ibdel" aria-label="Remove">🗑</button></div>`).join("")
+        :`<p class="rnote" id="ibNone">Nothing yet. After a story, Talk to me sometimes asks him what he thinks; his answers wait here.</p>`}
+      <div class="sheetfoot"><button class="btn primary" id="ibDone">Done</button></div></div>`;
+    const shut=()=>{try{Books.stopAudio();}catch(e){}Modes.shut(ib);inboxButton();};
+    ib.querySelector("#ibX").onclick=shut;ib.querySelector("#ibDone").onclick=shut;
+    ib.querySelectorAll(".ibrow").forEach(row=>{const id=row.dataset.id;
+      row.querySelector(".ibplay").onclick=async e=>{const b=e.currentTarget;
+        if(b.classList.contains("on")){b.classList.remove("on");b.textContent="▶ Play";try{Books.stopAudio();}catch(x){}return;}
+        let blob=null;try{blob=await DB.get("blobs","inbox:"+id);}catch(x){}
+        if(!blob){b.textContent="(no sound)";return;}
+        b.classList.add("on");b.textContent="⏹ Stop";await Books.playBlob(blob);b.classList.remove("on");b.textContent="▶ Play";};
+      row.querySelector(".ibdel").onclick=()=>{const t=T();t.inbox=IB().filter(x=>x.id!==id);try{DB.del("blobs","inbox:"+id);}catch(x){}save();inboxOpen();};});
+    if(!ib.classList.contains("on")){ib.classList.add("on");Modes.open("other",ib);}
+  }
+  function inboxButton(){const b=document.getElementById("inboxBtn");if(!b)return;const n=IB().length;
+    b.style.display=n||on()?"":"none";b.textContent="🎤 "+inboxName()+"'s inbox"+(n?" ("+n+")":"");}
   function result(Q,r){
     if(!r||!r.sure||r.best==null||Q.expect.indexOf(r.best)<0)return unsure(Q,r);
     logIt(r.tier,r.best===Q.ans);
@@ -13358,23 +13449,26 @@ const Talk=(()=>{
   function renderSettings(){
     const a=document.getElementById("optTalk"),e=document.getElementById("optEyes"),row=document.getElementById("rowEyes");if(!a||!e)return;
     a.checked=on();e.checked=!!state.settings.eyesFree;e.disabled=!on();if(row)row.classList.toggle("off",!on());
+    inboxButton();
   }
   function sync(){const b=document.getElementById("talkEntry");if(b)b.style.display=on()?"":"none";}
   {const a=document.getElementById("optTalk"),e=document.getElementById("optEyes"),go=document.getElementById("talkBtn"),cr=document.getElementById("crateBtn");
     if(a)a.onchange=ev=>{state.settings.talk=ev.target.checked;save();renderSettings();sync();};
     if(e)e.onchange=ev=>{state.settings.eyesFree=ev.target.checked;save();};
     if(go)go.onclick=()=>{Sound.sfx.pop();hide("ovCrates");open();};
+    const ibb=document.getElementById("inboxBtn");if(ibb)ibb.onclick=inboxOpen;
     // the crates panel shows the way in whenever it opens (after a restore too)
     if(cr)cr.addEventListener("click",sync);}
 
   // every fixed line it says (tools/voice/extract.js), and "yes" for tier B's references
   const voiceLines=()=>["Read it out loud!","Listen to the sounds.","What's the word?","Which one starts with","Which one rhymes with","or",
-    "Listen to the story.","Yes or no?","You said it!","I didn't quite catch that. Tap the one you said.","Let's try another one.","yes","no"];
+    "Listen to the story.","Yes or no?","You said it!","I didn't quite catch that. Tap the one you said.","Let's try another one.","yes","no",
+    "Thank you for telling me!"].concat(OPEN);
 
   // put away mid-answer: let the microphone go
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&capStop)capStop();});
 
-  Object.assign(api,{hear,probe,match,tier,bank,bankPage,featuresOf,open,close,report,renderSettings,sync,voiceLines,on,
+  Object.assign(api,{hear,probe,match,tier,bank,bankPage,featuresOf,open,close,report,renderSettings,sync,voiceLines,on,transcribe,inboxOpen,
     // the step after the microphone, and the microphone (the tests stand in for both)
     _hear:hearAny,_record:record,
     // for the tests

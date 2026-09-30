@@ -1,6 +1,6 @@
 // The listener's proxy (Node only, no browser, about 15 s): server/server.js with HEAR_URL pointing at a fake
 // sidecar made here, which gives canned transcripts. GET /api/hear is 200 only while the sidecar is up and ready;
-// POST /api/hear passes the clip, its type and its answers through untouched and the answer back; a sidecar that
+// POST /api/hear passes the clip, its type and its answers (none, for an open answer) through untouched and the answer back; a sidecar that
 // takes longer than 10 s gives 504 {error:"hear timeout"}; the token guards both; a sidecar that is missing, broken
 // or talking nonsense never takes the server down. Also runs server/hear/hear.py --selftest (the scoring) when
 // Python is on the PATH.
@@ -21,7 +21,7 @@ function sidecar(port){
       if(fake.mode==="slow")return;                                   // never answers
       if(fake.mode==="drop")return q.socket.destroy();                  // hangs up
       if(fake.mode==="junk"){r.writeHead(200,{"content-type":"text/html"});return r.end("<h1>not json</h1>");}
-      if(fake.mode==="bad"){r.writeHead(400,{"content-type":"application/json"});return r.end(J({error:"expect is a list of 1 to 6 answers"}));}
+      if(fake.mode==="bad"){r.writeHead(400,{"content-type":"application/json"});return r.end(J({error:"expect is a list of up to 6 answers"}));}
       let exp=[];try{exp=JSON.parse(decodeURIComponent(q.headers["x-expect"]||"[]"));}catch(e){}
       const text=exp[0]?exp[0]+".":"";const scores={};exp.forEach((e,i)=>{scores[e]=i?0.5:1;});
       r.writeHead(200,{"content-type":"application/json"});r.end(J({text,best:exp[0]||null,scores,ms:12}));
@@ -78,6 +78,9 @@ function req(port,method,p,{headers={},body}={}){
   r=await req(sp,"POST","/api/hear",{headers:Object.assign({"Content-Type":"multipart/form-data; boundary="+B},TOK),body:form});
   const s2=fake.seen[2]||{};
   ok(r.code===200&&s2.type==="multipart/form-data; boundary="+B&&s2.len===form.length&&Buffer.compare(s2.body,form)===0,"POST /api/hear: a multipart form (audio + expect fields) is passed through whole");
+  r=await req(sp,"POST","/api/hear",{headers:Object.assign({"Content-Type":"audio/mp4","X-Expect":"%5B%5D","X-Prompt":"What%20happens%20next%3F"},TOK),body:clip});
+  const s3=fake.seen[3]||{};
+  ok(r.code===200&&r.j.best===null&&s3.expect==="%5B%5D"&&s3.prompt==="What%20happens%20next%3F","POST /api/hear with no answers ([], an open question for Dad's inbox) and a prompt goes through");
   const n0=fake.seen.length;
   r=await req(sp,"POST","/api/hear",{headers:Object.assign({"Content-Type":"audio/mp4"},TOK),body:clip});
   ok(r.code===400&&/expect/.test(r.j.error)&&fake.seen.length===n0,"POST /api/hear with no answers to listen for: 400, the sidecar is not asked");
