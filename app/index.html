@@ -1590,6 +1590,18 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   /* the tool bar takes three rows there: the toast and the tour sit above it */
   #toast,#coach{bottom:calc(env(safe-area-inset-bottom) + 236px)}
 }
+/* ---------------- REST ----------------
+   body.rest: nobody has touched the game for 45 s (REST in the script). Everything that moves in
+   #app (the HUD, the valley, the tool bar) holds still where it is; the overlays, the Mine, the
+   Factory and a race are outside #app and are left alone.
+   body.flat: resting now (and Save battery, later). The four light layers are laid on as plain
+   alpha instead of blending (their strength is set by applyGrade), and the glass has no blur
+   behind it, a plainer fill instead. */
+body.rest #app *,body.rest #app *::before,body.rest #app *::after{animation-play-state:paused!important}
+body.flat #grade,body.flat #glow,body.flat #sunbeam,body.flat #seasonTint{mix-blend-mode:normal}
+body.flat{--glass:rgba(255,252,246,.9)}
+body.flat .iconbtn,body.flat .pan,body.flat .slot,body.flat .overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.flat .overlay{background:rgba(40,32,22,.58)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -3555,7 +3567,19 @@ const distractors=(ps,also)=>{
 
 const Sound=(()=>{
   const cache=new Map();let ctx=null;
-  const actx=()=>ctx||(ctx=new (window.AudioContext||window.webkitAudioContext)());
+  // REST and a hidden page hold the context (suspended); a sound asked for while nothing holds it
+  // but it is still suspended from a hold (a resume outside a touch can fail on iOS) resumes it
+  const holds=new Set();let held=false;
+  const resume=()=>{try{const r=ctx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}};
+  const actx=()=>{if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+    else if(held&&!holds.size){if(ctx.state==="suspended")resume();else held=false;}
+    return ctx;};
+  function hold(why,on){
+    if(on)holds.add(why);else holds.delete(why);
+    if(!ctx)return;
+    try{if(holds.size){if(ctx.state==="running"){ctx.suspend();held=true;}}
+      else if(held&&ctx.state==="suspended")resume();}catch(e){}
+  }
   function tone(f,d,type="sine",g=.1,slide=0){try{const c=actx(),o=c.createOscillator(),gn=c.createGain();
     o.type=type;o.frequency.setValueAtTime(f,c.currentTime);
     if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(60,f+slide),c.currentTime+d);
@@ -3791,7 +3815,7 @@ const Sound=(()=>{
       if(Phonics.known(ph))return Phonics.play(actx(),ph);
       return speak(fallback,.8);}
     return speak(fallback,rate>=.9?rate:.82);}
-  return{say,sfx,speak,stream,ctx:()=>actx(),stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
+  return{say,sfx,speak,stream,ctx:()=>actx(),hold,stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
     has:k=>DB.get("blobs","aud:"+k).then(b=>!!b),
     invalidate:k=>{const u=cache.get(k);if(u)URL.revokeObjectURL(u);cache.delete(k);}};
 })();
@@ -4276,7 +4300,7 @@ function nearest(cr,kind){
   return best?{o:best,d:bd}:null;
 }
 setInterval(()=>{
-  if(!state.critters.length)return;
+  if(!state.critters.length||Rest.quiet())return;      // REST: nobody watching
   const quiet=!!document.querySelector(".overlay.on");
   const night=isNight();
   state.critters.forEach(cr=>{
@@ -4524,7 +4548,7 @@ function launchRocket(v,fromPad){
 
 // traffic: everything keeps moving on its own
 setInterval(()=>{
-  const vs=state.vehicles||[];if(!vs.length)return;
+  const vs=state.vehicles||[];if(!vs.length||Rest.quiet())return;      // REST: nobody watching
   const quiet=!!document.querySelector(".overlay.on");
   vs.forEach(v=>{
     if(v.busy||v.hold||v.out===false)return;const m=VEH(v.id);if(!m)return;const roll=Math.random();
@@ -4693,13 +4717,17 @@ document.getElementById("buddyBtn").onclick=()=>{
    Tapping the button walks the day forward, which kids treat as a toy. */
 const PHASES=[
   {id:"day",  icon:"☀️", grade:"transparent", gradeOp:0,
-   glow:"radial-gradient(ellipse 60% 44% at 72% 4%,rgba(255,232,168,.55),transparent 70%)", glowOp:.9, beam:.5},
+   glow:"radial-gradient(ellipse 60% 44% at 72% 4%,rgba(255,232,168,.55),transparent 70%)", glowOp:.9, beam:.5,
+   flat:{gradeOp:0,glowOp:.7,beam:.38}},
   {id:"dusk", icon:"🌇", grade:"linear-gradient(180deg,#FFB06B,#C06A8E 60%,#6B5A9E)", gradeOp:.42,
-   glow:"radial-gradient(ellipse 70% 40% at 24% 16%,rgba(255,150,90,.6),transparent 70%)", glowOp:.85, beam:.75},
+   glow:"radial-gradient(ellipse 70% 40% at 24% 16%,rgba(255,150,90,.6),transparent 70%)", glowOp:.85, beam:.75,
+   flat:{grade:"linear-gradient(180deg,#E08A4E,#9E4F78 60%,#4A3F7E)",gradeOp:.3,glowOp:.66,beam:.55}},
   {id:"night",icon:"🌙", grade:"linear-gradient(180deg,#2A3470,#1B2148)", gradeOp:.62,
-   glow:"radial-gradient(ellipse 40% 26% at 76% 10%,rgba(180,210,255,.4),transparent 70%)", glowOp:.7, beam:.12},
+   glow:"radial-gradient(ellipse 40% 26% at 76% 10%,rgba(180,210,255,.4),transparent 70%)", glowOp:.7, beam:.12,
+   flat:{grade:"linear-gradient(180deg,#1B2148,#11152E)",gradeOp:.55,glowOp:.55,beam:.1}},
   {id:"dawn", icon:"🌅", grade:"linear-gradient(180deg,#9FB6E8,#E8B0A0 70%)", gradeOp:.34,
-   glow:"radial-gradient(ellipse 62% 36% at 30% 12%,rgba(255,200,170,.6),transparent 70%)", glowOp:.8, beam:.55}
+   glow:"radial-gradient(ellipse 62% 36% at 30% 12%,rgba(255,200,170,.6),transparent 70%)", glowOp:.8, beam:.55,
+   flat:{grade:"linear-gradient(180deg,#7F93C4,#C48E80 70%)",gradeOp:.25,glowOp:.62,beam:.42}}
 ];
 function phase(){return PHASES[(state.phase||0)%PHASES.length];}
 document.getElementById("timeBtn").onclick=()=>{
@@ -4708,11 +4736,8 @@ document.getElementById("timeBtn").onclick=()=>{
   save();
 };
 function applyNight(){
-  const p=phase(), amb=state.settings.ambient;
-  const g=document.getElementById("grade"), gl=document.getElementById("glow");
-  g.style.background=p.grade; g.style.opacity=amb?p.gradeOp:0;
-  gl.style.background=p.glow; gl.style.opacity=amb?p.glowOp:0;
-  document.getElementById("sunbeam").style.opacity=amb?p.beam:.35;
+  const p=phase();
+  applyGrade();
   document.getElementById("timeBtn").textContent=p.icon;
   Nature.retune();if(p.id==="night")state.sawNight=true;
   // lanterns and crystals light up after dark
@@ -4720,6 +4745,24 @@ function applyNight(){
   document.querySelectorAll('.tile[data-lum="1"]').forEach(el=>
     el.style.filter=(el.dataset.baseFilter||"")+(lit?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""));
   updateFireflies();
+}
+/* The light layers: #grade (multiply) and #glow, #sunbeam (screen) give the time of day, #seasonTint
+   (multiply) the season or the look. On the iPad a blended layer the size of the valley is a whole
+   extra pass every frame anything under it moves, so in body.flat (REST) they are laid on as plain
+   alpha instead: each phase's "flat" values were picked to look close to the blended ones (compared
+   on screenshots at noon, sunset and night). A switch between the two is instant, not a 2 s fade. */
+const FLAT_TINT=.7;      // #seasonTint's strength when it is plain alpha
+function applyGrade(){
+  const p=phase(),amb=state.settings.ambient,b=document.body,fl=b.classList.contains("rest");
+  const was=b.classList.contains("flat");b.classList.toggle("flat",fl);
+  const F=fl?p.flat:null,g=document.getElementById("grade"),gl=document.getElementById("glow"),
+    sb=document.getElementById("sunbeam"),st=document.getElementById("seasonTint"),L=[g,gl,sb,st];
+  if(was!==fl)L.forEach(e=>{e.style.transition="none";});
+  g.style.background=F&&F.grade||p.grade;g.style.opacity=amb?(F?F.gradeOp:p.gradeOp):0;
+  gl.style.background=p.glow;gl.style.opacity=amb?(F?F.glowOp:p.glowOp):0;
+  sb.style.opacity=amb?(F?F.beam:p.beam):(F?.25:.35);
+  st.style.opacity=fl?FLAT_TINT:"";
+  if(was!==fl){void getComputedStyle(g).opacity;L.forEach(e=>{e.style.transition="";});}
 }
 function updateFireflies(){
   document.querySelectorAll(".firefly").forEach(n=>n.remove());
@@ -4780,7 +4823,7 @@ function setStreak(n){
   el.classList.toggle("on",n>=2);document.getElementById("streakN").textContent=n;
 }
 setInterval(()=>{
-  if(!state.settings.ambient||Math.random()>.18)return;
+  if(!state.settings.ambient||Rest.quiet()||Math.random()>.18)return;      // REST: no rain for nobody
   const W=document.getElementById("weather");
   for(let i=0;i<40;i++){const d=document.createElement("div");d.className="drop";
     d.style.cssText=`left:${Math.random()*100}%;top:${-20+Math.random()*40}%;
@@ -4866,6 +4909,7 @@ const Modes=(()=>{
   }
   // el is optional; when it is given it should already carry "on"
   function open(id,el){
+    try{Rest.poke();}catch(e){}      // REST: a mode opening wakes the valley
     id=id||of(el);if(!MODES[id])id="other";
     reconcile();
     const i=stack.findIndex(e=>el?e.el===el:(!e.el&&e.id===id));
@@ -4896,6 +4940,85 @@ const Modes=(()=>{
   // the minutes tick: this minute goes to whatever is on top
   const credit=()=>bump("modeMin",top());
   return{open,close,shut,top,of,credit,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
+})();
+
+/* ================================================================
+   REST — the game holds still when nobody is playing
+   After 45 s with no touch, pointer or key, document.body gets the class
+   "rest" and the game stops spending the battery on what nobody is
+   watching:
+     - every animation in #app (the HUD, the valley, the tool bar) pauses
+       where it is (CSS "REST"); the overlays, the Mine, the Factory and
+       a race are outside #app and are left alone
+     - the animals, vehicles and buddy stop wandering, and the rain and
+       the badge check skip their ticks (Rest.quiet())
+     - the four light layers blend as plain alpha and the glass loses its
+       blur (body.flat, applyGrade in WORLD)
+     - Nature's and Sound's audio contexts are suspended
+     - the Mine's, Adventure's and the Factory's frame loops park
+   Any input takes it off at once and starts everything again; the audio
+   is resumed inside that input event, so iOS allows it.
+   It never comes on while something is waiting on him: a mode with
+   reading:true in Modes (a crate word, a book page or its quiz, Talk to
+   me, Word Wilds...) or a Job is open, a race is on, or the Factory is
+   running or asking its question. In Adventure and the Mine, steering
+   counts as input: their loops call Rest.poke() while Ash or the miner
+   is moving. A mode opening counts too.
+   While the page is hidden the same timers skip (Rest.quiet()) and the
+   audio is suspended as well.
+   Rest.on() is true while resting; Rest.onWake(fn) runs fn when it ends.
+   For the tests: Rest._idleMs (45000), Rest.now() (the clock; replace it
+   to jump ahead), Rest.check() (look now, not at the next timer).
+   ================================================================ */
+const Rest=(()=>{
+  const R={_idleMs:45000,now:()=>Date.now()};
+  let last=0,on=false,timer=null;const wakers=[];
+  const hidden=()=>document.visibilityState==="hidden";
+  function waiting(){
+    let st=[],L={};try{st=Modes.stack();L=Modes.list();}catch(e){}
+    if(st.some(id=>(L[id]&&L[id].reading)||id==="job"))return true;
+    try{if(Race.busy())return true;}catch(e){}
+    try{if(Factory.busy())return true;}catch(e){}
+    return false;
+  }
+  // one timer, never more than 5 s out, so a changed _idleMs or clock is seen soon
+  function arm(ms){clearTimeout(timer);timer=setTimeout(check,Math.max(50,Math.min(ms,5000)));}
+  function check(){
+    if(on)return;
+    const idle=R.now()-last;
+    if(idle<R._idleMs){arm(R._idleMs-idle);return;}
+    if(hidden()||waiting()){arm(5000);return;}
+    on=true;clearTimeout(timer);timer=null;
+    document.body.classList.add("rest");
+    try{applyGrade();}catch(e){}
+    try{Nature.hold("rest",true);}catch(e){}
+    try{Sound.hold("rest",true);}catch(e){}
+  }
+  // something happened: a touch, a key, a mode opening, Ash walking
+  function poke(){
+    last=R.now();
+    if(!on)return;
+    on=false;document.body.classList.remove("rest");
+    try{applyGrade();}catch(e){}
+    try{Sound.hold("rest",false);}catch(e){}
+    try{Nature.hold("rest",false);}catch(e){}
+    wakers.forEach(f=>{try{f();}catch(e){}});
+    arm(R._idleMs);
+  }
+  // his input: also where a suspended audio context gets its resume, inside the event
+  function input(){poke();try{Nature.kick();}catch(e){}}
+  ["pointerdown","pointermove","pointerup","touchstart","touchend","keydown","wheel"].forEach(ev=>
+    document.addEventListener(ev,input,{capture:true,passive:true}));
+  document.addEventListener("visibilitychange",()=>{
+    const h=hidden();
+    try{Nature.hold("hidden",h);}catch(e){}
+    try{Sound.hold("hidden",h);}catch(e){}
+    if(!h)last=R.now();      // back in the app: a fresh 45 s (a rest already on waits for his touch)
+  });
+  last=R.now();arm(R._idleMs);
+  R.on=()=>on;R.quiet=()=>on||hidden();R.poke=poke;R.check=check;
+  R.onWake=fn=>{wakers.push(fn);};
+  return R;
 })();
 
 /* ================================================================
@@ -6366,7 +6489,7 @@ const COLOR={3:"red",5:"blue",6:"green",7:"pink"};
 const MINE_LINES=["Thank you!","Wow, a shiny gem!","You beat the boss!","Oh no! Try again!","Here comes a big order!","Your egg hatched!"];
 
 const Mine=(()=>{
-  let cv,ctx,dpr=1,TS=48,vw=0,vh=0,tiles,ore,running=false,paused=false,lastT=0,time=0;
+  let cv,ctx,dpr=1,TS=48,vw=0,vh=0,tiles,ore,running=false,paused=false,lastT=0,time=0,parked=false;
   const P={x:SPAWN_X,y:SKY-0.95,w:.62,h:.92,vx:0,vy:0,face:1,onGround:false,digT:0,digKey:-1,walk:0};
   const cam={x:0,y:0};
   const input={jx:0,jy:0,dig:false,jump:false,jumpEdge:false};
@@ -6659,7 +6782,7 @@ const Mine=(()=>{
     if(!root){buildDom();buildTextures();}
     const m=M();gen();layerSeen=new Set(m.layers||[]);ENT.length=0;setBuild(false);lostAnimal();jobs();
     P.x=m.x||SPAWN_X;P.y=m.y||SKY-.95;P.vx=P.vy=0;if(solidBox(P.x,P.y))Object.assign(P,{x:SPAWN_X,y:SKY-.95});
-    root.classList.add("on");Modes.open("mine",root);running=true;paused=false;resize();hud();
+    root.classList.add("on");Modes.open("mine",root);running=true;paused=false;parked=false;resize();hud();
     cam.x=P.x*TS-vw/2;cam.y=P.y*TS-vh*.45;
     lastT=performance.now();requestAnimationFrame(loop);
     PET.x=P.x-1;PET.y=P.y;
@@ -6909,8 +7032,10 @@ const Mine=(()=>{
   }
   function loop(now){
     if(!running)return;
+    if(Rest.on()){parked=true;return;}      // REST: the loop waits for his next touch (Rest.onWake below)
     const dt=Math.min(.05,(now-lastT)/1000);lastT=now;time+=dt;
-    if(!paused){step(dt);
+    if(!paused){if(input.jx||input.jy||input.dig||input.jump)Rest.poke();      // steering counts as input
+      step(dt);
       for(const p of parts){p.vy+=16*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}
       for(const f of floats){f.y-=dt*.8;f.life-=dt;}
       for(let i=parts.length-1;i>=0;i--)if(parts[i].life<=0)parts.splice(i,1);
@@ -6921,6 +7046,7 @@ const Mine=(()=>{
       if(dirty&&Math.floor(time/3)!==Math.floor((time-dt)/3)){dirty=false;markDug();}}
     render();requestAnimationFrame(loop);
   }
+  Rest.onWake(()=>{if(!parked)return;parked=false;if(running){lastT=performance.now();requestAnimationFrame(loop);}});
 
   /* ---------- panels ---------- */
   const panel=root=>document.getElementById("mPanel"),card=()=>document.getElementById("mCard");
@@ -8397,7 +8523,7 @@ setTimeout(booksBadge,300);
    ================================================================ */
 const Adv=(()=>{
   const A=()=>state.adv;
-  let on=false,raf=0,lastT=0,hud=null,ash=null,petEl=null,noteEl=null,grassEls=[],landEls=[];
+  let on=false,raf=0,lastT=0,hud=null,ash=null,petEl=null,noteEl=null,grassEls=[],landEls=[],parked=false;
   const P={c:10,r:8,face:1,walk:0,moving:false,pc:10,pr:8};   // pc/pr = pet position
   const input={jx:0,jy:0};
   let near=null,grassRun=0,wildCool=0,inGrass=false;
@@ -8524,12 +8650,15 @@ const Adv=(()=>{
 
   /* ---------- the loop ---------- */
   function frame(now){
-    if(!on)return;raf=requestAnimationFrame(frame);
+    if(!on)return;
+    if(Rest.on()){parked=true;raf=0;return;}      // REST: the loop waits for his next touch (Rest.onWake below)
+    raf=requestAnimationFrame(frame);
     const dt=Math.min(.05,(now-lastT)/1000||0);lastT=now;
     if(busy()){P.moving=false;posAsh();return;}
     const jx=input.jx,jy=input.jy,mag=Math.hypot(jx,jy);
     P.moving=mag>.15;
     if(P.moving){
+      Rest.poke();      // walking counts as input
       const sp=4.2,old={c:P.c,r:P.r};
       P.c=Math.max(0,Math.min(COLS-1,P.c+jx*sp*dt));
       P.r=Math.max(firstRow(),Math.min(ROWS_MAX-1,P.r+jy*2.4*dt));
@@ -8550,6 +8679,8 @@ const Adv=(()=>{
     if(lab!==(near&&near.label)||!n){const b=hud.querySelector("#advAct");b.textContent=lab;b.classList.toggle("on",!!n);}
     near=n;
   }
+
+  Rest.onWake(()=>{if(!parked)return;parked=false;if(on&&!raf){lastT=performance.now();raf=requestAnimationFrame(frame);}});
 
   /* ---------- enter / leave ---------- */
   function buildHud(){
@@ -8583,7 +8714,7 @@ const Adv=(()=>{
   function enter(){
     if(!hud)buildHud();
     if(state.selected){state.selected=null;renderDock();}
-    on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
+    on=true;parked=false;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
     // start where he is looking, at the front of the valley
     const W=worldW(),t=((cam+viewW()/2)/W-EDGE)/(1-EDGE*2);
     P.c=Math.max(0,Math.min(COLS-1,t*(COLS-1)));P.r=ROWS_MAX-1;P.pc=P.c-.9;P.pr=P.r;
@@ -9694,7 +9825,7 @@ const Race=(()=>{
     });
   }
   function finish(){
-    cancelAnimationFrame(raf);
+    cancelAnimationFrame(raf);R.done=true;
     // everyone else finishes at their own pace, instantly
     const order=R.cars.map(c=>({c,t:c.me?R.t:R.t+(100-c.x)/c.sp})).sort((a,b)=>a.t-b.t);
     const place=order.findIndex(o=>o.c.me)+1,gems=[0,6,3,2][place];
@@ -9707,7 +9838,7 @@ const Race=(()=>{
     ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{Modes.shut(ov);R=null;};
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
-  return{start,_R:()=>R};
+  return{start,_R:()=>R,busy:()=>!!R&&!R.done};      // busy: REST waits
 })();
 
 /* ================================================================
@@ -12254,6 +12385,7 @@ const Factory=(()=>{
   }
   function tick(now){
     raf=0;if(!isOpen()||view!=="board"||hidden())return;
+    if(Rest.on())return;      // REST (never while it runs or asks): the loop waits, Rest.onWake starts it again
     const dt=Math.min(250,lastT?now-lastT:0);lastT=now;
     if(S&&S.running&&!S.done){acc+=dt;let n=0;while(acc>=STEP&&n<8){step(true);acc-=STEP;n++;}if(n>=8)acc=0;}else acc=0;
     draw();
@@ -12262,6 +12394,7 @@ const Factory=(()=>{
   function loop(){if(!raf&&isOpen()&&view==="board"&&!hidden()&&typeof requestAnimationFrame==="function"){lastT=0;acc=0;raf=requestAnimationFrame(tick);}}
   function stop(){if(raf){try{cancelAnimationFrame(raf);}catch(e){}raf=0;}}
   document.addEventListener("visibilitychange",()=>{if(hidden()){stop();if(S&&S.sandbox)keep();}else loop();});
+  Rest.onWake(loop);
   function toggle(){
     if(!S||S.done)return;
     if(!S.running&&!drills()){Sound.sfx.soft();say("💡 Put a drill on a rock first!");Sound.speak("Put a drill on a rock first!",.95);return;}
@@ -12664,6 +12797,8 @@ const Factory=(()=>{
 
   return{open,close,play,sandbox,map,LEVELS,SANDBOX,TOOLS,TIPS,engine:E,voiceLines,sim,sumQ,orderSay,sideOrder,
     get done(){return done();},stars:starsOf,isOpen,
+    // REST waits while the belts run or the order's question is up
+    busy:()=>isOpen()&&!!S&&((S.running&&!S.done)||!!S.q),
     // for the tests
     _w:()=>w,_S:()=>S&&{n:S.n,sandbox:S.sandbox,tool:S.tool,running:S.running,done:S.done,tip:S.tip.shown,cur:S.cur,kb:S.kb,
       order:S.order&&{parts:S.order.parts,pay:S.order.pay,k:S.order.k},result:S.result,q:S.q&&{ans:S.q.ans,level:S.q.level,text:S.q.text},miss:S.miss,
@@ -13854,7 +13989,7 @@ function buddyTalk(){
 }
 // buddy wanders when idle
 setInterval(()=>{
-  if(document.querySelector(".overlay.on"))return;
+  if(Rest.quiet()||document.querySelector(".overlay.on"))return;      // REST: the buddy naps too
   if(Math.random()<.5)return;
   const b=state.buddy||{c:10,r:ROWS_MAX-1};
   buddyGo(b.c+(Math.random()<.5?-1:1),b.r+(Math.random()<.7?0:(Math.random()<.5?-1:1)));
@@ -13930,6 +14065,8 @@ document.getElementById("recapBtn").onclick=()=>{hide("ovParent");showRecap();};
    ================================================================ */
 const Nature=(()=>{
   let ctx,master,wind,windGain,started=false,timer=null;
+  // REST and a hidden page hold it: the context is suspended and the chirps wait
+  const holds=new Set();
   function start(){
     if(started||!state.settings.nature)return;
     try{
@@ -13945,9 +14082,21 @@ const Nature=(()=>{
       const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.08;lg.gain.value=.03;   // the swell scales with the wind
       lfo.connect(lg).connect(windGain.gain);lfo.start();
       master.gain.linearRampToValueAtTime(.55,ctx.currentTime+3);
-      started=true;schedule();
+      started=true;
+      if(holds.size)ctx.suspend();else schedule();
     }catch(e){}
   }
+  function hold(why,on){
+    const was=holds.size>0;
+    if(on)holds.add(why);else holds.delete(why);
+    if(!started)return;
+    try{
+      if(holds.size){clearTimeout(timer);timer=null;if(ctx.state==="running")ctx.suspend();}
+      else if(was){kick();clearTimeout(timer);timer=setTimeout(schedule,1500+Math.random()*3000);}
+    }catch(e){}
+  }
+  // called on his input too: a resume that did not take outside a touch takes now
+  function kick(){if(started&&!holds.size&&ctx.state==="suspended"){try{const r=ctx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}}}
   function chirp(){
     const t=ctx.currentTime, o=ctx.createOscillator(), g=ctx.createGain(), m=ctx.createOscillator(), mg=ctx.createGain();
     const night=phase().id==="night";
@@ -13965,7 +14114,7 @@ const Nature=(()=>{
     m.start(t);o.start(t);o.stop(t+1);m.stop(t+1);
   }
   function schedule(){
-    clearTimeout(timer);if(!started)return;
+    clearTimeout(timer);if(!started||holds.size)return;
     if(state.settings.nature&&!document.querySelector(".overlay.on"))chirp();
     // half as often as before (was 900/1800 + up to 2600 ms): a chirp or a cricket every 4-9 s by day, 2-7 s at night
     timer=setTimeout(schedule,(phase().id==="night"?1800:3600)+Math.random()*5200);
@@ -13975,7 +14124,8 @@ const Nature=(()=>{
     try{master.gain.linearRampToValueAtTime(0,ctx.currentTime+.8);setTimeout(()=>{ctx.close();},1000);}catch(e){}
     clearTimeout(timer);started=false;
   }
-  return{start,stop,retune:()=>{if(started){windGain.gain.value=phase().id==="night"?.09:.16;}}};
+  return{start,stop,hold,kick,retune:()=>{if(started){windGain.gain.value=phase().id==="night"?.09:.16;}},
+    _ctx:()=>ctx,_started:()=>started};
 })();
 
 
@@ -14143,7 +14293,7 @@ function checkBadges(){
   });
   if(fresh.length)save();
 }
-setInterval(checkBadges,6000);
+setInterval(()=>{if(!Rest.quiet())checkBadges();},6000);      // REST: nothing new to earn while nobody plays
 
 /* ================================================================
    7k. PARENT: daily chart + practise export
