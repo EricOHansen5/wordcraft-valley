@@ -21,6 +21,7 @@ const {launch,reload,waitFor,check}=require("./lib");
   IDS.push("lights");   // LIGHT THE TREE
   IDS.push("feast");      // FEAST TABLE
   IDS.push("mail");       // WORD MAIL
+  IDS.push("eggs");       // EGG HUNT
   IDS.push("factory");    // FACTORY
   IDS.push("talk");       // TALK
   const L=await E(()=>Modes.list());

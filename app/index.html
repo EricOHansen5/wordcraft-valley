@@ -1454,6 +1454,31 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .lfall[data-lk="easter:blossom"]:nth-child(2n){filter:hue-rotate(-24deg) saturate(.8) brightness(1.1)}
 @keyframes ehdrift{0%{transform:translate(0,-20px) rotate(0)}30%{transform:translate(-26px,34vh) rotate(80deg)}60%{transform:translate(18px,70vh) rotate(170deg)}
   100%{transform:translate(-6px,120vh) rotate(300deg)}}
+#eggsBtn{background:linear-gradient(160deg,#EEF9D8,#9ED36A)}
+#advNote.ehmark .paper{border-color:#4F9A3E;background:linear-gradient(170deg,#FBFFF2,#E4F5CE)}
+#advNote.ehmark .nh{color:#3F7A30}
+.advland.ehmark:not(.dug)::after{content:"🌷"}
+.advland.ehmark .ehfound{position:absolute;right:-16%;bottom:-8%;width:50%;height:56%}.advland.ehmark .ehfound svg{width:100%;height:100%;display:block}
+.ehsheet{max-width:760px;border-color:#4F9A3E;background:linear-gradient(180deg,#F1FBE6,var(--paper) 40%)}
+.ehsheet .bhead h2{color:#3F8A30}
+.ehstat{font-size:19px;font-weight:900;white-space:nowrap}
+.ehwork{text-align:center}
+.ehegg{width:96px;height:112px;margin:0 auto;animation:ehwob 1.6s ease-in-out infinite;transform-origin:50% 90%}
+.ehegg svg{width:100%;height:100%;display:block}
+@keyframes ehwob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.ehsay{font-size:22px;font-weight:900;margin:2px 0 4px}
+.ehq{min-height:236px}
+.ehmsg{min-height:26px;font-weight:800;color:#3F8A30;margin:8px 0 0;text-align:center}
+.ehopen{position:relative;width:170px;height:160px;margin:0 auto}
+.ehopen .ehthing{position:absolute;left:20%;top:0;width:60%;height:62%;animation:ehpop .55s cubic-bezier(.2,1.3,.4,1) both}
+.ehopen .ehshell{position:absolute;left:12%;bottom:0;width:76%;height:56%}
+.ehopen svg{width:100%;height:100%;display:block}
+@keyframes ehpop{0%{transform:translateY(45%) scale(.4);opacity:0}100%{transform:none;opacity:1}}
+.ehyum,.ehdone{padding:4px 0}.ehdone h2{font-size:30px;margin:4px 0}
+.ehbig{font-size:44px;line-height:1.1;animation:pop .35s cubic-bezier(.2,1.3,.4,1)}
+.ehpiece{font-weight:900;font-size:20px;color:#7B5BE0;min-height:24px;margin:4px 0}
+@media (max-width:700px){.ehsheet{padding:14px}.ehsheet .bhead{flex-wrap:wrap}.ehsheet .bhead h2{font-size:21px}
+  .ehegg{width:64px;height:76px}.ehq{min-height:0}.ehopen{width:130px;height:122px}}
 /* ---------------- FACTORY: the board beside the order card (above it in portrait) ---------------- */
 .fcsheet{max-width:1000px;padding:14px;border-color:#5B4A3A;background:linear-gradient(180deg,#F4EAD6,var(--paper) 40%)}
 .fcsheet .bhead{top:-14px}.fcsheet .bhead h2{color:#8C4A1E;font-size:24px}
@@ -1682,6 +1707,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
     <button class="toolbtn" id="lightsBtn" title="Light the tree" aria-label="Light the tree" style="display:none">❄️<span class="badge" id="lightsBadge"></span></button>
     <button class="toolbtn" id="feastBtn" title="Feast table" aria-label="Feast table" style="display:none">🦃<span class="badge" id="feastBadge"></span></button>
     <button class="toolbtn" id="mailBtn" title="Word mail" aria-label="Word mail" style="display:none">💌<span class="badge" id="mailBadge"></span></button>
+    <button class="toolbtn" id="eggsBtn" title="Egg hunt" aria-label="Egg hunt" style="display:none">🥚<span class="badge" id="eggsBadge"></span></button>
   </div>
 </div>
 
@@ -4006,6 +4032,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   feast:{day:"",dishes:[],tables:0},
   // WORD MAIL (Valentine's): the mailbag's date, who sent each letter answered that day, full bags in all
   mail:{day:"",read:[],bags:0},
+  // EGG HUNT (Easter): the hunt's date, the words in the eggs found that day, finished hunts in all
+  eggs:{day:"",found:[],hunts:0},
   // FACTORY: levels finished (0-12), best stars per level {"F3":2}, his own factory as a short string (null until
   // he builds), and today's paid side orders {day, paid}
   factory:{lvl:0,stars:{},sandbox:null,orders:{day:"",paid:0}},
@@ -4876,6 +4904,7 @@ const Modes=(()=>{
     lights:{name:"Light the tree",reading:true},       // LIGHT THE TREE: the Winter tree and its advent doors
     feast:{name:"Feast table",reading:true},           // FEAST TABLE: a Thanksgiving dish to read
     mail:{name:"Word mail",reading:true},              // WORD MAIL: a Valentine's letter to read and answer
+    eggs:{name:"Egg hunt",reading:true},               // EGG HUNT: the word in an Easter egg
     factory:{name:"Factory",reading:false},            // FACTORY: the board, its levels and his own factory
     talk:{name:"Talk to me",reading:true},             // TALK: he answers out loud
     mine:{name:"Gem Mine",reading:false},
@@ -8485,10 +8514,10 @@ const Adv=(()=>{
   /* ---------- treasure hunt landmarks ---------- */
   function drawLand(){
     landEls.forEach(e=>e.remove());landEls=[];
-    const h=A().hunt;if(!h)return;const base=baseSize();
+    const h=A().hunt;if(!h)return;const base=baseSize(),K=kindOf(h);
     h.marks.forEach((m,i)=>{
-      const el=document.createElement("div");el.className="tile advland"+(m.dug?" dug":"");
-      el.innerHTML=(m.dug?`<div class="hole"></div>`:"")+`<div class="lart">${drawWord(m.w,"land")}</div>`;
+      const el=document.createElement("div");el.className="tile advland"+(m.dug?" dug":"")+(K&&K.cls?" "+K.cls:"");
+      el.innerHTML=(m.dug?(K&&K.dug?K.dug(m,i):`<div class="hole"></div>`):"")+`<div class="lart">${drawWord(m.w,"land")}</div>`;
       place(el,m.c,m.r,base*.72,4);tilesEl.appendChild(el);landEls.push(el);});
   }
   /* ---------- Ash and his pet ---------- */
@@ -8619,7 +8648,7 @@ const Adv=(()=>{
     hud.querySelector("#advAct").onclick=act;
     hud.querySelector("#advDone").onclick=exit;
     hud.querySelector("#advDex").onclick=()=>Dex.open();
-    hud.querySelector("#advHunt").onclick=()=>{if(A().hunt)showNote(true);else newHunt();};
+    hud.querySelector("#advHunt").onclick=()=>{settle();if(A().hunt)showNote(true);else newHunt();};
     // keyboard for grown-ups on a computer: WASD / arrows, Space or E to use
     const keys={},MOVE=new Set(["KeyA","KeyD","KeyW","KeyS","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"]);
     const upd=()=>{input.jx=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0);input.jy=(keys.ArrowDown||keys.KeyS?1:0)-(keys.ArrowUp||keys.KeyW?1:0);};
@@ -8631,6 +8660,7 @@ const Adv=(()=>{
   }
   function enter(){
     if(!hud)buildHud();
+    settle();   // an egg hunt from another day gives back the treasure hunt it put aside
     if(state.selected){state.selected=null;renderDock();}
     on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
     // start where he is looking, at the front of the valley
@@ -8665,48 +8695,76 @@ const Adv=(()=>{
     if(tier<=4||!other)return`Dig by the ${w}.`;
     return`Dig by the ${w}, not the ${other}.`;
   }
-  function newHunt(){
+  /* Other hunts on the same engine (the Egg hunt, EGG HUNT below): Adv.huntKind(id, K) registers one and
+     Adv.newHunt({kind:id, day, step}) starts it, with the same landmarks, places, note and digging. K gives:
+       cls              a class on its marks and its note     head(h)     the note's heading
+       clue(h,w,other)  the note's line                        blew        the toast when it starts
+       nothing(w)       what a dig at the wrong landmark says  dug(m,i)    what a dug mark shows (instead of the hole)
+       found(m,h,next)  a dig at the right landmark: the kind shows what is there and calls next() once it is
+                        done with it; then the mark is dug and the next clue comes (small, under whatever the kind
+                        has open), or after the third the hunt is over (and finish(h), when the kind has one)
+       avoid            words its landmarks never are (an egg hunt has no landmark called egg)
+       stale(h)         true when a hunt of this kind is over without being finished (an egg hunt from another day)
+     Such a hunt keeps the treasure hunt that was going (h.park) and gives it back when it is over. */
+  const kinds={};
+  const kindOf=h=>(h&&h.kind&&kinds[h.kind])||null;
+  // a mark keeps clear of the spots that would take the "use" button from it (a note, the quest friend), and of one
+  // that stands like a building (low: the Trading Post stall) as far as of a building, so it is never on or behind it
+  const bySpot=(c,r)=>spotList.some(s=>s.low?Math.abs(s.c-c)<2.2&&Math.abs(s.r-r)<1.5:Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1);
+  function newHunt(opts){
+    opts=opts||{};const K=opts.kind?kinds[opts.kind]:null;
     const tier=currentTier();
     const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"]];
     const near=(a,b)=>LOOK.some(g=>g.includes(a)&&g.includes(b));
     // landmarks are things, not animals, so they never look like his wandering critters
-    const thing=w=>!w.tricky&&WORD_ART[w.w]&&!CRIT(w.w)&&!CRIT(WORD_ART[w.w]);
+    const skip=(K&&K.avoid)||[],thing=w=>!w.tricky&&WORD_ART[w.w]&&!CRIT(w.w)&&!CRIT(WORD_ART[w.w])&&skip.indexOf(w.w)<0;
     let pool=allWords().filter(w=>thing(w)&&w.t<=tier).sort(()=>Math.random()-.5);
     // practise his shaky sounds when possible
     const tg=Skills.target(tier);if(tg&&thing(tg.w))pool.unshift(tg.w);
     const pick=[];for(const w of pool){if(pick.length>=4)break;if(pick.some(x=>x.w===w.w||near(x.w,w.w)||WORD_ART[x.w]===WORD_ART[w.w]))continue;pick.push(w);}
-    if(pick.length<4){toast("Read a few more words first!");return;}
+    if(pick.length<4){toast("Read a few more words first!");return null;}
     // spread the landmarks around the valley
     const spots=[];for(let k=0;k<450&&spots.length<4;k++){
       // rounded before the checks: the stored value is the one that must keep clear
       const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
       // the spread between marks relaxes as the search goes on; the clearance from buildings never does
       if(spots.some(s=>Math.abs(s.c-c)<(k<150?3.2:k<300?2.2:1.6)))continue;
-      // keep clear of notes and the quest giver, which win the "use" button over a mark
-      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
+      // keep clear of notes and the quest giver, which win the "use" button over a mark, and of the stall
+      if(bySpot(c,r))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
       if(byBuilding(c,r))continue;
       spots.push({c,r});}
     // a crowded valley: walk the front row for spots that are still clear of every building
     for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=1.5){const cc=+c.toFixed(2),rr=ROWS_MAX-1;
-      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2)||spotList.some(s=>Math.abs(s.c-cc)<1.6&&Math.abs(s.r-rr)<1)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
+      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2)||bySpot(cc,rr)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
+      spots.push({c:cc,r:rr});}
+    // still short: the rows behind it, front to back, the same way
+    for(let rr=ROWS_MAX-2;spots.length<4&&rr>=firstRow();rr--)for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=1.5){const cc=+c.toFixed(2);
+      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2&&Math.abs(s.r-rr)<1)||bySpot(cc,rr)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
       spots.push({c:cc,r:rr});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
     const order=[0,1,2].sort(()=>Math.random()-.5);
-    A().hunt={marks,order,step:0,miss:0,t0:Date.now(),tier};save();
+    const h={marks,order,step:0,miss:0,t0:Date.now(),tier};
+    // another kind: its day, the finds it starts with (their marks dug), and a treasure hunt that was going, put aside
+    if(K){const was=A().hunt,park=was&&(was.kind?was.park:was);h.kind=opts.kind;h.day=opts.day||today();
+      h.step=Math.max(0,Math.min(2,Math.floor(+opts.step||0)));for(let i=0;i<h.step;i++)marks[order[i]].dug=true;
+      if(park)h.park=park;}
+    A().hunt=h;save();
     mount();refreshHud();Sound.sfx.chime();
-    toast("A note blew in! 📜");showNote(true);try{Quests.ensure();}catch(e){}
+    toast(K&&K.blew||"A note blew in! 📜");showNote(true);try{Quests.ensure();}catch(e){}
+    return h;
   }
   function noteText(){
     const h=A().hunt,m=h.marks[h.order[h.step]],others=h.marks.filter(x=>!x.dug&&x!==m);
-    const other=others.length?others[Math.floor((h.t0/1000+h.step)%others.length)].w:null;
+    const other=others.length?others[Math.floor((h.t0/1000+h.step)%others.length)].w:null,K=kindOf(h);
+    if(K&&K.clue)return K.clue(h,m.w,other);
     return (h.step===0?"":h.step===1?"Yes! ":"One more! ")+clue(h.tier,m.w,other);
   }
   function showNote(big){
     const h=A().hunt;if(!h||!hud)return;noteEl=hud.querySelector("#advNote");
-    const text=noteText();
-    noteEl.className=big?"big":"small";
-    noteEl.innerHTML=`<div class="paper"><div class="nh">📜 Clue ${h.step+1} of 3</div>
+    const text=noteText(),K=kindOf(h);
+    noteEl.className=(big?"big":"small")+(K&&K.cls?" "+K.cls:"");
+    noteEl.innerHTML=`<div class="paper"><div class="nh">${K&&K.head?K.head(h):`📜 Clue ${h.step+1} of 3`}</div>
       <div class="btext">${text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
       ${big?`<button class="btn primary" id="noteGo">Let's go! 🧭</button>`:""}
       ${h.miss?`<button class="btn soft" id="noteHear">🔊</button>`:""}</div>`;
@@ -8715,12 +8773,25 @@ const Adv=(()=>{
     const hr=noteEl.querySelector("#noteHear");if(hr)hr.onclick=()=>Sound.say("sent:"+text,text,.9);
     if(!big)noteEl.onclick=e=>{if(e.target.closest(".bw,button"))return;showNote(true);};else noteEl.onclick=null;
   }
+  let digAt=0;
   function dig(m){
     if(m.dug)return;
-    const h=A().hunt,want=h.marks[h.order[h.step]];
+    const h=A().hunt,want=h.marks[h.order[h.step]],K=kindOf(h);
+    if(K&&m===want&&Date.now()<digAt)return;   // one dig, not two from a double tap
     const el=landEls[h.marks.indexOf(m)];if(el){el.classList.remove("digging");void el.offsetWidth;el.classList.add("digging");}
     Sound.sfx.dig?Sound.sfx.dig():Sound.sfx.thud();
     const wobj=allWords().find(x=>x.w===want.w);
+    if(m===want&&K){
+      digAt=Date.now()+900;
+      setTimeout(()=>{if(A().hunt!==h||m.dug)return;Sound.sfx.win();const g=geom(m.c,m.r);sparkleBurst(toView(g.x),g.y*100-6,12);
+        K.found(m,h,()=>{
+          if(A().hunt!==h||m.dug)return;
+          try{Skills.result(wobj,{ok:true,help:h.miss>0});}catch(e){}
+          m.dug=true;h.step++;save();if(on)drawLand();refreshHud();
+          if(h.step<3){showNote(false);return;}
+          endKind(h);if(K.finish)K.finish(h);});},450);
+      return;
+    }
     if(m===want){
       try{Skills.result(wobj,{ok:true,help:h.miss>0});}catch(e){}
       m.dug=true;h.step++;state.wordsRead+=4;
@@ -8728,11 +8799,18 @@ const Adv=(()=>{
         if(h.step>=3)treasure();else{Sound.say("sent:Yes! You found the next clue!","Yes! You found the next clue!",.95);showNote(true);}save();refreshHud();},450);
     }else{
       h.miss++;try{Skills.result(wobj,{ok:false,confused:m.w});}catch(e){}
-      setTimeout(()=>{Sound.sfx.nope();toast(`Nothing by the ${m.w}. Read the note again!`);showNote(true);
+      setTimeout(()=>{Sound.sfx.nope();toast(K&&K.nothing?K.nothing(m.w):`Nothing by the ${m.w}. Read the note again!`);showNote(true);
         const sp=[...noteEl.querySelectorAll(".bw")].find(x=>x.textContent.replace(/[^a-z]/gi,"").toLowerCase()===want.w);
         if(sp){sp.classList.add("look");setTimeout(()=>sp.classList.remove("look"),1800);}save();},450);
     }
   }
+  // a hunt of another kind is over: the treasure hunt it put aside comes back, and its note goes
+  function endKind(h){
+    if(A().hunt===h){A().hunt=h.park||null;save();}
+    if(noteEl){noteEl.className="";noteEl.innerHTML="";noteEl.onclick=null;}
+    if(on){drawLand();refreshHud();}
+  }
+  function settle(){const h=A().hunt,K=kindOf(h);if(K&&K.stale&&K.stale(h))endKind(h);return A().hunt;}
   function treasure(){
     const a=A(),h=a.hunt,first=a.huntDay!==today();
     a.huntDay=today();a.hunts=(a.hunts||0)+1;a.hunt=null;
@@ -8748,7 +8826,8 @@ const Adv=(()=>{
     show("ovReward");confetti();Sound.sfx.fanfare();setTimeout(()=>Sound.say("sent:You found the treasure!","You found the treasure!",.95),400);
   }
   return{enter,exit,mount,refreshHud,newHunt,provide:f=>providers.push(f),hookCrit:f=>hooks.crit.push(f),hookVeh:f=>hooks.veh.push(f),
-    redraw:()=>{if(on){drawSpots();near=null;hud&&hud.querySelector("#advAct").classList.remove("on");}},freePos,get on(){return on;},_P:P,_in:input,_near:()=>near,_act:act,_patches:patches,_A:A};
+    redraw:()=>{if(on){drawSpots();near=null;hud&&hud.querySelector("#advAct").classList.remove("on");}},freePos,get on(){return on;},_P:P,_in:input,_near:()=>near,_act:act,_patches:patches,_A:A,
+    huntKind:(id,K)=>{kinds[id]=K;},settle,note:big=>showNote(!!big)};
 })();
 
 /* ================================================================
@@ -15234,6 +15313,34 @@ const Mail=(()=>{
    Its window moves with Easter: from 14 days before Easter Sunday to
    Easter Monday, both counted (easterDay(year), the anonymous Gregorian
    algorithm). In 2027 that is 14 to 29 March.
+   The Egg hunt exists only in that window: Looks.inWindow("easter"), or
+   the same dates here. In the window a 🥚 button sits in the tool bar
+   (and stays while a hunt is part-way through), with the eggs still to
+   find on its badge; never a gate. It opens Adventure, where the egg
+   hunt runs on the treasure hunt's own engine (Adv.newHunt with kind
+   "eggs"): four landmarks at his level, placed by the hunt's rules (so
+   never on a building, a note or the Trading Post stall), and a note
+   with three clues, "The egg is by the log." (at his level: "Hop to the
+   log!" at level 1, "…, not the cup." from 5). A treasure hunt that was
+   going is put aside and comes back when the eggs are found. A dig at
+   the right landmark finds an egg; it opens on a word pick (the shared
+   Read builder: a spring word at his level when there is one, chick,
+   duck, nest, bee…, else another word he can read):
+     right  2 🪙, the mark shows the egg, and the next clue
+     miss   "Not that one, try again!": the same word stays, the second
+            miss makes the answer glow, and it still pays when he gets there
+   A dig at the wrong landmark is "No egg by the cup. Read the note
+   again!", as the treasure hunt says it. Nothing is ever taken away.
+   Every egg counts as a read toward the daily goal. The third egg ends
+   the hunt: "You found all the eggs!", confetti, and one look piece
+   (Looks.grant("easter"), which says and shows it; the panel only
+   repeats it). Three eggs a day; after that the 🥚 button says to come
+   back tomorrow, and a hunt left from another day is put away.
+   Save: state.eggs = {day, found (the words in the eggs found that
+   day), hunts (finished hunts in all)}; the hunt itself is Adventure's
+   (state.adv.hunt, with kind, day and park). Nothing is written until
+   the 🥚 button is pressed in the window, so outside it the save is
+   untouched.
    ================================================================ */
 // Easter Sunday in year y, [month, day]: the anonymous Gregorian algorithm (Meeus/Jones/Butcher)
 function easterDay(y){
@@ -15317,6 +15424,204 @@ Looks.add({id:"easter",name:"Easter",ic:"🐣",window:EASTER_WINDOW,
   names:{eggs:"painted eggs",bunny:"bunny",blossom:"blossom",hat:"chick hat"},
   css:{hud:"linear-gradient(180deg,#E6F7D2,rgba(230,247,210,0))",trim:"repeating-linear-gradient(90deg,#8CCB5E 0 14px,#FFE27A 14px 28px,#F7B6CB 28px 42px,#9FD4F5 42px 56px)",
     edge:"#4F9A3E",crate:"linear-gradient(160deg,#F2FBE6,#C8EBA4)"}});
+
+const Eggs=(()=>{
+  const EGGS=3,PAY=2,LOOK="easter",
+    // what can be in an egg: these spring things first, the ones in his word list at his level that he can decode there
+    SPRING=["chick","hen","duck","egg","nest","bug","frog","sun","bee","bird","snail","lamb","bunny","rabbit","sheep","kite","tree","grass","seed","rain","cake"];
+  let fake=null,ov=null,cur=null,pending=false,lastPiece=null,lastKey="";
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const day=()=>fake||today();
+  // pure: is this date ("YYYY-MM-DD" or a Date) in the two weeks before Easter Sunday, or Easter Monday?
+  function inWindow(d){
+    let t=d;
+    if(!(d instanceof Date)){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d==null?day():d));if(!m)return false;t=new Date(+m[1],+m[2]-1,+m[3]);}
+    return !isNaN(t.getTime())&&EASTER_WINDOW(t);
+  }
+  // the Look system, when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the look's window, then the dates above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow(LOOK);}catch(e){}}
+    return inWindow(today());
+  }
+  // reading the save never writes to it
+  const saved=()=>isObj(state.eggs)?state.eggs:{day:"",found:[],hunts:0};
+  const found=()=>{const e=saved();return e.day===day()&&Array.isArray(e.found)?e.found:[];};
+  const left=()=>Math.max(0,EGGS-found().length);
+  const done=()=>found().length>=EGGS;
+  const going=()=>found().length>0&&!done();
+  const active=()=>live()||going();
+  // for writing, when an egg is found: a new day starts a new hunt
+  function G(){
+    if(!isObj(state.eggs))state.eggs={day:"",found:[],hunts:0};
+    const e=state.eggs;if(!Array.isArray(e.found))e.found=[];
+    if(e.day!==day()){e.day=day();e.found=[];}
+    return e;
+  }
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+  // today's hunt, while it lasts: Adventure's hunt with kind "eggs" (state.adv.hunt)
+  const hunt=()=>{const h=state.adv&&state.adv.hunt;return h&&h.kind==="eggs"&&h.day===day()&&!done()?h:null;};
+
+  /* ---------- on the treasure hunt's engine ---------- */
+  Adv.huntKind("eggs",{
+    cls:"ehmark",
+    avoid:["egg"],
+    blew:"Eggs are hiding in the valley! 🥚",
+    // a hunt from another day, or one whose eggs are all found, is over
+    stale:h=>h.day!==day()||done(),
+    head:h=>`🥚 Egg ${Math.min(EGGS,h.step+1)} of ${EGGS}`,
+    // the note at his level: "Hop to the log!" (1), "The egg is by the log." (2), "…, not the cup." (5); "Yes!" is level 2, "more" 6
+    clue:(h,w,other)=>{const t=h.tier,pre=!h.step?"":t>=6&&h.step===2?"One more! ":t>=2?"Yes! ":"";
+      return pre+(t<=1?`Hop to the ${w}!`:t<=4||!other?`The egg is by the ${w}.`:`The egg is by the ${w}, not the ${other}.`);},
+    nothing:w=>`No egg by the ${w}. Read the note again!`,
+    dug:m=>`<div class="hole"></div><div class="ehfound">${S(paintedEgg(50,52,30,40,eggCol(hashStr(m.w)),hashStr(m.w)%3,-10))}</div>`,
+    found:(m,h,next)=>crack(m,h,next)
+  });
+
+  /* ---------- what is in the eggs ---------- */
+  // spring things he can read at his level; when there are fewer than three, other words he can read fill in
+  function eggWords(){
+    const tier=currentTier(),by={};allWords().forEach(w=>{by[w.w]=w;});
+    const fits=w=>!!w&&!w.tricky&&w.t<=tier&&!!WORD_ART[w.w]&&!!ART[WORD_ART[w.w]]&&Decode.check(w.w,tier).every(x=>x.ok);
+    const out=SPRING.map(id=>by[id]).filter(fits);
+    if(out.length<EGGS){const rnd=mulberry(hashStr("eggs:pad:"+day()));
+      allWords().filter(w=>fits(w)&&out.indexOf(w)<0).map(w=>({w,o:(tier-w.t)+rnd()})).sort((a,b)=>a.o-b.o).forEach(x=>{if(out.length<EGGS+3)out.push(x.w);});}
+    return out;
+  }
+  // the word in the nth egg of the day: fixed by the date, never one found already today
+  function eggWord(n){
+    const pool=eggWords(),had=found(),fresh=pool.filter(w=>had.indexOf(w.w)<0),list=fresh.length?fresh:pool;
+    if(!list.length)return null;
+    return list[Math.floor(mulberry(hashStr("eggs:"+day()+":"+n))()*list.length)];
+  }
+
+  /* ---------- an egg: one read ---------- */
+  // a dig at the right landmark: the egg, and the word pick in it (a double tap or a second dig opens it once)
+  function crack(m,h,next){
+    if(isOpen()||!hunt())return;
+    const n=found().length,w=eggWord(n);
+    if(!w){next();return;}
+    const q={n,w,miss:0,paid:false,next};cur=q;
+    if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovEggs";document.body.appendChild(ov);}
+    ov.innerHTML=`<div class="sheet ehsheet"><div class="bhead"><h2>🥚 Egg hunt</h2><b class="ehstat" id="ehStat"></b><button class="bx" id="ehX" aria-label="Close">✕</button></div>
+      <div class="ehwork" id="ehWork"><div class="ehegg">${S(paintedEgg(50,52,34,44,eggCol(n),n%3,0))}</div>
+        <p class="ehsay">You found an egg! What is in it?</p><div class="ehq" id="ehQ"></div></div>
+      <p class="ehmsg" id="ehMsg" aria-live="polite"></p></div>`;
+    ov.querySelector("#ehX").onclick=close;
+    ov.classList.add("on");Modes.open("eggs",ov);stat();
+    const host=ov.querySelector("#ehQ");
+    Read.wordPick(host,Read.once(()=>paid(q)),w);
+    host.addEventListener("click",e=>missed(e,q,host));
+    setTimeout(()=>{if(cur===q&&!q.paid&&isOpen())Sound.speak("You found an egg! What is in it?",.95);},300);
+  }
+  // the word pick marks a right tap .right and a wrong one .wrong; this runs after it
+  function missed(e,q,host){
+    if(q.paid||cur!==q)return;
+    const b=e.target&&e.target.closest?e.target.closest("[data-w]"):null;
+    if(!b||!host.contains(b)||host.querySelector(".right")||b.getAttribute("data-w")===q.w.w)return;
+    q.miss++;msg("Not that one, try again!");
+    clearTimeout(q.t);q.t=setTimeout(()=>{if(!q.paid&&cur===q&&isOpen())Sound.speak("Not that one, try again!",.95);},650);
+    if(q.miss>=2){const r=host.querySelector('[data-w="'+q.w.w+'"]');if(r)r.classList.add("hint");}
+  }
+  // a right read, however many tries it took: 2 🪙, and the hunt moves on
+  function paid(q){
+    if(q.paid)return;q.paid=true;
+    const e=G();if(e.found.length>=EGGS)return;
+    e.found.push(q.w.w);
+    if(!isObj(state.mine))state.mine=def().mine;
+    state.mine.coins=(+state.mine.coins||0)+PAY;
+    state.wordsRead=(+state.wordsRead||0)+1;
+    try{Quests.hit("read",1);}catch(x){}
+    const last=e.found.length>=EGGS;if(last)e.hunts=(+e.hunts||0)+1;
+    save();try{renderHUD();}catch(x){}
+    toast("+"+PAY+" 🪙");hud();
+    // the engine digs the mark and brings the next clue, or (the third) ends the hunt and gives back a treasure hunt put aside
+    try{q.next();}catch(x){}
+    if(last)finish(q);else yum(q);
+  }
+  // the egg opened: the thing in it on its shell, and the eggs to go
+  const opened=q=>`<div class="ehopen"><div class="ehthing">${drawWord(q.w.w,"egg")}</div><div class="ehshell">${S(eggShell(eggCol(q.n),q.n%3))}</div></div>`;
+  function yum(q){
+    Sound.sfx.chime();
+    Sound.speak(left()===1?"One more egg to find!":"Two more eggs to find!",.95);
+    if(cur!==q||!isOpen())return;
+    msg("");stat();
+    ov.querySelector("#ehWork").innerHTML=`<div class="ehyum">${opened(q)}<p class="mpaid">+${PAY} 🪙</p>
+      <p class="sub">🥚 ${left()} ${left()===1?"egg":"eggs"} to find</p>
+      <div class="mrow"><button class="btn primary big" id="ehNext">Find the next egg! 🧭</button></div></div>`;
+    ov.querySelector("#ehNext").onclick=close;
+  }
+  // the third egg: the hunt is done
+  function finish(q){
+    Sound.sfx.fanfare();try{confetti();}catch(x){}
+    const said=Sound.speak("You found all the eggs!",.95);
+    // the look piece comes after the cheer (the Look system says its own line), or at once if the app is put away
+    pending=true;const give=()=>{if(pending){pending=false;piece();}};
+    Promise.resolve(said).then(give,give);setTimeout(give,5000);
+    if(cur!==q||!isOpen())return;
+    msg("");stat();
+    ov.querySelector("#ehWork").innerHTML=`<div class="ehdone">${opened(q)}<h2>You found all the eggs!</h2><div class="ehbig">🐣 🥚🥚🥚</div>
+      <p class="mpaid">🪙 ${EGGS*PAY} today</p><p class="ehpiece" id="ehPiece"></p>
+      <div class="mrow"><button class="btn primary big" id="ehDone">Done 🐣</button></div></div>`;
+    ov.querySelector("#ehDone").onclick=close;
+  }
+  function piece(){
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant(LOOK);}catch(x){p=null;}}
+    lastPiece=p||null;if(!p)return;
+    let nm=String(p);
+    try{const LK=L.get&&L.get(LOOK);if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(x){}   // the piece's shown name ("chick hat")
+    // the Look system toasts and speaks it when it grants; the panel only repeats it
+    const el=isOpen()&&ov.querySelector("#ehPiece");if(el)el.textContent="🎁 You got the "+nm+"! Look in your closet 🎨";
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){pending=false;piece();try{saveNow();}catch(x){}}});
+  function msg(t){const m=ov&&ov.querySelector("#ehMsg");if(m)m.textContent=t||"";}
+  function stat(){const s=ov&&ov.querySelector("#ehStat");if(s)s.textContent=`🥚 ${found().length} of ${EGGS}`;}
+  // closing the egg: back to the hunt, with its note (the next clue, or the same one if the egg is still to read)
+  function close(){
+    if(!ov)return;Modes.shut(ov);cur=null;Sound.sfx.soft();
+    if(hunt()&&Adv.on)Adv.note(true);
+  }
+
+  /* ---------- the 🥚 button ---------- */
+  // Adventure with today's hunt: a new one (the eggs found today already dug), or the one going on
+  function go(){
+    if(!active())return false;
+    Sound.sfx.pop();
+    if(done()){toast("🐣 You found all the eggs! Come back tomorrow 🥚");Sound.speak("You found all the eggs! Come back tomorrow.",.95);return false;}
+    try{Adv.settle();}catch(x){}
+    const was=Adv.on;if(!was)Adv.enter();
+    // entering puts the note of a hunt it finds up small after a moment: this one's comes back big after that
+    const big=()=>setTimeout(()=>{if(Adv.on&&hunt()&&!isOpen())Adv.note(true);},450);
+    if(hunt()){Adv.redraw();big();return true;}
+    const had=!!(state.adv&&state.adv.hunt);
+    const h=Adv.newHunt({kind:"eggs",day:day(),step:Math.min(EGGS-1,found().length)});
+    if(!h)return false;
+    if(!was&&had)big();
+    setTimeout(()=>{if(Adv.on&&hunt())Sound.speak("It's an egg hunt! Read the note to find the eggs.",.95);},900);
+    return true;
+  }
+  function hud(){
+    const b=document.getElementById("eggsBtn");if(!b)return;
+    const on=active();b.style.display=on?"":"none";
+    const n=document.getElementById("eggsBadge");if(n){const l=left();n.textContent=l;n.classList.toggle("on",on&&l>0);}
+  }
+  // the window opens and closes at midnight: a hunt from another day is put away (a treasure hunt it put aside comes back)
+  function tick(){hud();const k=active()+"|"+day();if(k===lastKey)return;lastKey=k;try{Adv.settle();}catch(x){}}
+  document.getElementById("eggsBtn").onclick=()=>go();
+  setInterval(tick,60000);setTimeout(tick,1500);setTimeout(tick,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
+  hud();
+
+  return{inWindow,live,active,open:go,close,hud,EGGS,PAY,
+    words:()=>eggWords().map(w=>w.w),
+    get found(){return found().slice();},get left(){return left();},get done(){return done();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;lastKey="";hud();try{Adv.settle();}catch(x){}},
+    _q:()=>cur&&{n:cur.n,w:cur.w.w,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece,_hunt:()=>hunt()};
+})();
 
 /* ================================================================
    7m. LISTEN-AND-PICK  ("Hear it")
@@ -16036,6 +16341,7 @@ NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
 NULL_IS_MISSING.push("feast");      // FEAST TABLE
 NULL_IS_MISSING.push("mail");      // WORD MAIL
+NULL_IS_MISSING.push("eggs");      // EGG HUNT
 NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTORY
 NULL_IS_MISSING.push("talk");      // TALK
 function withDefaults(saved){
