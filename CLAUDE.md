@@ -8,7 +8,7 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 |---|---|
 | `app/index.html` | **The game's code. This is the source of truth.** CSS, HTML and all the JS inline (~1.1 MB, ~16k lines). Its data comes from `app/art/` and `app/content/`, loaded by `<script src>` tags just before the game script. |
 | `app/art/` | Picture data: `openmoji.js` (`WCV.openmoji`: `OM`, `OMV`, `OMW`, `OMX`, `OMN`, `OMB`; OpenMoji, CC BY-SA) and `fluent.js` (`WCV.fluent`, the `FLU` map; Fluent Emoji, MIT). ~1.2 MB of long lines: don't read them whole. |
-| `app/content/` | Reading data: `words.js` (`WCV.words`: `WORDS` with the tricky-word checklist, and `WORD_ART`), `books.js` (`WCV.books`: `BOOKS`, format described at the top), `sentences.js` (`WCV.sentences`: `SIGNS`, `QUEST_POOL`). |
+| `app/content/` | Reading data: `words.js` (`WCV.words`: `WORDS` with the tricky-word checklist, and `WORD_ART`), `books.js` (`WCV.books`: `BOOKS`, format described at the top), `sentences.js` (`WCV.sentences`: `SIGNS`, `QUEST_POOL`), `fluency.js` (`WCV.fluency`: the one-minute reading check's stories and the Hasbrouck & Tindal 2017 norms). |
 | `app/sw.js` | Service worker for offline play. The shell cache (`SHELL`, keyed by `VERSION`) holds the page and every file in `art/` and `content/`, cache-only and replaced whole by each new version; the voice clips use a separate persistent cache, `wcv-voice-1`. |
 | `app/voice/` | Pre-rendered game voice: Kokoro "af_heart", MP3, 24 kHz mono. `index.json` maps normalized text to a file. |
 | `app/manifest.webmanifest`, `app/icons/` | Files that make it installable as a home-screen app. |
