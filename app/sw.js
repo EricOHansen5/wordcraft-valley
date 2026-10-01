@@ -5,7 +5,7 @@ const VERSION = "wcv-2026-10-01b";
 const VOICE = "wcv-voice-1";
 const SHELL = ["./", "index.html", "manifest.webmanifest",
   // the game's data, loaded by index.html's <script src> tags before its script (tests/version_check.js checks the two agree)
-  "art/openmoji.js", "art/fluent.js", "content/words.js", "content/books.js", "content/sentences.js",
+  "art/openmoji.js", "art/fluent.js", "content/words.js", "content/books.js", "content/sentences.js", "content/fluency.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

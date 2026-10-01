@@ -1834,6 +1834,11 @@ body.saver .critter.shiny .body{filter:hue-rotate(160deg) saturate(1.4)!importan
 body.saver .tile.glow::before{content:"";position:absolute;left:-35%;right:-35%;top:-25%;bottom:-12%;z-index:-1;pointer-events:none;
   background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(255,214,110,.62),rgba(255,214,110,0) 70%)}
 body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,.8)}
+.flusheet{max-width:860px}.flsteps{font-size:17px;line-height:1.5;margin:6px 0 10px 22px;padding:0}
+.flhead{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}.fltime{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums}
+.fltext{font-size:24px;line-height:1.7;padding:12px 16px;border:3px solid var(--ink);border-radius:18px;background:var(--paper);max-height:44vh;overflow:auto;-webkit-overflow-scrolling:touch}
+.flw{display:inline-block;padding:0 3px;border-radius:8px;cursor:pointer}.flw.err{background:#FFC9BC;text-decoration:line-through}
+.flw.past{opacity:.35}.flw.lastw{box-shadow:0 0 0 3px #3F86D2}.flbig{font-size:22px;margin:6px 0}.flbig b{font-size:44px}.flsrc{font-size:13px}
 .micbar{height:14px;margin-top:8px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:var(--paper)}
 .micbar i{display:block;height:100%;width:0;background:#4FA84A;transition:width .06s linear}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -2038,6 +2043,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
       <button class="btn soft" id="recapBtn">Show today's recap</button>
       <button class="btn soft" id="tourBtn">Replay the tour</button>
       <button class="btn soft" id="inboxBtn" style="display:none">🎤 Dad's inbox</button>
+      <button class="btn soft" id="fluBtn">📏 One-minute reading check</button>
     </div>
     <div class="lbl" style="margin:6px 0 8px">Last 7 days</div>
     <div class="chart" id="dailyChart"></div>
@@ -2090,6 +2096,9 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div class="row"><div class="grow"><div class="lbl">Hero name</div>
       <div class="meta">The name in the storybooks and in My Own Book. The game voice knows the name Asher; other names use the iPad voice.</div></div>
       <input id="optHero" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:140px"></div>
+    <div class="row"><div class="grow"><div class="lbl">School grade</div>
+      <div class="meta">For the one-minute reading check and the report's comparison with national norms. Move it up each August.</div></div>
+      <select id="optGrade"><option value="">Not set</option><option value="K">Kindergarten</option><option value="1">1st grade</option><option value="2">2nd grade</option></select></div>
     <div class="row"><div class="grow"><div class="lbl">Birthday</div>
       <div class="meta">The week of his birthday (the day and the six before it) brings a 🎂 party: his animals at a cake, a book in his name and a free party hat. Leave it blank for none.</div></div>
       <span class="bdset"><select id="optBdayM" aria-label="Birthday month"><option value="">Month</option></select><select id="optBdayD" aria-label="Birthday day"><option value="">Day</option></select></span></div>
@@ -2187,6 +2196,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/words.js"></script>
 <script src="content/books.js"></script>
 <script src="content/sentences.js"></script>
+<script src="content/fluency.js"></script>
 <script>
 "use strict";
 const APP_VERSION="wcv-2026-10-01b"; /* stamped by tools/release.js, matches sw.js VERSION */
@@ -2195,7 +2205,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
    each sets one part of window.WCV. If one did not arrive (a bad deploy, or a first visit that lost the network
    half-way), say so and stop here, rather than leave a blank valley. */
-const DATA_SETS=["openmoji","fluent","words","books","sentences"];
+const DATA_SETS=["openmoji","fluent","words","books","sentences","fluency"];
 {const W=window.WCV||{},gone=DATA_SETS.filter(k=>!W[k]);
   if(gone.length){
     const box=document.createElement("div");box.id="dataMissing";
@@ -4255,6 +4265,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   recent:{},
   // MICROPHONE CHECK: the last test in Grown-up → Settings, and the last real recording that could not start (null: none)
   micCheck:null,micErr:null,
+  // ONE-MINUTE READING CHECK: his school grade ("" not set, "K", "1", "2") and the checks, the last 20
+  fluency:{grade:"",checks:[]},
   // TRICK-OR-READ (Halloween): the night's date, the doors closed that night, candy got in all, nights finished
   trick:{day:"",doors:[],candy:0,nights:0},
   // LIGHT THE TREE (Winter): today's date with its bulbs lit and the star, the advent doors opened this December, look pieces asked for
@@ -8878,6 +8890,165 @@ const Reread=(()=>{
   return{offer,open,log,count,paid,stats,report,MIN,MAX,GEMS,_cur:()=>cur};
 })();
 
+
+/* ================================================================
+   ONE-MINUTE READING CHECK — his reading against national norms
+   The game's own numbers (first-try accuracy, level, words read) have
+   no national comparison. Oral reading fluency does: words read
+   correctly in one minute from an unpracticed grade-level passage, with
+   published percentiles by grade and season (Hasbrouck & Tindal 2017, in
+   content/fluency.js). A grown-up runs it (Grown-up menu → Progress →
+   📏 One-minute reading check): he reads a story aloud; the grown-up
+   starts the minute when he starts, taps any word he misreads or skips
+   (tap again to undo; a word he fixes himself is right), and when the
+   minute is up taps the last word he reached. Two stories, averaged, as
+   the norms' authors advise. The result says where that sits among
+   children in his grade this season, with the 50th percentile beside it,
+   and how accurate he was (below about 95% the text is still hard).
+   His grade is a Grown-up setting (Settings → School grade; K, 1 or 2):
+   grade 1 has no fall norm, so in the fall it is compared with the
+   winter (January) norms; kindergarten has no fluency norm at all.
+   The report also places his game level in a typical K–2 phonics
+   sequence (a curriculum comparison, not a percentile).
+   Save: state.fluency {grade: "" | "K" | "1" | "2", checks: [{d, grade,
+   season, reads: [{p, words, errors, secs, wcpm, acc}], wcpm, acc}]} (the
+   last 20). Nothing here is shown to him or pays anything.
+   ================================================================ */
+const Fluency=(()=>{
+  const D=WCV.fluency,SECS=60;
+  const F=()=>{if(!state.fluency||typeof state.fluency!=="object")state.fluency={grade:"",checks:[]};
+    if(!Array.isArray(state.fluency.checks))state.fluency.checks=[];if(typeof state.fluency.grade!=="string")state.fluency.grade="";return state.fluency;};
+  const grade=()=>F().grade;
+  const GRADE_NAME={K:"kindergarten","1":"1st grade","2":"2nd grade"};
+  // the school year's seasons, as the norms use them: fall Aug–Nov, winter Dec–Feb, spring Mar–Jul
+  function season(d){const m=(d instanceof Date?d:new Date(String(d||today())+"T12:00:00")).getMonth()+1;return m>=8&&m<=11?"fall":(m===12||m<=2)?"winter":"spring";}
+  // which norms a result is held against: {season, row, note} or null (no norm for that grade)
+  function normFor(g,s){
+    const n=D.NORMS[g];if(!n)return null;
+    if(n[s])return{season:s,row:n[s],note:""};
+    if(g==="1"&&s==="fall")return{season:"winter",row:n.winter,note:"First grade has no fall norm (most children can't yet read for a whole minute in September), so this compares him with the winter norms, where first graders are in January."};
+    return null;
+  }
+  // where a score sits among the percentiles [10,25,50,75,90]
+  function band(v,row){
+    const P=D.PCT;
+    if(v<row[0])return{lo:0,hi:10,text:"below the 10th percentile"};
+    for(let i=P.length-1;i>=0;i--)if(v>=row[i])return i===P.length-1?{lo:90,hi:100,text:"at or above the 90th percentile"}
+      :{lo:P[i],hi:P[i+1],text:`between the ${P[i]}th and ${P[i+1]}th percentiles`};
+    return{lo:0,hi:10,text:"below the 10th percentile"};
+  }
+  // one reading: words reached (to the last word, counting it), errors among them, seconds read
+  function score(words,errors,secs){
+    const s=Math.max(1,Math.min(SECS,secs||SECS)),right=Math.max(0,words-errors);
+    return{words,errors,secs:+s.toFixed(1),wcpm:Math.round(right*60/s),acc:words?Math.round(right/words*100):0};
+  }
+  function summary(c){
+    const nf=normFor(c.grade,c.season);
+    if(!nf)return{nf:null,b:null,mid:null};
+    return{nf,b:band(c.wcpm,nf.row),mid:nf.row[2]};
+  }
+  // where his game level sits in a typical K–2 phonics sequence: [grade 0 K / 1 / 2, season 0 fall / 1 winter / 2 spring]
+  const LV_AT={1:[0,1],2:[0,2],3:[0,2],4:[1,0],5:[1,1],6:[1,2],7:[1,2],8:[1,2],9:[1,2],10:[2,0],11:[2,0],12:[2,1]};
+  const SEAS=["fall","winter","spring"],GIDX={K:0,"1":1,"2":2};
+  function placement(lv,g,d){
+    const at=LV_AT[lv];if(!at)return null;
+    const when=(at[0]?GRADE_NAME[String(at[0])]:"kindergarten"),taught=`the ${SEAS[at[1]]} of ${when}`;
+    if(!(g in GIDX))return{taught,diff:null};
+    const now=GIDX[g]*3+SEAS.indexOf(season(d)),pos=at[0]*3+at[1];
+    return{taught,diff:pos-now};
+  }
+  function placementText(){
+    const lv=currentTier(),pl=placement(lv,grade()),name=(document.querySelector(`#optTier option[value="${lv}"]`)||{}).textContent||("Level "+lv);
+    if(!pl)return"";
+    let s=`His level, ${esc(name.replace(/^\d+ · /,"Level "+lv+": "))}, is usually taught in ${pl.taught}.`;
+    if(pl.diff!=null){const g=GRADE_NAME[grade()],n=Math.abs(pl.diff);
+      s+=pl.diff===0?` That is in step with a typical sequence for ${g} in the ${season()}.`
+        :` For ${g} in the ${season()}, that is about ${n===1?"one season":n+" seasons"} (${n*3} months) ${pl.diff>0?"ahead of":"behind"} a typical sequence.`;}
+    return s+" Reading programs differ, so this is a rough guide, not a percentile.";
+  }
+  // the next two stories for his grade, moving on each check
+  function pick(g){const L=D.PASSAGES[g]||[];if(!L.length)return[];const k=(F().checks.filter(c=>c.grade===g).length*2)%L.length;return[L[k],L[(k+1)%L.length]];}
+
+  // ---------- the sheet ----------
+  let ov=null,run=null;
+  const root=()=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFluency";document.body.appendChild(ov);}return ov;};
+  function shut(){stopTimer();run=null;if(ov)Modes.shut(ov);}
+  function stopTimer(){if(run&&run.iv){clearInterval(run.iv);run.iv=null;}}
+  function frame(body){const o=root();o.innerHTML=`<div class="sheet flusheet"><div class="bhead"><h2>📏 One-minute reading check</h2><button class="bx" id="flX" aria-label="Close">✕</button></div>${body}</div>`;
+    o.querySelector("#flX").onclick=shut;if(!o.classList.contains("on")){o.classList.add("on");Modes.open("other",o);}return o;}
+  function open(){
+    const g=grade();
+    if(!g){const o=frame(`<p class="sub">First set his school grade in Grown-up menu → Settings → School grade. The national norms are by grade and time of year.</p><div class="sheetfoot"><button class="btn primary" id="flOk">OK</button></div>`);o.querySelector("#flOk").onclick=shut;return;}
+    if(!D.PASSAGES[g]){const o=frame(`<p class="sub">There is no national words-per-minute norm for kindergarten: most kindergartners are still learning to read words one at a time. The reading report compares his level with a typical kindergarten sequence instead, and the one-minute check opens in 1st grade.</p><div class="sheetfoot"><button class="btn primary" id="flOk">OK</button></div>`);o.querySelector("#flOk").onclick=shut;return;}
+    run={g,season:season(),ps:pick(g),i:0,reads:[]};
+    const o=frame(`<p class="sub">Two short stories he hasn't seen. For each one:</p>
+      <ol class="flsteps"><li>Tap <b>Start the minute</b> when he reads the first word.</li>
+      <li>Tap any word he reads wrong or skips (tap it again to undo). A word he fixes by himself counts as right. If he is stuck for 3 seconds, say the word and tap it.</li>
+      <li>When the minute is up, tap the last word he reached. If he finishes sooner, tap <b>He finished</b>.</li></ol>
+      <p class="rnote">Don't help or correct him while the minute runs. The result compares him with children in ${esc(GRADE_NAME[g])} in the ${run.season} (Hasbrouck &amp; Tindal, 2017).</p>
+      <div class="sheetfoot"><button class="btn primary big" id="flGo">Show the first story</button></div>`);
+    o.querySelector("#flGo").onclick=()=>passage();
+  }
+  function passage(){
+    const p=run.ps[run.i],words=p.text.split(/\s+/).filter(Boolean);
+    run.cur={p,words,err:new Set(),last:-1,t0:0,secs:0,phase:"ready"};
+    const o=frame(`<div class="flhead"><b>${run.i+1} of 2 · ${esc(p.title)}</b><span class="fltime" id="flTime">1:00</span></div>
+      <div class="fltext" id="flText">${words.map((w,i)=>`<span class="flw" data-i="${i}">${esc(w)}</span>`).join(" ")}</div>
+      <p class="rnote" id="flHint">Tap Start the minute when he reads the first word.</p>
+      <div class="mrow"><button class="btn primary big" id="flStart">▶ Start the minute</button><button class="btn soft" id="flDone" style="display:none">He finished</button><button class="btn primary" id="flNext" style="display:none">Next</button></div>`);
+    const C=run.cur,hint=o.querySelector("#flHint"),tm=o.querySelector("#flTime"),start=o.querySelector("#flStart"),done=o.querySelector("#flDone"),next=o.querySelector("#flNext");
+    const paint=()=>o.querySelectorAll(".flw").forEach(el=>{const i=+el.dataset.i;el.classList.toggle("err",C.err.has(i));el.classList.toggle("past",C.last>=0&&i>C.last);el.classList.toggle("lastw",i===C.last);});
+    const timeUp=(secs)=>{stopTimer();C.secs=secs;C.phase="last";start.style.display="none";done.style.display="none";tm.textContent="0:00";
+      hint.textContent=secs>=SECS?"Time! Now tap the last word he reached.":"Now tap the last word he read.";Sound.sfx.soft();};
+    start.onclick=()=>{C.phase="run";C.t0=performance.now();start.style.display="none";done.style.display="";hint.textContent="Tap any word he misreads or skips.";
+      run.iv=setInterval(()=>{const s=(performance.now()-C.t0)/1000,left=Math.max(0,Math.ceil(SECS-s));tm.textContent="0:"+String(left).padStart(2,"0");if(s>=SECS)timeUp(SECS);},200);};
+    done.onclick=()=>{const s=(performance.now()-C.t0)/1000;timeUp(Math.min(SECS,s));C.last=C.words.length-1;paint();ready();};
+    const ready=()=>{hint.textContent=`He reached word ${C.last+1}. Tap another word to change it, or Next.`;next.style.display="";next.textContent=run.i===0?"Next story":"See the result";};
+    o.querySelector("#flText").onclick=e=>{const el=e.target.closest(".flw");if(!el)return;const i=+el.dataset.i;
+      if(C.phase==="run"){C.err.has(i)?C.err.delete(i):C.err.add(i);paint();}
+      else if(C.phase==="last"){C.last=i;paint();ready();}};
+    next.onclick=()=>{if(C.last<0)return;
+      const errs=[...C.err].filter(i=>i<=C.last).length;run.reads.push(Object.assign({p:C.p.id},score(C.last+1,errs,C.secs)));
+      run.i++;if(run.i<2)passage();else finish();};
+  }
+  function finish(){
+    const r=run.reads,avg=k=>Math.round(r.reduce((a,x)=>a+x[k],0)/r.length);
+    const c={d:today(),grade:run.g,season:run.season,reads:r,wcpm:avg("wcpm"),acc:avg("acc")};
+    const f=F();f.checks.push(c);if(f.checks.length>20)f.checks.splice(0,f.checks.length-20);save();
+    const o=frame(`<div id="flResult">${resultHtml(c)}</div><div class="sheetfoot"><button class="btn primary" id="flOk">Done</button></div>`);
+    o.querySelector("#flOk").onclick=shut;run=null;
+  }
+  function resultHtml(c){
+    const s=summary(c),g=GRADE_NAME[c.grade]||c.grade;
+    let h=`<p class="flbig"><b>${c.wcpm}</b> words correct a minute</p><p class="rnote">${c.reads.map(x=>`${x.wcpm} and`).join(" ").replace(/ and$/,"")} on the two stories, averaged · ${c.acc}% of words read right.</p>`;
+    if(s.nf){
+      h+=`<p class="rnote">That is <b>${s.b.text}</b> for ${esc(g)} in the ${s.nf.season}: the national middle (50th percentile) is <b>${s.mid}</b>, the 25th is ${s.nf.row[1]} and the 75th is ${s.nf.row[3]}.</p>`;
+      if(s.nf.note)h+=`<p class="rnote">${s.nf.note}</p>`;
+      if(c.wcpm<=s.mid-10)h+=`<p class="rnote">The norms' authors suggest extra fluency practice when a child reads 10 or more words below the 50th percentile on two unpracticed grade-level passages. Rereading favorite books aloud and reading together are the usual practice; the game's 🔁 Read it again is one.</p>`;
+    }
+    if(c.acc<95)h+=`<p class="rnote">Below about 95% right, a passage is still hard for him, so accuracy matters more than speed for now.</p>`;
+    return h+`<p class="rnote flsrc">Norms: Hasbrouck &amp; Tindal (2017), An update to compiled ORF norms. The stories are this game's own, not the ones the norms came from, so treat the result as a guide.</p>`;
+  }
+  // the report's block (after Reading speed)
+  function report(){
+    const g=grade(),cs=F().checks.slice(-4).reverse(),pl=placementText();
+    let h=`<h3>Compared with other children</h3><div id="rFluency">`;
+    if(!g)h+=`<p class="rnote">Set his school grade in Grown-up menu → Settings → School grade to compare him with national norms.</p>`;
+    if(pl)h+=`<p class="rnote" id="rPlace">${pl}</p>`;
+    if(g&&!D.PASSAGES[g])h+=`<p class="rnote">There is no national words-per-minute norm for kindergarten; the one-minute reading check opens in 1st grade.</p>`;
+    else if(g&&!cs.length)h+=`<p class="rnote">No one-minute reading check yet. Grown-up menu → Progress → 📏 One-minute reading check takes about three minutes; once each season is plenty.</p>`;
+    if(cs.length){h+=`<table class="rspeed"><tr><th>Date</th><th>Grade</th><th>Words a minute</th><th>Right</th><th>Among children his grade</th></tr>${cs.map(c=>{const s=summary(c);
+      return`<tr><td>${esc(c.d)}</td><td>${esc(GRADE_NAME[c.grade]||c.grade)}, ${esc(c.season)}</td><td><b>${c.wcpm}</b></td><td>${c.acc}%</td><td>${s.b?s.b.text+(s.nf.season!==c.season?" (vs. winter)":"")+" · middle "+s.mid:"no norm"}</td></tr>`;}).join("")}</table>
+      <p class="rnote">Words correct a minute on two unpracticed stories (Hasbrouck &amp; Tindal 2017 norms). The game's own numbers above have no national comparison.</p>`;}
+    return h+`</div>`;
+  }
+  // ---------- the settings row and the way in ----------
+  function renderSettings(){const s=document.getElementById("optGrade");if(s)s.value=grade();}
+  {const s=document.getElementById("optGrade");if(s)s.onchange=e=>{F().grade=String(e.target.value||"");save();};
+    const b=document.getElementById("fluBtn");if(b)b.onclick=()=>{Sound.sfx.soft();open();};}
+  return{open,close:shut,report,renderSettings,season,normFor,band,score,placement,pick,grade,_run:()=>run};
+})();
+
 /* ================================================================
    PICTURE IT — does he understand the sentence?
    "The cat is on the box." Three scenes; only one matches. The wrong
@@ -9048,6 +9219,7 @@ function openReport(){
     ${Power.report(days)}
     ${Talk.report(days)}
     ${Reread.report(days)}
+    ${Fluency.report()}
     ${Tracks.report(days)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <p class="rnote" id="rTogether">${tgWeek} book${tgWeek===1?"":"s"} read together this week${tgWeek?"":" (👨‍👦 Read together is on the book shelf: take turns, or read each page first and he echoes it)"}.</p>
@@ -18520,6 +18692,7 @@ function renderSettings(){
   document.getElementById("optHero").value=heroName();
   try{Talk.renderSettings();}catch(e){}      // TALK
   try{MicCheck.render();}catch(e){}      // MICROPHONE CHECK
+  try{Fluency.renderSettings();}catch(e){}      // ONE-MINUTE READING CHECK
   try{Party.renderSettings();}catch(e){}      // PARTY
 }
 document.getElementById("optPics").onchange=e=>{state.settings.pics=e.target.checked;save();};
@@ -18649,6 +18822,7 @@ const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","b
   "adv.dex"];
 NULL_IS_MISSING.push("owned");      // TRADING POST
 NULL_IS_MISSING.push("look","looks");      // LOOKS
+NULL_IS_MISSING.push("fluency","fluency.checks");      // ONE-MINUTE READING CHECK
 NULL_IS_MISSING.push("recent");      // ROLLING WINDOW
 NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
