@@ -15043,7 +15043,10 @@ function renderPage(){
 }
 document.getElementById("pageHear").onclick=()=>{const pg=GUARDIANS[bookB].book[state.books[bookB].page];Sound.say("sent:"+pg.s,pg.s,.9);};
 document.getElementById("pagePrev").onclick=()=>{const bk=state.books[bookB];if(bk.page>0){bk.page--;renderPage();Sound.sfx.soft();save();}};
+// one page a tap: the second tap of a double tap would turn a page he never saw and pay for it
+let pageLock=0;
 document.getElementById("pageNext").onclick=()=>{
+  if(Date.now()<pageLock)return;pageLock=Date.now()+600;
   const g=GUARDIANS[bookB], bk=state.books[bookB];
   if(!bk.read.includes(bk.page)){bk.read.push(bk.page);state.gems+=1;floater("+1 💎","#FFE9A8");Quests.hit("sign");}
   Sound.sfx.chime();
@@ -15974,6 +15977,8 @@ document.getElementById("photoShare").onclick=async()=>{
    ================================================================ */
 // the outfits he owns (the hats, and anything newer from the Trading Post): put one on, or take it off.
 // Buying is at the Trading Post now; the line at the end goes there.
+// one tap at a time: the second tap of a double tap would land on the button drawn again and take the hat back off
+let hatLock=0;
 function renderHats(g){
   const mine=Store.outfits();
   mine.forEach(h=>{
@@ -15984,6 +15989,7 @@ function renderHats(g){
     const b=document.createElement("button");b.className="btn primary mini";
     b.textContent=worn?"Take off":"Wear it";
     b.onclick=()=>{
+      if(Date.now()<hatLock)return;hatLock=Date.now()+600;
       state.hat=worn?null:h.id;
       buddyCheer();renderHUD();renderBuddy();renderAlbum();save();
       if(!worn)buddySay(h.id==="crown"?"I am the king of the valley!":"How do I look?");
