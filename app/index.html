@@ -2814,6 +2814,19 @@ const ART = {
     <path d="M50 30 Q52 18 60 14" fill="none" stroke="#6FA85C" stroke-width="3.4"/>
     <path d="M58 16 Q68 10 70 20 Q62 24 58 16Z" fill="${grad("#7FB069","h")}"/>
     ${HI(38,44,8,14,.4,20)}`);},
+  // a jar of red jam with a gingham cloth tied over the lid and a strawberry on the label, so it never reads as a plain jar
+  jam(){const CAP="M24 40 Q21 29 30 23 Q50 12 70 23 Q79 29 76 40 Q69.5 43.6 63 40.6 Q56.5 44 50 40.6 Q43.5 44 37 40.6 Q30.5 43.6 24 40Z",
+      cid="wc"+(_gid++);_defs.push(`<clipPath id="${cid}"><path d="${CAP}"/></clipPath>`);
+    let st="";for(let i=0;i<11;i++)st+=`<rect x="${21+i*6}" y="10" width="3" height="36"/>`;for(let j=0;j<6;j++)st+=`<rect x="20" y="${14+j*6}" width="62" height="3"/>`;
+    return S(`${OCC}<path d="M28 43 Q28 38 33 38 L67 38 Q72 38 72 43 L72 83 Q72 90 64 90 L36 90 Q28 90 28 83Z" fill="${grad("#E6EFF3","h",.3,.14)}"/>
+    <path d="M31 48 Q50 52.5 69 48 L69 82 Q69 87 63.5 87 L36.5 87 Q31 87 31 82Z" fill="${dome("#C8323C",34,30)}" stroke="none"/>
+    <path d="M36 58 Q36 56 38 56 L62 56 Q64 56 64 58 L64 74 Q64 76 62 76 L38 76 Q36 76 36 74Z" fill="#FFF4DA" stroke-width="1.8"/>
+    <path d="M50 72.5 Q43 68 43.6 63.6 Q44.2 60 47.6 60.6 Q50 61.2 52.4 60.6 Q55.8 60 56.4 63.6 Q57 68 50 72.5Z" fill="#E0484A" stroke-width="1.5"/>
+    <path d="M46 61 L50 58 L54 61 M50 58 L50 56.4" fill="none" stroke="#5E9A48" stroke-width="2" stroke-opacity="1"/>
+    <circle cx="48" cy="64.5" r=".8" fill="#FFE9A8" stroke="none"/><circle cx="52.4" cy="65.5" r=".8" fill="#FFE9A8" stroke="none"/><circle cx="50" cy="68.6" r=".8" fill="#FFE9A8" stroke="none"/>
+    <path d="${CAP}" fill="#FBF6EC"/><g clip-path="url(#${cid})" fill="#D9435A" fill-opacity=".5" stroke="none">${st}</g><path d="${CAP}" fill="none"/>
+    <path d="M26 40 Q50 45.5 74 40" fill="none" stroke="#A0643A" stroke-width="2.8" stroke-opacity="1"/>
+    ${HI(33.5,66,3,13,.55,4)}`);},
   truck(){return S(`${OCC}<path d="M8 46 L8 74 L60 74 L60 32 L22 32 Q8 34 8 46Z" fill="${grad("#DC5A4B","v",.26,.24)}"/>
     <path d="M60 50 L92 50 L92 74 L60 74Z" fill="${grad("#3F86D2","v",.26,.22)}"/>
     <path d="M14 40 L34 40 L34 54 L14 54Z" fill="${dome("#CBE9F7",36,26)}"/>
@@ -7514,7 +7527,7 @@ const Mine=(()=>{
     const tier=currentTier(),pool=allWords().filter(w=>!w.tricky&&WORD_ART[w.w]&&w.t>=Math.max(1,tier-1)&&w.t<=tier+1);
     const all=pool.length>=3?pool:allWords().filter(w=>!w.tricky&&WORD_ART[w.w]);
     const w=all[Math.floor(Math.random()*all.length)];
-    const LOOKS=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"]];
+    const LOOKS=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"],["jam","jar"]];
     const near=(a,b)=>LOOKS.some(g=>g.includes(a)&&g.includes(b));
     const others=allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&x.w!==w.w&&WORD_ART[x.w]!==WORD_ART[w.w]&&!near(x.w,w.w)).sort(()=>Math.random()-.5)
       .reduce((a,x)=>{if(a.length<2&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
@@ -7782,7 +7795,7 @@ const Mine=(()=>{
     return c.slice(0,n);
   }
   function picOthers(w){
-    const LOOKS=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"]];
+    const LOOKS=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"],["jam","jar"]];
     const near=(a,b)=>LOOKS.some(g=>g.includes(a)&&g.includes(b));
     return allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&x.w!==w.w&&WORD_ART[x.w]!==WORD_ART[w.w]&&!near(x.w,w.w)).sort(()=>Math.random()-.5)
       .reduce((a,x)=>{if(a.length<2&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
@@ -8409,7 +8422,8 @@ const Books=(()=>{
   }
   const BG={meadow:["#BFE0F0","#F4EFDC","#8FBE6E"],farm:["#CFE6F2","#F6EBD2","#A9C46A"],pond:["#AED9E8","#EEF3E0","#6FAC72"],
     town:["#C8DDF0","#F2ECDD","#B9B2A4"],shop:["#F6E1C0","#F9EEDB","#C9A47A"],sea:["#9FD8F0","#FBF1D6","#4FA8D8"],
-    cave:["#2A2238","#3B2F4E","#5A4A3A"],night:["#1E2450","#3B3F7A","#2E4A6A"],rain:["#9AA8B8","#C8D0D8","#7FA07A"]};
+    cave:["#2A2238","#3B2F4E","#5A4A3A"],night:["#1E2450","#3B3F7A","#2E4A6A"],rain:["#9AA8B8","#C8D0D8","#7FA07A"],
+    jungle:["#A9D3B0","#EEF0D2","#5E9A48"]};
   function scene(bg,items,t,extra){
     const c=BG[bg]||BG.meadow;
     return`<div class="bscene bg-${bg}" style="background:linear-gradient(180deg,${c[0]},${c[1]} 68%,${c[2]} 68%)">
@@ -9236,7 +9250,7 @@ const Adv=(()=>{
   function newHunt(opts){
     opts=opts||{};const K=opts.kind?kinds[opts.kind]:null;
     const tier=currentTier();
-    const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"]];
+    const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"],["jam","jar"]];
     const near=(a,b)=>LOOK.some(g=>g.includes(a)&&g.includes(b));
     // landmarks are things, not animals, so they never look like his wandering critters
     const skip=(K&&K.avoid)||[],thing=w=>!w.tricky&&WORD_ART[w.w]&&!CRIT(w.w)&&!CRIT(WORD_ART[w.w])&&skip.indexOf(w.w)<0;
@@ -9415,7 +9429,7 @@ const Wild=(()=>{
     return w;
   }
   function others(w){
-    const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"]];
+    const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"],["jam","jar"]];
     const near=(a,b)=>LOOK.some(g=>g.includes(a)&&g.includes(b));
     return shuffle(allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&x.w!==w.w&&WORD_ART[x.w]!==WORD_ART[w.w]&&!near(x.w,w.w)))
       .reduce((a,x)=>{if(a.length<2&&!a.some(y=>near(x.w,y.w)||WORD_ART[x.w]===WORD_ART[y.w]))a.push(x);return a;},[]);
@@ -9689,7 +9703,7 @@ setTimeout(()=>Notes.badge(),1600);
    ================================================================ */
 const Read=(()=>{
   const shuffle=a=>a.sort(()=>Math.random()-.5);
-  const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"],["puppy","dog"],["bunny","rabbit"],["mice","mouse"],["happy","face"],["sailboat","boat"],["lamb","sheep"]];
+  const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"],["jam","jar"],["puppy","dog"],["bunny","rabbit"],["mice","mouse"],["happy","face"],["sailboat","boat"],["lamb","sheep"]];
   const near=(a,b)=>LOOK.some(g=>g.includes(a)&&g.includes(b));
   function word(opt){
     const tier=currentTier();opt=opt||{};let w=null;
