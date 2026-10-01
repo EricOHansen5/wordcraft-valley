@@ -9779,6 +9779,25 @@ const Race=(()=>{
   return{start,_R:()=>R};
 })();
 
+/* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
+   under the finger (the first question after ⏰ Clock in, a belt on the Factory board after a level button), and
+   that tap would answer a question he has not read or put down a piece he did not want. Ghost.guard(el) lets it
+   go: a real tap within 40 px and half a second of the tap that last redrew el. The screen calls Ghost.mark() as
+   it draws; it marks only when a real tap came just before, so a screen drawn by a timer, a key or a test marks
+   nothing, and a tap anywhere else goes through at once. ---- */
+// e.timeStamp (not Date.now()) so a busy main thread — a save, a redraw, a GC pause, the very
+// kind of moment a ghost tap is likeliest — never makes a real fast double tap look slow: it is
+// the clock the browser stamped the tap with, not the clock at whenever this handler got to run.
+const Ghost=(()=>{
+  let last=null,spot=null;
+  document.addEventListener("click",e=>{if(e.isTrusted&&e.detail>0)last={x:e.clientX,y:e.clientY,t:e.timeStamp};},true);
+  function mark(){if(last&&performance.now()-last.t<150)spot=last;}
+  function stop(e){const g=spot;
+    if(g&&e.isTrusted&&e.timeStamp-g.t<500&&Math.abs(e.clientX-g.x)<40&&Math.abs(e.clientY-g.y)<40){e.stopPropagation();e.preventDefault();}}
+  function guard(el){if(el&&!el.dataset.ghost){el.dataset.ghost="1";el.addEventListener("pointerdown",stop,true);el.addEventListener("click",stop,true);}return el;}
+  return{mark,guard};
+})();
+
 /* ================================================================
    JOBS — read the order, do the job, get paid in coins
    The one non-reading mode of v10.1, and every task still starts with
@@ -10206,7 +10225,8 @@ const Jobs=(()=>{
 
   /* ---------- the Job board and the shift ---------- */
   let ov=null,S=null;
-  const root=()=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovJob";document.body.appendChild(ov);}return ov;};
+  // a double tap on a job, ⏰ Clock in or Keep going must not answer what comes up under the finger (Ghost)
+  const root=()=>{if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovJob";document.body.appendChild(ov);Ghost.guard(ov);}return ov;};
   const $=s=>ov&&ov.querySelector(s);
   function me(){let src=null;try{src=Mine.avatar();}catch(e){}return src?`<img src="${src}" alt="">`:drawThing("fox",1);}
   // the Trading Post's gear for a job that he owns ("uniform" or "tool"), or null
@@ -10234,7 +10254,7 @@ const Jobs=(()=>{
   }
   function close(){hush();keyFn=null;S=null;try{VoicePack.stop();Sound.stopVoice();}catch(e){}if(ov)Modes.shut(ov);badge();}
   function board(){
-    S=null;keyFn=null;const o=root();
+    S=null;keyFn=null;const o=root();Ghost.mark();
     o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>💼 Job board</h2><span class="jpurse">🪙 ${coins()}</span><button class="bx" id="jX">✕</button></div>
       <p class="sub">Pick a job. Read, count and get paid in 🪙!</p>
       <div class="jcards">${REG.length?REG.slice().sort((a,b)=>((a.unlock&&a.unlock.tier)||1)-((b.unlock&&b.unlock.tier)||1)).map(card).join(""):`<p class="sub">No jobs yet.</p>`}</div></div>`;
@@ -10252,7 +10272,7 @@ const Jobs=(()=>{
   }
   // put on the uniform, then clock in
   function intro(j){
-    if(!j)return board();const o=root();
+    if(!j)return board();const o=root();Ghost.mark();
     o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2><button class="bx" id="jBack">‹ Jobs</button></div>
       ${wearing(j)}<p class="sub">You put on your ${esc(uniform(j).name)}!</p>
       <ul class="jwhat"><li>🪙 ${j.pay.perTask} for each task</li>${j.pay.streakTip?`<li>🎉 ${tipAt(j)} right in a row: a tip of ${j.pay.streakTip} 🪙</li>`:""}<li>⏰ Clock out when you are done</li></ul>
@@ -10272,7 +10292,7 @@ const Jobs=(()=>{
   // the job whose tool has said "Your … is ready!" in this shift: once a shift (clocking in clears it)
   let toolSaid=null;
   function shift(j){
-    const o=root();S={job:j,n:0,coins:0,tips:0,task:null};
+    const o=root();Ghost.mark();S={job:j,n:0,coins:0,tips:0,task:null};
     const tool=gear(j,"tool"),ready=tool&&toolSaid!==j.id?readyLine(tool):"";
     o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>${j.icon} ${esc(j.name)}</h2>${wearing(j,true)}
         <span class="jpurse" id="jPurse">🪙 ${coins()}</span><button class="btn soft" id="jOut">⏰ Clock out</button></div>
@@ -10315,7 +10335,7 @@ const Jobs=(()=>{
     msg("");step();
   }
   function step(){
-    if(!S||!S.task)return;const T=S.task,q=T.steps[T.i],host=freshHost();keyFn=null;
+    if(!S||!S.task)return;const T=S.task,q=T.steps[T.i],host=freshHost();keyFn=null;Ghost.mark();
     try{KITS[q.kit](host,q,ok=>{if(S&&S.task===T&&T.steps[T.i]===q)stepDone(q,ok);},
       {hint:false,onMiss:n=>{if(!S||S.task!==T)return;T.miss++;wait(n);}});}
     catch(e){console.warn(`Jobs: the ${q.kit} kit could not show a step of ${S.job.id}/${T.type.id}:`,e&&e.message);
@@ -10375,7 +10395,7 @@ const Jobs=(()=>{
   }
   function clockOut(){
     const s=S;hush();keyFn=null;S=null;J().current=null;save();badge();
-    if(!ov)return;
+    if(!ov)return;Ghost.mark();
     ov.innerHTML=`<div class="sheet jobsheet"><div class="jbig">${s?s.job.icon:"💼"}</div><h2>Great work today!</h2>
       <p class="mpaid">${s?s.n:0} task${s&&s.n===1?"":"s"} · +${s?s.coins:0} 🪙</p>${s&&s.tips?`<p class="sub">🎉 ${s.tips} tip${s.tips===1?"":"s"}</p>`:""}
       <div class="mrow"><button class="btn soft" id="jBoard">💼 Job board</button><button class="btn primary big" id="jHome">🏡 Back to the valley</button></div></div>`;
@@ -13055,7 +13075,8 @@ const Factory=(()=>{
   const $=s=>ov&&ov.querySelector(s);
   const isOpen=()=>!!ov&&ov.classList.contains("on");
   const hidden=()=>typeof document!=="undefined"&&document.visibilityState==="hidden";
-  function root(){if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFactory";document.body.appendChild(ov);}return ov;}
+  // a double tap on a level, Next level, Build again or Next order must not put a piece down or turn one (Ghost)
+  function root(){if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFactory";document.body.appendChild(ov);Ghost.guard(ov);}return ov;}
   function session(opt){
     return Object.assign({n:0,level:null,sandbox:false,tool:"belt",lastDir:1,sortCol:2,running:false,done:false,
       order:null,base:new Int16Array(128),full:0,hop:-99,tip:{cand:"",since:0,shown:"",said:{}},flow:1,jam:0,cur:0,kb:false,kbDir:1,kbLast:-1,
@@ -13098,7 +13119,7 @@ const Factory=(()=>{
 
   /* ---------- the levels ---------- */
   function map(){
-    stop();view="map";root();
+    stop();view="map";root();Ghost.mark();
     const d=done();
     shell("🏭 Factory",`<b class="fcstars" id="fcAll">⭐ ${LEVELS.reduce((s,L)=>s+starsOf(L.n),0)} of ${LEVELS.length*3}</b>`);
     const btn=L=>{const st=starsOf(L.n),open=L.n<=d+1,next=L.n===d+1;
@@ -13140,7 +13161,7 @@ const Factory=(()=>{
 
   /* ---------- the board ---------- */
   function board(){
-    view="board";root();
+    view="board";root();Ghost.mark();
     const L=S.level,st=L?starsOf(L.n):0;
     shell(S.sandbox?"🏗️ My own factory":`🏭 ${L.n} · ${esc(L.name)}`,S.sandbox?"":`<b class="fcstars" id="fcStars" aria-label="${st} stars">${"★".repeat(st)}${"☆".repeat(3-st)}</b>`);
     const teach=L&&L.teach?TOOL(L.teach):null;
