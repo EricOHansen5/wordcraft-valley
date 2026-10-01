@@ -63,11 +63,11 @@ function kit(area,page,errs,E){
     const h=await p.evaluateHandle(fn,arg),el=h.asElement();
     if(!el){await h.dispose();throw new Error("not found");}
     // a greyed (disabled) button is tapped anyway, as a finger would: Playwright would otherwise wait for it to enable
-    const off=await el.evaluate(e=>!!e.disabled);
+    const off=await el.evaluate(e=>!!e.disabled||e.getAttribute("aria-disabled")==="true");
     try{await el.tap({timeout:3000,force:off});}finally{await h.dispose();}
     return true;
   }
-  const tapSelRaw=async sel=>{await pace();const off=await p.$eval(sel,e=>!!e.disabled).catch(()=>false);await p.tap(sel,{timeout:3000,force:off});return true;};
+  const tapSelRaw=async sel=>{await pace();const off=await p.$eval(sel,e=>!!e.disabled||e.getAttribute("aria-disabled")==="true").catch(()=>false);await p.tap(sel,{timeout:3000,force:off});return true;};
   // the centre of an element (scrolled into view)
   const centre=(fn,arg)=>E(([f,a])=>{const el=(0,eval)("("+f+")")(a);if(!el)return null;el.scrollIntoView({block:"nearest"});const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2];},[fn.toString(),arg]);
   // two quick touches on one spot (a child's double tap): the second lands on whatever the first put there
@@ -937,7 +937,8 @@ async function holidayArea(){
   /* ---------------- the Closet: every look he earned, worn and taken off ---------------- */
   const RC="#ovCloset",CL="Closet";
   await tapSel(CL,"🎨 in the dock","#closetBtn",{root:RC,swap:true,want:()=>E(()=>{const c=[...document.querySelectorAll("#clGrid .clcard")].map(x=>x.dataset.look+":"+x.querySelector(".cost").textContent);
-    return[Modes.top()==="closet"&&c.length===4&&["halloween","thanks","winter"].every(l=>c.indexOf(l+":1 of 4 pieces")>=0),c.join(", ")];})});
+    // every look has a card ("No look" and the seven holidays); the three played here have their first piece
+    return[Modes.top()==="closet"&&c.length===Looks.list().length+1&&["halloween","thanks","winter"].every(l=>c.indexOf(l+":1 of 4 pieces")>=0),c.join(", ")];})});
   await clip(CL,RC);
   let lastC=0;const gapC=async()=>{const d=Date.now()-lastC;if(d<700)await wait(700-d);};
   const cardC=l=>`#clGrid .clcard[data-look="${l}"]`;

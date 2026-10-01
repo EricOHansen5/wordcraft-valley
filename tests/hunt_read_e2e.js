@@ -36,7 +36,8 @@ function spies(){
     return new Blob([b],{type:"audio/wav"});};
   // the save, without what moves by itself (positions, clocks, minute counts)
   const DROP=new Set(["c","r","pc","pr","x","y","face","since","modeMin","modeOpens","minutes","at","t0","lastTouch","savedAt","seenHead","last"]);
-  window.__dig=()=>{let s="";try{s=JSON.stringify(state,(k,v)=>DROP.has(k)?undefined:v);}catch(e){}return hash(s);};
+  // like save(): "_" fields (a mover's on-screen element, _el, and its animation) are never part of the save
+  window.__dig=()=>{let s="";try{s=JSON.stringify(state,(k,v)=>DROP.has(k)||(k&&k[0]==="_")?undefined:v);}catch(e){}return hash(s);};
   window.__dom=()=>hash([...document.querySelectorAll(".overlay.on,#advHud.on")].map(o=>o.id+"|"+o.className+"|"+o.innerHTML).join("#"));
   window.__snap=()=>({top:Modes.top(),stack:Modes.stack().join(">"),dom:__dom(),st:__dig(),ev:__ev.length});
   // what can be tapped in the open overlays (or under a selector)
