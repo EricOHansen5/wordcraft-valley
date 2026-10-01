@@ -1305,6 +1305,48 @@ body.exploring .slot-empty{display:none}
 .jochk{margin-top:10px}.jocheck{width:110px;height:62px}
 .jocheck.ready{box-shadow:0 0 0 4px rgba(255,229,138,.95),0 4px 0 rgba(0,0,0,.2)}.jocheck.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9)}
 @media (max-width:700px){.jorder.wide{flex-direction:column;align-items:stretch}.jorder.wide .jorow,.jorder.wide .jopool{flex:0 0 auto}.jocard,.jorder.wide .jocard{font-size:20px;padding:6px 10px}.jogap{min-width:80px}}
+/* the sort kit: the things to sort in a row, and two or three labelled bins to put them in */
+.jsort{display:flex;flex-direction:column;gap:10px;align-items:stretch;margin:2px auto 0;max-width:760px}
+.jq[data-kit="sort"] .jtext{font-size:27px;padding:8px 14px;margin-bottom:8px}
+.jspool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;min-height:88px;padding:4px;border-radius:18px}
+.jsbins{display:flex;gap:12px;justify-content:center;align-items:stretch}
+.jsbin{flex:1 1 0;min-width:0;max-width:280px;min-height:140px;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px;border:3px solid var(--ink);border-radius:18px;
+  background:rgba(255,255,255,.6);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.jslab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:36px;font-size:26px;font-weight:900;color:var(--ink);pointer-events:none}
+.jsic{font-size:32px;line-height:1}.jsic .jword{width:40px;height:40px}
+.jsin{flex:1;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-content:flex-start;min-height:98px;padding:6px;border:3px dashed rgba(59,48,36,.28);border-radius:14px;background:#fff}
+.jscard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:80px;min-height:80px;padding:4px 8px;border:3px solid var(--ink);border-radius:16px;
+  background:#fff;box-shadow:0 4px 0 rgba(0,0,0,.2);font-family:inherit;font-size:20px;font-weight:800;line-height:1.1;color:var(--ink);
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.jsart{display:block;width:46px;height:46px;pointer-events:none}.jsart>*{width:46px!important;height:46px!important;margin:0!important}
+.jsart svg,.jsart img{width:100%;height:100%;display:block;-webkit-user-drag:none}
+.jstext{pointer-events:none}
+.jscard.lift{transform:translateY(-6px);box-shadow:0 0 0 4px #3F86D2,0 8px 0 rgba(0,0,0,.18)}
+.jscard.drag{position:relative;z-index:9;box-shadow:0 12px 18px rgba(0,0,0,.28)}
+.jscard.hint{box-shadow:0 0 0 5px rgba(127,176,105,.9);background:#EAF7E2}
+.jscard.cur,.jsbin.cur{outline:4px solid #3F86D2;outline-offset:2px}
+.jsbin.open{border-color:#3F86D2}.jsbin.over{background:#E3F0FB}
+.jsbin.hint{box-shadow:0 0 0 6px rgba(127,176,105,.9);background:#EAF7E2}
+.jsort.right .jscard{background:#DDF3D4;border-color:var(--meadow-deep)}
+.jsort.wrong .jsbins,.jspool.nudge{animation:joshake .45s}
+@media (max-width:700px){.jsbins{gap:8px}.jsbin{min-height:120px;padding:6px}.jslab{font-size:20px}.jsic{font-size:26px}.jscard{min-width:72px;min-height:72px;font-size:17px}
+  .jsart,.jsart>*{width:40px!important;height:40px!important}}
+/* the Restaurant: plates with the order on them, pizzas cut into halves and quarters, prices in coins */
+.jplate{display:flex;flex-wrap:wrap;gap:2px 8px;justify-content:center;align-items:center;align-content:center;width:156px;min-height:104px;padding:14px 16px;border-radius:50%;
+  border:3px solid var(--ink);background:radial-gradient(ellipse at center,#FFFFFF 0 56%,#E4EAEF 57% 63%,#FFFFFF 64%);box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.jpgrp{display:flex;flex-wrap:wrap;justify-content:center;gap:0 2px}
+.jplate img{width:42px;height:42px;display:block;-webkit-user-drag:none}.jplate.many img{width:26px;height:26px}
+.jmenu{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.jmitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border:3px solid var(--ink);border-radius:16px;background:#fff}
+.jmitem img{width:60px;height:60px;display:block}.jmitem b{font-size:26px;font-weight:900}.jmitem .jcoins{gap:4px}
+/* the Bus driver: the street map with the valley's buildings as stops, and the bus */
+.jlawn.bus .jcell{width:56px;height:56px}
+.jlawn.bus .start::before{content:"🚏"}.jlawn.bus .me::after,.jlawn.street.bus.done .me::after{content:"🚌";font-size:34px}
+.jmark{position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:1px;pointer-events:none}
+.jmark .jword{width:34px;height:34px}.jmark b{display:block;margin-top:-3px;padding:0 4px;border-radius:6px;background:#fff;border:2px solid var(--ink);font-size:13px;font-weight:900;line-height:1.1;color:var(--ink)}
+@media (max-width:700px){.jlawn.bus .jcell{width:44px;height:44px}.jmark .jword{width:26px;height:26px}.jmark b{font-size:11px}}
+/* the Detective: a word on a card */
+.jwcard{display:block;font-size:40px;font-weight:900;letter-spacing:.02em;padding:0 10px;color:var(--ink)}
 @media (max-width:700px){.jobsheet{padding:14px}.jobsheet .bhead h2{font-size:21px}.jobsheet .bhead .jme.small{display:none}
   .jwork{flex-direction:column;align-items:center;gap:4px}.jcust{flex-basis:auto}.jface{width:56px;height:56px}.jq{min-height:0}
   .jsay{font-size:16px}.jtext{font-size:26px;padding:8px 12px;margin-bottom:8px}.jsum{font-size:32px}
@@ -9945,6 +9987,26 @@ Object.assign(JOB_ART,{
     const row=k=>`<div class="jsrow">${Array.from({length:k},()=>`<i style="height:${34+Math.floor(r()*13)}px;background:${HUES[Math.floor(r()*HUES.length)]}"></i>`).join("")}</div>`;
     return`<div class="jshelf">${row(Math.min(10,n))}${n>10?row(n-10):""}</div>`;}
 });
+// pictures for the Restaurant: a plate with the order on it, a pizza cut in halves or quarters (or not cut),
+// and the prices of what was ordered, paid in coins. A thing is drawn by its picture id (drawThing), once per
+// id as an image, so a plate of ten buns is ten small images of one picture.
+const JOB_PIC={};
+const jobPic=id=>JOB_PIC[id]||(JOB_PIC[id]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(drawThing(id,1)));
+Object.assign(JOB_ART,{
+  // one thing by its ART id: the Bus driver's stops (the valley's buildings), the animals
+  thing:a=>`<div class="jword">${drawThing(a.id,1)}</div>`,
+  // a word written on a card: the Detective's words to choose from, with no pictures
+  wcard:a=>`<span class="jwcard">${esc(a.text)}</span>`,
+  plate:a=>{const items=a.items||[],n=items.reduce((s,x)=>s+(x.n|0),0);
+    return`<div class="jplate${n>4?" many":""}">${items.map(x=>`<span class="jpgrp">${`<img src="${jobPic(x.id)}" alt="" draggable="false">`.repeat(Math.max(0,x.n|0))}</span>`).join("")}</div>`;},
+  pizza:a=>{const f=+a.f||1,cut=deg=>{const t=deg*Math.PI/180,x=(Math.sin(t)*37).toFixed(1),y=(Math.cos(t)*37).toFixed(1),d=`M${50-x} ${50-y} L${50+ +x} ${50+ +y}`;
+      return`<path d="${d}" fill="none" stroke-width="6"/><path d="${d}" fill="none" stroke="#FBF6EC" stroke-width="2.6" stroke-opacity="1"/>`;};
+    const pep=[[36,33],[62,30],[29,55],[53,50],[71,58],[42,72],[63,76]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="5.6" fill="${dome("#C8412F",40,35)}"/>`).join("");
+    return`<div class="jsvg jpizza" data-cut="${esc(a.cut||"")}">${S(`<circle cx="50" cy="50" r="44" fill="${dome("#E0A456",40,35)}"/>
+      <circle cx="50" cy="50" r="37" fill="#E8563F" stroke="none"/><circle cx="50" cy="50" r="34" fill="${dome("#FFD36B",40,35)}" stroke="none"/>${pep}
+      ${(f===.5?[0]:f===.25?[0,90]:[]).map(cut).join("")}`)}</div>`;},
+  menu:a=>`<div class="jmenu">${(a.items||[]).map(x=>`<div class="jmitem"><img src="${jobPic(x.id)}" alt="" draggable="false"><b>${x.cents|0}¢</b>${Jobs.art({kind:"coins",coins:x.coins||[]})}</div>`).join(`<b class="jop">+</b>`)}</div>`
+});
 const Jobs=(()=>{
   const REG=[],BY={},KITS={};
   // tasks done to reach job levels 1 to 5
@@ -10023,6 +10085,8 @@ const Jobs=(()=>{
       case"vetcare":case"drops":case"petpart":return JOB_ART[a.kind](a);
       case"bookcover":case"bookshelf":return JOB_ART[a.kind](a);
     }
+    // any other picture a job adds to JOB_ART (the Restaurant's plates and pizzas, and more)
+    if(JOB_ART[a.kind])return JOB_ART[a.kind](a);
     return"";
   }
 
@@ -10038,6 +10102,8 @@ const Jobs=(()=>{
   // a word he taps is sounded out (as in the books); the question is read aloud as it appears
   function wire(host,q){
     const t=host.querySelector(".jtext");if(t)try{Books.wireWords(t);}catch(e){}
+    // a sound in slashes (the Detective's /sh/) plays that sound, not the letter's name
+    if(t)t.querySelectorAll(".bw").forEach(sp=>{const m=/^\/([a-z]+)\/[.,!?]*$/.exec(sp.textContent);if(m)sp.onclick=()=>{hush();Sound.say("sound:"+m[1],m[1]);};});
     const h=host.querySelector(".jhear");if(h)h.onclick=()=>talk(q.say);
     setTimeout(()=>{if(host.isConnected)talk(q.say);},250);
   }
@@ -10103,24 +10169,30 @@ const Jobs=(()=>{
     done=Read.once(done);opt=opt||{};const moves=String(q.ans||""),g=q.grid||{w:6,h:5},st=q.start||{c:0,r:0};
     if(!/^[LRUD]+$/.test(moves))throw new Error("a path answer is a list of moves (L, R, U, D)");
     let miss=0,fin=false,i=0,c=st.c,r=st.r,hint=!!opt.hint;const cut={};
+    // q.to: drive to that square by any shortest way, so a step is right when it gets closer (the moves in q.ans are one
+    // such way); q.marks [{c,r,text,art}] name places on the map (the Bus driver's stops)
+    const to=q.to&&q.to.c>=0?q.to:null,far=(x,y)=>Math.abs(x-to.c)+Math.abs(y-to.r),
+      closer=d=>{const x=c+STEP[d][0],y=r+STEP[d][1];return x>=0&&y>=0&&x<g.w&&y<g.h&&far(x,y)<far(c,r);},
+      want=()=>!to?moves.charAt(i):moves.charAt(i)&&closer(moves.charAt(i))?moves.charAt(i):["L","R","U","D"].find(closer)||"";
+    const mark=(x,y)=>(q.marks||[]).find(m=>m.c===x&&m.r===y),markHtml=m=>`<span class="jmark">${m.art?artHtml(m.art):""}<b>${esc(m.text)}</b></span>`;
     host.dataset.kit="path";host.dataset.ans=moves;
-    let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="grass"></button>`;
+    let cells="";for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const m=mark(x,y);cells+=`<button class="jcell" data-c="${x}" data-r="${y}" aria-label="${m?esc(m.text):"grass"}">${m?markHtml(m):""}</button>`;}
     const arrow=d=>`<button class="jarrow" data-dir="${d}" aria-label="${DIR_NAME[d]}">${ARROW[d]}</button>`;
-    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
+    host.innerHTML=head(q)+`<div class="jrow"><div class="jlawn play${q.theme==="street"?" street":q.theme==="bus"?" street bus":""}" style="grid-template-columns:repeat(${g.w},auto)">${cells}</div>
       <div class="jarrows"><span></span>${arrow("U")}<span></span>${arrow("L")}${arrow("D")}${arrow("R")}</div></div>`;
     const lawnEl=host.querySelector(".jlawn"),cellEls=[...lawnEl.querySelectorAll(".jcell")],arrows=[...host.querySelectorAll(".jarrow")];
     // a job's own theme (the Farmer's field) is a class on the lawn too, as the Mail carrier's "street" is
     if(q.theme&&q.theme!=="street")lawnEl.classList.add(String(q.theme));
     function draw(){
-      const nx=hint&&!fin?moves.charAt(i):"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
+      const nx=hint&&!fin?want():"",tc=nx?c+STEP[nx][0]:-9,tr=nx?r+STEP[nx][1]:-9;
       cellEls.forEach(b=>{const x=+b.dataset.c,y=+b.dataset.r;
         b.className="jcell"+(cut[x+","+y]?" cut":"")+(x===st.c&&y===st.r?" start":"")+(x===c&&y===r?" me":"")+(x===tc&&y===tr?" next":"")+(q.goal&&x===q.goal.c&&y===q.goal.r?" goal":"");});
       arrows.forEach(b=>b.classList.toggle("hint",b.dataset.dir===nx));
     }
     function go(d){
       if(fin||!STEP[d])return;
-      if(d===moves.charAt(i)){c+=STEP[d][0];r+=STEP[d][1];cut[c+","+r]=1;i++;Sound.sfx.pop();
-        if(i>=moves.length){fin=true;keyFn=null;lawnEl.classList.add("done");Sound.sfx.win();setTimeout(()=>done(!miss),900);}
+      if(to?closer(d):d===moves.charAt(i)){c+=STEP[d][0];r+=STEP[d][1];cut[c+","+r]=1;i++;Sound.sfx.pop();
+        if(to?c===to.c&&r===to.r:i>=moves.length){fin=true;keyFn=null;lawnEl.classList.add("done");Sound.sfx.win();setTimeout(()=>done(!miss),900);}
         draw();return;}
       miss++;if(miss>=2)hint=true;lawnEl.classList.remove("bump");void lawnEl.offsetWidth;lawnEl.classList.add("bump");Sound.sfx.nope();draw();
       if(opt.onMiss)opt.onMiss(miss);
@@ -10146,7 +10218,7 @@ const Jobs=(()=>{
   // the job's tool from the Trading Post makes the tip come one task sooner: four right first time in a row instead of five
   const tipAt=j=>gear(j,"tool")?4:5;
   const TIP_LINE={4:"Four in a row! Here is a tip!",5:"Five in a row! Here is a tip!"};
-  const readyLine=it=>"Your "+it.name.toLowerCase()+(/s$/.test(it.name)?" are":" is")+" ready!";
+  const readyLine=it=>"Your "+it.name.toLowerCase()+(/[^s]s$/.test(it.name)?" are":" is")+" ready!";
   // him in his uniform; in the shift header (small) the tool he owns for the job is beside it
   function wearing(j,small){
     const u=uniform(j),tool=small?gear(j,"tool"):null,tp=tool?gearPic(tool):"";
@@ -10165,7 +10237,7 @@ const Jobs=(()=>{
     S=null;keyFn=null;const o=root();
     o.innerHTML=`<div class="sheet jobsheet"><div class="bhead"><h2>💼 Job board</h2><span class="jpurse">🪙 ${coins()}</span><button class="bx" id="jX">✕</button></div>
       <p class="sub">Pick a job. Read, count and get paid in 🪙!</p>
-      <div class="jcards">${REG.length?REG.map(card).join(""):`<p class="sub">No jobs yet.</p>`}</div></div>`;
+      <div class="jcards">${REG.length?REG.slice().sort((a,b)=>((a.unlock&&a.unlock.tier)||1)-((b.unlock&&b.unlock.tier)||1)).map(card).join(""):`<p class="sub">No jobs yet.</p>`}</div></div>`;
     o.querySelector("#jX").onclick=close;
     o.querySelectorAll(".jcard[data-job]").forEach(b=>b.onclick=()=>{Sound.sfx.pop();intro(BY[b.dataset.job]);});
   }
@@ -10423,6 +10495,496 @@ Jobs.kit("order",function(host,q,done,opt){
     return false;});
   U.wire(host,q);draw();
 });
+
+/* ---- the sort kit: put each thing in the right bin ----
+   Added with Jobs.kit("sort",fn) and wired like the order kit (Jobs.ui). q.choices are the things to sort:
+   a value, or {v, text, art} (a picture with its name under it); q.bins are two or three bins, each
+   {v, text, ic} (a word and an icon; art instead of ic for a picture); q.ans says where each thing goes,
+   "fox:den|pig:pen", or {fox:"den", pig:"pen"}. A tap on a thing lifts it and a tap on a bin puts it in; a
+   thing can also be dragged onto a bin with a finger (pointer events; the taps always work too). A tap on a
+   placed thing lifts it back out, ready for another bin; ✓ checks. A miss keeps the things that are in the
+   right bin, the others come back out to try again, and the customer waits (opt.onMiss); after the second
+   miss the next thing to place glows, and so does its bin. dataset.ans is item:bin|item:bin, in the order of
+   the things. done(ok) once, through Read.once, ok being right the first time. Keyboard: the arrows move a
+   cursor over the things and the bins, Space picks up and puts down, Enter checks. Things and bins are at
+   least 56 px. */
+Jobs.kit("sort",function(host,q,done,opt){
+  const U=Jobs.ui;done=Read.once(done);opt=opt||{};
+  const val=c=>String(c&&typeof c==="object"?c.v:c),obj=c=>c&&typeof c==="object"?c:{};
+  const things=(q.choices||[]).map(c=>({v:val(c),text:String(obj(c).text!=null?obj(c).text:val(c)),art:obj(c).art||null}));
+  const bins=(q.bins||[]).map(b=>({v:val(b),text:String(obj(b).text!=null?obj(b).text:val(b)),ic:obj(b).ic||"",art:obj(b).art||null}));
+  const pairs=typeof q.ans==="string"?q.ans.split("|").map(p=>{const i=p.lastIndexOf(":");return[p.slice(0,i),p.slice(i+1)];})
+    :q.ans&&typeof q.ans==="object"?Object.keys(q.ans).map(k=>[k,q.ans[k]]):[];
+  const want={},isBin={};pairs.forEach(p=>{want[String(p[0])]=String(p[1]);});bins.forEach(b=>{isBin[b.v]=1;});
+  if(things.length<2||bins.length<2||Object.keys(isBin).length!==bins.length||new Set(things.map(t=>t.v)).size!==things.length||
+    pairs.length!==things.length||things.some(t=>!isBin[want[t.v]]))throw new Error("a sort answer puts every thing in one of the bins");
+  host.dataset.kit="sort";host.dataset.ans=things.map(t=>t.v+":"+want[t.v]).join("|");
+  let miss=0,fin=false,hint=!!opt.hint,lifted=null,cur=0,kbd=false,quiet=0,drag=null;
+  const at={};   // a thing -> the bin it is in
+  const lab=b=>(b.art?`<span class="jsic">${Jobs.art(b.art)}</span>`:b.ic?`<span class="jsic">${esc(b.ic)}</span>`:"")+`<b>${esc(b.text)}</b>`;
+  host.innerHTML=U.head(q)+`<div class="jsort"><div class="jspool"></div><div class="jsbins">${bins.map(b=>
+    `<div class="jsbin" data-bin="${esc(b.v)}" role="button" aria-label="${esc(b.text)}"><span class="jslab">${lab(b)}</span><span class="jsin"></span></div>`).join("")}</div></div>
+    <div class="mrow jochk"><button class="jkey ok jocheck" data-act="check" aria-label="Check">✓</button></div>`;
+  const box=host.querySelector(".jsort"),poolEl=host.querySelector(".jspool"),binEls=[...host.querySelectorAll(".jsbin")],chk=host.querySelector(".jocheck");
+  const pool=()=>things.filter(t=>!at[t.v]);
+  // what the cursor walks over, as they stand on the screen: the things still out, then each bin and what is in it
+  const stops=()=>{const s=pool().map(t=>"t:"+t.v);bins.forEach(b=>{s.push("b:"+b.v);things.forEach(t=>{if(at[t.v]===b.v)s.push("t:"+t.v);});});return s;};
+  const face=t=>(t.art?`<span class="jsart">${Jobs.art(t.art)}</span>`:"")+`<span class="jstext">${esc(t.text)}</span>`;
+  function draw(){
+    const next=hint&&!fin?(lifted||(pool()[0]||{}).v||null):null,goal=next?want[next]:null,list=stops();
+    cur=Math.max(0,Math.min(cur,list.length-1));const k=kbd&&!fin?list[cur]:null;
+    const card=t=>`<button class="jscard${t.v===lifted?" lift":""}${t.v===next?" hint":""}${k==="t:"+t.v?" cur":""}" data-w="${esc(t.v)}">${face(t)}</button>`;
+    poolEl.innerHTML=pool().map(card).join("");
+    binEls.forEach(el=>{const b=el.dataset.bin;
+      el.querySelector(".jsin").innerHTML=things.filter(t=>at[t.v]===b).map(card).join("");
+      el.classList.toggle("open",!!lifted&&!fin);el.classList.toggle("hint",b===goal);el.classList.toggle("cur",k==="b:"+b);});
+    const all=!pool().length;chk.classList.toggle("ready",all);
+    chk.classList.toggle("hint",!!(hint&&!fin&&all&&things.every(t=>at[t.v]===want[t.v])));
+  }
+  const nudge=el=>{Sound.sfx.soft();el.classList.remove("nudge");void el.offsetWidth;el.classList.add("nudge");};
+  // a thing still out is lifted (or put down again); a placed one comes back out, lifted, ready for another bin
+  function lift(v){
+    if(fin||!want[v])return;
+    if(at[v]){delete at[v];lifted=v;Sound.sfx.soft();}
+    else{lifted=lifted===v?null:v;Sound.sfx.pop();}
+    draw();
+  }
+  function put(v,b){if(fin||!want[v]||!isBin[b])return;at[v]=b;lifted=null;Sound.sfx.pop();draw();}
+  function binTap(b){if(fin)return;if(lifted)put(lifted,b);else nudge(poolEl);}
+  function check(){
+    if(fin)return;
+    if(pool().length){nudge(poolEl);return;}
+    if(things.every(t=>at[t.v]===want[t.v])){fin=true;lifted=null;U.keys(null);box.classList.add("right");draw();Sound.sfx.win();setTimeout(()=>done(!miss),900);return;}
+    // the things in the right bin stay there; the others come back out to be tried again
+    miss++;if(miss>=2)hint=true;lifted=null;
+    things.forEach(t=>{if(at[t.v]!==want[t.v])delete at[t.v];});
+    box.classList.remove("wrong");void box.offsetWidth;box.classList.add("wrong");Sound.sfx.nope();draw();
+    if(opt.onMiss)opt.onMiss(miss);
+  }
+  host.addEventListener("click",e=>{
+    const el=e.target&&e.target.closest?e.target.closest(".jscard,.jsbin,.jocheck"):null;if(!el||!host.contains(el))return;
+    // a button keeps no focus, so Space from the keyboard never presses it a second time
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(x){}
+    if(Date.now()<quiet)return;   // the end of a drag is not a tap
+    if(el.classList.contains("jocheck"))check();else if(el.classList.contains("jscard"))lift(el.dataset.w);else binTap(el.dataset.bin);
+  });
+  // a drag: the card follows the finger and goes into the bin it is let go over; let go anywhere else and nothing moves
+  const binAt=(x,y)=>binEls.find(el=>{const r=el.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;})||null;
+  host.addEventListener("pointerdown",e=>{
+    if(fin||drag||(e.button!=null&&e.button>0))return;
+    const el=e.target&&e.target.closest?e.target.closest(".jscard"):null;if(!el||!host.contains(el))return;
+    drag={el,v:el.dataset.w,x:e.clientX,y:e.clientY,id:e.pointerId,on:false};
+  });
+  host.addEventListener("pointermove",e=>{
+    const d=drag;if(!d||e.pointerId!==d.id)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+    if(!d.on){if(Math.abs(dx)+Math.abs(dy)<12)return;d.on=true;d.el.classList.add("drag");try{d.el.setPointerCapture(d.id);}catch(x){}}
+    d.el.style.transform=`translate(${dx}px,${dy}px)`;
+    const over=binAt(e.clientX,e.clientY);binEls.forEach(b=>b.classList.toggle("over",b===over));
+    if(e.cancelable)e.preventDefault();
+  });
+  const letGo=e=>{
+    const d=drag;if(!d||e.pointerId!==d.id)return;drag=null;if(!d.on)return;
+    quiet=Date.now()+200;binEls.forEach(b=>b.classList.remove("over"));
+    const over=e.type==="pointerup"&&!fin?binAt(e.clientX,e.clientY):null;
+    if(over)put(d.v,over.dataset.bin);else{d.el.classList.remove("drag");d.el.style.transform="";}
+  };
+  host.addEventListener("pointerup",letGo);host.addEventListener("pointercancel",letGo);
+  U.keys(e=>{
+    if(!host.isConnected||fin)return false;const k=e.key,list=stops();
+    if(k==="ArrowLeft"||k==="ArrowUp"||k==="ArrowRight"||k==="ArrowDown"){
+      if(kbd&&list.length)cur=(cur+(k==="ArrowLeft"||k==="ArrowUp"?-1:1)+list.length)%list.length;kbd=true;draw();return true;}
+    if(k===" "||k==="Spacebar"||e.code==="Space"){
+      kbd=true;const s=list[cur];if(!s){draw();return true;}
+      // a thing picked up: on to the first bin; one put down: back to the things still out
+      if(s.charAt(0)==="t"){lift(s.slice(2));cur=Math.max(0,stops().indexOf(lifted?"b:"+bins[0].v:s));}
+      else{const had=lifted;binTap(s.slice(2));if(had&&!lifted)cur=pool().length?0:Math.max(0,stops().indexOf(s));}
+      draw();return true;}
+    if(k==="Enter"){kbd=true;check();return true;}
+    return false;});
+  U.wire(host,q);draw();
+});
+
+/* ---- 🍕 Restaurant, opens at reading level 3 ----
+   Every task starts with an order ticket to read: two things on one plate ("Ham on a bun.", "Fish and chips.",
+   "A hot dog and a cup."). He finds the plate with the order on it among three; each of the other two gets
+   one of the things wrong, so both words have to be read. The words decode at his level: at level 3 a hot
+   dog, a bun, ham, eggs, nuts, fish, chips and a cup; plums from level 4, cake from 5, corn from 6, and a
+   burger, an apple or a sandwich from 8. Job level 2 counts: the ticket says how many ("2 buns and 3 eggs.";
+   the other plates have the numbers the other way round, or one thing wrong), then how many things are on
+   the plate (adding within 10). Level 3 reads a ticket, then finds the pizza cut in half, in quarters, or
+   not cut yet (halves and quarters, the Baker's cups with a pizza instead); level 4 reads a ticket, then
+   adds the prices of its two things, shown in coins (to 20¢). */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // the kitchen: how a thing is written for one and for more (ham, fish and corn stay the same; nuts and
+  // chips only come as more than one), and its picture
+  const FOOD=[{id:"hotdog",one:"a hot dog",many:"hot dogs",pic:"w_hotdog"},{id:"bun",one:"a bun",many:"buns",pic:"x_bun"},
+    {id:"ham",one:"ham",pic:"x_ham"},{id:"egg",one:"an egg",many:"eggs",pic:"egg"},{id:"nut",many:"nuts",pic:"nut"},
+    {id:"fish",one:"fish",many:"fish",pic:"fish"},{id:"chip",many:"chips",pic:"chip"},{id:"cup",one:"a cup",many:"cups",pic:"cup"},
+    {id:"plum",one:"a plum",many:"plums",pic:"plum"},{id:"cake",one:"a cake",many:"cakes",pic:"cake"},{id:"corn",one:"corn",pic:"w_corn"},
+    {id:"burger",one:"a burger",many:"burgers",pic:"w_burger"},{id:"apple",one:"an apple",many:"apples",pic:"x_apple"},
+    {id:"sandwich",one:"a sandwich",many:"sandwiches",pic:"w_sandwich"}];
+  const menu=tier=>FOOD.filter(f=>ART[f.pic]&&[f.one,f.many].filter(Boolean).every(x=>fits(x,tier)));
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  const key=p=>p.map(x=>x.id+x.n).join("+");
+  // what the ticket says for a thing ("a bun", "eggs") and how many are on the plate for it
+  function say(r,f){const w=pick(r,[f.one,f.many].filter(Boolean));return{w,n:f.one&&w===f.one?1:2};}
+  // {a} and {b} are the two things; a line is used only when all its words decode at his level
+  const TWO=["{A} and {b}.","{A} with {b}.","Can I get {a} and {b}?","Get me {a} and {b}!"],ON="{A} on {b}.";
+  // the ticket, and the step that reads it: find its plate among three
+  function ticket(r,tier){
+    const M=menu(tier);if(M.length<4)return null;
+    const s=shuffle(r,M),a=s[0],b=s[1],A=say(r,a),B=say(r,b);
+    // ham, fish or an egg can go on a bun
+    const on=b.id==="bun"&&B.n===1&&["ham","fish","egg"].indexOf(a.id)>=0&&A.n===1;
+    const lines=TWO.concat(on?[ON,ON]:[]).map(l=>l.replace("{A}",cap(A.w)).replace("{a}",A.w).replace("{b}",B.w)).filter(l=>fits(l,tier));
+    if(!lines.length)return null;
+    const right=[{id:a.pic,n:A.n},{id:b.pic,n:B.n}],c=s[2],d=s[3];
+    const plates=[right,[{id:c.pic,n:A.n},{id:b.pic,n:B.n}],[{id:a.pic,n:A.n},{id:d.pic,n:B.n}]];
+    return{a,b,step:{kit:"pick",track:"reading",read:true,say:["Read the order. Find the plate!"],text:pick(r,lines),
+      choices:shuffle(r,plates).map(p=>({v:key(p),art:{kind:"plate",items:p}})),ans:key(right)}};
+  }
+  // level 2: how many of each ("2 buns and 3 eggs."), then how many in all on the plate
+  const COUNT=["{n} {a} and {m} {b}.","Can I get {n} {a} and {m} {b}?","Get me {n} {a} and {m} {b}!"];
+  function counted(r,tier){
+    const M=menu(tier).filter(f=>f.one&&f.many&&f.one!==f.many);if(M.length<3)return null;
+    const s=shuffle(r,M),a=s[0],b=s[1],c=s[2],n=int(r,1,5);let m=int(r,1,5);if(m===n)m=m<5?m+1:m-1;
+    const word=(f,k)=>k===1?f.one.replace(/^an? /,""):f.many;
+    const lines=COUNT.map(l=>l.replace("{n}",n).replace("{m}",m).replace("{a}",word(a,n)).replace("{b}",word(b,m))).filter(l=>fits(l,tier));
+    if(!lines.length)return null;
+    const right=[{id:a.pic,n},{id:b.pic,n:m}],plates=[right,[{id:a.pic,n:m},{id:b.pic,n}],[{id:a.pic,n},{id:c.pic,n:m}]];
+    return[{kit:"pick",track:"reading",read:true,say:["Read the order. Find the plate!"],text:pick(r,lines),
+        choices:shuffle(r,plates).map(p=>({v:key(p),art:{kind:"plate",items:p}})),ans:key(right)},
+      {kit:"pad",track:"math",level:"add10",say:[n,"and",m+".","How many in all?"],text:`${n} + ${m} = ?`,art:{kind:"plate",items:right},ans:n+m,math:{op:"+",a:n,b:m}}];
+  }
+  // level 3: the math track's halves and quarters, with pizzas
+  const PIZZA={"1/2":"Which pizza is cut in half?","1/4":"Which pizza is cut in quarters?","1":"Which pizza is not cut yet?"},PART={"1/2":.5,"1/4":.25,"1":1};
+  function pizza(seed){const q=Tracks.gen("math","frac",seed+":f",{});if(!q||!PIZZA[q.ans])return null;
+    return Object.assign(q,{say:[PIZZA[q.ans]],choices:q.choices.map(c=>({v:c.v,art:{kind:"pizza",f:PART[c.v],cut:c.v}}))});}
+  // level 4: the two things' prices in coins (10¢, 5¢ and at most four 1¢), added up
+  const coins=p=>{const out=[];let left=p;if(left>=10){out.push(10);left-=10;}if(left>=5){out.push(5);left-=5;}while(left-->0)out.push(1);return out;};
+  function prices(r,t){const pa=int(r,1,10),pb=int(r,1,10),ca=coins(pa),cb=coins(pb);
+    return{kit:"pad",track:"math",level:"coins20",say:["Add up the prices. How much in all?"],text:`${pa}¢ + ${pb}¢ = ?`,
+      art:{kind:"menu",items:[{id:t.a.pic,cents:pa,coins:ca},{id:t.b.pic,cents:pb,coins:cb}]},ans:pa+pb,math:{op:"coins",coins:ca.concat(cb)}};}
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"restaurant",name:"Restaurant",icon:"🍕",uniform:{id:"servercap",name:"server cap",ic:"🧢"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the restaurant! Read each order.",
+    tasks:[
+      {id:"plate",lv:1,name:"reading orders",gen:(seed,L)=>{const t=ticket(rnd(seed),L.tier);return then(t&&t.step);}},
+      {id:"count",lv:2,name:"counting",gen:(seed,L)=>counted(rnd(seed),L.tier)||[]},
+      {id:"pizza",lv:3,name:"halves and quarters",gen:(seed,L)=>{const t=ticket(rnd(seed),L.tier);return then(t&&t.step,t&&pizza(seed));}},
+      {id:"prices",lv:4,name:"adding prices",gen:(seed,L)=>{const r=rnd(seed),t=ticket(r,L.tier);return then(t&&t.step,t&&prices(r,t));}}
+    ]});
+})();
+
+/* ---- 🚌 Bus driver, opens at reading level 3 ----
+   Every task starts with a passenger's note or a stop sign to read ("Sam gets off at the hill.", "Go to
+   the shop."; "Stop at the pond." from level 4, "Take me to the well!" from 5), and he drives the bus on the
+   Mail carrier's street map to the stop it names. The stops are the valley's own buildings with the name on
+   them (the mill, the shed, the shop, the hut, the hill, the dock at level 3; the pond, the nest and the tent
+   from 4; the well, the mine and the bell from 5; the castle from 8), three on each map, and any way that
+   gets closer to the stop is right. Job level 2 adds who gets on and off ("3 get on. Then 2 get off. How many
+   are on the bus?", adding and taking away within 10); level 3 the timetable ("The bus comes at 3
+   o'clock.", find the clock); level 4 puts three stops in the order a note gives ("Go to the hill, then the
+   shop, then the mill."), which counts for reading and for putting steps in order. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const STOPS=[{w:"mill",art:"windmill"},{w:"shed",art:"barn"},{w:"shop",art:"market"},{w:"hut",art:"tiki"},{w:"hill",art:"volcano"},
+    {w:"dock",art:"lighthouse"},{w:"pond",art:"gardenpond"},{w:"nest",art:"dinonest"},{w:"tent",art:"tent"},{w:"well",art:"well"},
+    {w:"mine",art:"mine"},{w:"bell",art:"bell"},{w:"castle",art:"castle"}];
+  const stops=(r,tier)=>shuffle(r,STOPS.filter(s=>ART[s.art]&&fits(s.w,tier)));
+  const NAMES=["Sam","Pam","Bob","Dan","Max","Tom","Kim","Tim","Meg","Ben","Ted","Jen","Gus","Liz","Ned","Jim","Ann","Seth","Beth","Josh"];
+  // who the note is from: his own name on about one note in four
+  function who(r,tier){const me=heroName(),ok=NAMES.filter(n=>fits(n,tier));return /^[A-Za-z]/.test(me)&&fits(me,tier)&&r()<.25?me:pick(r,ok);}
+  const NOTE=["{who} gets off at the {stop}.","{who} gets on at the {stop}.","Go to the {stop}.","{who} is at the {stop}.",
+    "Stop at the {stop}.","Next stop: the {stop}!","Take me to the {stop}!"];
+  // the street map: the depot, the stop to drive to and two more stops, none of them on a shortest way there
+  const W=6,H=5;
+  function drive(r,tier){
+    const S=stops(r,tier);if(S.length<3)return null;
+    for(let k=0;k<300;k++){
+      const st={c:int(r,0,W-1),r:int(r,0,H-1)},to={c:int(r,0,W-1),r:int(r,0,H-1)},d=Math.abs(st.c-to.c)+Math.abs(st.r-to.r);
+      if(d<2||d>6)continue;
+      const inBox=p=>p.c>=Math.min(st.c,to.c)&&p.c<=Math.max(st.c,to.c)&&p.r>=Math.min(st.r,to.r)&&p.r<=Math.max(st.r,to.r);
+      const others=[];
+      for(let j=0;j<60&&others.length<2;j++){const p={c:int(r,0,W-1),r:int(r,0,H-1)};
+        if(!inBox(p)&&![st,to].concat(others).some(q=>Math.abs(q.c-p.c)+Math.abs(q.r-p.r)<2))others.push(p);}
+      if(others.length<2)continue;
+      const across=(to.c>st.c?"R":"L").repeat(Math.abs(to.c-st.c)),down=(to.r>st.r?"D":"U").repeat(Math.abs(to.r-st.r));
+      const lines=NOTE.map(l=>l.replace("{who}",()=>who(r,tier)).replace("{stop}",S[0].w)).filter(l=>fits(l,tier));
+      if(!lines.length)return null;
+      return{kit:"path",track:"reading",read:true,say:["Read the note. Drive the bus to the stop!"],text:pick(r,lines),grid:{w:W,h:H},start:st,to,theme:"bus",
+        marks:[to].concat(others).map((p,i)=>({c:p.c,r:p.r,text:S[i].w,art:{kind:"thing",id:S[i].art}})),ans:r()<.5?across+down:down+across};
+    }
+    return null;
+  }
+  // level 2: on and off ("3 get on. Then 2 get off. How many are on the bus?")
+  const RIDERS=["dog","cat","pig","hen","duck","fox"].filter(w=>WORD_ART[w]);
+  function riders(seed){
+    const r=rnd(seed+":b"),t=pick(r,RIDERS),more=r()<.5;let a,b;
+    if(more){a=int(r,1,7);b=int(r,1,Math.min(5,10-a));}else{a=int(r,2,10);b=int(r,1,a-1);}
+    return{kit:"pad",track:"math",level:more?"add10":"sub10",say:[a,a===1?"gets on.":"get on.","Then",b,more?(b===1?"more gets on.":"more get on."):(b===1?"gets off.":"get off."),"How many are on the bus?"],
+      text:more?`${a} + ${b} = ?`:`${a} − ${b} = ?`,art:more?{kind:"groups",groups:[{thing:t,n:a},{thing:t,n:b}],op:"+"}:{kind:"take",thing:t,n:a,gone:b},
+      ans:more?a+b:a-b,math:{op:more?"+":"-",a,b}};
+  }
+  // level 3: the timetable, a clock to the hour
+  function timetable(seed){const q=Tracks.gen("math","time",seed+":t",{read:true});if(!q)return null;
+    return Object.assign(q,{say:["The bus comes at",q.ans,"o'clock.","Find the clock!"]});}
+  // level 4: three stops in the order the note gives
+  const ROUTE=["Go to the {a}, then the {b}, then the {c}.","Stop at the {a}, then the {b}, then the {c}.","First the {a}, then the {b}, last the {c}."];
+  function route(seed,tier){
+    const r=rnd(seed),S=stops(r,tier).slice(0,3);if(S.length<3)return null;
+    const lines=ROUTE.map(l=>l.replace("{a}",S[0].w).replace("{b}",S[1].w).replace("{c}",S[2].w)).filter(l=>fits(l,tier));if(!lines.length)return null;
+    const q=Tracks.gen("math","seq",seed+":s",{steps:S.map(s=>({text:s.w,art:{kind:"thing",id:s.art}})),say:["Read the note. Put the stops in order!"]});
+    if(!q)return null;delete q.level;
+    return Object.assign(q,{track:"reading",read:true,text:pick(r,lines),also:{track:"math",level:"seq"}});
+  }
+  const then=(a,b)=>a?[a].concat(b?[b]:[]):[];
+  Jobs.register({
+    id:"bus",name:"Bus driver",icon:"🚌",uniform:{id:"drivercap",name:"driver cap",ic:"🧢"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"All aboard! Read each note.",
+    tasks:[
+      {id:"drive",lv:1,name:"driving to the stop",gen:(seed,L)=>then(drive(rnd(seed),L.tier))},
+      {id:"riders",lv:2,name:"getting on and off",gen:(seed,L)=>{const d=drive(rnd(seed),L.tier);return then(d,d&&riders(seed));}},
+      {id:"clock",lv:3,name:"the bus times",gen:(seed,L)=>{const d=drive(rnd(seed),L.tier);return then(d,d&&timetable(seed));}},
+      {id:"route",lv:4,name:"the stops in order",gen:(seed,L)=>then(route(seed,L.tier))}
+    ]});
+})();
+
+/* ---- what the jobs know about animals: the Detective's clues and the Park ranger's signs ----
+   Plain facts only. A fact lists the animals it is true of (yes) and the ones it is plainly not true of
+   (no; "*" is every other animal here); an animal in neither list is never one the fact has to tell apart.
+   Each fact is a sentence with {X} for the animal ("It" in a clue, "The fox" on a sign), plainest first:
+   the last one that decodes at his level is used. kind is what it is about: body (looks and does), home
+   (where it lives: a bin on the ranger's sign, with its icon) or food (what it eats: a bin too). Animals go
+   by the word he reads, which is their critter id ("bug" is the Beetle). */
+const JOB_ZOO=(()=>{
+  const ALL="dog cat fox hen chick pig duck frog fish bug bat wolf bear crab whale seal shark croc hawk lion tiger rabbit penguin snake elephant sloth monkey parrot eagle lizard snail owl".split(" ");
+  const F=(id,kind,t,yes,no,ic)=>{const y=yes.split(" ");return{id,kind,t,ic:ic||"",yes:y,no:no==="*"?ALL.filter(a=>y.indexOf(a)<0):no.split(" ")};};
+  const FACTS=[
+    F("wings","body",["{X} has wings."],"hen chick duck bat hawk parrot penguin eagle owl","dog cat fox pig frog fish wolf bear crab whale seal shark croc lion tiger rabbit snake elephant sloth monkey snail lizard"),
+    F("fins","body",["{X} has fins."],"fish shark whale","dog cat fox hen chick pig duck frog bug bat wolf bear crab hawk lion tiger rabbit snake elephant sloth monkey parrot eagle owl snail lizard croc penguin"),
+    F("hops","body",["{X} hops."],"frog rabbit","pig fish whale snake elephant croc shark crab bear wolf lion tiger fox cat dog duck bat hawk sloth seal snail eagle owl"),
+    F("legs6","body",["{X} has six legs."],"bug","*"),
+    F("shell","body",["{X} has a shell."],"crab snail","dog cat fox hen chick pig duck frog fish bat wolf bear whale seal shark croc hawk lion tiger rabbit penguin snake elephant sloth monkey parrot eagle lizard owl"),
+    F("quacks","body",["{X} quacks.","{X} says quack."],"duck","*"),
+    F("pecks","body",["{X} pecks."],"hen chick","dog cat fox pig frog fish bug bat wolf bear whale seal shark croc lion tiger rabbit snake elephant sloth monkey crab snail lizard"),
+    F("nolegs","body",["{X} has no legs."],"snake fish whale shark snail","dog cat fox hen chick pig duck frog bug bat wolf bear crab hawk lion tiger rabbit elephant croc sloth monkey parrot penguin eagle lizard owl"),
+    F("hasden","body",["{X} has a den."],"fox wolf bear","hen chick duck frog fish bug whale crab snail hawk parrot penguin shark seal dog cat pig elephant monkey sloth eagle owl"),
+    F("pink","body",["{X} is pink."],"pig","dog fox hen chick duck frog fish bug bat wolf bear whale seal shark croc hawk lion tiger penguin elephant sloth monkey parrot eagle lizard owl"),
+    F("trunk","body",["{X} has a trunk."],"elephant","*"),
+    F("mane","body",["{X} has a mane."],"lion","*"),
+    F("stripes","body",["{X} has stripes."],"tiger","fox pig hen chick duck bat wolf bear whale elephant crab snail croc seal penguin lion rabbit hawk sloth monkey parrot eagle owl"),
+    F("hangs","body",["{X} hangs up to nap."],"bat sloth","dog cat fox hen chick pig duck frog fish wolf bear crab whale seal shark croc hawk lion tiger rabbit penguin snake elephant snail eagle lizard"),
+    F("swims","body",["{X} swims."],"fish duck frog whale shark seal penguin","hen chick hawk eagle parrot owl snail"),
+    F("pen","home",["{X} is in the pen.","{X} lives in a pen."],"pig hen chick","fox wolf bear whale shark seal frog fish bat bug crab snail hawk eagle owl parrot penguin lion tiger elephant monkey sloth snake croc lizard","🏡"),
+    F("den","home",["{X} is in the den.","{X} lives in a den."],"fox wolf bear","hen chick duck frog fish bug whale crab snail hawk parrot penguin shark seal dog cat pig elephant monkey sloth eagle owl","🕳️"),
+    F("pond","home",["{X} is in the pond.","{X} lives in the pond."],"duck frog fish","dog cat fox hen chick pig bat wolf bear whale seal shark lion tiger rabbit elephant sloth monkey parrot hawk eagle penguin owl lizard","💧"),
+    F("land","home",["{X} is on land.","{X} lives on land."],"dog cat fox pig hen chick wolf bear lion tiger rabbit elephant sloth monkey snake lizard","fish whale shark","🌳"),
+    F("sea","home",["{X} is in the sea.","{X} lives in the sea."],"whale seal shark crab","dog cat fox hen chick pig frog bat wolf bear lion tiger rabbit elephant sloth monkey parrot hawk eagle owl lizard bug","🌊"),
+    F("day","home",["{X} is up in the day."],"hen chick duck pig hawk eagle parrot monkey","bat owl","☀️"),
+    F("night","home",["{X} is up at night."],"bat owl","hen chick duck pig hawk eagle parrot monkey","🌙"),
+    F("bugs","food",["{X} gets bugs.","{X} eats bugs."],"hen chick bat frog lizard","whale seal shark elephant sloth penguin rabbit lion tiger snail eagle","🐛"),
+    F("fish","food",["{X} gets fish.","{X} eats fish."],"cat whale seal shark croc penguin bear eagle","hen chick rabbit elephant sloth snail monkey parrot bug lion pig","🐟"),
+    F("plants","food",["{X} gets plants.","{X} eats plants."],"snail sloth rabbit elephant","cat whale seal shark croc penguin frog lion tiger wolf hawk eagle owl snake","🌿"),
+    F("nuts","food",["{X} gets nuts.","{X} eats nuts."],"pig parrot","cat whale seal shark croc penguin frog snail fish lion tiger wolf hawk eagle owl sloth lizard snake","🌰")];
+  const {pick,shuffle}=Seeded;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const fact=id=>FACTS.find(f=>f.id===id)||null;
+  const has=(f,a)=>f.yes.indexOf(a)>=0,not=(f,a)=>f.no.indexOf(a)>=0;
+  // the fact said about X ("It", "The fox"), in the plainest wording that decodes at his level, or null
+  const say=(f,X,tier)=>f.t.map(s=>s.replace("{X}",X)).filter(s=>fits(s,tier)).pop()||null;
+  // an animal he can read the name of, with its picture
+  const named=(a,tier)=>ALL.indexOf(a)>=0&&!!ART[a]&&fits(a,tier);
+  // his own animals first (the critters in his valley, each once), then the ones given, all with names he can read
+  function animals(tier,more){const out=[];(state.critters||[]).concat((more||[]).map(id=>({id}))).forEach(c=>{const a=c&&c.id;if(a&&out.indexOf(a)<0&&named(a,tier))out.push(a);});return out;}
+  const COMMON="dog cat fox hen pig duck fish bug bat frog chick whale crab wolf snail hawk snake croc sloth seal owl bear".split(" ");
+  // a clue of two facts (of the kinds given) about one of the animals, and two others it rules out: one like it
+  // in the first fact only and one in the second only when there are such, so both facts are needed
+  function clue(r,tier,kinds,ids){
+    const facts=FACTS.filter(f=>kinds.indexOf(f.kind)>=0&&say(f,"It",tier)),P=ids.filter(a=>named(a,tier));
+    const out=(A,fs,o)=>({ans:A,facts:fs,others:o,text:fs.map(f=>say(f,"It",tier)).join(" ")});
+    for(const A of shuffle(r,P)){const mine=shuffle(r,facts.filter(f=>has(f,A)));
+      for(let i=0;i<mine.length;i++)for(let j=i+1;j<mine.length;j++){const f1=mine[i],f2=mine[j];
+        const d1=P.filter(x=>x!==A&&has(f1,x)&&not(f2,x)),d2=P.filter(x=>x!==A&&has(f2,x)&&not(f1,x));
+        if(d1.length&&d2.length)return out(A,[f1,f2],[pick(r,d1),pick(r,d2)]);}}
+    for(const A of shuffle(r,P)){const mine=shuffle(r,facts.filter(f=>has(f,A)));
+      for(let i=0;i<mine.length;i++)for(let j=i+1;j<mine.length;j++){const f1=mine[i],f2=mine[j],d=shuffle(r,P.filter(x=>x!==A&&(not(f1,x)||not(f2,x))));
+        if(d.length>=2)return out(A,[f1,f2],d.slice(0,2));}
+      for(const f of mine){const d=shuffle(r,P.filter(x=>x!==A&&not(f,x)));if(d.length>=2)return out(A,[f],d.slice(0,2));}}
+    return null;
+  }
+  // things to sort into bins (facts of one kind): each thing is true of one bin and of none of the others
+  function sort(r,tier,bins,ids,n){
+    const B=bins.map(fact).filter(f=>f&&say(f,"It",tier));if(B.length!==bins.length)return null;
+    const own=a=>{const y=B.filter(f=>has(f,a));return y.length===1?y[0]:null;};
+    const P=shuffle(r,ids.filter(a=>named(a,tier)&&own(a)));if(P.length<n)return null;
+    // every bin gets one before any gets two, when the animals allow it
+    const got=[],left=P.slice();B.forEach(f=>{const i=left.findIndex(a=>own(a)===f);if(i>=0&&got.length<n)got.push(left.splice(i,1)[0]);});
+    while(got.length<n&&left.length)got.push(left.shift());
+    const items=shuffle(r,got);
+    return{items,bin:a=>own(a).id,lines:items.map(a=>say(own(a),"The "+a,tier)),bins:B};
+  }
+  return{FACTS,fact,has,not,say,named,animals,clue,sort,COMMON,ALL};
+})();
+
+/* ---- 🕵️ Detective, opens at reading level 5 ----
+   Every task starts with a clue to read, and the clue is what finds the answer: its front sound and its
+   end ("It has /b/ at the front, and it ends like hat."; "It starts with /b/" from level 6, "it rhymes
+   with hat" from 8), or a sound in it and what it does ("It has /sh/ in it, and it swims."). A sound in
+   slashes plays when he taps it. Job level 1 finds the creature or thing among three pictures: one of the
+   others has the same front sound and one the same end, so both halves of the clue count. Level 2 has the
+   two halves on two cards to put in order, the front one first (a case to crack: "Who has the jam?"), then
+   finds it; level 3 is about one of his own animals ("It has wings. It quacks."), found among his animals;
+   level 4 finds the word among three written words, with no pictures ("ship", "chip", "shop"). */
+(()=>{
+  const {rnd,pick,shuffle}=Seeded,Z=JOB_ZOO;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  // words to build clues and word cards from: short words, all of them decodable by sounds
+  const WORDS=("cat hat bat mat rat sat cap map nap tap pan van can fan man ran log dog frog hog jog fog pot hot dot mop shop chop top hop pop "+
+    "rock sock lock box fox pig big dig wig fig bin pin win fin bed red sled fed hen pen ten men net jet wet pet vet sun bun fun run bug rug mug hug jug "+
+    "cup pup nut hut cut sub tub rub cub ship chip dip hip lip tip zip fish dish wish bath path math duck truck luck shell well bell tell sell "+
+    "chick kick sick pick lick crab cab drum plum gum hum flag bag tag wag nest vest cake lake bake make bike like hike rope hope kite bite bone cone gate late plane crane cane").split(" ");
+  const tiles=w=>{const x=allWords().find(y=>y.w===w);if(x&&x.p)return x.p;try{return splitPhonemes(w);}catch(e){return null;}};
+  // a word's front sound (its first sound, spelled as its first letters) and its end (the letters from its first vowel on)
+  function parts(w){const p=tiles(w);if(!p||!p.length)return null;const t=tileText(p[0]),m=/[aeiou].*$/.exec(w);
+    if(!m||/[aeiouy]/.test(t)||w.indexOf(t)!==0)return null;return{w,t,s:soundOf(p[0]),end:m[0],p};}
+  const pictured=tier=>allWords().filter(x=>!x.tricky&&x.t<=tier&&WORD_ART[x.w]&&/^[a-z]{2,5}$/.test(x.w)).map(x=>parts(x.w)).filter(Boolean);
+  const written=tier=>WORDS.filter(w=>fits(w,tier)).map(parts).filter(Boolean);
+  const same=(a,b)=>a.t===b.t&&a.s===b.s;
+  // the answer, one with its end but not its front sound, one with its front sound but not its end, and a
+  // word that ends the same to name the end by ("ends like hat"), which is none of the three
+  function frontEnd(r,tier,P){
+    const W=written(tier).concat(pictured(tier));
+    for(const A of shuffle(r,P)){
+      const R=P.filter(x=>x.end===A.end&&x.t!==A.t&&x.s!==A.s&&!Read.near(x.w,A.w)),O=P.filter(x=>same(x,A)&&x.end!==A.end&&!Read.near(x.w,A.w));
+      if(!R.length||!O.length)continue;const rr=pick(r,R),oo=pick(r,O);
+      const Y=W.filter(x=>x.end===A.end&&x.w!==A.w&&x.w!==rr.w&&x.w!==oo.w);if(!Y.length)continue;
+      return{A,R:rr,O:oo,Y:pick(r,Y)};
+    }
+    return null;
+  }
+  const last=(list,tier)=>list.filter(x=>fits(x,tier)).pop()||null;
+  const frontClue=(c,tier)=>last([`It has /${c.A.t}/ at the front.`,`It starts with /${c.A.t}/.`],tier);
+  const endClue=(c,tier)=>last([`It ends like ${c.Y.w}.`,`It rhymes with ${c.Y.w}.`],tier);
+  const both=(c,tier)=>{const f=frontClue(c,tier),e=endClue(c,tier);return f&&e?f.replace(/\.$/,", and ")+e.charAt(0).toLowerCase()+e.slice(1):null;};
+  const card=w=>({v:w,art:WORD_ART[w]?{kind:"word",w}:{kind:"thing",id:w}});
+  // or a sound somewhere in it and what it does: one of the others has the sound, one does what it does
+  const SOUNDS=["sh","ch","th","wh"],DOES=["swims","wings","hops","legs6","fins"];
+  function soundDoes(r,tier){
+    const P=pictured(tier),hasS=(x,s)=>x.p.some(ph=>tileText(ph)===s),thing=x=>Z.ALL.indexOf(x.w)<0;
+    for(const s of shuffle(r,SOUNDS))for(const id of shuffle(r,DOES)){const f=Z.fact(id),line=Z.say(f,"it",tier);if(!line)continue;
+      const A=P.filter(x=>hasS(x,s)&&Z.has(f,x.w)),D1=P.filter(x=>hasS(x,s)&&(thing(x)||Z.not(f,x.w))),D2=P.filter(x=>!hasS(x,s)&&Z.has(f,x.w));
+      if(!A.length||!D1.length||!D2.length)continue;
+      const text=last([`It has /${s}/ in it, and ${line}`,`It has the sound /${s}/, and ${line}`],tier);if(!text)continue;
+      const a=pick(r,A);return{text,ans:a.w,choices:[a.w,pick(r,D1).w,pick(r,D2).w]};
+    }
+    return null;
+  }
+  // level 1: read the clue, find it among three pictures
+  function find(r,tier){
+    const sd=r()<.35?soundDoes(r,tier):null;
+    if(sd)return{kit:"pick",track:"reading",read:true,say:["Read the clue. Find it!"],text:sd.text,choices:shuffle(r,sd.choices).map(card),ans:sd.ans};
+    const c=frontEnd(r,tier,pictured(tier)),text=c&&both(c,tier);if(!text)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the clue. Find it!"],text,choices:shuffle(r,[c.A.w,c.R.w,c.O.w]).map(card),ans:c.A.w};
+  }
+  // level 2: a case, its two clues to put in order (the front one first), then who or what it is
+  const CASES=["Who has the jam?","Who hid the nuts?","Who dug in the mud?","Who got the ham?"];
+  function crack(seed,tier){
+    const r=rnd(seed),animal=r()<.6,P=pictured(tier),c=frontEnd(r,tier,animal?P.filter(x=>Z.ALL.indexOf(x.w)>=0):P)||frontEnd(r,tier,P);
+    const f=c&&frontClue(c,tier),e=c&&endClue(c,tier);if(!f||!e)return null;
+    const who=Z.ALL.indexOf(c.A.w)>=0,text=who?pick(r,CASES.filter(x=>fits(x,tier))):"What is it?";
+    const q=Tracks.gen("math","seq",seed+":c",{steps:[{text:f},{text:e}],say:["Read the clues. Put the front clue first!"]});if(!q)return null;delete q.level;
+    return[Object.assign(q,{track:"reading",read:true,text,also:{track:"math",level:"seq"}}),
+      {kit:"pick",say:[who?"Who is it?":"What is it?"],choices:shuffle(r,[c.A.w,c.R.w,c.O.w]).map(card),ans:c.A.w}];
+  }
+  // level 3: a clue about one of his own animals, found among his animals
+  function suspect(r,tier){
+    const c=Z.clue(r,tier,["body"],Z.animals(tier,Z.COMMON));if(!c)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the clue. Who is it?"],text:c.text,
+      choices:shuffle(r,[c.ans].concat(c.others)).map(a=>({v:a,art:{kind:"thing",id:a}})),ans:c.ans};
+  }
+  // level 4: the word among three written words, no pictures
+  function word(r,tier){
+    const c=frontEnd(r,tier,written(tier)),text=c&&both(c,tier);if(!text)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the clue. Which word is it?"],text,
+      choices:shuffle(r,[c.A.w,c.R.w,c.O.w]).map(w=>({v:w,art:{kind:"wcard",text:w}})),ans:c.A.w};
+  }
+  const one=q=>q?[q]:[];
+  Jobs.register({
+    id:"detective",name:"Detective",icon:"🕵️",uniform:{id:"dethat",name:"detective hat",ic:"🎩"},unlock:{tier:5},
+    pay:{perTask:4,streakTip:6},hello:"A new case! Read each clue.",
+    tasks:[
+      {id:"find",lv:1,name:"reading clues",gen:(seed,L)=>one(find(rnd(seed),L.tier))},
+      {id:"case",lv:2,name:"two clues in order",gen:(seed,L)=>crack(seed,L.tier)||[]},
+      {id:"suspect",lv:3,name:"which animal",gen:(seed,L)=>one(suspect(rnd(seed),L.tier))},
+      {id:"word",lv:4,name:"which word",gen:(seed,L)=>one(word(rnd(seed),L.tier))}
+    ]});
+})();
+
+/* ---- 🧭 Park ranger, opens at reading level 3 ----
+   Every task starts with a habitat sign or a feeding chart to read, about his own animals first (the ones in
+   his valley), then the common ones, and only animals whose names he can read. Job level 1 sorts three of
+   them into their two homes by what the sign says ("The fox is in the den. The pig is in the pen. The hen is
+   in the pen."): the pen and the den at level 3, the pond and land from 4 ("lives in" from 5), the sea and
+   land or day and night from 7. Level 2 reads a feeding chart and counts one food ("The hen gets 4 bugs. The
+   cat gets 2 fish. The bat gets 3 bugs." How many bugs in all? Adding within 10, and reading which lines are
+   bugs). Level 3 sorts three animals by what they eat (bugs, fish and nuts at level 3; plants for nuts from 4;
+   "eats" for "gets" from 7). Level 4 reads a sign about one animal ("It is in the den. It gets fish.") and
+   finds it among his animals. */
+(()=>{
+  const {rnd,int,pick,shuffle}=Seeded,Z=JOB_ZOO;
+  const fits=(t,tier)=>Decode.check(t,tier).every(x=>x.ok);
+  const zoo=tier=>Z.animals(tier,Z.COMMON);
+  const pic=a=>({v:a,text:a,art:{kind:"thing",id:a}});
+  // a sort: the sign's lines, his animals as the things, the facts as the bins
+  function sorting(r,tier,bins,n,say){
+    const s=Z.sort(r,tier,bins,zoo(tier),n);if(!s)return null;
+    return{kit:"sort",track:"reading",read:true,say:[say],text:s.lines.join(" "),choices:s.items.map(pic),
+      bins:s.bins.map(f=>({v:f.id,text:f.id,ic:f.ic})),ans:s.items.map(a=>a+":"+s.bin(a)).join("|")};
+  }
+  // level 1: two homes; the pairs his level can read, the newest a bit more often
+  const HOMES=[["pen","den"],["pond","land"],["sea","land"],["day","night"]];
+  function homes(r,tier){
+    const ok=HOMES.filter(h=>h.every(id=>Z.say(Z.fact(id),"It",tier)));if(!ok.length)return null;
+    for(const h of shuffle(r,ok)){const q=sorting(r,tier,shuffle(r,h),3,"Read the sign. Put each one in its home!");if(q)return q;}
+    return null;
+  }
+  // level 2: a feeding chart, and how many of one food in all
+  const ONE={bugs:"bug",fish:"fish",nuts:"nut",plants:"plant"};
+  function chart(r,tier){
+    const eat=fits("eats",tier)?"eats":"gets",foods=["bugs","fish","nuts","plants"].map(Z.fact).filter(f=>fits(f.id,tier));
+    const who=f=>zoo(tier).filter(a=>Z.has(f,a)&&foods.every(g=>g===f||!Z.has(g,a)));
+    const F=shuffle(r,foods.filter(f=>who(f).length>=2))[0];if(!F)return null;
+    const G=shuffle(r,foods.filter(g=>g!==F&&who(g).length))[0],[x,y]=shuffle(r,who(F)),a=int(r,1,6),b=int(r,1,Math.min(6,10-a));
+    const line=(k,n,f)=>`The ${k} ${eat} ${n} ${n===1?ONE[f.id]:f.id}.`;
+    const lines=[line(x,a,F),line(y,b,F)].concat(G?[line(pick(r,who(G)),int(r,1,5),G)]:[]);
+    const text=shuffle(r,lines).join(" ");if(!fits(text,tier))return null;
+    return{kit:"pad",track:"reading",read:true,say:["Read the chart.",`How many ${F.id} in all?`],text,ans:a+b,math:{op:"+",a,b},also:{track:"math",level:"add10"}};
+  }
+  // level 3: what they eat, three bins
+  const foods=tier=>Z.say(Z.fact("plants"),"It",tier)?["bugs","fish","plants"]:["bugs","fish","nuts"];
+  const feeding=(r,tier)=>sorting(r,tier,shuffle(r,foods(tier)),3,"Read the chart. Put each one by its food!");
+  // level 4: a sign about one animal (where it lives, what it eats), found among his animals
+  function which(r,tier){
+    const c=Z.clue(r,tier,["home","food"],zoo(tier))||Z.clue(r,tier,["home","food","body"],zoo(tier));if(!c)return null;
+    return{kit:"pick",track:"reading",read:true,say:["Read the sign. Which one is it?"],text:c.text,
+      choices:shuffle(r,[c.ans].concat(c.others)).map(a=>({v:a,art:{kind:"thing",id:a}})),ans:c.ans};
+  }
+  const one=q=>q?[q]:[];
+  Jobs.register({
+    id:"ranger",name:"Park ranger",icon:"🧭",uniform:{id:"rangerhat",name:"ranger hat",ic:"👒"},unlock:{tier:3},
+    pay:{perTask:3,streakTip:5},hello:"Welcome to the park! Read each sign.",
+    tasks:[
+      {id:"homes",lv:1,name:"animal homes",gen:(seed,L)=>one(homes(rnd(seed),L.tier))},
+      {id:"food",lv:2,name:"counting food",gen:(seed,L)=>one(chart(rnd(seed),L.tier))},
+      {id:"feed",lv:3,name:"what they eat",gen:(seed,L)=>one(feeding(rnd(seed),L.tier))},
+      {id:"which",lv:4,name:"which animal",gen:(seed,L)=>one(which(rnd(seed),L.tier))}
+    ]});
+})();
 
 /* ---- the math track, K–1 ----
    Seven levels, every question generated from a seed and read aloud, so his reading level
@@ -11394,6 +11956,45 @@ Store.item({id:"vetcoat",shelf:"gear",name:"Vet coat",cost:{coins:20},art:"gear_
 Store.item({id:"stethoscope",shelf:"gear",name:"Stethoscope",cost:{coins:45},art:"gear_stethoscope",tag:"tool",unlock:{job:"vet",level:3}});
 Store.item({id:"libbadge",shelf:"gear",name:"Library badge",cost:{coins:20},art:"gear_libbadge",tag:"uniform",unlock:{job:"library",level:2}});
 Store.item({id:"bookcart",shelf:"gear",name:"Book cart",cost:{coins:45},art:"gear_bookcart",tag:"tool",unlock:{job:"library",level:3}});
+// and the Restaurant's, the Bus driver's, the Detective's and the Park ranger's
+Object.assign(Store.JOBS,{restaurant:{name:"Restaurant",ic:"🍕"},bus:{name:"Bus driver",ic:"🚌"},detective:{name:"Detective",ic:"🕵️"},ranger:{name:"Park ranger",ic:"🧭"}});
+Object.assign(ART,{
+  gear_servercap(){return `${OCC}<path d="M12 78 L20 44 Q50 24 80 44 L88 78 Q50 70 12 78Z" fill="${grad("#FFFFFF","v",.05,.16)}"/>
+    <path d="M14 69 Q50 61 86 69 L88 78 Q50 70 12 78Z" fill="${grad("#DC5A4B","v",.25,.2)}"/>
+    <path d="M50 30 L50 64" fill="none" stroke-opacity=".3" stroke-width="2"/>`;},
+  gear_tray(){return `${OCC}<ellipse cx="50" cy="72" rx="44" ry="14" fill="${grad("#C9CED6","v",.3,.2)}"/>
+    <ellipse cx="50" cy="69" rx="35" ry="9" fill="#E8EBEF" stroke="none"/>
+    <path d="M26 66 L28 42 L46 42 L48 66Z" fill="${grad("#FBF6EC","v",.1,.12)}"/><path d="M46 48 Q57 48 55 57 Q53 62 47 61" fill="none" stroke-width="3"/>
+    <ellipse cx="68" cy="64" rx="14" ry="4.5" fill="#FFFFFF"/><path d="M58 62 Q68 44 78 62Z" fill="${grad("#E0A456","v",.2,.2)}"/>`;},
+  gear_drivercap(){return `${OCC}<path d="M20 58 Q18 28 50 26 Q82 28 80 58Z" fill="${grad("#2F5A9C","v",.3,.2)}"/>
+    <path d="M16 55 L84 55 L84 64 L16 64Z" fill="${grad("#1F3E6E","v",.2,.2)}"/>
+    <path d="M20 64 Q50 86 86 66 Q60 72 20 64Z" fill="#2B2B2B"/>
+    <circle cx="50" cy="42" r="7.5" fill="${dome("#FFC53D",36,30)}"/>`;},
+  gear_whistle(){return `${OCC}<path d="M12 14 Q18 42 38 50" fill="none" stroke="#DC5A4B" stroke-width="3.4"/>
+    <path d="M34 50 L72 50 L72 42 L88 42 L88 58 L72 58 Q72 80 53 80 Q34 80 34 64Z" fill="${grad("#C9CED6","h",.3,.2)}"/>
+    <circle cx="52" cy="64" r="6" fill="#8E949C"/><path d="M40 54 L60 54" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-opacity=".7"/>`;},
+  gear_dethat(){return `${OCC}<path d="M22 62 Q22 26 50 24 Q78 26 78 62Z" fill="${grad("#A0703E","v",.25,.2)}"/>
+    <path d="M36 28 L36 62 M50 24 L50 62 M64 28 L64 62 M23 44 L77 44" fill="none" stroke="#6E4A26" stroke-width="2"/>
+    <path d="M8 64 Q30 55 50 61 Q70 55 92 64 Q70 75 50 68 Q30 75 8 64Z" fill="${grad("#8A5E32","v",.2,.2)}"/>
+    <circle cx="50" cy="24" r="3.2" fill="#6E4A26"/>`;},
+  gear_magnifier(){return `${OCC}<path d="M58 60 L86 88" fill="none" stroke-width="13"/><path d="M58 60 L86 88" fill="none" stroke="#9A6436" stroke-width="8" stroke-opacity="1"/>
+    <circle cx="42" cy="42" r="27" fill="${grad("#C9CED6","v",.3,.2)}"/><circle cx="42" cy="42" r="20" fill="#DFF3FB"/>
+    <path d="M29 34 Q33 25 42 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-opacity=".9"/>`;},
+  gear_rangerhat(){return `${OCC}<ellipse cx="50" cy="68" rx="45" ry="12" fill="${grad("#B08850","v",.25,.2)}"/>
+    <path d="M28 66 Q29 42 37 33 Q44 40 50 30 Q56 40 63 33 Q71 42 72 66Z" fill="${grad("#C9A265","v",.25,.2)}"/>
+    <path d="M29 59 L71 59 L72 66 L28 66Z" fill="#3E7A3A"/>`;},
+  gear_binoculars(){return `${OCC}<path d="M42 38 L58 38 L58 58 L42 58Z" fill="#4A4F5A"/>
+    <rect x="14" y="26" width="28" height="46" rx="10" fill="${grad("#3A3F48","v",.3,.2)}"/><rect x="58" y="26" width="28" height="46" rx="10" fill="${grad("#3A3F48","v",.3,.2)}"/>
+    <circle cx="28" cy="74" r="12" fill="${dome("#5CC8DE",36,30)}"/><circle cx="72" cy="74" r="12" fill="${dome("#5CC8DE",36,30)}"/>`;}
+});
+Store.item({id:"servercap",shelf:"gear",name:"Server cap",cost:{coins:20},art:"gear_servercap",tag:"uniform",unlock:{job:"restaurant",level:2}});
+Store.item({id:"tray",shelf:"gear",name:"Tray",cost:{coins:45},art:"gear_tray",tag:"tool",unlock:{job:"restaurant",level:3}});
+Store.item({id:"drivercap",shelf:"gear",name:"Driver cap",cost:{coins:20},art:"gear_drivercap",tag:"uniform",unlock:{job:"bus",level:2}});
+Store.item({id:"whistle",shelf:"gear",name:"Whistle",cost:{coins:40},art:"gear_whistle",tag:"tool",unlock:{job:"bus",level:3}});
+Store.item({id:"dethat",shelf:"gear",name:"Detective hat",cost:{coins:25},art:"gear_dethat",tag:"uniform",unlock:{job:"detective",level:2}});
+Store.item({id:"magnifier",shelf:"gear",name:"Magnifying glass",cost:{coins:50},art:"gear_magnifier",tag:"tool",unlock:{job:"detective",level:3}});
+Store.item({id:"rangerhat",shelf:"gear",name:"Ranger hat",cost:{coins:20},art:"gear_rangerhat",tag:"uniform",unlock:{job:"ranger",level:2}});
+Store.item({id:"binoculars",shelf:"gear",name:"Binoculars",cost:{coins:45},art:"gear_binoculars",tag:"tool",unlock:{job:"ranger",level:3}});
 
 /* ================================================================
    LOOKS — the valley dresses up for a holiday, and keeps it on

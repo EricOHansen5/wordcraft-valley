@@ -2,7 +2,8 @@
 // ignored, a wrong answer takes nothing away (and the answer glows after a second miss), the tip, clock in and out,
 // the 5-task moment, XP and job levels, the Job board in Adventure, old saves without the fields, and every reading
 // text a generator can make decodes at the job's level (the words on order cards, mailboxes and street signs too). It walks
-// Jobs.list(), so a new job is tested with no new code. Also the order kit from the keyboard, and its cards' size.
+// Jobs.list(), so a new job is tested with no new code. Also the order kit from the keyboard, and its cards' size, and the sort kit
+// (taps, a drag, lifting a thing back out, a miss and the glow, the keyboard, its size).
 const {launch,seed,reload,waitFor,check}=require("./lib");
 (async()=>{
   const T=check("jobs"),ok=T.ok;
@@ -22,19 +23,31 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
         for(let i=0;i<A.length;i++){const c=slot(i).querySelector(".jocard");if(c&&c.dataset.w!==A[i])c.click();}
         for(let i=0;i<A.length;i++)if(!slot(i).querySelector(".jocard")){const c=[...h.querySelectorAll(".jopool .jocard")].find(x=>x.dataset.w===A[i]);if(c)c.click();}
         h.querySelector('[data-act="check"]').click();return k;}
+      // sort: a thing in a wrong bin comes back out, then each thing still out goes into its bin, then ✓
+      if(k==="sort"){const A={};a.split("|").forEach(p=>{const i=p.lastIndexOf(":");A[p.slice(0,i)]=p.slice(i+1);});const card=v=>[...h.querySelectorAll(".jscard")].find(c=>c.dataset.w===v);
+        Object.keys(A).forEach(v=>{const c=card(v),bin=c&&c.closest(".jsbin");if(!c||bin&&bin.dataset.bin===A[v])return;
+          if(!c.classList.contains("lift"))c.click();if(!card(v).classList.contains("lift"))card(v).click();
+          [...h.querySelectorAll(".jsbin")].find(b=>b.dataset.bin===A[v]).click();});
+        h.querySelector('[data-act="check"]').click();return k;}
       return "none";},
     again(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick")h.querySelector(`[data-w="${a}"]`).click();
       if(k==="pad")h.querySelector('[data-key="ok"]').click();
       if(k==="path")h.querySelector(`[data-dir="${a.slice(-1)}"]`).click();
-      if(k==="order")h.querySelector('[data-act="check"]').click();},
+      if(k==="order"||k==="sort")h.querySelector('[data-act="check"]').click();},
     wrong(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick"){[...h.querySelectorAll(".jopt")].find(b=>b.dataset.w!==a).click();return;}
       if(k==="pad"){for(const c of String((+a+1)%100))h.querySelector(`[data-key="${c}"]`).click();h.querySelector('[data-key="ok"]').click();return;}
-      if(k==="path")h.querySelector(`[data-dir="${["L","R","U","D"].find(x=>x!==a[0])}"]`).click();
+      // path: the way back from the first move (a drive to a stop takes any way that gets closer)
+      if(k==="path")h.querySelector(`[data-dir="${{L:"R",R:"L",U:"D",D:"U"}[a[0]]}"]`).click();
       // order: the empty places filled back to front, so the first of them is wrong
       if(k==="order"){const A=a.split("|"),empty=[...h.querySelectorAll(".jorow .joslot")].map((s,i)=>s.querySelector(".jocard")?-1:i).filter(i=>i>=0);
         empty.map(i=>A[i]).reverse().forEach(v=>{const c=[...h.querySelectorAll(".jopool .jocard")].find(x=>x.dataset.w===v);if(c)c.click();});
+        h.querySelector('[data-act="check"]').click();}
+      // sort: every thing still out goes into a bin that is not its own, then ✓
+      if(k==="sort"){const A={};a.split("|").forEach(p=>{const i=p.lastIndexOf(":");A[p.slice(0,i)]=p.slice(i+1);});
+        [...h.querySelectorAll(".jspool .jscard")].map(c=>c.dataset.w).forEach(v=>{const c=[...h.querySelectorAll(".jscard")].find(x=>x.dataset.w===v);
+          if(!c.classList.contains("lift"))c.click();[...h.querySelectorAll(".jsbin")].find(b=>b.dataset.bin!==A[v]).click();});
         h.querySelector('[data-act="check"]').click();}},
     hinted(h){const k=h.dataset.kit,a=h.dataset.ans;
       if(k==="pick")return h.querySelector(`[data-w="${a}"]`).classList.contains("hint");
@@ -42,6 +55,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
       if(k==="path")return !!h.querySelector(`.jarrow.hint[data-dir="${a[0]}"]`);
       if(k==="order"){const A=a.split("|"),i=[...h.querySelectorAll(".jorow .joslot")].findIndex(s=>!s.querySelector(".jocard"));
         return i>=0&&!!h.querySelector(`.jopool .jocard.hint[data-w="${CSS.escape(A[i])}"]`);}
+      if(k==="sort"){const A={};a.split("|").forEach(p=>{const i=p.lastIndexOf(":");A[p.slice(0,i)]=p.slice(i+1);});const c=h.querySelector(".jspool .jscard");
+        return !!c&&c.classList.contains("hint")&&!!h.querySelector(`.jsbin.hint[data-bin="${CSS.escape(A[c.dataset.w])}"]`);}
       return false;}};});
   await helpers();
   const S=()=>E(()=>Jobs._S());
@@ -102,6 +117,12 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
           if(cv.join("|")===av.join("|"))bad.push(`${j.id}/${t.id}: the cards start out in order`);}
         (q.choices||[]).map(c=>c&&typeof c==="object"?(q.kit==="order"?c.text:c.art&&(c.art.name||c.art.text)):null).filter(x=>x!=null).forEach(x=>{n.texts++;
           const miss=Decode.check(String(x),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the card "${x}" needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
+        (q.marks||[]).forEach(m=>{n.texts++;const miss=Decode.check(String(m.text),tier).filter(y=>!y.ok);if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: the place "${m.text}" on the map needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});
+        if(q.to){let c=q.start.c,r=q.start.r;for(const d of q.ans){c+=d==="L"?-1:d==="R"?1:0;r+=d==="U"?-1:d==="D"?1:0;}if(c!==q.to.c||r!==q.to.r)bad.push(`${j.id}/${t.id}: the moves do not end at the stop`);}
+        if(q.kit==="sort"){const it=(q.choices||[]).map(c=>String(c&&typeof c==="object"?c.v:c)),bn=(q.bins||[]).map(b=>String(b.v)),pr=String(q.ans).split("|").map(x=>x.split(":"));
+          if(pr.length!==it.length||new Set(pr.map(x=>x[0])).size!==it.length||pr.some(x=>it.indexOf(x[0])<0||bn.indexOf(x[1])<0))bad.push(`${j.id}/${t.id}: the sort ${q.ans} is not its things ${it} and bins ${bn}`);
+          (q.choices||[]).map(c=>c.text).concat((q.bins||[]).map(b=>b.text)).forEach(x=>{n.texts++;const miss=Decode.check(String(x),tier).filter(y=>!y.ok);
+            if(miss.length)bad.push(`${j.id}/${t.id} at ${tier}: "${x}" on a card or a bin needs ${miss.map(y=>y.w+" ("+y.t+")").join(", ")}`);});}
         if(q.math){const m=q.math,f=w=>String(w).charAt(0).toUpperCase(),want=m.op==="+"?m.a+m.b:m.op==="-"?m.a-m.b:m.op==="×"?m.a*m.b:m.op==="count"?m.n:m.op==="coins"?m.coins.reduce((x,y)=>x+y,0):
             m.op==="house"?m.n:m.op==="place"?m.tens*10+m.ones:m.op==="frac"?m.of:m.op==="time"?m.start+m.add:m.op==="seq"?m.steps.join("|"):
             m.op==="abc"?m.words.slice().sort((x,y)=>f(x)<f(y)?-1:f(x)>f(y)?1:0).join("|"):m.op==="sort"?m.nums.slice().sort((x,y)=>x-y).join("|"):null;
@@ -112,7 +133,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
             if(seen[c+","+r])bad.push(`${j.id}/${t.id}: the path crosses itself`);seen[c+","+r]=1;}}});}}));
     return{bad,kits:[...kits].sort(),n:n.texts};});
   ok(!G.bad.length,`every generated task: ${G.n} reading texts decode at their level, answers right, same seed same task`+(G.bad.length?" — "+G.bad.slice(0,5).join(" | "):""));
-  ok(G.kits.join()==="order,pad,path,pick","the jobs use all four kits: "+G.kits);
+  ok(G.kits.join()==="order,pad,path,pick,sort","the jobs use all five kits: "+G.kits);
   // the Mail carrier's letters at level 3, and the Baker's recipes at level 4, read only words of that level
   const mailWords=await E(()=>{const w=new Set();for(let s=0;s<200;s++)Jobs.list().find(j=>j.id==="mail").tasks.forEach(t=>Jobs.gen("mail",t.id,s,{tier:3,lv:t.lv}).forEach(q=>{
     [q.read?q.text:""].concat((q.choices||[]).map(c=>c&&typeof c==="object"?(c.text||c.art&&(c.art.name||c.art.text)):"")).forEach(x=>Decode.words(String(x||"")).forEach(y=>w.add(y)));}));
@@ -238,7 +259,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   await E(()=>{state.settings.tierOverride=3;});
   await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
   ok(await E(()=>!!document.querySelector('#ovJob .jcard[data-job="mail"]')&&!!document.querySelector("#ovJob .jcard.locked")&&
-    [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>/Opens at level 4/.test(c.textContent))),"at level 3 the Mail carrier opens");
+    [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>+(/Opens at level (\d+)/.exec(c.textContent)||[])[1]>3)),"at level 3 the Mail carrier opens; the jobs still locked open at 4 or later");
   ok(await E(()=>Modes.top()==="job"),"the Job board is the job mode");
   await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
 
@@ -312,7 +333,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     await clockOut();
     ok(await E(()=>state.jobs.current===null&&!document.getElementById("jobsBadge").classList.contains("on")),`${j.name}: Clock out ends the shift`);
   }
-  ok(["pick","pad","path","order"].every(k=>kitsUsed.has(k)),"the shifts used every kit: "+[...kitsUsed].join(", "));
+  ok(["pick","pad","path","order","sort"].every(k=>kitsUsed.has(k)),"the shifts used every kit: "+[...kitsUsed].join(", "));
 
   // 3b. the order kit: cards at least 56 px tall, a placed card tapped goes back, and the keyboard (arrows, Space, Enter);
   //     and the Mail carrier's street map
@@ -352,6 +373,59 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   await p.keyboard.press("Enter");
   const k1=await waitFor(p,n=>{const s=Jobs._S();return s&&s.n>n?{coins:state.mine.coins,n:s.n}:false;},{arg:k0.n,timeout:6000});
   ok(k1&&k1.coins===k0.coins+3,"Enter checks: right, and the task pays 3 🪙 ("+(k1&&k1.coins-k0.coins)+")");
+  await clockOut();
+
+  // 3c. the sort kit (each thing into its bin), shown in a shift's question space with a question of its own: the things
+  //     and bins at least 56 px, a tap on a thing then on a bin, a tap on a placed thing lifts it back out, ✓ with things
+  //     still out does nothing, a miss keeps the right ones, the second miss makes the next thing and its bin glow, the
+  //     keyboard (arrows, Space, Enter), a drag with a finger, and done once
+  await E(()=>{state.settings.tierOverride=2;state.jobs.current=null;state.jobs.streak=0;});
+  await clockIn("shop");
+  const SQ={say:["Read the sign. Put each one in its home!"],text:"The fox is in the den. The pig and the hen are in the pen.",read:true,
+    choices:["fox","pig","hen"].map(w=>({v:w,text:w,art:{kind:"word",w}})),bins:[{v:"den",text:"den",ic:"🕳️"},{v:"pen",text:"pen",ic:"🏡"}],ans:"fox:den|pig:pen|hen:pen"};
+  const mountSort=()=>E(q=>{window.__sort={done:[],miss:0};const old=document.getElementById("jQ"),h=document.createElement("div");h.className="jq";h.id="jQ";old.replaceWith(h);
+    Jobs.KITS.sort(h,q,ok=>window.__sort.done.push(ok),{onMiss:n=>{window.__sort.miss=n;}});return h.dataset.kit+" "+h.dataset.ans;},SQ);
+  ok(await mountSort()==="sort fox:den|pig:pen|hen:pen","the sort kit keeps its answer on the host as item:bin|item:bin");
+  await p.waitForTimeout(700);   // the sheet has finished growing in
+  const sortNow=()=>E(()=>{const h=document.getElementById("jQ"),o={pool:[...h.querySelectorAll(".jspool .jscard")].map(c=>c.dataset.w+(c.classList.contains("lift")?"^":"")+(c.classList.contains("hint")?"*":""))};
+    h.querySelectorAll(".jsbin").forEach(b=>{o[b.dataset.bin+(b.classList.contains("hint")?"*":"")]=[...b.querySelectorAll(".jscard")].map(c=>c.dataset.w);});return JSON.stringify(o);});
+  const sortSizes=await E(()=>[...document.querySelectorAll("#jQ .jscard,#jQ .jsbin")].map(b=>{const r=b.getBoundingClientRect();return Math.round(Math.min(r.width,r.height));}));
+  ok(sortSizes.length===5&&sortSizes.every(x=>x>=56),"the sort kit: 3 things and 2 bins, each at least 56 px across ("+sortSizes.join(", ")+")");
+  const tapS=sel=>E(s=>document.querySelector(s).click(),sel);
+  await tapS('#jQ .jscard[data-w="fox"]');await tapS('#jQ .jsbin[data-bin="den"]');
+  ok(await sortNow()===JSON.stringify({pool:["pig","hen"],den:["fox"],pen:[]}),"a tap on the fox, then on the den, puts the fox in the den: "+await sortNow());
+  await tapS('#jQ .jsbin .jscard[data-w="fox"]');
+  ok(await sortNow()===JSON.stringify({pool:["fox^","pig","hen"],den:[],pen:[]}),"a tap on the placed fox lifts it back out: "+await sortNow());
+  await tapS('#jQ .jsbin[data-bin="den"]');await tapS('#jQ .jscard[data-w="hen"]');await tapS('#jQ .jsbin[data-bin="pen"]');
+  await tapS('#jQ [data-act="check"]');await p.waitForTimeout(150);
+  ok(await E(()=>__sort.miss===0&&__sort.done.length===0)&&await sortNow()===JSON.stringify({pool:["pig"],den:["fox"],pen:["hen"]}),"✓ with the pig still out does nothing: "+await sortNow());
+  await tapS('#jQ .jscard[data-w="pig"]');await tapS('#jQ .jsbin[data-bin="den"]');await tapS('#jQ [data-act="check"]');await p.waitForTimeout(150);
+  ok(await E(()=>__sort.miss===1&&__sort.done.length===0)&&await sortNow()===JSON.stringify({pool:["pig"],den:["fox"],pen:["hen"]}),"a miss keeps the fox and the hen in their bins and puts the pig back out: "+await sortNow());
+  await tapS('#jQ .jscard[data-w="pig"]');await tapS('#jQ .jsbin[data-bin="den"]');await tapS('#jQ [data-act="check"]');await p.waitForTimeout(150);
+  ok(await E(()=>__sort.miss===2)&&await sortNow()===JSON.stringify({pool:["pig*"],den:["fox"],"pen*":["hen"]}),"after the second miss the pig and its bin, the pen, glow: "+await sortNow());
+  // the keyboard: the arrows to the pig, Space picks it up (the cursor goes to the first bin), the arrows to the pen, Space puts it in, Enter checks
+  const curAt=()=>E(()=>{const c=document.querySelector("#jQ .jscard.cur,#jQ .jsbin.cur");return c?(c.dataset.w||"bin:"+c.dataset.bin):null;});
+  const keyToS=async want=>{for(let k=0;k<10;k++){if(await curAt()===want)return true;await p.keyboard.press("ArrowRight");}return await curAt()===want;};
+  await p.keyboard.press("ArrowRight");
+  ok(await keyToS("pig"),"the arrows move a cursor over the things and the bins");
+  await p.keyboard.press("Space");
+  ok(await sortNow()===JSON.stringify({pool:["pig^*"],den:["fox"],"pen*":["hen"]})&&await curAt()==="bin:den","Space picks up the pig and the cursor goes to the first bin: "+await sortNow());
+  ok(await keyToS("bin:pen"),"…the arrows to the pen");
+  await p.keyboard.press("Space");
+  ok(await sortNow()===JSON.stringify({pool:[],den:["fox"],pen:["pig","hen"]}),"Space puts the pig in the pen: "+await sortNow());
+  await p.keyboard.press("Enter");await waitFor(p,()=>window.__sort.done.length>0,{timeout:8000});await p.waitForTimeout(300);
+  ok(await E(()=>JSON.stringify(__sort.done))==="[false]","Enter checks: right, done once, not right the first time (two misses): "+await E(()=>JSON.stringify(__sort.done)));
+  // a finger: the fox dragged onto the den goes in; a drag let go away from the bins moves nothing; the rest by taps, right the first time
+  await mountSort();
+  const mid=s=>E(x=>{const r=document.querySelector(x).getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};},s);
+  const fromS=await mid('#jQ .jscard[data-w="fox"]'),toS=await mid('#jQ .jsbin[data-bin="den"]');
+  await p.mouse.move(fromS.x,fromS.y);await p.mouse.down();await p.mouse.move(toS.x,toS.y,{steps:8});await p.mouse.up();await p.waitForTimeout(300);
+  ok(await sortNow()===JSON.stringify({pool:["pig","hen"],den:["fox"],pen:[]}),"dragging the fox onto the den puts it there: "+await sortNow());
+  const fromP=await mid('#jQ .jscard[data-w="pig"]');
+  await p.mouse.move(fromP.x,fromP.y);await p.mouse.down();await p.mouse.move(fromP.x+30,fromP.y-70,{steps:6});await p.mouse.up();await p.waitForTimeout(300);
+  ok(await sortNow()===JSON.stringify({pool:["pig","hen"],den:["fox"],pen:[]}),"a drag let go away from the bins moves nothing: "+await sortNow());
+  await E(()=>{const h=document.getElementById("jQ");__job.right(h);__job.again(h);});await waitFor(p,()=>window.__sort.done.length>0,{timeout:8000});await p.waitForTimeout(300);
+  ok(await E(()=>JSON.stringify(__sort.done)==="[true]"&&__sort.miss===0),"the answer helper sorts the rest, ✓ twice: done once, right the first time "+await E(()=>JSON.stringify(__sort)));
   await clockOut();
 
   // 4. the 5-task moment, a summary at clock out (five right first time: the fifth has a tip)
