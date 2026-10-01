@@ -1834,6 +1834,8 @@ body.saver .critter.shiny .body{filter:hue-rotate(160deg) saturate(1.4)!importan
 body.saver .tile.glow::before{content:"";position:absolute;left:-35%;right:-35%;top:-25%;bottom:-12%;z-index:-1;pointer-events:none;
   background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(255,214,110,.62),rgba(255,214,110,0) 70%)}
 body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,.8)}
+.micbar{height:14px;margin-top:8px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:var(--paper)}
+.micbar i{display:block;height:100%;width:0;background:#4FA84A;transition:width .06s linear}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -2139,6 +2141,10 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div class="row" id="rowEyes"><div class="grow"><div class="lbl">Eyes-free</div>
       <div class="meta">For the car: every question is spoken, listening starts by itself, one big button, and the next question comes by itself.</div></div>
       <label class="switch"><input type="checkbox" id="optEyes"></label></div>
+    <div class="row" id="micRow"><div class="grow"><div class="lbl">Microphone check</div>
+      <div class="meta" id="micMeta"></div>
+      <div class="micbar" id="micBar" style="display:none"><i id="micLvl"></i></div></div>
+      <button class="btn soft" id="micBtn" style="min-height:44px;padding:8px 14px">Test</button></div>
     <div class="row"><div class="grow"><div class="lbl">Spelling crates</div>
       <div class="meta">How often a crate asks him to build the word from its sounds.</div></div>
       <select id="optSpell"><option value="0.35">Some</option><option value="0.6">Lots</option><option value="0.9">Almost all</option></select></div>
@@ -4247,6 +4253,8 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // ROLLING WINDOW: the last 20 sounding-out reads of each level, 1 = right first time ({1:[1,0,1,...]});
   // the level rule judges where he is now by these, not by his lifetime score
   recent:{},
+  // MICROPHONE CHECK: the last test in Grown-up → Settings, and the last real recording that could not start (null: none)
+  micCheck:null,micErr:null,
   // TRICK-OR-READ (Halloween): the night's date, the doors closed that night, candy got in all, nights finished
   trick:{day:"",doors:[],candy:0,nights:0},
   // LIGHT THE TREE (Winter): today's date with its bulbs lit and the star, the advent doors opened this December, look pieces asked for
@@ -8707,12 +8715,81 @@ const Rec=(()=>{
     let s=null;
     try{s=await navigator.mediaDevices.getUserMedia({audio:true});stream=s;mr=new MediaRecorder(s);chunks=[];
       mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};mr.start();return true;}
-    catch(e){try{if(s)s.getTracks().forEach(t=>t.stop());}catch(x){}mr=null;return false;}
+    catch(e){try{MicCheck.note("recording",e);}catch(x){}try{if(s)s.getTracks().forEach(t=>t.stop());}catch(x){}mr=null;return false;}
   }
   function stop(){return new Promise(res=>{const m=mr,s=stream,c=chunks;if(!m){res(null);return;}mr=null;
     m.onstop=()=>{try{s.getTracks().forEach(t=>t.stop());}catch(e){}res(new Blob(c,{type:m.mimeType||"audio/mp4"}));};
     try{m.stop();}catch(e){try{s.getTracks().forEach(t=>t.stop());}catch(x){}res(null);}});}
   return{ok,start,stop};
+})();
+
+/* ---- MICROPHONE CHECK (Grown-up menu → Settings → Microphone check) ----
+   The recorder, Talk to me and the Voice Studio fall back quietly when the microphone fails (he taps
+   instead), so a grown-up never learns why. Test opens the microphone the way the game does, shows a
+   level for three seconds, and says in plain words what stopped it: an http:// address (iPadOS gives
+   the microphone to https:// pages only), iPadOS saying no (Safari's or Screen Time's setting, or an
+   earlier "Don't Allow" for this Home Screen icon), another app holding it, or an iPadOS too old to
+   record from a web page.
+   Saves: state.micCheck, the last test {at, origin, secure, md, mr, perm, err, peak, ok}, and
+   state.micErr, the last time a real recording could not start {at, where, err, origin}, so a
+   backup (and tools/progress.js) carries both. Nothing here is ever shown to him. */
+const MicCheck=(()=>{
+  const el=id=>document.getElementById(id);
+  const name=e=>String((e&&(e.name||e.message))||e||"unknown").slice(0,60);
+  const support=()=>({origin:String(location.origin||""),secure:window.isSecureContext!==false,
+    md:!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia),mr:!!window.MediaRecorder});
+  const why=s=>!s.md?(s.secure?"no getUserMedia":"not https"):!s.mr?"no MediaRecorder":"";
+  // a real recording that could not start (a book page, Talk to me, the Voice Studio): kept once a minute at most
+  function note(where,e){
+    try{const s=support(),err=e?name(e):(why(s)||"unknown");
+      const o=state.micErr;if(o&&o.where===where&&o.err===err&&Date.now()-Date.parse(o.at)<6e4)return;
+      state.micErr={at:new Date().toISOString(),where,err,origin:s.origin};save();}catch(x){}
+  }
+  function when(r){try{return new Date(r.at).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}catch(e){return "";}}
+  function text(r){
+    if(!r)return "Tests the microphone the way the game uses it, and says what is stopping it if it doesn't work.";
+    const at=when(r)+": ",e=r.err||"";
+    if(r.ok)return at+(r.peak<.01?"the microphone opened but heard almost nothing. Talk close to the top edge of the iPad and test again."
+      :"the microphone works. Talk to me and the book recordings can hear him.");
+    if(e==="not https")return at+"this copy of the game is open at "+r.origin+", and iPadOS only lets https:// pages use the microphone. Open the game at your https:// address (the ts.net one), add that to the Home Screen, and restore his save there from the backup.";
+    if(/NotAllowed|Security|Permission/i.test(e))return at+"iPadOS said no ("+e+"). Check Settings → Apps → Safari → Microphone (Ask or Allow), and Settings → Screen Time → Content & Privacy Restrictions → Microphone (Allow). If both allow it, iPadOS is remembering an earlier “Don’t Allow” for this Home Screen icon: open "+r.origin+" in Safari and test there.";
+    if(/NotReadable|Abort|TrackStart/i.test(e))return at+"another app is using the microphone (a call, a recording, Siri). Close it and test again.";
+    if(/NotFound|DevicesNotFound/i.test(e))return at+"the iPad reported no microphone ("+e+").";
+    if(e==="no getUserMedia"||e==="no MediaRecorder")return at+"this iPadOS can’t record from a web page ("+e+"). Settings → General → Software Update.";
+    return at+"the microphone did not open ("+e+").";
+  }
+  function render(){const m=el("micMeta");if(m)m.textContent=text(state.micCheck);}
+  let busy=false;
+  async function run(){
+    if(busy)return null;busy=true;
+    const b=el("micBtn"),bar=el("micBar"),lvl=el("micLvl"),m=el("micMeta");
+    const r=Object.assign({at:new Date().toISOString(),perm:"",err:"",peak:0,ok:false},support());
+    try{if(navigator.permissions&&navigator.permissions.query){const q=await navigator.permissions.query({name:"microphone"});r.perm=String(q.state||"");}}catch(e){}
+    r.err=why(r);let s=null;
+    if(!r.err){
+      if(b)b.disabled=true;if(m)m.textContent="Say something for three seconds…";
+      try{s=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){r.err=name(e);}
+    }
+    if(s){
+      let level=true;
+      try{const c=Sound.ctx();if(c.state==="suspended"&&c.resume)c.resume();
+        const src=c.createMediaStreamSource(s),an=c.createAnalyser(),mute=c.createGain();an.fftSize=1024;mute.gain.value=0;
+        src.connect(an);an.connect(mute);mute.connect(c.destination);
+        const buf=new Uint8Array(an.fftSize),t0=Date.now();if(bar)bar.style.display="";
+        await new Promise(res=>{const iv=setInterval(()=>{an.getByteTimeDomainData(buf);let q=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;q+=v*v;}
+          const rms=Math.sqrt(q/buf.length);if(rms>r.peak)r.peak=rms;if(lvl)lvl.style.width=Math.min(100,Math.round(rms*500))+"%";
+          if(Date.now()-t0>=3000){clearInterval(iv);res();}},60);});
+        try{src.disconnect();mute.disconnect();}catch(e){}
+      }catch(e){level=false;}     // no Web Audio: the microphone opened, and its level is unknown
+      try{s.getTracks().forEach(t=>t.stop());}catch(e){}
+      r.ok=true;r.peak=level?+r.peak.toFixed(3):1;
+    }
+    if(bar)bar.style.display="none";if(lvl)lvl.style.width="0";if(b)b.disabled=false;
+    state.micCheck=r;save();render();busy=false;
+    return r;
+  }
+  {const b=el("micBtn");if(b)b.onclick=()=>{Sound.sfx.soft();run();};}
+  return{run,render,note,text};
 })();
 
 /* ---- Read it again: how smoothly he reads a page he has just read (no microphone) ----
@@ -15395,8 +15472,8 @@ const Talk=(()=>{
      loud as ever. It stops 0.7 s after he stops talking, after 4 s of talk, or after 5 s of nothing. */
   let capStop=null;
   async function record(opt){
-    opt=opt||{};if(!micOk())return null;
-    let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){return null;}
+    opt=opt||{};if(!micOk()){try{MicCheck.note("talk");}catch(x){}return null;}
+    let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){try{MicCheck.note("talk",e);}catch(x){}return null;}
     let mr;try{mr=new MediaRecorder(stream);}catch(e){try{stream.getTracks().forEach(t=>t.stop());}catch(_){}return null;}
     const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
     // the level as he talks, for "has he started" and "has he finished"
@@ -18392,7 +18469,7 @@ async function toggleRecord(key,btn){
       Sound.invalidate(recKey);btn.textContent="⏺";btn.classList.remove("rec");recorder=null;renderStudio();
     };
     recorder.start();
-  }catch(e){alert("Microphone unavailable. On iPad this needs Safari over HTTPS or localhost.");}
+  }catch(e){try{MicCheck.note("studio",e);}catch(x){}alert("Microphone unavailable. On iPad this needs Safari over HTTPS or localhost.");}
 }
 async function renderPackPane(){
   const st=document.getElementById("packStatus"),gr=document.getElementById("packGrid");gr.innerHTML="";
@@ -18442,6 +18519,7 @@ function renderSettings(){
   document.getElementById("optGoal").value=String(Goal.target());
   document.getElementById("optHero").value=heroName();
   try{Talk.renderSettings();}catch(e){}      // TALK
+  try{MicCheck.render();}catch(e){}      // MICROPHONE CHECK
   try{Party.renderSettings();}catch(e){}      // PARTY
 }
 document.getElementById("optPics").onchange=e=>{state.settings.pics=e.target.checked;save();};

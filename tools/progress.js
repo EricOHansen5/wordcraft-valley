@@ -90,6 +90,10 @@ function report(snap){
   p("Valley: ",(s.critters||[]).length," animals, ",(s.vehicles||[]).length," vehicles, ",Object.keys(s.grid||{}).length," buildings, ",(s.badges||[]).length," badges");
   p("Settings: goal ",(s.settings||{}).goal," words, fast track ",(s.settings||{}).fastTrack?"on":"off",", say it ",(s.settings||{}).speech?"on":"off",", talk to me ",(s.settings||{}).talk?"on":"off",
     ", save battery ",(s.settings||{}).saver===false?"off":"on");
+  // ---- the microphone: the last test (Grown-up menu → Settings → Microphone check) and the last recording that could not start ----
+  const mc=s.micCheck,me=s.micErr;
+  p("Microphone: ",mc?("tested "+new Date(mc.at).toLocaleString()+": "+(mc.ok?"works (level "+mc.peak+")":"failed, "+mc.err)+" at "+mc.origin+(mc.perm?", permission "+mc.perm:"")):"never tested",
+    me?("; last failure "+new Date(me.at).toLocaleString()+" in "+me.where+": "+me.err+" at "+me.origin):"; no failures noted");
   // ---- battery: the grown-up's checks (Grown-up menu → Settings → Battery check) and the game's own clues ----
   const pw=s.power||{},ck=(pw.checks||[]).slice(-5).reverse();
   p("");
