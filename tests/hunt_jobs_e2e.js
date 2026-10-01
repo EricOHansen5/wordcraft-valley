@@ -464,7 +464,7 @@ async function storeArea(){
   await clip("🪙 Gear",R);
   await sweep("gear","🪙 Gear (no coins)");
   // coins from the Mine: the 🏪 button shows them, and he has held both purses, so the Swap tab comes
-  await E(()=>{state.mine.coins=200;renderHUD();});
+  await E(()=>{state.gems=Math.max(state.gems,10);state.mine.coins=200;renderHUD();});   // (the outfit sweep may have spent his gems: both purses must be held)
   ok((await hudOk())[0]&&await E(()=>state.exchangeSeen===true),`${A} · coins arrive: ${(await hudOk())[1]}, and he has now held gems and coins at once`);
   await gap();
   await tapSel("🪙 Gear","the 🪙 Gear tab again",'#ovStore [data-shelf="gear"]',{root:R,want:()=>E(()=>[getComputedStyle(document.getElementById("stSwapTab")).display!=="none","the 🔄 Swap tab is there"])});

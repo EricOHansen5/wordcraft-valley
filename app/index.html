@@ -1470,6 +1470,76 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 @keyframes fsland{0%{transform:translateY(-40px) scale(1.3);opacity:0}100%{transform:none;opacity:1}}
 @media (max-width:700px){.fssheet{padding:14px}.fssheet .bhead{flex-wrap:wrap}.fssheet .bhead h2{font-size:21px}
   .fsplates{grid-template-columns:repeat(5,minmax(0,1fr))}.fshost{flex-basis:60px}.fsbuddy svg{width:60px;height:60px}.fsbubble{bottom:64px}.fsq{min-height:0}}
+/* ---- WORD MAIL (Valentine's): the look's heart petals ---- */
+.lfall[data-lk="valentine:petals"]{color:#F06C9B;animation-name:vmflutter;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.lfall[data-lk="valentine:petals"]:nth-child(3n){color:#E8445A}
+.lfall[data-lk="valentine:petals"]:nth-child(3n+1){color:#FF9EBB}
+@keyframes vmflutter{0%{transform:translate(0,-20px) rotate(-24deg)}25%{transform:translate(30px,28vh) rotate(22deg)}50%{transform:translate(-8px,58vh) rotate(-28deg)}
+  75%{transform:translate(32px,88vh) rotate(18deg)}100%{transform:translate(10px,120vh) rotate(-12deg)}}
+.clcard[data-look="valentine"] .clpc[data-piece="petals"] b{color:#F06C9B}
+/* ---- WORD MAIL (Valentine's): the 💌 button, the mailbag and the letter ---- */
+#mailBtn{background:linear-gradient(160deg,#FFD6E2,#F47FA4)}
+.vmsheet{max-width:780px;border-color:#C8406E;background:linear-gradient(180deg,#FFF0F5,var(--paper) 40%)}
+.vmsheet .bhead h2{color:#C8406E}
+.vmstat{font-size:19px;font-weight:900;white-space:nowrap}
+.vmbag{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 8px}
+.vmbagart{width:52px;height:52px;flex:0 0 52px}.vmbagart svg{width:100%;height:100%;display:block}
+.vmslot{position:relative;width:40px;height:30px;border:2px dashed rgba(59,48,36,.35);border-radius:6px;background:rgba(255,255,255,.6)}
+.vmslot.on{border:2px solid var(--ink);background:linear-gradient(160deg,#FFF6F9,#FFD1DE)}
+.vmslot.on::before{content:"";position:absolute;left:0;right:0;top:0;height:62%;
+  background:linear-gradient(to bottom right,transparent 48%,rgba(59,48,36,.55) 50%,transparent 54%),linear-gradient(to bottom left,transparent 48%,rgba(59,48,36,.55) 50%,transparent 54%)}
+.vmslot.on::after{content:"\2665\FE0E";position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);color:#E8445A;font-size:14px;line-height:1}
+.vmslot.new{animation:vmin .5s cubic-bezier(.2,1.3,.4,1)}
+@keyframes vmin{0%{transform:translateY(-30px) scale(1.4);opacity:0}100%{transform:none;opacity:1}}
+.vmwork{text-align:center}
+.vmletter{max-width:640px;margin:0 auto}
+.vmletter .nenv{font-size:44px;line-height:1;margin-bottom:-4px}
+.vmpaper{text-align:left;padding:10px 16px 8px}
+.vmfrom{display:flex;align-items:center;gap:10px}
+.vmstamp{flex:0 0 58px;width:58px;height:58px;border:3px dashed #D98CA4;border-radius:8px;background:#FFF7FA;padding:2px}
+.vmstamp svg{width:100%;height:100%;display:block}
+.vmfrom b{font-weight:900;color:#B5548A;font-size:20px}
+.vmpaper .btext{font-size:34px;line-height:1.3;text-align:center;margin:2px 0}
+.vmpaper .vmask{color:#8C2F57}
+.vmq{margin-top:12px}
+.vmmsg{min-height:26px;font-weight:800;color:#C8406E;margin:8px 0 0;text-align:center}
+.vmyum,.vmdone{padding:6px 0}.vmdone h2{font-size:30px;margin:4px 0}
+.vmbig{font-size:60px;line-height:1.1;animation:pop .35s cubic-bezier(.2,1.3,.4,1)}
+.vmfriend{width:140px;height:140px;margin:4px auto 0;animation:pop .45s cubic-bezier(.2,1.3,.4,1)}.vmfriend svg{width:100%;height:100%;display:block}
+.vmpiece{font-weight:900;font-size:20px;color:#7B5BE0;min-height:24px;margin:4px 0}
+@media (max-width:700px){.vmsheet{padding:14px}.vmsheet .bhead{flex-wrap:wrap}.vmsheet .bhead h2{font-size:21px}
+  .vmslot{width:28px;height:22px}.vmslot.on::after{font-size:11px}.vmbagart{width:40px;height:40px;flex-basis:40px}
+  .vmpaper .btext{font-size:26px}.vmstamp{width:44px;height:44px;flex-basis:44px}}
+/* ---- EGG HUNT (Easter): the look's blossom ---- */
+.lfall[data-lk="easter:blossom"]{animation-name:ehdrift;filter:drop-shadow(0 1px 1px rgba(255,255,255,.6))}
+.lfall[data-lk="easter:blossom"]:nth-child(2n){filter:hue-rotate(-24deg) saturate(.8) brightness(1.1)}
+@keyframes ehdrift{0%{transform:translate(0,-20px) rotate(0)}30%{transform:translate(-26px,34vh) rotate(80deg)}60%{transform:translate(18px,70vh) rotate(170deg)}
+  100%{transform:translate(-6px,120vh) rotate(300deg)}}
+#eggsBtn{background:linear-gradient(160deg,#EEF9D8,#9ED36A)}
+#advNote.ehmark .paper{border-color:#4F9A3E;background:linear-gradient(170deg,#FBFFF2,#E4F5CE)}
+#advNote.ehmark .nh{color:#3F7A30}
+.advland.ehmark:not(.dug)::after{content:"🌷"}
+.advland.ehmark .ehfound{position:absolute;right:-16%;bottom:-8%;width:50%;height:56%}.advland.ehmark .ehfound svg{width:100%;height:100%;display:block}
+.ehsheet{max-width:760px;border-color:#4F9A3E;background:linear-gradient(180deg,#F1FBE6,var(--paper) 40%)}
+.ehsheet .bhead h2{color:#3F8A30}
+.ehstat{font-size:19px;font-weight:900;white-space:nowrap}
+.ehwork{text-align:center}
+.ehegg{width:96px;height:112px;margin:0 auto;animation:ehwob 1.6s ease-in-out infinite;transform-origin:50% 90%}
+.ehegg svg{width:100%;height:100%;display:block}
+@keyframes ehwob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.ehsay{font-size:22px;font-weight:900;margin:2px 0 4px}
+.ehq{min-height:236px}
+.ehmsg{min-height:26px;font-weight:800;color:#3F8A30;margin:8px 0 0;text-align:center}
+.ehopen{position:relative;width:170px;height:160px;margin:0 auto}
+.ehopen .ehthing{position:absolute;left:20%;top:0;width:60%;height:62%;animation:ehpop .55s cubic-bezier(.2,1.3,.4,1) both}
+.ehopen .ehshell{position:absolute;left:12%;bottom:0;width:76%;height:56%}
+.ehopen svg{width:100%;height:100%;display:block}
+@keyframes ehpop{0%{transform:translateY(45%) scale(.4);opacity:0}100%{transform:none;opacity:1}}
+.ehyum,.ehdone{padding:4px 0}.ehdone h2{font-size:30px;margin:4px 0}
+.ehbig{font-size:44px;line-height:1.1;animation:pop .35s cubic-bezier(.2,1.3,.4,1)}
+.ehpiece{font-weight:900;font-size:20px;color:#7B5BE0;min-height:24px;margin:4px 0}
+@media (max-width:700px){.ehsheet{padding:14px}.ehsheet .bhead{flex-wrap:wrap}.ehsheet .bhead h2{font-size:21px}
+  .ehegg{width:64px;height:76px}.ehq{min-height:0}.ehopen{width:130px;height:122px}}
 /* ---------------- FACTORY: the board beside the order card (above it in portrait) ---------------- */
 .fcsheet{max-width:1000px;padding:14px;border-color:#5B4A3A;background:linear-gradient(180deg,#F4EAD6,var(--paper) 40%)}
 .fcsheet .bhead{top:-14px}.fcsheet .bhead h2{color:#8C4A1E;font-size:24px}
@@ -1722,6 +1792,8 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <button class="toolbtn" id="trickBtn" title="Trick-or-Read" aria-label="Trick-or-Read" style="display:none">🎃<span class="badge" id="trickBadge"></span></button>
     <button class="toolbtn" id="lightsBtn" title="Light the tree" aria-label="Light the tree" style="display:none">❄️<span class="badge" id="lightsBadge"></span></button>
     <button class="toolbtn" id="feastBtn" title="Feast table" aria-label="Feast table" style="display:none">🦃<span class="badge" id="feastBadge"></span></button>
+    <button class="toolbtn" id="mailBtn" title="Word mail" aria-label="Word mail" style="display:none">💌<span class="badge" id="mailBadge"></span></button>
+    <button class="toolbtn" id="eggsBtn" title="Egg hunt" aria-label="Egg hunt" style="display:none">🥚<span class="badge" id="eggsBadge"></span></button>
   </div>
 </div>
 
@@ -4073,6 +4145,10 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   lights:{day:"",bulbs:0,star:false,doors:[],granted:0},
   // FEAST TABLE (Thanksgiving): the table's date, the dishes put on it that day, full tables in all
   feast:{day:"",dishes:[],tables:0},
+  // WORD MAIL (Valentine's): the mailbag's date, who sent each letter answered that day, full bags in all
+  mail:{day:"",read:[],bags:0},
+  // EGG HUNT (Easter): the hunt's date, the words in the eggs found that day, finished hunts in all
+  eggs:{day:"",found:[],hunts:0},
   // FACTORY: levels finished (0-12), best stars per level {"F3":2}, his own factory as a short string (null until
   // he builds), and today's paid side orders {day, paid}
   factory:{lvl:0,stars:{},sandbox:null,orders:{day:"",paid:0}},
@@ -5009,6 +5085,8 @@ const Modes=(()=>{
     trick:{name:"Trick-or-Read",reading:true},        // TRICK-OR-READ: a knock on a Halloween door
     lights:{name:"Light the tree",reading:true},       // LIGHT THE TREE: the Winter tree and its advent doors
     feast:{name:"Feast table",reading:true},           // FEAST TABLE: a Thanksgiving dish to read
+    mail:{name:"Word mail",reading:true},              // WORD MAIL: a Valentine's letter to read and answer
+    eggs:{name:"Egg hunt",reading:true},               // EGG HUNT: the word in an Easter egg
     factory:{name:"Factory",reading:false},            // FACTORY: the board, its levels and his own factory
     talk:{name:"Talk to me",reading:true},             // TALK: he answers out loud
     mine:{name:"Gem Mine",reading:false},
@@ -8850,10 +8928,10 @@ const Adv=(()=>{
   /* ---------- treasure hunt landmarks ---------- */
   function drawLand(){
     landEls.forEach(e=>e.remove());landEls=[];
-    const h=A().hunt;if(!h)return;const base=baseSize();
+    const h=A().hunt;if(!h)return;const base=baseSize(),K=kindOf(h);
     h.marks.forEach((m,i)=>{
-      const el=document.createElement("div");el.className="tile advland"+(m.dug?" dug":"");
-      el.innerHTML=(m.dug?`<div class="hole"></div>`:"")+`<div class="lart">${drawWord(m.w,"land")}</div>`;
+      const el=document.createElement("div");el.className="tile advland"+(m.dug?" dug":"")+(K&&K.cls?" "+K.cls:"");
+      el.innerHTML=(m.dug?(K&&K.dug?K.dug(m,i):`<div class="hole"></div>`):"")+`<div class="lart">${drawWord(m.w,"land")}</div>`;
       place(el,m.c,m.r,base*.72,4);tilesEl.appendChild(el);landEls.push(el);});
   }
   /* ---------- Ash and his pet ---------- */
@@ -8989,7 +9067,7 @@ const Adv=(()=>{
     hud.querySelector("#advAct").onclick=act;
     hud.querySelector("#advDone").onclick=exit;
     hud.querySelector("#advDex").onclick=()=>Dex.open();
-    hud.querySelector("#advHunt").onclick=()=>{if(A().hunt)showNote(true);else newHunt();};
+    hud.querySelector("#advHunt").onclick=()=>{settle();if(A().hunt)showNote(true);else newHunt();};
     // keyboard for grown-ups on a computer: WASD / arrows, Space or E to use
     const keys={},MOVE=new Set(["KeyA","KeyD","KeyW","KeyS","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"]);
     const upd=()=>{input.jx=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0);input.jy=(keys.ArrowDown||keys.KeyS?1:0)-(keys.ArrowUp||keys.KeyW?1:0);};
@@ -9001,6 +9079,7 @@ const Adv=(()=>{
   }
   function enter(){
     if(!hud)buildHud();
+    settle();   // an egg hunt from another day gives back the treasure hunt it put aside
     if(state.selected){state.selected=null;renderDock();}
     on=true;parked=false;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
     // start where he is looking, at the front of the valley
@@ -9035,48 +9114,76 @@ const Adv=(()=>{
     if(tier<=4||!other)return`Dig by the ${w}.`;
     return`Dig by the ${w}, not the ${other}.`;
   }
-  function newHunt(){
+  /* Other hunts on the same engine (the Egg hunt, EGG HUNT below): Adv.huntKind(id, K) registers one and
+     Adv.newHunt({kind:id, day, step}) starts it, with the same landmarks, places, note and digging. K gives:
+       cls              a class on its marks and its note     head(h)     the note's heading
+       clue(h,w,other)  the note's line                        blew        the toast when it starts
+       nothing(w)       what a dig at the wrong landmark says  dug(m,i)    what a dug mark shows (instead of the hole)
+       found(m,h,next)  a dig at the right landmark: the kind shows what is there and calls next() once it is
+                        done with it; then the mark is dug and the next clue comes (small, under whatever the kind
+                        has open), or after the third the hunt is over (and finish(h), when the kind has one)
+       avoid            words its landmarks never are (an egg hunt has no landmark called egg)
+       stale(h)         true when a hunt of this kind is over without being finished (an egg hunt from another day)
+     Such a hunt keeps the treasure hunt that was going (h.park) and gives it back when it is over. */
+  const kinds={};
+  const kindOf=h=>(h&&h.kind&&kinds[h.kind])||null;
+  // a mark keeps clear of the spots that would take the "use" button from it (a note, the quest friend), and of one
+  // that stands like a building (low: the Trading Post stall) as far as of a building, so it is never on or behind it
+  const bySpot=(c,r)=>spotList.some(s=>s.low?Math.abs(s.c-c)<2.2&&Math.abs(s.r-r)<1.5:Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1);
+  function newHunt(opts){
+    opts=opts||{};const K=opts.kind?kinds[opts.kind]:null;
     const tier=currentTier();
     const LOOK=[["hat","cap"],["cup","mug"],["rock","stone"],["log","wood","stick"],["pot","pan"],["bug","bee"],["boat","ship","sub"],["car","van","cab","jeep"]];
     const near=(a,b)=>LOOK.some(g=>g.includes(a)&&g.includes(b));
     // landmarks are things, not animals, so they never look like his wandering critters
-    const thing=w=>!w.tricky&&WORD_ART[w.w]&&!CRIT(w.w)&&!CRIT(WORD_ART[w.w]);
+    const skip=(K&&K.avoid)||[],thing=w=>!w.tricky&&WORD_ART[w.w]&&!CRIT(w.w)&&!CRIT(WORD_ART[w.w])&&skip.indexOf(w.w)<0;
     let pool=allWords().filter(w=>thing(w)&&w.t<=tier).sort(()=>Math.random()-.5);
     // practise his shaky sounds when possible
     const tg=Skills.target(tier);if(tg&&thing(tg.w))pool.unshift(tg.w);
     const pick=[];for(const w of pool){if(pick.length>=4)break;if(pick.some(x=>x.w===w.w||near(x.w,w.w)||WORD_ART[x.w]===WORD_ART[w.w]))continue;pick.push(w);}
-    if(pick.length<4){toast("Read a few more words first!");return;}
+    if(pick.length<4){toast("Read a few more words first!");return null;}
     // spread the landmarks around the valley
     const spots=[];for(let k=0;k<450&&spots.length<4;k++){
       // rounded before the checks: the stored value is the one that must keep clear
       const c=+(1+Math.random()*(COLS-3)).toFixed(2),r=+(firstRow()+Math.random()*(state.rows-1)).toFixed(2);
       // the spread between marks relaxes as the search goes on; the clearance from buildings never does
       if(spots.some(s=>Math.abs(s.c-c)<(k<150?3.2:k<300?2.2:1.6)))continue;
-      // keep clear of notes and the quest giver, which win the "use" button over a mark
-      if(spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1))continue;
+      // keep clear of notes and the quest giver, which win the "use" button over a mark, and of the stall
+      if(bySpot(c,r))continue;
       if(patches().some(p=>Math.abs(p.c-c)<p.w/2+.8&&Math.abs(p.r-r)<1))continue;
       if(byBuilding(c,r))continue;
       spots.push({c,r});}
     // a crowded valley: walk the front row for spots that are still clear of every building
     for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=1.5){const cc=+c.toFixed(2),rr=ROWS_MAX-1;
-      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2)||spotList.some(s=>Math.abs(s.c-cc)<1.6&&Math.abs(s.r-rr)<1)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
+      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2)||bySpot(cc,rr)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
+      spots.push({c:cc,r:rr});}
+    // still short: the rows behind it, front to back, the same way
+    for(let rr=ROWS_MAX-2;spots.length<4&&rr>=firstRow();rr--)for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=1.5){const cc=+c.toFixed(2);
+      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2&&Math.abs(s.r-rr)<1)||bySpot(cc,rr)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
       spots.push({c:cc,r:rr});}
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
     const order=[0,1,2].sort(()=>Math.random()-.5);
-    A().hunt={marks,order,step:0,miss:0,t0:Date.now(),tier};save();
+    const h={marks,order,step:0,miss:0,t0:Date.now(),tier};
+    // another kind: its day, the finds it starts with (their marks dug), and a treasure hunt that was going, put aside
+    if(K){const was=A().hunt,park=was&&(was.kind?was.park:was);h.kind=opts.kind;h.day=opts.day||today();
+      h.step=Math.max(0,Math.min(2,Math.floor(+opts.step||0)));for(let i=0;i<h.step;i++)marks[order[i]].dug=true;
+      if(park)h.park=park;}
+    A().hunt=h;save();
     mount();refreshHud();Sound.sfx.chime();
-    toast("A note blew in! 📜");showNote(true);try{Quests.ensure();}catch(e){}
+    toast(K&&K.blew||"A note blew in! 📜");showNote(true);try{Quests.ensure();}catch(e){}
+    return h;
   }
   function noteText(){
     const h=A().hunt,m=h.marks[h.order[h.step]],others=h.marks.filter(x=>!x.dug&&x!==m);
-    const other=others.length?others[Math.floor((h.t0/1000+h.step)%others.length)].w:null;
+    const other=others.length?others[Math.floor((h.t0/1000+h.step)%others.length)].w:null,K=kindOf(h);
+    if(K&&K.clue)return K.clue(h,m.w,other);
     return (h.step===0?"":h.step===1?"Yes! ":"One more! ")+clue(h.tier,m.w,other);
   }
   function showNote(big){
     const h=A().hunt;if(!h||!hud)return;noteEl=hud.querySelector("#advNote");
-    const text=noteText();
-    noteEl.className=big?"big":"small";
-    noteEl.innerHTML=`<div class="paper"><div class="nh">📜 Clue ${h.step+1} of 3</div>
+    const text=noteText(),K=kindOf(h);
+    noteEl.className=(big?"big":"small")+(K&&K.cls?" "+K.cls:"");
+    noteEl.innerHTML=`<div class="paper"><div class="nh">${K&&K.head?K.head(h):`📜 Clue ${h.step+1} of 3`}</div>
       <div class="btext">${text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
       ${big?`<button class="btn primary" id="noteGo">Let's go! 🧭</button>`:""}
       ${h.miss?`<button class="btn soft" id="noteHear">🔊</button>`:""}</div>`;
@@ -9085,12 +9192,25 @@ const Adv=(()=>{
     const hr=noteEl.querySelector("#noteHear");if(hr)hr.onclick=()=>Sound.say("sent:"+text,text,.9);
     if(!big)noteEl.onclick=e=>{if(e.target.closest(".bw,button"))return;showNote(true);};else noteEl.onclick=null;
   }
+  let digAt=0;
   function dig(m){
     if(m.dug)return;
-    const h=A().hunt,want=h.marks[h.order[h.step]];
+    const h=A().hunt,want=h.marks[h.order[h.step]],K=kindOf(h);
+    if(K&&m===want&&Date.now()<digAt)return;   // one dig, not two from a double tap
     const el=landEls[h.marks.indexOf(m)];if(el){el.classList.remove("digging");void el.offsetWidth;el.classList.add("digging");}
     Sound.sfx.dig?Sound.sfx.dig():Sound.sfx.thud();
     const wobj=allWords().find(x=>x.w===want.w);
+    if(m===want&&K){
+      digAt=Date.now()+900;
+      setTimeout(()=>{if(A().hunt!==h||m.dug)return;Sound.sfx.win();const g=geom(m.c,m.r);sparkleBurst(toView(g.x),g.y*100-6,12);
+        K.found(m,h,()=>{
+          if(A().hunt!==h||m.dug)return;
+          try{Skills.result(wobj,{ok:true,help:h.miss>0});}catch(e){}
+          m.dug=true;h.step++;save();if(on)drawLand();refreshHud();
+          if(h.step<3){showNote(false);return;}
+          endKind(h);if(K.finish)K.finish(h);});},450);
+      return;
+    }
     if(m===want){
       try{Skills.result(wobj,{ok:true,help:h.miss>0});}catch(e){}
       m.dug=true;h.step++;state.wordsRead+=4;
@@ -9098,11 +9218,18 @@ const Adv=(()=>{
         if(h.step>=3)treasure();else{Sound.say("sent:Yes! You found the next clue!","Yes! You found the next clue!",.95);showNote(true);}save();refreshHud();},450);
     }else{
       h.miss++;try{Skills.result(wobj,{ok:false,confused:m.w});}catch(e){}
-      setTimeout(()=>{Sound.sfx.nope();toast(`Nothing by the ${m.w}. Read the note again!`);showNote(true);
+      setTimeout(()=>{Sound.sfx.nope();toast(K&&K.nothing?K.nothing(m.w):`Nothing by the ${m.w}. Read the note again!`);showNote(true);
         const sp=[...noteEl.querySelectorAll(".bw")].find(x=>x.textContent.replace(/[^a-z]/gi,"").toLowerCase()===want.w);
         if(sp){sp.classList.add("look");setTimeout(()=>sp.classList.remove("look"),1800);}save();},450);
     }
   }
+  // a hunt of another kind is over: the treasure hunt it put aside comes back, and its note goes
+  function endKind(h){
+    if(A().hunt===h){A().hunt=h.park||null;save();}
+    if(noteEl){noteEl.className="";noteEl.innerHTML="";noteEl.onclick=null;}
+    if(on){drawLand();refreshHud();}
+  }
+  function settle(){const h=A().hunt,K=kindOf(h);if(K&&K.stale&&K.stale(h))endKind(h);return A().hunt;}
   function treasure(){
     const a=A(),h=a.hunt,first=a.huntDay!==today();
     a.huntDay=today();a.hunts=(a.hunts||0)+1;a.hunt=null;
@@ -9118,7 +9245,8 @@ const Adv=(()=>{
     show("ovReward");confetti();Sound.sfx.fanfare();setTimeout(()=>Sound.say("sent:You found the treasure!","You found the treasure!",.95),400);
   }
   return{enter,exit,mount,refreshHud,newHunt,provide:f=>providers.push(f),hookCrit:f=>hooks.crit.push(f),hookVeh:f=>hooks.veh.push(f),
-    redraw:()=>{if(on){drawSpots();near=null;hud&&hud.querySelector("#advAct").classList.remove("on");}},freePos,get on(){return on;},_P:P,_in:input,_near:()=>near,_act:act,_patches:patches,_A:A};
+    redraw:()=>{if(on){drawSpots();near=null;hud&&hud.querySelector("#advAct").classList.remove("on");}},freePos,get on(){return on;},_P:P,_in:input,_near:()=>near,_act:act,_patches:patches,_A:A,
+    huntKind:(id,K)=>{kinds[id]=K;},settle,note:big=>showNote(!!big)};
 })();
 
 /* ================================================================
@@ -12473,6 +12601,21 @@ Object.assign(ART,{hat_pilgrim(){return `<g data-hat="pilgrim"><path d="M12 33 Q
     <path d="M47 24 L53 24 L53 27.5 L47 27.5Z" fill="#2A2220" stroke-width="1.2"/>
     <path d="M39.5 9 L38.5 18" fill="none" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="2.4"/>
     <path d="M62 24 Q71 15 76 24 Q69 29 62 24Z" fill="#E0782E" stroke-width="1.6"/></g>`;}});
+// the heart antennae of the Valentine's look (WORD MAIL): a pink band over the head, two springy stalks, a heart on each
+Object.assign(ART,{hat_heart(){return `<g data-hat="heart"><path d="M39 26 Q33 21 36 17 Q39 13 32 12" fill="none" stroke-width="2.6"/><path d="M61 26 Q67 21 64 17 Q61 13 68 12" fill="none" stroke-width="2.6"/>
+    <path d="M27 34 Q50 16 73 34" fill="none" stroke-width="7.4"/><path d="M27 34 Q50 16 73 34" fill="none" stroke="#F47FA4" stroke-width="4.2"/>
+    ${loveHeart(31,9,6.5,"#E8445A")}${loveHeart(69,9,6.5,"#F47FA4")}${HI(28.4,6.4,2.2,1.3,.7)}${HI(66.4,6.4,2.2,1.3,.7)}</g>`;}});
+// the chick hat of the Easter look (EGG HUNT): a chick peeping out of half a painted eggshell
+Object.assign(ART,{hat_chick(){return `<g data-hat="chick"><path d="M38 19 Q36 4 50 3 Q64 4 62 19 Q62 29 50 30 Q38 29 38 19Z" fill="${dome("#FFD84D",40,30)}"/>
+    <path d="M47.5 3.5 Q48.5 -1 51 .8 M50.5 3.5 Q53.5 -.2 55.5 1.8" fill="none" stroke-width="2"/>
+    <circle cx="45.5" cy="12.5" r="2" fill="${INK}" stroke="none"/><circle cx="54.5" cy="12.5" r="2" fill="${INK}" stroke="none"/>
+    <circle cx="44.8" cy="11.8" r=".7" fill="#FFFFFF" stroke="none"/><circle cx="53.8" cy="11.8" r=".7" fill="#FFFFFF" stroke="none"/>
+    <path d="M47 15.5 L50 19.5 L53 15.5Z" fill="#F2913A" stroke-width="1.4"/>
+    <ellipse cx="42" cy="17" rx="2.4" ry="1.4" fill="#F7B6CB" stroke="none" opacity=".85"/><ellipse cx="58" cy="17" rx="2.4" ry="1.4" fill="#F7B6CB" stroke="none" opacity=".85"/>
+    <path d="M28 22 L33 17 L38 22 L43 17 L50 22 L57 17 L62 22 L67 17 L72 22 L72 26 Q70 36 50 36 Q30 36 28 26Z" fill="${grad("#FBF6EC","v",.08,.14)}"/>
+    <path d="M32 28 Q41 31 50 29 Q59 31 68 28" fill="none" stroke="#9FD4F5" stroke-width="2.6"/>
+    <circle cx="40" cy="32.5" r="1.5" fill="#F7B6CB" stroke="none"/><circle cx="50" cy="33.5" r="1.5" fill="#FFE27A" stroke="none"/><circle cx="60" cy="32.5" r="1.5" fill="#F7B6CB" stroke="none"/>
+    ${HI(44,7.5,4,2,.45)}</g>`;}});
 // the hat the buddy shows: a worn look's hat once he has earned it, otherwise his wardrobe hat.
 // A function declaration, so the drawings that run before this section is reached can call it.
 function buddyHat(){try{return Looks.hat();}catch(e){return state.hat;}}
@@ -16218,6 +16361,666 @@ const Feast=(()=>{
 })();
 
 /* ================================================================
+   WORD MAIL — Valentine's Day, 1 to 14 February (v10.3)
+   The Valentine's look ("valentine", 💌) joins LOOKS here as data
+   (Looks.add), earned one piece per full mailbag, in this order: a
+   string of hearts hung between two posts, a red mailbox with a heart
+   on its flag, heart petals drifting down, and heart antennae for the
+   buddy (hat_heart, drawn with the witch hat). While it is worn the
+   tint turns rosy, the HUD gets a pink wash with a red-and-pink trim,
+   and plain crates a pink edge and a 💌.
+   Word mail exists only in the look's window, 1 to 14 February:
+   Looks.inWindow("valentine"), or the same dates here. In the window a
+   💌 button sits in the tool bar (and stays while a bag is part-way
+   through), with the letters still to come on its badge; never a gate.
+   It opens the mailbag and a letter. His animals write to him (each
+   kind he has, in an order of the day, round again when there are
+   fewer than eight; the animals of his lands while he has none): a
+   line or two about the one who sends it and a question, "I got you a
+   kite! What did I get you?", in an envelope like Notes from home's.
+   Every word of a letter and of its answers passes the decode check at
+   his level before he sees it, so what a letter can say grows with his
+   level ("I am on a log. What am I on?" at level 1, "The fox likes you!
+   Who likes you?" at 5, yes or no with "maybe" at 8), and a tap on a
+   word says it, as in the books. Nothing is read to him first. He
+   answers by picking one of three words of the same kind (things,
+   animals, what he can do, or yes / no / maybe):
+     right  the letter goes into the mailbag, 2 🪙, then the next letter
+     miss   "Not that one. Read the letter again!": the same letter
+            stays, the second miss makes the answer glow, and it still
+            pays when he gets there
+   Nothing is ever taken away. Every letter counts as a read toward the
+   daily goal. Eight letters fill the bag: a new friend comes to the
+   valley, one of the animals of his lands he has not got yet (it joins
+   the Word-Dex, like a friend from the tall grass), or 10 💎 when he has
+   them all; and one look piece (Looks.grant("valentine"), which says
+   and shows it; the panel only repeats it). One full bag a day; a
+   second visit shows the full bag and says to come back tomorrow.
+   Save: state.mail = {day, read (who sent each letter answered that
+   day), bags (full bags in all)}. Nothing is written until a letter is
+   answered, so outside the window the save is untouched.
+   ================================================================ */
+// a heart, point down, centred on x,y (s is about half its width), for the look's drawings and the mailbag.
+// A function declaration, so a drawing made before this part of the page has run can use it
+function loveHeart(x,y,s,fill,rot){
+  const f=n=>+n.toFixed(1);
+  return `<path${rot?` transform="rotate(${rot} ${x} ${y})"`:""} d="M${x} ${f(y+s*.9)} C${f(x-s*1.5)} ${f(y-s*.1)} ${f(x-s*.7)} ${f(y-s*1.3)} ${x} ${f(y-s*.35)} C${f(x+s*.7)} ${f(y-s*1.3)} ${f(x+s*1.5)} ${f(y-s*.1)} ${x} ${f(y+s*.9)}Z" fill="${fill}" stroke-width="1.6"/>`;
+}
+/* ---- the look's props (the same 100-box and ink as the seasonal builds) ---- */
+Object.assign(ART,{
+  // a string of hearts hung between two posts, with a pink bow on each post
+  look_hearts(r){
+    const at=t=>{const a=(1-t)*(1-t),b=2*(1-t)*t,c=t*t;return[a*16+b*50+c*84,a*47+b*75+c*47];},
+      cols=["#E8445A","#F47FA4","#FF9EBB","#D8343F","#F47FA4","#E8445A"];
+    let hs="";
+    for(let i=0;i<6;i++){const p=at(.15+i*.14),x=+p[0].toFixed(1),y=+p[1].toFixed(1),rot=Math.round((i%2?10:-10)+(r()-.5)*12);
+      hs+=`<path d="M${x} ${y} L${x} ${(y+5).toFixed(1)}" fill="none" stroke-width="1.4"/>${loveHeart(x,+(y+12).toFixed(1),7,cols[i],rot)}`;}
+    const post=x=>`<path d="M${x-4.5} 92 L${x-4.5} 47 Q${x} 41 ${x+4.5} 47 L${x+4.5} 92Z" fill="${grad("#C08A55","h")}"/>`;
+    const bow=x=>`<path d="M${x-1.5} 50 L${x-5} 61 M${x+1.5} 50 L${x+5} 61" fill="none" stroke="#F06C9B" stroke-width="2.6"/>
+      <path d="M${x} 49 Q${x-9} 41 ${x-10} 49 Q${x-9} 56 ${x} 49 Q${x+9} 41 ${x+10} 49 Q${x+9} 56 ${x} 49Z" fill="#F06C9B" stroke-width="1.5"/>
+      <circle cx="${x}" cy="49" r="2.4" fill="#D84A80" stroke-width="1.2"/>`;
+    return S(`${OCC}${post(16)}${post(84)}<path d="M16 47 Q50 75 84 47" fill="none" stroke="#B5548A" stroke-width="2"/>${hs}${bow(16)}${bow(84)}`);
+  },
+  // a red mailbox on a post: a letter peeking out of its door, a heart on its side and a heart on the flag, which is up
+  look_mailbox(r){
+    const tilt=+((r()-.5)*6).toFixed(1);
+    return S(`${OCC}<path d="M46 58 L54 58 L54 93 L46 93Z" fill="${grad("#9A6436","h")}"/>
+      <path d="M38 93 Q42 85 46 92 M54 92 Q58 85 62 93" fill="none" stroke="#5C8C48" stroke-width="2.6"/>
+      <path d="M14 60 L14 38 Q14 18 36 18 L64 18 Q86 18 86 38 L86 60Z" fill="${grad("#D8343F","v",.28,.2)}"/>
+      <path d="M36 18 Q14 18 14 38 L14 60 L25 60 L25 38 Q25 23 36 18Z" fill="#A82530" stroke="none" opacity=".45"/>
+      <path d="M25 23 L25 60" fill="none" stroke-opacity=".35" stroke-width="1.8"/>
+      <g transform="rotate(${-12+tilt} 16 40)"><path d="M3 33 L23 33 L23 46 L3 46Z" fill="#FFFDF6" stroke-width="1.6"/>
+        <path d="M3 33 L13 40 L23 33" fill="none" stroke-width="1.3"/>${loveHeart(13,41.5,2.6,"#F06C9B")}</g>
+      ${loveHeart(54,41,7.5,"#FFB3C9")}
+      <path d="M76 52 L76 7" fill="none" stroke-width="3"/>${loveHeart(85,11,7.5,"#F06C9B",tilt)}
+      ${HI(42,25,10,3,.35,0)}`);
+  }
+});
+Looks.add({id:"valentine",name:"Valentine's Day",ic:"💌",window:{from:[2,1],to:[2,14]},
+  tint:"linear-gradient(180deg,rgba(255,160,196,.17),rgba(240,98,143,.2) 55%,rgba(255,196,214,.15))",
+  particles:"petals",drift:"\u2665\uFE0E",
+  props:[{id:"hearts",at:{c:9.5,r:7},size:1.2},{id:"mailbox",at:{c:14,r:6},size:.95}],
+  hat:"heart",
+  greet:"Happy Valentine's Day! The valley loves you.",
+  pieces:["hearts","mailbox","petals","hat"],
+  names:{hearts:"string of hearts",mailbox:"heart mailbox",petals:"heart petals",hat:"heart antennae"},
+  css:{hud:"linear-gradient(180deg,#FFE1EB,rgba(255,225,235,0))",trim:"repeating-linear-gradient(90deg,#E8445A 0 14px,#FFFFFF 14px 22px,#F47FA4 22px 36px,#FFFFFF 36px 44px)",
+    edge:"#C8406E",crate:"linear-gradient(160deg,#FFEAF1,#F7B6CB)"}});
+
+const Mail=(()=>{
+  const BAG=8,PAY=2,GEMS=10,LOOK="valentine",
+    // the words a letter is written from; a letter is only shown when every word of it passes the decode check
+    GIFTS=["hat","sock","map","box","pot","fan","top","cup","pen","bun","bell","kite","drum","flag","cake","shell","ring","ball","doll","star","rose"],
+    SPOTS=["log","rock","box","van","mat","bed","rug","hill","ship","bus","sled","bench","stump","raft","truck"],
+    VERBS=["hop","jog","nap","dig","run","hum","kick","sing","dash","swim","jump","skip","spin","clap"],
+    FOODS=["jam","ham","nuts","buns","eggs","figs","fish","chips","plums","cake","corn"],
+    THINGS=["hat","cap","sock","box","cup","pen","bed","bus","van","kite","drum","flag","sled","truck","ship","bell"],
+    COLORS=["blue","yellow","tan","red","pink","black","gold"],
+    ANIMALS=["fox","dog","cat","bat","hen","pig","bug","duck","fish","frog","crab","wolf","hawk","snake","shark","bird","horse","seal","whale",
+      "sheep","goat","cow","mouse","owl","bee","rabbit","turtle","dragon"],
+    HELLO=["Be my pal!","Hugs from me!","I love you!"];
+  let fake=null,ov=null,cur=null,pending=false,lastPiece=null,lastFriend=null,nextT=0;
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const day=()=>fake||today();
+  // pure: is this date ("YYYY-MM-DD" or a Date) from 1 to 14 February?
+  function inWindow(d){
+    let m,dd;
+    if(d instanceof Date){if(isNaN(d.getTime()))return false;m=d.getMonth()+1;dd=d.getDate();}
+    else{const s=String(d==null?day():d);if(!/^\d{4}-\d{2}-\d{2}/.test(s))return false;m=+s.slice(5,7);dd=+s.slice(8,10);}
+    return m===2&&dd>=1&&dd<=14;
+  }
+  // the Look system, when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the look's window, then the dates above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow(LOOK);}catch(e){}}
+    return inWindow(today());
+  }
+  // reading the save never writes to it
+  const saved=()=>isObj(state.mail)?state.mail:{day:"",read:[],bags:0};
+  const read=()=>{const m=saved();return m.day===day()&&Array.isArray(m.read)?m.read:[];};
+  const left=()=>Math.max(0,BAG-read().length);
+  const full=()=>read().length>=BAG;
+  const going=()=>read().length>0&&!full();
+  const active=()=>live()||going();
+  // for writing, when a letter is answered: a new day starts an empty mailbag
+  function M(){
+    if(!isObj(state.mail))state.mail={day:"",read:[],bags:0};
+    const m=state.mail;if(!Array.isArray(m.read))m.read=[];
+    if(m.day!==day()){m.day=day();m.read=[];}
+    return m;
+  }
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+
+  /* ---------- the letters ---------- */
+  // who writes: each kind of animal he has, in an order of the day (the animals of his lands while he has none)
+  function senders(){
+    const ids=[];
+    (state.critters||[]).forEach(c=>{if(c&&CRIT(c.id)&&ART[c.id]&&ids.indexOf(c.id)<0)ids.push(c.id);});
+    if(!ids.length)CRITTERS.forEach(c=>{if(ids.length<4&&c.b<=Math.max(0,+state.biome||0)&&ART[c.id])ids.push(c.id);});
+    const rnd=mulberry(hashStr("mail:who:"+day()));
+    return ids.map(id=>({id,o:rnd()})).sort((a,b)=>a.o-b.o).map(x=>x.id);
+  }
+  const mix=(a,rnd)=>a.map(o=>({o,k:rnd()})).sort((x,y)=>x.k-y.k).map(z=>z.o);
+  // what a letter can be: a line about the one who sends it, and a question whose answer is in it.
+  // x = {tier, me (the sender's name, when he can read it), rnd, pick(list): a word of the list he can read}
+  const KINDS={
+    spot:x=>{const p=x.pick(SPOTS);return p&&{lines:[`I am on a ${p}.`],ask:"What am I on?",ans:p,from:SPOTS};},
+    color:x=>{const c=x.pick(COLORS),t=x.pick(THINGS);return c&&t&&{lines:[`My ${t} is ${c}.`],ask:`What is ${c}?`,ans:t,from:THINGS};},
+    gift:x=>{const g=x.pick(GIFTS);return g&&{lines:[`I got you a ${g}!`],ask:"What did I get you?",ans:g,from:GIFTS};},
+    can:x=>{const v=x.pick(VERBS);return v&&{lines:[`I can ${v}!`],ask:"What can I do?",ans:v,from:VERBS};},
+    food:x=>{const f=x.pick(FOODS);return f&&(x.tier>=5?{lines:[`I like ${f}!`],ask:"What do I like?",ans:f,from:FOODS}
+      :{lines:[`I had ${f}!`],ask:"What did I have?",ans:f,from:FOODS});},
+    who:x=>{const n=x.me;return n&&(x.tier>=5?{lines:[`The ${n} likes you!`],ask:"Who likes you?",ans:n,from:ANIMALS}
+      :x.tier>=3?{lines:[`The ${n} is your pal!`],ask:"Who is your pal?",ans:n,from:ANIMALS}:{lines:[`I am your ${n}!`],ask:"What am I?",ans:n,from:ANIMALS});},
+    // yes or no, with "maybe" as the third answer (so from level 8, where he can read it)
+    yesno:x=>{const v=x.pick(VERBS),w=x.pick(VERBS.filter(y=>y!==v)),yes=x.rnd()<.5;
+      return v&&w&&{lines:[`I can ${v}, but I can not ${w}.`],ask:`Can I ${yes?v:w}?`,ans:yes?"yes":"no",opts:["yes","no","maybe"]};}
+  };
+  // the answer and two more of its kind that he can read, none the same thing as another (a hat and a cap)
+  function choices(ans,from,tier,rnd){
+    const out=[ans];
+    mix(from.filter(w=>w!==ans&&Decode.tier(w)<=tier),rnd).forEach(w=>{if(out.length<3&&!out.some(y=>y===w||Read.near(y,w)))out.push(w);});
+    return out.length===3?out:null;
+  }
+  // letter k of today's bag: the same letter all day, whenever the bag is opened
+  function letter(k){
+    const list=senders(),id=list[k%Math.max(1,list.length)]||"fox",c=CRIT(id)||{id,name:"Fox"},tier=currentTier();
+    const rnd=mulberry(hashStr("mail:"+day()+":"+k+":"+id)),ok=t=>Decode.check(t,tier).every(w=>w.ok);
+    const nm=String(c.name).toLowerCase(),me=/^[a-z]+$/.test(nm)&&ok(nm)?nm:null;
+    const x={tier,me,rnd,pick:l=>{const p=l.filter(w=>Decode.tier(w)<=tier);return p.length?p[Math.floor(rnd()*p.length)]:null;}};
+    // the kinds in an order of the day, this letter starting at its own place in it
+    const order=mix(Object.keys(KINDS),mulberry(hashStr("mail:kinds:"+day())));
+    for(let j=0;j<order.length;j++){
+      const kind=order[(k+j)%order.length],L=KINDS[kind](x);if(!L)continue;
+      const opts=L.opts?L.opts.slice():choices(L.ans,L.from,tier,rnd);
+      if(!opts||opts.length<3||!ok(L.lines.join(" ")+" "+L.ask)||!opts.every(ok))continue;
+      // every other letter starts with a hello he can read ("Be my pal!", "Hugs from me!", "I love you!")
+      const hi=HELLO.filter(ok),lines=(k%2===0&&hi.length?[hi[hi.length-1-Math.floor(rnd()*Math.min(2,hi.length))]]:[]).concat(L.lines);
+      return{k,id,name:c.name,kind,lines,ask:L.ask,ans:L.ans,opts:mix(opts,rnd)};
+    }
+    // every word of this one is level 1
+    return{k,id,name:c.name,kind:"spot",lines:["I am on a log."],ask:"What am I on?",ans:"log",opts:mix(["log","rock","box"],rnd)};
+  }
+
+  /* ---------- the panel: the mailbag, and a letter under it ---------- */
+  const BAG_ART=()=>S(`<path d="M30 34 Q30 10 50 10 Q70 10 70 34" fill="none" stroke-width="4.2"/>
+    <path d="M18 40 Q18 32 26 32 L74 32 Q82 32 82 40 L86 84 Q86 92 78 92 L22 92 Q14 92 14 84Z" fill="${grad("#B0703E","v",.25,.2)}"/>
+    <path d="M16 38 L84 38 L80 58 Q50 67 20 58Z" fill="${grad("#8C5530","v",.2,.2)}"/>${loveHeart(50,55,6,"#F06C9B")}${HI(30,50,6,2.4,.3,0)}`);
+  function build(){
+    ov=document.createElement("div");ov.className="overlay";ov.id="ovMail";
+    ov.innerHTML=`<div class="sheet vmsheet"><div class="bhead"><h2>💌 Word mail</h2><b class="vmstat" id="vmStat"></b><button class="bx" id="vmX" aria-label="Close">✕</button></div>
+      <div class="vmbag" id="vmBag"></div><div class="vmwork" id="vmWork"></div><p class="vmmsg" id="vmMsg" aria-live="polite"></p></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#vmX").onclick=close;
+  }
+  const work=()=>ov.querySelector("#vmWork");
+  // the bag: a slot for each letter of the day, the ones answered sealed with a heart
+  function bag(fresh){
+    const n=read().length;let h=`<div class="vmbagart">${BAG_ART()}</div>`;
+    for(let i=0;i<BAG;i++)h+=`<i class="vmslot${i<n?" on":""}${fresh&&i===n-1?" new":""}" data-i="${i}"></i>`;
+    ov.querySelector("#vmBag").innerHTML=h;
+  }
+  function stat(){const s=ov&&ov.querySelector("#vmStat");if(s)s.textContent=`💌 ${read().length} of ${BAG}`;}
+  function msg(t){const m=ov&&ov.querySelector("#vmMsg");if(m)m.textContent=t||"";}
+  const words=t=>t.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ");
+  // the next letter: who sent it, what it says, the question, and three words to answer with
+  function ask(){
+    const k=read().length,L=letter(k),q={k,L,miss:0,paid:false,fin:false};cur=q;
+    const mine=(state.critters||[]).filter(c=>c&&c.id===L.id)[0];
+    work().innerHTML=`<div class="vmletter"><div class="nenv">💌</div><div class="npaper vmpaper">
+        <div class="vmfrom"><span class="vmstamp">${drawThing(L.id,mine?+mine.seed||0:1)}</span><b>From the ${esc(String(L.name).toLowerCase())}</b></div>
+        <div class="btext vmlines">${words(L.lines.join(" "))}</div><div class="btext vmask">${words(L.ask)}</div>
+        <div class="nsig">💗 ${esc(L.name)}</div></div></div>
+      <div class="vmq" id="vmQ"><div class="wopts">${L.opts.map(o=>`<button class="wwopt" data-w="${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
+    const host=work().querySelector("#vmQ");host.dataset.ans=L.ans;
+    Books.wireWords(work().querySelector(".vmpaper"));
+    [].slice.call(host.querySelectorAll("[data-w]")).forEach(b=>{b.onclick=()=>pickIt(q,b,host);});
+  }
+  // a tap on an answer: the right one pays (once, after a moment to see it), a wrong one takes nothing
+  function pickIt(q,b,host){
+    if(q.fin||q.paid||cur!==q)return;
+    const w=b.getAttribute("data-w");
+    if(w===q.L.ans){
+      q.fin=true;b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w,w,.9);
+      setTimeout(()=>paid(q),900);return;
+    }
+    q.miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
+    msg("Not that one. Read the letter again!");
+    clearTimeout(q.t);q.t=setTimeout(()=>{if(!q.paid&&!q.fin&&cur===q&&isOpen())Sound.speak("Not that one. Read the letter again!",.95);},650);
+    if(q.miss>=2){const r=host.querySelector('[data-w="'+q.L.ans+'"]');if(r)r.classList.add("hint");}
+  }
+  // a full bag: one of the animals of his lands he hasn't got comes to live in the valley and joins the Word-Dex
+  // (as a friend from the tall grass does; the commoner ones more often, as with the treasure), or 10 💎 when he has them all
+  function friend(){
+    const have=(state.critters||[]).map(c=>c&&c.id),pool=CRITTERS.filter(c=>c.b<=(+state.biome||0)&&ART[c.id]&&have.indexOf(c.id)<0);
+    if(!pool.length){state.gems=(+state.gems||0)+GEMS;return null;}
+    const bag=[];pool.forEach(c=>{for(let i=0;i<(c.rar===3?1:c.rar===2?2:6);i++)bag.push(c);});
+    const c=bag[Math.floor(Math.random()*bag.length)];
+    try{const a=state.adv,d=a.dex[c.id]=a.dex[c.id]||{};d.seen=1;d.caught=(+d.caught||0)+1;d.at=d.at||Date.now();a.caught=(+a.caught||0)+1;}catch(e){}
+    addItem(c.id);
+    return c;
+  }
+  // a right answer, however many tries it took: the letter goes into the bag and 2 🪙
+  function paid(q){
+    if(q.paid)return;q.paid=true;
+    const m=M();if(m.read.length>=BAG)return;
+    m.read.push(q.L.id);
+    if(!isObj(state.mine))state.mine=def().mine;
+    state.mine.coins=(+state.mine.coins||0)+PAY;
+    state.wordsRead=(+state.wordsRead||0)+1;
+    try{Quests.hit("read",1);}catch(e){}
+    const last=m.read.length>=BAG;
+    if(last){m.bags=(+m.bags||0)+1;lastFriend=friend();}
+    save();try{renderHUD();}catch(e){}
+    toast("+"+PAY+" 🪙");hud();
+    if(last)finish(q,lastFriend);else yum(q);
+  }
+  function yum(q){
+    const n=read().length;
+    Sound.sfx.chime();
+    Sound.speak(n>=BAG-1?"The mailbag is almost full!":n%2?"Into the mailbag!":"What a sweet letter!",.95);
+    if(cur!==q||!isOpen())return;
+    msg("");stat();bag(true);
+    work().innerHTML=`<div class="vmyum"><div class="vmbig">💌</div><p class="mpaid">+${PAY} 🪙</p>
+      <p class="sub">💌 ${left()} ${left()===1?"letter":"letters"} to go</p></div>`;
+    clearTimeout(nextT);nextT=setTimeout(()=>{if(cur===q&&isOpen())ask();},1500);
+  }
+  // the eighth letter: the bag is full, and a friend comes
+  function finish(q,c){
+    Sound.sfx.fanfare();try{confetti();}catch(e){}
+    try{buddyCheer();}catch(e){}
+    const said=Sound.speak(c?"The mailbag is full! A new friend came to the valley!":"The mailbag is full! You have all the animals, so here are ten gems!",.95);
+    // the look piece comes after the cheer (the Look system says its own line), or at once if the app is put away
+    pending=true;const give=()=>{if(pending){pending=false;piece();}};
+    Promise.resolve(said).then(give,give);setTimeout(give,5000);
+    if(cur!==q||!isOpen())return;
+    msg("");stat();bag(true);
+    const mine=c&&(state.critters||[]).filter(x=>x&&x.id===c.id)[0];
+    work().innerHTML=`<div class="vmdone"><div class="vmbig">💌🎉</div><h2>The mailbag is full!</h2>
+      ${c?`<div class="vmfriend" data-crit="${c.id}">${drawThing(c.id,mine?+mine.seed||0:7)}</div><p class="sub vmnew">A new friend came to the valley: the ${esc(String(c.name).toLowerCase())}!</p>`
+        :`<p class="sub vmnew">You have all the animals, so here are ${GEMS} gems!</p><p class="mpaid">+${GEMS} 💎</p>`}
+      <p class="mpaid">🪙 ${BAG*PAY} today</p><p class="vmpiece" id="vmPiece"></p>
+      <div class="mrow"><button class="btn primary big" id="vmDone">Done 💌</button></div></div>`;
+    work().querySelector("#vmDone").onclick=close;
+  }
+  function piece(){
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant(LOOK);}catch(e){p=null;}}
+    lastPiece=p||null;if(!p)return;
+    let nm=String(p);
+    try{const LK=L.get&&L.get(LOOK);if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(e){}   // the piece's shown name ("heart mailbox")
+    // the Look system toasts and speaks it when it grants; the panel only repeats it
+    const el=isOpen()&&ov.querySelector("#vmPiece");if(el)el.textContent="🎁 You got the "+nm+"! Look in your closet 🎨";
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){pending=false;piece();try{saveNow();}catch(e){}}});
+
+  /* ---------- opening and closing ---------- */
+  // the 💌 button: the bag as it stands today and the next letter; a full bag stays full until tomorrow
+  function open(){
+    if(!active())return false;
+    Sound.sfx.pop();
+    if(!ov)build();
+    clearTimeout(nextT);cur=null;msg("");
+    ov.classList.add("on");Modes.open("mail",ov);
+    stat();bag(false);
+    if(full()){
+      work().innerHTML=`<div class="vmdone"><div class="vmbig">💌</div><h2>The mailbag is full!</h2><p class="sub">Come back tomorrow for more letters.</p>
+        <div class="mrow"><button class="btn primary big" id="vmDone">OK 💌</button></div></div>`;
+      work().querySelector("#vmDone").onclick=close;
+      Sound.speak("The mailbag is full! Come back tomorrow.",.95);
+      return true;
+    }
+    const first=!read().length;
+    ask();
+    if(first)setTimeout(()=>{if(isOpen()&&cur&&!cur.fin)Sound.speak("You have mail! Read each letter, then pick the answer.",.95);},300);
+    return true;
+  }
+  function close(){if(!ov)return;clearTimeout(nextT);Modes.shut(ov);cur=null;Sound.sfx.soft();}
+
+  /* ---------- the tool bar ---------- */
+  function hud(){
+    const b=document.getElementById("mailBtn");if(!b)return;
+    const on=active();b.style.display=on?"":"none";
+    const n=document.getElementById("mailBadge");if(n){const l=left();n.textContent=l;n.classList.toggle("on",on&&l>0);}
+  }
+  // the window opens and closes at midnight, and the bag is emptied each day (and the badge catches up with the loaded save)
+  document.getElementById("mailBtn").onclick=()=>open();
+  setInterval(hud,60000);setTimeout(hud,1500);setTimeout(hud,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")hud();});
+  hud();
+
+  return{inWindow,live,active,open,close,hud,letter,BAG,PAY,
+    get read(){return read().slice();},get left(){return left();},get full(){return full();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;hud();},
+    _q:()=>cur&&{k:cur.k,id:cur.L.id,kind:cur.L.kind,ans:cur.L.ans,opts:cur.L.opts.slice(),text:cur.L.lines.concat(cur.L.ask).join(" "),miss:cur.miss,paid:cur.paid},
+    _piece:()=>lastPiece,_friend:()=>lastFriend&&lastFriend.id};
+})();
+
+/* ================================================================
+   EGG HUNT — Easter, the two weeks before Easter Sunday to Easter Monday (v10.3)
+   The Easter look ("easter", 🐣) joins LOOKS here as data (Looks.add),
+   earned one piece at a time, in this order: painted eggs in the grass,
+   a bunny by a bush, blossom drifting down, and a chick hat for the
+   buddy (hat_chick, drawn with the witch hat). While it is worn the
+   tint turns a fresh green, the HUD gets a spring wash with a pastel
+   trim, and plain crates a green edge and a 🐣.
+   Its window moves with Easter: from 14 days before Easter Sunday to
+   Easter Monday, both counted (easterDay(year), the anonymous Gregorian
+   algorithm). In 2027 that is 14 to 29 March.
+   The Egg hunt exists only in that window: Looks.inWindow("easter"), or
+   the same dates here. In the window a 🥚 button sits in the tool bar
+   (and stays while a hunt is part-way through), with the eggs still to
+   find on its badge; never a gate. It opens Adventure, where the egg
+   hunt runs on the treasure hunt's own engine (Adv.newHunt with kind
+   "eggs"): four landmarks at his level, placed by the hunt's rules (so
+   never on a building, a note or the Trading Post stall), and a note
+   with three clues, "The egg is by the log." (at his level: "Hop to the
+   log!" at level 1, "…, not the cup." from 5). A treasure hunt that was
+   going is put aside and comes back when the eggs are found. A dig at
+   the right landmark finds an egg; it opens on a word pick (the shared
+   Read builder: a spring word at his level when there is one, chick,
+   duck, nest, bee…, else another word he can read):
+     right  2 🪙, the mark shows the egg, and the next clue
+     miss   "Not that one, try again!": the same word stays, the second
+            miss makes the answer glow, and it still pays when he gets there
+   A dig at the wrong landmark is "No egg by the cup. Read the note
+   again!", as the treasure hunt says it. Nothing is ever taken away.
+   Every egg counts as a read toward the daily goal. The third egg ends
+   the hunt: "You found all the eggs!", confetti, and one look piece
+   (Looks.grant("easter"), which says and shows it; the panel only
+   repeats it). Three eggs a day; after that the 🥚 button says to come
+   back tomorrow, and a hunt left from another day is put away.
+   Save: state.eggs = {day, found (the words in the eggs found that
+   day), hunts (finished hunts in all)}; the hunt itself is Adventure's
+   (state.adv.hunt, with kind, day and park). Nothing is written until
+   the 🥚 button is pressed in the window, so outside it the save is
+   untouched.
+   ================================================================ */
+// Easter Sunday in year y, [month, day]: the anonymous Gregorian algorithm (Meeus/Jones/Butcher)
+function easterDay(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+    h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  return[Math.floor((h+l-7*m+114)/31),(h+l-7*m+114)%31+1];
+}
+// the look's window: 14 days before Easter Sunday to Easter Monday, both counted. A function, since Easter moves each year;
+// its `from` is only for the Closet, which names the month on a look not earned yet: the month the next window opens
+const EASTER_WINDOW=d=>{
+  const y=d.getFullYear(),e=easterDay(y),t=new Date(y,d.getMonth(),d.getDate()).getTime();
+  return t>=new Date(y,e[0]-1,e[1]-14).getTime()&&t<=new Date(y,e[0]-1,e[1]+1).getTime();
+};
+Object.defineProperty(EASTER_WINDOW,"from",{get(){
+  const now=new Date(),y=now.getFullYear(),e=easterDay(y),yy=now<=new Date(y,e[0]-1,e[1]+1,23,59,59)?y:y+1,ee=easterDay(yy),
+    start=new Date(yy,ee[0]-1,ee[1]-14);
+  return[start.getMonth()+1,start.getDate()];}});
+/* ---- painted eggs: for the look, the marks of the hunt and the egg he finds ---- */
+// the pastel of egg i
+function eggCol(i){const c=["#9FD4F5","#F7B6CB","#FFE27A","#B9E4A0","#D8B4F5"];return c[((Math.floor(+i)||0)%c.length+c.length)%c.length];}
+// the pattern on an egg, drawn over its middle (the egg clips it): 0 a zigzag, 1 dots, 2 two bands
+function eggPattern(cx,cy,rx,ry,fill,pat){
+  const f=n=>+n.toFixed(1),dark=shade(fill,-.32);
+  if(pat===1)return[[-.45,-.35],[.1,-.5],[.5,-.15],[-.2,.05],[.35,.35],[-.5,.4],[0,.6]].map(p=>`<circle cx="${f(cx+p[0]*rx)}" cy="${f(cy+p[1]*ry)}" r="${f(rx*.13)}" fill="${p[1]<0?"#FFFFFF":dark}"/>`).join("");
+  if(pat===2)return`<path d="M${f(cx-rx*1.2)} ${f(cy-ry*.46)} L${f(cx+rx*1.2)} ${f(cy-ry*.46)} L${f(cx+rx*1.2)} ${f(cy-ry*.28)} L${f(cx-rx*1.2)} ${f(cy-ry*.28)}Z" fill="${dark}"/>
+    <path d="M${f(cx-rx*1.2)} ${f(cy+ry*.22)} L${f(cx+rx*1.2)} ${f(cy+ry*.22)} L${f(cx+rx*1.2)} ${f(cy+ry*.42)} L${f(cx-rx*1.2)} ${f(cy+ry*.42)}Z" fill="#FFFFFF" opacity=".8"/>`;
+  let z=`M${f(cx-rx*1.2)} ${f(cy)}`;for(let i=1;i<=8;i++)z+=` L${f(cx-rx*1.2+rx*2.4*i/8)} ${f(cy+(i%2?-ry*.2:ry*.08))}`;
+  return`<path d="${z}" fill="none" stroke="${dark}" stroke-width="${f(ry*.13)}" stroke-linejoin="round"/>`;
+}
+// a painted egg, a bit narrower at the top, centred on cx,cy
+function paintedEgg(cx,cy,rx,ry,fill,pat,rot){
+  const f=n=>+n.toFixed(1),d=`M${f(cx)} ${f(cy-ry)} C${f(cx+rx*.62)} ${f(cy-ry)} ${f(cx+rx)} ${f(cy-ry*.35)} ${f(cx+rx)} ${f(cy+ry*.15)} C${f(cx+rx)} ${f(cy+ry*.7)} ${f(cx+rx*.55)} ${f(cy+ry)} ${f(cx)} ${f(cy+ry)} C${f(cx-rx*.55)} ${f(cy+ry)} ${f(cx-rx)} ${f(cy+ry*.7)} ${f(cx-rx)} ${f(cy+ry*.15)} C${f(cx-rx)} ${f(cy-ry*.35)} ${f(cx-rx*.62)} ${f(cy-ry)} ${f(cx)} ${f(cy-ry)}Z`;
+  const id="eg"+(_gid++);_defs.push(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
+  return`<g${rot?` transform="rotate(${rot} ${f(cx)} ${f(cy)})"`:""}><path d="${d}" fill="${dome(fill,36,28)}"/><g clip-path="url(#${id})" stroke="none">${eggPattern(cx,cy,rx,ry,fill,pat)}</g>
+    <path d="${d}" fill="none"/>${HI(f(cx-rx*.38),f(cy-ry*.45),f(rx*.2),f(ry*.26),.5)}</g>`;
+}
+// the bottom of an egg that has cracked open along a zigzag (in a 100-box), for the egg he has just found
+function eggShell(fill,pat){
+  const d="M14 50 L22 42 L30 51 L39 41 L48 51 L57 41 L66 51 L75 42 L86 50 C88 72 72 94 50 94 C28 94 12 72 14 50Z";
+  const id="eg"+(_gid++);_defs.push(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
+  return`<path d="${d}" fill="${dome(fill,36,20)}"/><g clip-path="url(#${id})" stroke="none">${eggPattern(50,70,38,30,fill,pat)}</g><path d="${d}" fill="none"/>`;
+}
+/* ---- the look's props (the same 100-box and ink as the seasonal builds) ---- */
+Object.assign(ART,{
+  // four painted eggs hidden in a tuft of grass
+  look_eggs(r){
+    const tuft=(x,y)=>`<path d="M${x-9} ${y} Q${x-8} ${y-10} ${x-10} ${y-17} Q${x-3} ${y-9} ${x-2} ${y}Z M${x-1} ${y} Q${x} ${y-13} ${x+2} ${y-20} Q${x+5} ${y-10} ${x+4} ${y}Z M${x+5} ${y} Q${x+9} ${y-9} ${x+13} ${y-14} Q${x+11} ${y-5} ${x+11} ${y}Z" fill="${grad("#6FB558","v",.2,.2)}" stroke-width="1.6"/>`;
+    const k=Math.floor(r()*5);
+    return S(`${OCC}<ellipse cx="50" cy="88" rx="40" ry="8" fill="#8FD06A" stroke="none" opacity=".55"/>
+      ${paintedEgg(62,66,9,12,eggCol(k+4),1,12)}${paintedEgg(29,72,10,13,eggCol(k),0,-14)}${paintedEgg(49,76,10.5,13.5,eggCol(k+1),2,4)}${paintedEgg(73,80,8,10.5,eggCol(k+2),0,18)}
+      ${tuft(18,93)}${tuft(42,94)}${tuft(64,94)}${tuft(84,93)}`);
+  },
+  // a white bunny sitting by a round bush in flower
+  look_bunny(r){
+    return S(`${OCC}<path d="${blob(66,66,29,24,r,10,.1)}" fill="${dome("#5FA84F",36,26)}"/>
+      <path d="${blob(76,56,13,11,r,8,.14)}" fill="${shade("#5FA84F",.18)}" stroke="none" opacity=".7"/>
+      <circle cx="58" cy="52" r="3" fill="#F7B6CB" stroke-width="1.2"/><circle cx="80" cy="70" r="3" fill="#FFE27A" stroke-width="1.2"/>
+      <circle cx="86" cy="52" r="2.6" fill="#FFFFFF" stroke-width="1.2"/><circle cx="68" cy="80" r="2.6" fill="#F7B6CB" stroke-width="1.2"/>
+      <path d="M26 45 Q20 25 23 12 Q29 7 32 20 Q34 32 33 45Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+      <path d="M26.5 39 Q23.5 26 26 17 Q29 16 29.5 25 Q30.5 33 29.5 39Z" fill="#F7B6CB" stroke="none"/>
+      <path d="M36 45 Q38 27 44 17 Q50 14 48 27 Q46 37 42 47Z" fill="${grad("#FBF6EC","v",.1,.12)}"/>
+      <path d="M39 40 Q41 29 45 21 Q47.5 21 46 29 Q44 36 41 41Z" fill="#F7B6CB" stroke="none"/>
+      <path d="${blob(42,77,19,15,r,9,.07)}" fill="${dome("#FBF6EC",34,26)}"/>
+      <circle cx="61" cy="80" r="5.5" fill="#FFFFFF"/>
+      <path d="${blob(33,56,13,11.5,r,9,.06)}" fill="${dome("#FBF6EC",34,26)}"/>
+      <ellipse cx="28.5" cy="53.5" rx="2" ry="2.7" fill="${INK}" stroke="none"/><circle cx="27.8" cy="52.6" r=".8" fill="#FFFFFF" stroke="none"/>
+      <path d="M20.5 58 Q22 56 23.5 58 Q22 60.5 20.5 58Z" fill="#F07A9A" stroke-width="1.2"/>
+      <path d="M21.5 61.5 Q24.5 63.5 27.5 61.5" fill="none" stroke-width="1.4"/>
+      <ellipse cx="32.5" cy="60" rx="3" ry="2" fill="#F7B6CB" stroke="none" opacity=".75"/>
+      <path d="M30 91 Q36 94 42 91 M45 91 Q50 94 55 91" fill="none" stroke-width="1.6"/>
+      ${HI(38,68,6,4,.35)}`);
+  }
+});
+Looks.add({id:"easter",name:"Easter",ic:"🐣",window:EASTER_WINDOW,
+  tint:"linear-gradient(180deg,rgba(196,236,150,.16),rgba(130,204,110,.18) 55%,rgba(255,236,160,.14))",
+  particles:"blossom",drift:"🌸",
+  props:[{id:"eggs",at:{c:8.5,r:7},size:.9},{id:"bunny",at:{c:13.5,r:6},size:1.1}],
+  hat:"chick",
+  greet:"Happy Easter! Eggs are hiding in the valley.",
+  pieces:["eggs","bunny","blossom","hat"],
+  names:{eggs:"painted eggs",bunny:"bunny",blossom:"blossom",hat:"chick hat"},
+  css:{hud:"linear-gradient(180deg,#E6F7D2,rgba(230,247,210,0))",trim:"repeating-linear-gradient(90deg,#8CCB5E 0 14px,#FFE27A 14px 28px,#F7B6CB 28px 42px,#9FD4F5 42px 56px)",
+    edge:"#4F9A3E",crate:"linear-gradient(160deg,#F2FBE6,#C8EBA4)"}});
+
+const Eggs=(()=>{
+  const EGGS=3,PAY=2,LOOK="easter",
+    // what can be in an egg: these spring things first, the ones in his word list at his level that he can decode there
+    SPRING=["chick","hen","duck","egg","nest","bug","frog","sun","bee","bird","snail","lamb","bunny","rabbit","sheep","kite","tree","grass","seed","rain","cake"];
+  let fake=null,ov=null,cur=null,pending=false,lastPiece=null,lastKey="";
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const day=()=>fake||today();
+  // pure: is this date ("YYYY-MM-DD" or a Date) in the two weeks before Easter Sunday, or Easter Monday?
+  function inWindow(d){
+    let t=d;
+    if(!(d instanceof Date)){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d==null?day():d));if(!m)return false;t=new Date(+m[1],+m[2]-1,+m[3]);}
+    return !isNaN(t.getTime())&&EASTER_WINDOW(t);
+  }
+  // the Look system, when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the look's window, then the dates above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow(LOOK);}catch(e){}}
+    return inWindow(today());
+  }
+  // reading the save never writes to it
+  const saved=()=>isObj(state.eggs)?state.eggs:{day:"",found:[],hunts:0};
+  const found=()=>{const e=saved();return e.day===day()&&Array.isArray(e.found)?e.found:[];};
+  const left=()=>Math.max(0,EGGS-found().length);
+  const done=()=>found().length>=EGGS;
+  const going=()=>found().length>0&&!done();
+  const active=()=>live()||going();
+  // for writing, when an egg is found: a new day starts a new hunt
+  function G(){
+    if(!isObj(state.eggs))state.eggs={day:"",found:[],hunts:0};
+    const e=state.eggs;if(!Array.isArray(e.found))e.found=[];
+    if(e.day!==day()){e.day=day();e.found=[];}
+    return e;
+  }
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+  // today's hunt, while it lasts: Adventure's hunt with kind "eggs" (state.adv.hunt)
+  const hunt=()=>{const h=state.adv&&state.adv.hunt;return h&&h.kind==="eggs"&&h.day===day()&&!done()?h:null;};
+
+  /* ---------- on the treasure hunt's engine ---------- */
+  Adv.huntKind("eggs",{
+    cls:"ehmark",
+    avoid:["egg"],
+    blew:"Eggs are hiding in the valley! 🥚",
+    // a hunt from another day, or one whose eggs are all found, is over
+    stale:h=>h.day!==day()||done(),
+    head:h=>`🥚 Egg ${Math.min(EGGS,h.step+1)} of ${EGGS}`,
+    // the note at his level: "Hop to the log!" (1), "The egg is by the log." (2), "…, not the cup." (5); "Yes!" is level 2, "more" 6
+    clue:(h,w,other)=>{const t=h.tier,pre=!h.step?"":t>=6&&h.step===2?"One more! ":t>=2?"Yes! ":"";
+      return pre+(t<=1?`Hop to the ${w}!`:t<=4||!other?`The egg is by the ${w}.`:`The egg is by the ${w}, not the ${other}.`);},
+    nothing:w=>`No egg by the ${w}. Read the note again!`,
+    dug:m=>`<div class="hole"></div><div class="ehfound">${S(paintedEgg(50,52,30,40,eggCol(hashStr(m.w)),hashStr(m.w)%3,-10))}</div>`,
+    found:(m,h,next)=>crack(m,h,next)
+  });
+
+  /* ---------- what is in the eggs ---------- */
+  // spring things he can read at his level; when there are fewer than three, other words he can read fill in
+  function eggWords(){
+    const tier=currentTier(),by={};allWords().forEach(w=>{by[w.w]=w;});
+    const fits=w=>!!w&&!w.tricky&&w.t<=tier&&!!WORD_ART[w.w]&&!!ART[WORD_ART[w.w]]&&Decode.check(w.w,tier).every(x=>x.ok);
+    const out=SPRING.map(id=>by[id]).filter(fits);
+    if(out.length<EGGS){const rnd=mulberry(hashStr("eggs:pad:"+day()));
+      allWords().filter(w=>fits(w)&&out.indexOf(w)<0).map(w=>({w,o:(tier-w.t)+rnd()})).sort((a,b)=>a.o-b.o).forEach(x=>{if(out.length<EGGS+3)out.push(x.w);});}
+    return out;
+  }
+  // the word in the nth egg of the day: fixed by the date, never one found already today
+  function eggWord(n){
+    const pool=eggWords(),had=found(),fresh=pool.filter(w=>had.indexOf(w.w)<0),list=fresh.length?fresh:pool;
+    if(!list.length)return null;
+    return list[Math.floor(mulberry(hashStr("eggs:"+day()+":"+n))()*list.length)];
+  }
+
+  /* ---------- an egg: one read ---------- */
+  // a dig at the right landmark: the egg, and the word pick in it (a double tap or a second dig opens it once)
+  function crack(m,h,next){
+    if(isOpen()||!hunt())return;
+    const n=found().length,w=eggWord(n);
+    if(!w){next();return;}
+    const q={n,w,miss:0,paid:false,next};cur=q;
+    if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovEggs";document.body.appendChild(ov);}
+    ov.innerHTML=`<div class="sheet ehsheet"><div class="bhead"><h2>🥚 Egg hunt</h2><b class="ehstat" id="ehStat"></b><button class="bx" id="ehX" aria-label="Close">✕</button></div>
+      <div class="ehwork" id="ehWork"><div class="ehegg">${S(paintedEgg(50,52,34,44,eggCol(n),n%3,0))}</div>
+        <p class="ehsay">You found an egg! What is in it?</p><div class="ehq" id="ehQ"></div></div>
+      <p class="ehmsg" id="ehMsg" aria-live="polite"></p></div>`;
+    ov.querySelector("#ehX").onclick=close;
+    ov.classList.add("on");Modes.open("eggs",ov);stat();
+    const host=ov.querySelector("#ehQ");
+    Read.wordPick(host,Read.once(()=>paid(q)),w);
+    host.addEventListener("click",e=>missed(e,q,host));
+    setTimeout(()=>{if(cur===q&&!q.paid&&isOpen())Sound.speak("You found an egg! What is in it?",.95);},300);
+  }
+  // the word pick marks a right tap .right and a wrong one .wrong; this runs after it
+  function missed(e,q,host){
+    if(q.paid||cur!==q)return;
+    const b=e.target&&e.target.closest?e.target.closest("[data-w]"):null;
+    if(!b||!host.contains(b)||host.querySelector(".right")||b.getAttribute("data-w")===q.w.w)return;
+    q.miss++;msg("Not that one, try again!");
+    clearTimeout(q.t);q.t=setTimeout(()=>{if(!q.paid&&cur===q&&isOpen())Sound.speak("Not that one, try again!",.95);},650);
+    if(q.miss>=2){const r=host.querySelector('[data-w="'+q.w.w+'"]');if(r)r.classList.add("hint");}
+  }
+  // a right read, however many tries it took: 2 🪙, and the hunt moves on
+  function paid(q){
+    if(q.paid)return;q.paid=true;
+    const e=G();if(e.found.length>=EGGS)return;
+    e.found.push(q.w.w);
+    if(!isObj(state.mine))state.mine=def().mine;
+    state.mine.coins=(+state.mine.coins||0)+PAY;
+    state.wordsRead=(+state.wordsRead||0)+1;
+    try{Quests.hit("read",1);}catch(x){}
+    const last=e.found.length>=EGGS;if(last)e.hunts=(+e.hunts||0)+1;
+    save();try{renderHUD();}catch(x){}
+    toast("+"+PAY+" 🪙");hud();
+    // the engine digs the mark and brings the next clue, or (the third) ends the hunt and gives back a treasure hunt put aside
+    try{q.next();}catch(x){}
+    if(last)finish(q);else yum(q);
+  }
+  // the egg opened: the thing in it on its shell, and the eggs to go
+  const opened=q=>`<div class="ehopen"><div class="ehthing">${drawWord(q.w.w,"egg")}</div><div class="ehshell">${S(eggShell(eggCol(q.n),q.n%3))}</div></div>`;
+  function yum(q){
+    Sound.sfx.chime();
+    Sound.speak(left()===1?"One more egg to find!":"Two more eggs to find!",.95);
+    if(cur!==q||!isOpen())return;
+    msg("");stat();
+    ov.querySelector("#ehWork").innerHTML=`<div class="ehyum">${opened(q)}<p class="mpaid">+${PAY} 🪙</p>
+      <p class="sub">🥚 ${left()} ${left()===1?"egg":"eggs"} to find</p>
+      <div class="mrow"><button class="btn primary big" id="ehNext">Find the next egg! 🧭</button></div></div>`;
+    ov.querySelector("#ehNext").onclick=close;
+  }
+  // the third egg: the hunt is done
+  function finish(q){
+    Sound.sfx.fanfare();try{confetti();}catch(x){}
+    const said=Sound.speak("You found all the eggs!",.95);
+    // the look piece comes after the cheer (the Look system says its own line), or at once if the app is put away
+    pending=true;const give=()=>{if(pending){pending=false;piece();}};
+    Promise.resolve(said).then(give,give);setTimeout(give,5000);
+    if(cur!==q||!isOpen())return;
+    msg("");stat();
+    ov.querySelector("#ehWork").innerHTML=`<div class="ehdone">${opened(q)}<h2>You found all the eggs!</h2><div class="ehbig">🐣 🥚🥚🥚</div>
+      <p class="mpaid">🪙 ${EGGS*PAY} today</p><p class="ehpiece" id="ehPiece"></p>
+      <div class="mrow"><button class="btn primary big" id="ehDone">Done 🐣</button></div></div>`;
+    ov.querySelector("#ehDone").onclick=close;
+  }
+  function piece(){
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant(LOOK);}catch(x){p=null;}}
+    lastPiece=p||null;if(!p)return;
+    let nm=String(p);
+    try{const LK=L.get&&L.get(LOOK);if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(x){}   // the piece's shown name ("chick hat")
+    // the Look system toasts and speaks it when it grants; the panel only repeats it
+    const el=isOpen()&&ov.querySelector("#ehPiece");if(el)el.textContent="🎁 You got the "+nm+"! Look in your closet 🎨";
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){pending=false;piece();try{saveNow();}catch(x){}}});
+  function msg(t){const m=ov&&ov.querySelector("#ehMsg");if(m)m.textContent=t||"";}
+  function stat(){const s=ov&&ov.querySelector("#ehStat");if(s)s.textContent=`🥚 ${found().length} of ${EGGS}`;}
+  // closing the egg: back to the hunt, with its note (the next clue, or the same one if the egg is still to read)
+  function close(){
+    if(!ov)return;Modes.shut(ov);cur=null;Sound.sfx.soft();
+    if(hunt()&&Adv.on)Adv.note(true);
+  }
+
+  /* ---------- the 🥚 button ---------- */
+  // Adventure with today's hunt: a new one (the eggs found today already dug), or the one going on
+  function go(){
+    if(!active())return false;
+    Sound.sfx.pop();
+    if(done()){toast("🐣 You found all the eggs! Come back tomorrow 🥚");Sound.speak("You found all the eggs! Come back tomorrow.",.95);return false;}
+    try{Adv.settle();}catch(x){}
+    const was=Adv.on;if(!was)Adv.enter();
+    // entering puts the note of a hunt it finds up small after a moment: this one's comes back big after that
+    const big=()=>setTimeout(()=>{if(Adv.on&&hunt()&&!isOpen())Adv.note(true);},450);
+    if(hunt()){Adv.redraw();big();return true;}
+    const had=!!(state.adv&&state.adv.hunt);
+    const h=Adv.newHunt({kind:"eggs",day:day(),step:Math.min(EGGS-1,found().length)});
+    if(!h)return false;
+    if(!was&&had)big();
+    setTimeout(()=>{if(Adv.on&&hunt())Sound.speak("It's an egg hunt! Read the note to find the eggs.",.95);},900);
+    return true;
+  }
+  function hud(){
+    const b=document.getElementById("eggsBtn");if(!b)return;
+    const on=active();b.style.display=on?"":"none";
+    const n=document.getElementById("eggsBadge");if(n){const l=left();n.textContent=l;n.classList.toggle("on",on&&l>0);}
+  }
+  // the window opens and closes at midnight: a hunt from another day is put away (a treasure hunt it put aside comes back)
+  function tick(){hud();const k=active()+"|"+day();if(k===lastKey)return;lastKey=k;try{Adv.settle();}catch(x){}}
+  document.getElementById("eggsBtn").onclick=()=>go();
+  setInterval(tick,60000);setTimeout(tick,1500);setTimeout(tick,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
+  hud();
+
+  return{inWindow,live,active,open:go,close,hud,EGGS,PAY,
+    words:()=>eggWords().map(w=>w.w),
+    get found(){return found().slice();},get left(){return left();},get done(){return done();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;lastKey="";hud();try{Adv.settle();}catch(x){}},
+    _q:()=>cur&&{n:cur.n,w:cur.w.w,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece,_hunt:()=>hunt()};
+})();
+
+/* ================================================================
    7m. LISTEN-AND-PICK  ("Hear it")
    A rung-0 variant once a word has been seen: hear the word, choose
    it from three look-alikes in print. Sound → print, no picture.
@@ -16941,6 +17744,8 @@ NULL_IS_MISSING.push("recent");      // ROLLING WINDOW
 NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
 NULL_IS_MISSING.push("feast");      // FEAST TABLE
+NULL_IS_MISSING.push("mail");      // WORD MAIL
+NULL_IS_MISSING.push("eggs");      // EGG HUNT
 NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTORY
 NULL_IS_MISSING.push("talk");      // TALK
 NULL_IS_MISSING.push("power","power.checks","power.days");      // BATTERY CHECK (power.cur null is "no check under way")
