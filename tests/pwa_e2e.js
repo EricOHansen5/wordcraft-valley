@@ -25,7 +25,7 @@ const srv=require("./page").serveApp({port:8771,static:true},async()=>{
   // offline, the game boots from the cache with its data: the version line is written, the art and the books are there
   const off=await p.evaluate(()=>({ver:(document.getElementById("appVer")||{}).textContent||"",missing:!!document.getElementById("dataMissing"),
     sets:Object.keys(window.WCV||{}).sort().join(","),art:typeof ART.bat==="function"&&typeof ART.bath==="function",books:BOOKS.length,words:WORDS.length,tiles:document.querySelectorAll("#tiles .tile").length}));
-  ok(/^Version/.test(off.ver)&&!off.missing&&off.sets==="books,fluent,openmoji,sentences,words"&&off.art&&off.books>0&&off.words>0&&off.tiles>0,
+  ok(/^Version/.test(off.ver)&&!off.missing&&off.sets==="books,fluency,fluent,openmoji,sentences,words"&&off.art&&off.books>0&&off.words>0&&off.tiles>0,
     "offline, the page boots from the cache with its data files: "+JSON.stringify(off));
   const icon=await p.evaluate(async()=>(await fetch("icons/icon-192.png")).status);console.log("offline icon fetch:",icon);
   await ctx.setOffline(false);

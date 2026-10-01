@@ -2096,12 +2096,12 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div class="row"><div class="grow"><div class="lbl">Hero name</div>
       <div class="meta">The name in the storybooks and in My Own Book. The game voice knows the name Asher; other names use the iPad voice.</div></div>
       <input id="optHero" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:140px"></div>
-    <div class="row"><div class="grow"><div class="lbl">School grade</div>
-      <div class="meta">For the one-minute reading check and the report's comparison with national norms. Move it up each August.</div></div>
-      <select id="optGrade"><option value="">Not set</option><option value="K">Kindergarten</option><option value="1">1st grade</option><option value="2">2nd grade</option></select></div>
     <div class="row"><div class="grow"><div class="lbl">Birthday</div>
       <div class="meta">The week of his birthday (the day and the six before it) brings a 🎂 party: his animals at a cake, a book in his name and a free party hat. Leave it blank for none.</div></div>
       <span class="bdset"><select id="optBdayM" aria-label="Birthday month"><option value="">Month</option></select><select id="optBdayD" aria-label="Birthday day"><option value="">Day</option></select></span></div>
+    <div class="row"><div class="grow"><div class="lbl">School grade</div>
+      <div class="meta">For the one-minute reading check and the report's comparison with national norms. Move it up each August.</div></div>
+      <select id="optGrade"><option value="">Not set</option><option value="K">Kindergarten</option><option value="1">1st grade</option><option value="2">2nd grade</option></select></div>
     <div class="row"><div class="grow"><div class="lbl">Show picture choices</div>
       <div class="meta">Turn off when he can read without pictures.</div></div>
       <label class="switch"><input type="checkbox" id="optPics" checked></label></div>
@@ -9029,7 +9029,7 @@ const Fluency=(()=>{
     if(c.acc<95)h+=`<p class="rnote">Below about 95% right, a passage is still hard for him, so accuracy matters more than speed for now.</p>`;
     return h+`<p class="rnote flsrc">Norms: Hasbrouck &amp; Tindal (2017), An update to compiled ORF norms. The stories are this game's own, not the ones the norms came from, so treat the result as a guide.</p>`;
   }
-  // the report's block (after Reading speed)
+  // the report's block (just before Reading speed)
   function report(){
     const g=grade(),cs=F().checks.slice(-4).reverse(),pl=placementText();
     let h=`<h3>Compared with other children</h3><div id="rFluency">`;
@@ -9218,8 +9218,8 @@ function openReport(){
     ${whereTime(days,mins)}
     ${Power.report(days)}
     ${Talk.report(days)}
-    ${Reread.report(days)}
     ${Fluency.report()}
+    ${Reread.report(days)}
     ${Tracks.report(days)}
     <h3>Books</h3>${done.length?`<div class="rbooks">${done.map(b=>{const p=lib[b.id];return`<div class="rbook"><b>${esc(Books.fill(b.title,b.t))}</b><span>${"⭐".repeat(p.stars||1)}${"☆".repeat(3-(p.stars||1))} · read ${p.reads||1}×</span>${p.rec?`<button class="btn soft rplay" data-id="${b.id}">🎧 Hear him read</button>`:""}</div>`;}).join("")}</div>`:`<p class="rnote">No books finished yet — tap 📚 Books in the valley.</p>`}
     <p class="rnote" id="rTogether">${tgWeek} book${tgWeek===1?"":"s"} read together this week${tgWeek?"":" (👨‍👦 Read together is on the book shelf: take turns, or read each page first and he echoes it)"}.</p>
