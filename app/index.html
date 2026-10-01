@@ -1883,7 +1883,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
       <div class="meta">Quick, right-first-time reads climb a word's ladder twice as fast, and a level he reads fluently opens the next one early.</div></div>
       <label class="switch"><input type="checkbox" id="optFast" checked></label></div>
     <div class="row"><div class="grow"><div class="lbl">Reading tier</div>
-      <div class="meta">Moves up on its own at 85% first-try accuracy (sooner with Fast track).</div></div>
+      <div class="meta">Moves up on its own at 85% first-try accuracy over his last 20 goes (sooner with Fast track).</div></div>
       <select id="optTier"><option value="0">Auto</option><option value="1">1 · short a, o</option>
         <option value="2">2 · short i, e, u</option><option value="3">3 · digraphs</option>
         <option value="4">4 · blends</option><option value="5">5 · magic e</option>
@@ -1920,7 +1920,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 <script src="content/sentences.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-09-30b"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-01a"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -3952,6 +3952,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   exchangeSeen:false,
   // LOOKS: the look the valley wears ("" = the plain valley), and the pieces earned of each look, {halloween:{pieces:[]}}
   look:"",looks:{},
+  // ROLLING WINDOW: the last 20 sounding-out reads of each level, 1 = right first time ({1:[1,0,1,...]});
+  // the level rule judges where he is now by these, not by his lifetime score
+  recent:{},
   // TRICK-OR-READ (Halloween): the night's date, the doors closed that night, candy got in all, nights finished
   trick:{day:"",doors:[],candy:0,nights:0},
   // LIGHT THE TREE (Winter): today's date with its bulbs lit and the star, the advent doors opened this December, look pieces asked for
@@ -4000,7 +4003,11 @@ function currentTier(){
     // half the tier mastered at 85% first-try lets the next tier in; a tier he is
     // reading quickly and cleanly (Pace) only needs a quarter, so he isn't kept on easy words
     const quick=Pace.fluent(t);
-    if(mastered>=Math.ceil(pool.length*(quick?.25:.5))&&attempts>=(quick?8:12)&&firsts/attempts>=.85)tier=Math.min(MAX_TIER,t+1);
+    // accuracy is judged on his last 20 goes at the level once there are enough of them (12, or 8 on
+    // Fast track), so a rough start doesn't hold him back once he has got it; before that, all his goes
+    const need=quick?8:12, rc=(state.recent||{})[t]||[];
+    const rate=rc.length>=need?rc.reduce((a,b)=>a+b,0)/rc.length:(attempts?firsts/attempts:0);
+    if(mastered>=Math.ceil(pool.length*(quick?.25:.5))&&attempts>=need&&rate>=.85)tier=Math.min(MAX_TIER,t+1);
     else{tier=t;break;}
   }
   return tier;
@@ -5385,6 +5392,7 @@ function succeed(){
   const st=state.stats[cur.w]||(state.stats[cur.w]={seen:0,first:0,miss:0,mastered:false,rung:0,rungClean:0});
   st.seen++;
   const clean0=misses===0&&!usedEar, wasMastered=st.mastered;
+  if(!cur.tricky&&cur.t){const rc=state.recent[cur.t]||(state.recent[cur.t]=[]);rc.push(clean0?1:0);if(rc.length>20)rc.splice(0,rc.length-20);}
   // retention reads (Retain): was a check due for this heart word, or was it on review?
   // Only a read at Build it is a check (a ♥ crate always opens there); a due word that comes
   // up at another rung (a target, bonus or ordinary crate) leaves its check waiting
@@ -11053,7 +11061,7 @@ Store.item({id:"rollingpin",shelf:"gear",name:"Rolling pin",cost:{coins:50},art:
    Looks.pieces(id) → {earned, all}, Looks.has(id, piece), Looks.done(id).
    ================================================================ */
 const LOOKS=[
-  {id:"halloween",name:"Halloween",ic:"🎃",window:{from:[10,15],to:[10,31]},
+  {id:"halloween",name:"Halloween",ic:"🎃",window:{from:[9,30],to:[10,31]},   // opened early, from 30 Sept 2026, at Eric's request
    tint:"linear-gradient(180deg,rgba(128,84,168,.18),rgba(244,122,48,.24) 50%,rgba(244,122,48,.18))",
    particles:"bats",
    props:[{id:"pumpkins",at:{c:8.5,r:7},size:.9,lum:true},{id:"ghost",at:{c:13.5,r:6},size:1.25,sway:true}],
@@ -14234,12 +14242,12 @@ const Trick=(()=>{
   const DOORS=10,PAY=2;
   let fake=null,ov=null,cur=null,greeted="",lastKey="",pending=false,lastPiece=null,cache={key:"",list:null};
   const day=()=>fake||today();
-  // pure: is this date ("YYYY-MM-DD" or a Date) from 15 to 31 October?
+  // pure: is this date ("YYYY-MM-DD" or a Date) from 30 September to 31 October? (the window was opened early at Eric's request)
   function inWindow(d){
     let m,dd;
     if(d instanceof Date){m=d.getMonth()+1;dd=d.getDate();}
     else{const s=String(d==null?day():d);if(!/^\d{4}-\d{2}-\d{2}/.test(s))return false;m=+s.slice(5,7);dd=+s.slice(8,10);}
-    return m===10&&dd>=15&&dd<=31;
+    return (m===9&&dd>=30)||(m===10&&dd<=31);
   }
   // the Look system (LOOKS), when this build has it
   function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
@@ -15534,6 +15542,7 @@ const NULL_IS_MISSING=["settings","timers","blueprints","critters","vehicles","b
   "adv.dex"];
 NULL_IS_MISSING.push("owned");      // TRADING POST
 NULL_IS_MISSING.push("look","looks");      // LOOKS
+NULL_IS_MISSING.push("recent");      // ROLLING WINDOW
 NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
 NULL_IS_MISSING.push("feast");      // FEAST TABLE

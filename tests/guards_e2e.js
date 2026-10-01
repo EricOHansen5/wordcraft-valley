@@ -160,7 +160,23 @@ const srv=require("./page").serveApp({port:8792},async()=>{
        state.stats=st;state.settings.tierOverride=0;state.pace={1:[1,1,1,1,1,1,1,1,1,1]};
        const on=currentTier();state.settings.fastTrack=false;const off=currentTier();state.settings.fastTrack=true;
        state.pace={1:[1,0,0,1,0,1,0,0,1,0]};const mixed=currentTier();return{on,off,mixed};})()`);
-   ok(tier.on===2&&tier.off===1&&tier.mixed===1,"fluent at level 1 with 30% mastered opens level 2; not when switched off or slow "+JSON.stringify(tier));}
+   ok(tier.on===2&&tier.off===1&&tier.mixed===1,"fluent at level 1 with 30% mastered opens level 2; not when switched off or slow "+JSON.stringify(tier));
+   // the rolling window: a rough start (lifetime 70%) no longer holds him back once his last 20 goes are at 85%
+   const roll=await E(`(()=>{const t1=WORDS.filter(w=>w.t===1&&!w.tricky),st={};
+       t1.forEach((w,i)=>{st[w.w]={seen:10,first:7,miss:3,mastered:i<Math.ceil(t1.length*.5),rung:2,rungClean:0};});
+       state.stats=st;state.settings.tierOverride=0;state.settings.fastTrack=false;state.pace={};
+       state.recent={};const life=currentTier();
+       state.recent={1:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1]};const now=currentTier();   // 18 of 20
+       state.recent={1:[1,1,1,1,1,1,1,1,1,1,1]};const few=currentTier();                       // 11 goes: lifetime still rules
+       state.recent={1:[1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0]};const slump=currentTier();
+       return{life,now,few,slump};})()`);
+   ok(roll.life===1&&roll.now===2&&roll.few===1&&roll.slump===1,"level 2 opens on the last 20 goes (18/20) over a 70% lifetime; not on 11 goes, not on a slump "+JSON.stringify(roll));
+   // a read pushes its first-try outcome into state.recent, capped at 20
+   const rc=await E(`(()=>{state.recent={1:Array(20).fill(1)};const w=WORDS.find(x=>x.t===1&&!x.tricky);
+       openWord({...w,rung:0});cur._t0=performance.now()-2000;misses=1;succeed();
+       document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));
+       return state.recent[1];})()`);
+   ok(rc.length===20&&rc[19]===0&&rc[0]===1,"a read with a miss pushes a 0 and the window stays at 20: "+JSON.stringify(rc));}
 
   ok(!errs.length,"no page errors "+errs.join(" | "));
   await b.close();srv.close();

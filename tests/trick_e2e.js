@@ -1,4 +1,4 @@
-// v10.3 Trick-or-Read (Halloween, 15–31 October): the window (Trick.inWindow), nothing outside it, the 🎃 button,
+// v10.3 Trick-or-Read (Halloween, 30 September to 31 October): the window (Trick.inWindow), nothing outside it, the 🎃 button,
 // ten doors in Adventure (buildings first, then a little house and trees), a knock asks a reading question at his
 // level, a right read pays 2 🪙 once and closes the door, a miss takes nothing and the second miss glows, a sentence
 // every third door from level 3, the tenth door finishes the night (and asks the Look system for a piece), the doors
@@ -35,10 +35,10 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const quiet=()=>E(()=>{state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});});
   await listen();await tidy();
 
-  // ---- 1. the window: 15 to 31 October ----
-  ok(await E(()=>[Trick.inWindow("2026-10-14"),Trick.inWindow("2026-10-15"),Trick.inWindow("2026-10-31"),Trick.inWindow("2026-11-01")].join())==="false,true,true,false",
-    "Trick.inWindow: 14 October no, 15 October yes, 31 October yes, 1 November no");
-  ok(await E(()=>Trick.inWindow(new Date(2027,9,15))&&!Trick.inWindow(new Date(2027,9,14))&&Trick.inWindow("2030-10-20")&&!Trick.inWindow("soon")),
+  // ---- 1. the window: 30 September to 31 October ----
+  ok(await E(()=>[Trick.inWindow("2026-09-29"),Trick.inWindow("2026-09-30"),Trick.inWindow("2026-10-31"),Trick.inWindow("2026-11-01")].join())==="false,true,true,false",
+    "Trick.inWindow: 29 September no, 30 September yes, 31 October yes, 1 November no");
+  ok(await E(()=>Trick.inWindow(new Date(2027,8,30))&&!Trick.inWindow(new Date(2027,8,29))&&Trick.inWindow("2030-10-20")&&!Trick.inWindow("soon")),
     "...for a Date too, in any year; anything else is outside");
   ok(await E(()=>Trick.live()===Trick.inWindow(today())),"with no test date it goes by today's date (the Look system's window is the same one)");
 
@@ -208,7 +208,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const BIG={};[[2,8],[5,8],[8,8],[11,8],[14,8],[17,8],[20,8],[3,6],[7,6],[11,6],[15,6],[19,6]].forEach(([c,r],i)=>{BIG[c+","+r]={id:["lantern","well","barn","garage","bell","market"][i%6],seed:i,lv:1};});
   await E(g=>{state.grid=g;renderWorld();},BIG);
   const picks=[];
-  for(const d of ["2026-10-15","2026-10-16","2026-10-17"]){await E(x=>Trick._setToday(x),d);
+  for(const d of ["2026-09-30","2026-10-16","2026-10-17"]){await E(x=>Trick._setToday(x),d);
     picks.push(await E(()=>Trick.doors().map(x=>x.kind+":"+x.id)));}
   ok(picks.every(x=>x.length===10&&x.every(y=>/^build:b:/.test(y))),"12 buildings: 10 doors, all on buildings");
   ok(J(picks[0])!==J(picks[1])||J(picks[1])!==J(picks[2]),"...a different ten on different nights");
@@ -221,7 +221,8 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   t=await tk();ok(t.day==="2026-10-21"&&t.doors.length===3&&t.candy===26&&t.nights===1,"state.trick is saved "+J(t));
   ok((await shown("trickBtn"))===(await E(()=>Trick.inWindow(today()))),"after a reload the test date is gone: the real date ("+await E(()=>today())+") decides");
   // a night part-way through keeps its button even when the window says no (a Look system with other dates)
-  await E(()=>{if(window.__real){window.__oi=Looks.inWindow;Looks.inWindow=()=>false;}else window.Looks={inWindow:()=>false,grant:()=>null};window.__keep=state.trick;state.trick={day:today(),doors:["b:6,8"],candy:2,nights:0};Trick.hud();});
+  await E(()=>{window.__real=typeof Looks!=="undefined"&&!!Looks;   // the reload above cleared the flag
+    if(window.__real){window.__oi=Looks.inWindow;Looks.inWindow=()=>false;}else window.Looks={inWindow:()=>false,grant:()=>null};window.__keep=state.trick;state.trick={day:today(),doors:["b:6,8"],candy:2,nights:0};Trick.hud();});
   ok(await shown("trickBtn")&&await E(()=>Trick.live()===false&&Trick.active()===true),"a night part-way through keeps its 🎃 button");
   await E(()=>{state.trick.doors=[];Trick.hud();});
   ok(!(await shown("trickBtn")),"...and without one, the Look system's window decides (no button)");

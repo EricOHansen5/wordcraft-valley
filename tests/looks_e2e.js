@@ -47,8 +47,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(c.length===1+(await E(()=>LOOKS.length))&&c[0].look===""&&c[0].worn&&c[1].look==="halloween"&&c[1].locked&&!c[1].worn,"the Closet lists Valley (worn), then Halloween (greyed) and the other looks "+J(c));
   ok(c.some(x=>x.look==="winter"&&x.locked&&!x.worn&&x.text==="Earn it at Holiday Lights 🎄"),"...the Winter look is greyed until it is earned "+J(c.filter(x=>x.look==="winter")));
   ok(c.some(x=>x.look==="thanks"&&x.locked&&!x.worn),"...the Thanksgiving look is greyed until it is earned "+J(c.filter(x=>x.look==="thanks")));
-  ok(c[1].text==="Earn it at Halloween 🎃"&&await E(()=>document.querySelector('#clGrid [data-look="halloween"] .clwhen').textContent)==="in October",
-    "a look with nothing earned: \"Earn it at Halloween 🎃\", in October: "+c[1].text);
+  ok(c[1].text==="Earn it at Halloween 🎃"&&await E(()=>document.querySelector('#clGrid [data-look="halloween"] .clwhen').textContent)==="in September",
+    "a look with nothing earned: \"Earn it at Halloween 🎃\", in September: "+c[1].text);
   await tapCard("halloween");
   v=await view();
   ok(await E(()=>state.look==="")&&!v.props.length&&!v.anyCls,"tapping a look not earned yet puts nothing on");
@@ -56,7 +56,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(await shut(),"Done closes the Closet");
 
   // ---- 2. the window (pure) ----
-  const w=await E(()=>["2026-10-14","2026-10-15","2026-10-31","2026-11-01"].map(d=>Looks.inWindow("halloween",d)));
+  const w=await E(()=>["2026-09-29","2026-09-30","2026-10-31","2026-11-01"].map(d=>Looks.inWindow("halloween",d)));
   ok(J(w)==="[false,true,true,false]","inWindow: 14 Oct no, 15 Oct yes, 31 Oct yes (the last day counts), 1 Nov no "+J(w));
   const w2=await E(()=>[new Date(2026,9,15,0,1),new Date(2026,9,31,23,59),new Date(2026,10,1,0,0),new Date(2027,9,20,12),new Date(2026,2,10)]
     .map(d=>Looks.inWindow("halloween",d)));

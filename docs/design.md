@@ -717,6 +717,11 @@ The kindergarten tricky word checklist from his class is now part of level 1, hi
 - **The Holiday Lights look**, 1–25 December, earned in this order: string lights on a snowy fence that twinkle after dark, a wreath on a signpost, slow sparkles, and a Santa hat for the buddy. Worn, it gives a blue-dusk tint, a pale HUD with candy-cane trim, and crates with a blue edge and a 🎄.
 - **Light the tree and the advent doors**, from a ❄️ button that shows only in December. Every word he reads anywhere that day lights one bulb on a big tree, up to 25; a finished book, a sign, a Picture-it read or a sentence lights the star. Under the tree are 25 gift-wrapped doors: door N opens on N December, missed doors can still be opened, later ones say when they open. Behind each door is one read: a word to build from its sounds, a check on a mastered ♥ word, or a sentence at his level. A right read pays 3 🪙 and shows a surprise picture; a miss is "Almost! Try again." with the same read staying and a glow after the second miss. Doors 6, 12, 18 and 24 each hand out a piece of the look; door 25 says Merry Christmas with confetti. Door reads count toward the daily goal.
 
+### v10.7.1 — Halloween opens early; levels judged on his last 20 goes
+- **Halloween starts 30 September this year.** The 🎃 button, Trick-or-Read and the Halloween look are open from 30 September to 31 October (it was 15 October). The Closet says "in September".
+- **Moving up a level now looks at his last 20 goes.** The rule still wants half the level mastered and 85% first-try accuracy, but the accuracy is now his last 20 sounding-out reads at that level once he has 12 of them (8 on Fast track), not his whole history. A rough first week no longer holds him at level 1 once he has got it; a slump still keeps him where he is. Lifetime accuracy still rules until there are enough recent goes. Parent mode's first-try accuracy figure is unchanged (lifetime).
+- Saves gain `state.recent` ({level: [1,0,1,…]}, capped at 20 per level); old saves start it empty and fall back to the old rule until it fills.
+
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 
 ### Still on the list (v4 roadmap, in build order)
