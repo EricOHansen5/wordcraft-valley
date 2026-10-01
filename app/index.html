@@ -329,7 +329,7 @@ select{width:auto;max-width:100%}
 .badge.on{display:grid}
 .toolbtn{position:relative}
 /* buddy in the world */
-#buddyWorld{position:absolute;z-index:180;transform:translate(-50%,-100%);transition:left 1.4s cubic-bezier(.3,.8,.4,1),top 1.4s ease,width .5s,height .5s;
+#buddyWorld{position:absolute;z-index:180;transform:translate(-50%,-100%);transform-origin:50% 100%;
   pointer-events:auto;cursor:pointer}
 #buddyWorld svg{width:100%;height:100%;display:block;overflow:visible}
 #buddyWorld .hop{animation:bob 1.2s ease-in-out infinite;transform-origin:50% 100%}
@@ -1651,6 +1651,31 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   /* the tool bar takes three rows there: the toast and the tour sit above it */
   #toast,#coach{bottom:calc(env(safe-area-inset-bottom) + 236px)}
 }
+/* ---------------- REST ----------------
+   body.rest: nobody has touched the game for 45 s (REST in the script). Everything that moves in
+   #app (the HUD, the valley, the tool bar) holds still where it is; the overlays, the Mine, the
+   Factory and a race are outside #app and are left alone.
+   body.flat: resting now (and Save battery, later). The four light layers are laid on as plain
+   alpha instead of blending (their strength is set by applyGrade), and the glass has no blur
+   behind it, a plainer fill instead. */
+body.rest #app *,body.rest #app *::before,body.rest #app *::after{animation-play-state:paused!important}
+body.flat #grade,body.flat #glow,body.flat #sunbeam,body.flat #seasonTint{mix-blend-mode:normal}
+body.flat{--glass:rgba(255,252,246,.9)}
+body.flat .iconbtn,body.flat .pan,body.flat .slot,body.flat .overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.flat .overlay{background:rgba(40,32,22,.58)}
+/* body.saver: the Save battery setting (Grown-up menu → Settings, on by default; SAVE BATTERY in the
+   script). It is body.flat all the time, and the glows on things always in view are a soft light
+   painted behind them (a gradient, drawn once) instead of a drop-shadow filter, which is worked out
+   again every frame the drawing inside it moves (an animal's hop, a car's rumble). */
+body.saver .critter.legend .body,body.saver .vehicle.legend .body{filter:none;
+  background:radial-gradient(ellipse 50% 44% at 50% 62%,rgba(255,214,110,.55),rgba(255,214,110,0) 72%)}
+body.saver .critter.rare .body,body.saver .vehicle.rare .body{filter:none;
+  background:radial-gradient(ellipse 50% 44% at 50% 62%,rgba(123,91,224,.38),rgba(123,91,224,0) 72%)}
+body.saver .critter.shiny .body{filter:hue-rotate(160deg) saturate(1.4)!important;
+  background:radial-gradient(ellipse 50% 44% at 50% 62%,rgba(255,243,160,.6),rgba(255,243,160,0) 72%)}
+body.saver .tile.glow::before{content:"";position:absolute;left:-35%;right:-35%;top:-25%;bottom:-12%;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(255,214,110,.62),rgba(255,214,110,0) 70%)}
+body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,.8)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1910,6 +1935,18 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
     <div class="row"><div class="grow"><div class="lbl">Weather and lighting</div>
       <div class="meta">Sunset and night, fireflies, drifting leaves, rain.</div></div>
       <label class="switch"><input type="checkbox" id="optAmbient" checked></label></div>
+    <div class="row"><div class="grow"><div class="lbl">Save battery</div>
+      <div class="meta">Half the fireflies and leaves, simpler light and glass, only the front trees sway, and no wind sound (the birds and crickets stay). Everything still works. Turn it off for the full look.</div></div>
+      <label class="switch"><input type="checkbox" id="optSaver" checked></label></div>
+    <div class="row" id="batRow"><div class="grow"><div class="lbl">Battery check</div>
+      <div class="meta" id="batMeta"></div>
+      <div id="batAsk" style="display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="meta" id="batQ">Battery now, from the top of the screen:</span>
+        <input type="number" id="batPct" inputmode="numeric" pattern="[0-9]*" min="0" max="100" step="1" aria-label="Battery percent"
+          style="width:84px;font:inherit;padding:8px;border:3px solid var(--ink);border-radius:14px;background:var(--paper);color:var(--ink)"> %
+        <button class="btn primary" id="batOk" style="min-height:44px;padding:6px 16px">OK</button>
+        <button class="btn ghost" id="batNo" style="min-height:44px;padding:6px 14px">Cancel</button></div></div>
+      <button class="btn soft" id="batBtn" style="min-height:44px;padding:8px 14px">Start</button></div>
     <div class="row"><div class="grow"><div class="lbl">Game voice</div>
       <div class="meta" id="packMeta">One natural voice for every word, book and story — the same on every device. Your Voice Studio recordings still come first.</div>
       <button class="btn soft" id="packDl" style="min-height:40px;padding:6px 12px;margin-top:6px">⬇️ Save for offline</button></div>
@@ -3616,7 +3653,19 @@ const distractors=(ps,also)=>{
 
 const Sound=(()=>{
   const cache=new Map();let ctx=null;
-  const actx=()=>ctx||(ctx=new (window.AudioContext||window.webkitAudioContext)());
+  // REST and a hidden page hold the context (suspended); a sound asked for while nothing holds it
+  // but it is still suspended from a hold (a resume outside a touch can fail on iOS) resumes it
+  const holds=new Set();let held=false;
+  const resume=()=>{try{const r=ctx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}};
+  const actx=()=>{if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+    else if(held&&!holds.size){if(ctx.state==="suspended")resume();else held=false;}
+    return ctx;};
+  function hold(why,on){
+    if(on)holds.add(why);else holds.delete(why);
+    if(!ctx)return;
+    try{if(holds.size){if(ctx.state==="running"){ctx.suspend();held=true;}}
+      else if(held&&ctx.state==="suspended")resume();}catch(e){}
+  }
   function tone(f,d,type="sine",g=.1,slide=0){try{const c=actx(),o=c.createOscillator(),gn=c.createGain();
     o.type=type;o.frequency.setValueAtTime(f,c.currentTime);
     if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(60,f+slide),c.currentTime+d);
@@ -3852,7 +3901,7 @@ const Sound=(()=>{
       if(Phonics.known(ph))return Phonics.play(actx(),ph);
       return speak(fallback,.8);}
     return speak(fallback,rate>=.9?rate:.82);}
-  return{say,sfx,speak,stream,ctx:()=>actx(),stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
+  return{say,sfx,speak,stream,ctx:()=>actx(),hold,stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
     has:k=>DB.get("blobs","aud:"+k).then(b=>!!b),
     invalidate:k=>{const u=cache.get(k);if(u)URL.revokeObjectURL(u);cache.delete(k);}};
 })();
@@ -3952,7 +4001,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TALK adds talk ("Talk to me" is on) and eyesFree (its car mode)
   settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true,
     voice:null,voicePack:true,voiceRate:1,goal:12,together:"",
-    talk:false,eyesFree:false},customWords:[],pace:{},
+    talk:false,eyesFree:false,
+    // SAVE BATTERY: the lighter valley (fewer particles, plain light layers, no blur, no wind), on by default
+    saver:true},customWords:[],pace:{},
   modeMin:{},modeOpens:{},
   // BOOT: the block-era tidy-up has said "Tidied up!"
   tidied:false,
@@ -4028,6 +4079,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TALK: each sure answer and tap, {d, tier: "A" "B" "C" or "tap", ok} (the last 200), his voice templates banked in all,
   // and Dad's inbox: his answers to open questions, [{id, d, at, q, book, ms, text}] (the clips are blobs "inbox:<id>")
   talk:{log:[],tpl:0,inbox:[]},
+  // BATTERY CHECK: the grown-up's checks (the last 30), the check under way (null when none), and the
+  // game's own clues per day (60 days): minutes on screen and resting, running animations, frame times
+  power:{checks:[],days:{},cur:null},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
@@ -4203,7 +4257,8 @@ function renderScenery(){
       const inner=document.createElement("div");
       inner.style.cssText="width:100%;height:100%";
       if(["tree","pine","flower","bush","grass","palm","herb","hibiscus","flame"].includes(id)){
-        inner.className="sway";inner.style.animationDelay=(rnd()*4).toFixed(2)+"s";}
+        const dl=(rnd()*4).toFixed(2)+"s";
+        if(!saverOn()||r===ROWS_MAX-1){inner.className="sway";inner.style.animationDelay=dl;}}      // SAVE BATTERY: the front row only
       inner.innerHTML=drawThing(id,Math.floor(rnd()*9999));
       el.appendChild(inner);el.insertAdjacentHTML("beforeend",'<div class="hitpad"></div>');tilesEl.appendChild(el);
     }
@@ -4235,7 +4290,7 @@ function renderWorld(){
         el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${tsz}px;height:${tsz}px;
           transform:translate(-50%,-100%);z-index:${g.z};filter:${f}`;
         const inner=document.createElement("div");inner.style.cssText="width:100%;height:100%";
-        if(["tree","pine","flower","bush","grass"].includes(t.id)){
+        if(["tree","pine","flower","bush","grass"].includes(t.id)&&(!saverOn()||r===ROWS_MAX-1)){      // SAVE BATTERY: the front row only
           inner.className="sway";inner.style.animationDelay=(hashStr(key)%3000)/1000+"s";}
         inner.innerHTML=drawThing(t.id,t.seed);
         el.appendChild(inner);el.insertAdjacentHTML("beforeend",'<div class="hitpad"></div>');
@@ -4261,7 +4316,7 @@ function renderCritters(){
     const el=document.createElement("div");el.className="tile critter";
     el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${size}px;height:${size}px;
       transform:translate(-50%,-100%);z-index:${g.z+5};filter:${atmos(g)};
-      transition:left 1.8s ease,top 1.8s ease,width .6s,height .6s,filter .6s`;
+      transition:filter .6s`;      // its steps are glides (glideTo, below), not left/top transitions
     const meta=CRIT(cr.id);
     if(meta&&meta.rar===3)el.classList.add("legend");else if(meta&&meta.rar===2)el.classList.add("rare");
     if(cr.shiny)el.classList.add("shiny");
@@ -4318,6 +4373,31 @@ function settleMovers(){
     if(x.out===false||isAir(x))return;const f=freeSpot(x.c,x.r,x);x.c=f.c;x.r=f.r;});
   if(state.buddy)Object.assign(state.buddy,freeSpot(state.buddy.c,state.buddy.r,state.buddy));
 }
+/* ---- gliding: the animals, vehicles and buddy step with a transform, not left/top ----
+   A transition on left/top lays the valley out again on every frame of every step (with a few
+   animals and cars about, that was 15-40 layouts a second with nobody touching anything). Now the
+   new spot is set at once, one layout, and the step is drawn as a transform animation from where
+   it was drawn to its resting transform, which the compositor runs without laying anything out.
+   The element rests at translate(-50%,-100%) (its bottom middle on the spot), and .tile's
+   transform-origin is its bottom middle, so a size change between rows is a scale in the same
+   animation. A new step while one is under way starts from where it is drawn now. */
+function glideTo(el,x,topPct,size,secs,ease){
+  if(!el)return;
+  const H=tilesEl.clientHeight||stage.clientHeight||1;
+  const w0=parseFloat(el.style.width),L0=parseFloat(el.style.left),T0=parseFloat(el.style.top)/100*H;
+  let ax=L0,ay=T0,k=w0/size;
+  if(el._glide){      // under way: start from where it is drawn now (its transform is translate(dx,dy) translate(-50%,-100%) scale(k))
+    const m=/matrix\(([^)]+)\)/.exec(getComputedStyle(el).transform||"");
+    if(m){const v=m[1].split(",").map(Number);ax=L0+v[4]+w0/2;ay=T0+v[5]+w0;k=w0*v[0]/size;}
+    try{el._glide.cancel();}catch(e){}el._glide=null;}
+  el.style.left=x+"px";el.style.top=topPct+"%";el.style.width=size+"px";el.style.height=size+"px";
+  if(!secs||!el.isConnected||!(ax===ax&&ay===ay&&k===k)||typeof el.animate!=="function")return;
+  const dx=ax-x,dy=ay-topPct/100*H;
+  if(Math.abs(dx)<.5&&Math.abs(dy)<.5&&Math.abs(k-1)<.01)return;
+  const a=el.animate([{transform:`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) translate(-50%,-100%) scale(${k.toFixed(3)})`},
+    {transform:"translate(-50%,-100%)"}],{duration:secs*1000,easing:ease||"ease"});
+  el._glide=a;a.onfinish=()=>{if(el._glide===a)el._glide=null;};
+}
 function moveCritter(cr,dc,dr,fast=false){
   const firstRow=ROWS_MAX-state.rows;
   let nc=Math.max(0,Math.min(COLS-1,cr.c+dc)), nr=Math.max(firstRow,Math.min(ROWS_MAX-1,cr.r+dr));
@@ -4328,8 +4408,8 @@ function moveCritter(cr,dc,dr,fast=false){
   const g=geom(cr.c,cr.r),size=baseSize()*g.scale*critScale(cr);
   el.classList.toggle("face-r",cr.face==="r");
   el.classList.toggle("moving",fast);
-  el.style.left=g.x+"px";el.style.top=g.y*100+"%";
-  el.style.width=size+"px";el.style.height=size+"px";el.style.zIndex=g.z+5;el.style.filter=atmos(g);
+  glideTo(el,g.x,g.y*100,size,fast?.55:(+el.dataset.pace||1.8),"ease");      // a slow walk sets its own pace (the sloth: 3 s)
+  el.style.zIndex=g.z+5;el.style.filter=atmos(g);
   if(fast)act(cr,"dash");
 }
 function act(cr,what){
@@ -4344,7 +4424,7 @@ function nearest(cr,kind){
   return best?{o:best,d:bd}:null;
 }
 setInterval(()=>{
-  if(!state.critters.length)return;
+  if(!state.critters.length||Rest.quiet())return;      // REST: nobody watching
   const quiet=!!document.querySelector(".overlay.on");
   const night=isNight();
   state.critters.forEach(cr=>{
@@ -4396,9 +4476,8 @@ function placeVehicle(v,secs){
   const el=v._el;if(!el)return;
   const m=VEH(v.id)||{},g=geom(v.c,v.r),size=baseSize()*g.scale*vehSize(v);
   const alt=m.move==="air"?(v.alt||.2):0;
-  el.style.transition=secs?`left ${secs}s cubic-bezier(.45,.05,.35,1),top ${secs}s ease,width .5s,height .5s`:"none";
-  el.style.left=g.x+"px";el.style.top=Math.max(8,(g.y-alt)*100)+"%";
-  el.style.width=size+"px";el.style.height=size+"px";
+  el.style.transition="none";
+  glideTo(el,g.x,Math.max(8,(g.y-alt)*100),size,secs,"cubic-bezier(.45,.05,.35,1)");      // a glide, not a left/top transition
   el.style.zIndex=m.move==="air"?170:g.z+4;
   el.style.filter=m.move==="air"?"none":atmos(g);
   el.classList.toggle("face-r",v.face==="r");
@@ -4480,12 +4559,12 @@ function driveVehicle(v,dc,dr,perCell){
   const secs=Math.min(3.2,cells*(perCell||.34)/(1+.3*((v.lv||1)-1)));   // upgraded ones are quicker
   placeVehicle(v,secs);
   if((v.lv||1)>=3)for(let i=0;i<3;i++)setTimeout(()=>{if(!v._el)return;const a=vehAnchor(v);
-    puffAt(a.rear,a.top-3,"rgba(255,214,90,.95)",2,{dy:-8,size:7,d:.6});},i*secs*300);
+    puffAt(a.rear,a.top-3,"rgba(255,214,90,.95)",fewer(2),{dy:-8,size:7,d:.6});},i*secs*300);
   if(v._el){v._el.classList.add("driving");setTimeout(()=>v._el&&v._el.classList.remove("driving"),secs*1000);}
   // exhaust, smoke, spray or snow behind it
   const trail={road:["rgba(150,150,150,.55)",3],rail:["rgba(90,90,95,.6)",5],water:["rgba(210,240,255,.9)",4],snow:["rgba(255,255,255,.95)",4]}[m.move];
   if(trail){const steps=Math.min(4,cells);for(let i=0;i<steps;i++)setTimeout(()=>{if(!v._el)return;
-    const a=vehAnchor(v);puffAt(a.rear,a.top-(m.move==="rail"?10:1),trail[0],trail[1],{dy:m.move==="rail"?-60:-14,dx:-a.dir*16,size:m.move==="rail"?20:10});},i*secs*250);}
+    const a=vehAnchor(v);puffAt(a.rear,a.top-(m.move==="rail"?10:1),trail[0],fewer(trail[1]),{dy:m.move==="rail"?-60:-14,dx:-a.dir*16,size:m.move==="rail"?20:10});},i*secs*250);}
   return secs;
 }
 function say_(text,word){setTimeout(()=>Sound.say("word:"+word,text,.95),650);}
@@ -4592,7 +4671,7 @@ function launchRocket(v,fromPad){
 
 // traffic: everything keeps moving on its own
 setInterval(()=>{
-  const vs=state.vehicles||[];if(!vs.length)return;
+  const vs=state.vehicles||[];if(!vs.length||Rest.quiet())return;      // REST: nobody watching
   const quiet=!!document.querySelector(".overlay.on");
   vs.forEach(v=>{
     if(v.busy||v.hold||v.out===false)return;const m=VEH(v.id);if(!m)return;const roll=Math.random();
@@ -4761,13 +4840,17 @@ document.getElementById("buddyBtn").onclick=()=>{
    Tapping the button walks the day forward, which kids treat as a toy. */
 const PHASES=[
   {id:"day",  icon:"☀️", grade:"transparent", gradeOp:0,
-   glow:"radial-gradient(ellipse 60% 44% at 72% 4%,rgba(255,232,168,.55),transparent 70%)", glowOp:.9, beam:.5},
+   glow:"radial-gradient(ellipse 60% 44% at 72% 4%,rgba(255,232,168,.55),transparent 70%)", glowOp:.9, beam:.5,
+   flat:{gradeOp:0,glowOp:.55,beam:.3}},
   {id:"dusk", icon:"🌇", grade:"linear-gradient(180deg,#FFB06B,#C06A8E 60%,#6B5A9E)", gradeOp:.42,
-   glow:"radial-gradient(ellipse 70% 40% at 24% 16%,rgba(255,150,90,.6),transparent 70%)", glowOp:.85, beam:.75},
+   glow:"radial-gradient(ellipse 70% 40% at 24% 16%,rgba(255,150,90,.6),transparent 70%)", glowOp:.85, beam:.75,
+   flat:{grade:"linear-gradient(180deg,#C86A30,#8C4058 60%,#4A3A60)",gradeOp:.35,glowOp:.5,beam:.65}},
   {id:"night",icon:"🌙", grade:"linear-gradient(180deg,#2A3470,#1B2148)", gradeOp:.62,
-   glow:"radial-gradient(ellipse 40% 26% at 76% 10%,rgba(180,210,255,.4),transparent 70%)", glowOp:.7, beam:.12},
+   glow:"radial-gradient(ellipse 40% 26% at 76% 10%,rgba(180,210,255,.4),transparent 70%)", glowOp:.7, beam:.12,
+   flat:{grade:"linear-gradient(180deg,#151A38,#0E1124)",gradeOp:.65,glowOp:.9,beam:.15}},
   {id:"dawn", icon:"🌅", grade:"linear-gradient(180deg,#9FB6E8,#E8B0A0 70%)", gradeOp:.34,
-   glow:"radial-gradient(ellipse 62% 36% at 30% 12%,rgba(255,200,170,.6),transparent 70%)", glowOp:.8, beam:.55}
+   glow:"radial-gradient(ellipse 62% 36% at 30% 12%,rgba(255,200,170,.6),transparent 70%)", glowOp:.8, beam:.55,
+   flat:{grade:"linear-gradient(180deg,#40495D,#5D4640 70%)",gradeOp:.15,glowOp:.45,beam:.25}}
 ];
 function phase(){return PHASES[(state.phase||0)%PHASES.length];}
 document.getElementById("timeBtn").onclick=()=>{
@@ -4776,23 +4859,54 @@ document.getElementById("timeBtn").onclick=()=>{
   save();
 };
 function applyNight(){
-  const p=phase(), amb=state.settings.ambient;
-  const g=document.getElementById("grade"), gl=document.getElementById("glow");
-  g.style.background=p.grade; g.style.opacity=amb?p.gradeOp:0;
-  gl.style.background=p.glow; gl.style.opacity=amb?p.glowOp:0;
-  document.getElementById("sunbeam").style.opacity=amb?p.beam:.35;
+  const p=phase();
+  applyGrade();
   document.getElementById("timeBtn").textContent=p.icon;
   Nature.retune();if(p.id==="night")state.sawNight=true;
   // lanterns and crystals light up after dark
-  const lit=p.id==="night"||p.id==="dusk";
-  document.querySelectorAll('.tile[data-lum="1"]').forEach(el=>
-    el.style.filter=(el.dataset.baseFilter||"")+(lit?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""));
+  const lit=p.id==="night"||p.id==="dusk",sv=saverOn();
+  document.querySelectorAll('.tile[data-lum="1"]').forEach(el=>{
+    el.style.filter=(el.dataset.baseFilter||"")+(lit&&!sv?" drop-shadow(0 0 14px rgba(255,214,110,.95))":"");
+    el.classList.toggle("glow",lit&&sv);});      // SAVE BATTERY: a gradient behind it instead
   updateFireflies();
+}
+/* The light layers: #grade (multiply) and #glow, #sunbeam (screen) give the time of day, #seasonTint
+   (multiply) the season or the look. On the iPad a blended layer the size of the valley is a whole
+   extra pass every frame anything under it moves, so in body.flat (REST, Save battery) they are laid on as plain
+   alpha instead: each phase's "flat" values were fitted to the blended look on screenshots of the whole
+   valley (mean colour error, noon 5.8, sunset 10.6, night 5.1, dawn 7.4 out of 255), keeping the sun's
+   glow at noon and dawn where the plain fit would drop it. A switch between the two is instant, not a
+   2 s fade. */
+const FLAT_TINT=.7;      // #seasonTint's strength when it is plain alpha
+/* ---- SAVE BATTERY (Grown-up menu → Settings, state.settings.saver, on by default) ----
+   The valley as it is, made lighter to draw, even while he plays: half the particles (fewer()),
+   the wind bed off (the chirps and crickets stay), the light layers as plain alpha and no blur
+   behind the glass (body.flat, as in REST), the drop-shadow glows on the animals, vehicles and
+   lanterns as a gradient behind them (CSS body.saver), and only the front row of trees and grass
+   sways. Off: the full look. */
+const saverOn=()=>!!(state.settings&&state.settings.saver!==false);
+const fewer=n=>saverOn()?Math.ceil(n/2):n;
+function applySaver(){
+  renderWorld();seedParticles();      // renderWorld ends in applyNight: the classes, the light layers, the fireflies
+  try{Nature.wind(!saverOn());}catch(e){}
+}
+function applyGrade(){
+  const p=phase(),amb=state.settings.ambient,b=document.body,fl=b.classList.contains("rest")||saverOn();
+  b.classList.toggle("saver",saverOn());
+  const was=b.classList.contains("flat");b.classList.toggle("flat",fl);
+  const F=fl?p.flat:null,g=document.getElementById("grade"),gl=document.getElementById("glow"),
+    sb=document.getElementById("sunbeam"),st=document.getElementById("seasonTint"),L=[g,gl,sb,st];
+  if(was!==fl)L.forEach(e=>{e.style.transition="none";});
+  g.style.background=F&&F.grade||p.grade;g.style.opacity=amb?(F?F.gradeOp:p.gradeOp):0;
+  gl.style.background=p.glow;gl.style.opacity=amb?(F?F.glowOp:p.glowOp):0;
+  sb.style.opacity=amb?(F?F.beam:p.beam):(F?.25:.35);
+  st.style.opacity=fl?FLAT_TINT:"";
+  if(was!==fl){void getComputedStyle(g).opacity;L.forEach(e=>{e.style.transition="";});}
 }
 function updateFireflies(){
   document.querySelectorAll(".firefly").forEach(n=>n.remove());
   if(phase().id!=="night"||!state.settings.ambient)return;
-  for(let i=0;i<16;i++){
+  for(let i=0;i<fewer(16);i++){
     const f=document.createElement("div");f.className="firefly";
     f.style.cssText=`left:${8+Math.random()*84}%;top:${38+Math.random()*52}%;
       animation-delay:${Math.random()*3.4}s;z-index:250`;
@@ -4804,7 +4918,7 @@ function updateFireflies(){
 function seedParticles(){
   const P=document.getElementById("particles");P.innerHTML="";
   if(!state.settings.ambient)return;
-  for(let i=0;i<18;i++){
+  for(let i=0;i<fewer(18);i++){
     const m=document.createElement("div");m.className="mote";
     const s=2+Math.random()*4;
     m.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${30+Math.random()*66}%;
@@ -4814,7 +4928,7 @@ function seedParticles(){
   seedSeasonParticles(P);
   try{Looks.particles(P);}catch(e){}
   const leafCols=["#8FBE6E","#E8B33D","#E08A4B","#C96B86"];
-  for(let i=0;i<(season().id==="autumn"?11:4);i++){
+  for(let i=0;i<fewer(season().id==="autumn"?11:4);i++){
     const l=document.createElement("div");l.className="leaf";
     l.style.cssText=`left:${20+Math.random()*80}%;top:${20+Math.random()*30}%;
       background:${leafCols[i%4]};animation-duration:${8+Math.random()*7}s;
@@ -4834,7 +4948,7 @@ function floater(text,color){
   setTimeout(()=>f.remove(),1300);
 }
 function sparkleBurst(xPct,yPct,n=10){
-  const host=document.getElementById("floaters");
+  const host=document.getElementById("floaters");n=fewer(n);
   for(let i=0;i<n;i++){
     const s=document.createElement("div");s.className="sparkle";
     s.style.cssText=`left:${xPct+(Math.random()-.5)*16}%;top:${yPct+(Math.random()-.5)*14}%;
@@ -4848,9 +4962,9 @@ function setStreak(n){
   el.classList.toggle("on",n>=2);document.getElementById("streakN").textContent=n;
 }
 setInterval(()=>{
-  if(!state.settings.ambient||Math.random()>.18)return;
+  if(!state.settings.ambient||Rest.quiet()||Math.random()>.18)return;      // REST: no rain for nobody
   const W=document.getElementById("weather");
-  for(let i=0;i<40;i++){const d=document.createElement("div");d.className="drop";
+  for(let i=0;i<fewer(40);i++){const d=document.createElement("div");d.className="drop";
     d.style.cssText=`left:${Math.random()*100}%;top:${-20+Math.random()*40}%;
       animation-delay:${Math.random()}s;animation-duration:${.7+Math.random()*.5}s`;W.appendChild(d);}
   setTimeout(()=>W.innerHTML="",22000);
@@ -4934,6 +5048,7 @@ const Modes=(()=>{
   }
   // el is optional; when it is given it should already carry "on"
   function open(id,el){
+    try{Rest.poke();}catch(e){}      // REST: a mode opening wakes the valley
     id=id||of(el);if(!MODES[id])id="other";
     reconcile();
     const i=stack.findIndex(e=>el?e.el===el:(!e.el&&e.id===id));
@@ -4964,6 +5079,217 @@ const Modes=(()=>{
   // the minutes tick: this minute goes to whatever is on top
   const credit=()=>bump("modeMin",top());
   return{open,close,shut,top,of,credit,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
+})();
+
+/* ================================================================
+   REST — the game holds still when nobody is playing
+   After 45 s with no touch, pointer or key, document.body gets the class
+   "rest" and the game stops spending the battery on what nobody is
+   watching:
+     - every animation in #app (the HUD, the valley, the tool bar) pauses
+       where it is (CSS "REST"); the overlays, the Mine, the Factory and
+       a race are outside #app and are left alone
+     - the animals, vehicles and buddy stop wandering, and the rain and
+       the badge check skip their ticks (Rest.quiet())
+     - the four light layers blend as plain alpha and the glass loses its
+       blur (body.flat, applyGrade in WORLD)
+     - Nature's and Sound's audio contexts are suspended
+     - the Mine's, Adventure's and the Factory's frame loops park
+   Any input takes it off at once and starts everything again; the audio
+   is resumed inside that input event, so iOS allows it.
+   It never comes on while something is waiting on him: a mode with
+   reading:true in Modes (a crate word, a book page or its quiz, Talk to
+   me, Word Wilds...) or a Job is open, a race is on, or the Factory is
+   running or asking its question. In Adventure and the Mine, steering
+   counts as input: their loops call Rest.poke() while Ash or the miner
+   is moving. A mode opening counts too.
+   While the page is hidden the same timers skip (Rest.quiet()) and the
+   audio is suspended as well.
+   Rest.on() is true while resting; Rest.onWake(fn) runs fn when it ends.
+   For the tests: Rest._idleMs (45000), Rest.now() (the clock; replace it
+   to jump ahead), Rest.check() (look now, not at the next timer).
+   ================================================================ */
+const Rest=(()=>{
+  const R={_idleMs:45000,now:()=>Date.now()};
+  let last=0,on=false,timer=null;const wakers=[];
+  const hidden=()=>document.visibilityState==="hidden";
+  function waiting(){
+    let st=[],L={};try{st=Modes.stack();L=Modes.list();}catch(e){}
+    if(st.some(id=>(L[id]&&L[id].reading)||id==="job"))return true;
+    try{if(Race.busy())return true;}catch(e){}
+    try{if(Factory.busy())return true;}catch(e){}
+    return false;
+  }
+  // one timer, never more than 5 s out, so a changed _idleMs or clock is seen soon
+  function arm(ms){clearTimeout(timer);timer=setTimeout(check,Math.max(50,Math.min(ms,5000)));}
+  function check(){
+    if(on)return;
+    const idle=R.now()-last;
+    if(idle<R._idleMs){arm(R._idleMs-idle);return;}
+    if(hidden()||waiting()){arm(5000);return;}
+    on=true;clearTimeout(timer);timer=null;
+    document.body.classList.add("rest");
+    try{applyGrade();}catch(e){}
+    try{Nature.hold("rest",true);}catch(e){}
+    try{Sound.hold("rest",true);}catch(e){}
+  }
+  // something happened: a touch, a key, a mode opening, Ash walking
+  function poke(){
+    last=R.now();
+    if(!on)return;
+    on=false;document.body.classList.remove("rest");
+    try{applyGrade();}catch(e){}
+    try{Sound.hold("rest",false);}catch(e){}
+    try{Nature.hold("rest",false);}catch(e){}
+    wakers.forEach(f=>{try{f();}catch(e){}});
+    arm(R._idleMs);
+  }
+  // his input: also where a suspended audio context gets its resume, inside the event
+  function input(){poke();try{Nature.kick();}catch(e){}}
+  ["pointerdown","pointermove","pointerup","touchstart","touchend","keydown","wheel"].forEach(ev=>
+    document.addEventListener(ev,input,{capture:true,passive:true}));
+  document.addEventListener("visibilitychange",()=>{
+    const h=hidden();
+    try{Nature.hold("hidden",h);}catch(e){}
+    try{Sound.hold("hidden",h);}catch(e){}
+    if(!h)last=R.now();      // back in the app: a fresh 45 s (a rest already on waits for his touch)
+  });
+  last=R.now();arm(R._idleMs);
+  R.on=()=>on;R.quiet=()=>on||hidden();R.poke=poke;R.check=check;
+  R.onWake=fn=>{wakers.push(fn);};
+  return R;
+})();
+
+/* ================================================================
+   BATTERY CHECK — how fast the game uses the battery
+   An iPad gives a web page no battery level, so a grown-up types it in:
+   Grown-up menu → Settings → Battery check → Start asks for the percent
+   in the status bar and keeps {t0, pct0, saver, ver} (and the minutes by
+   mode so far today) in state.power.cur; Stop asks again and files
+   {d, min, pct0, pct1, pctPerHour, saver, ver, modes} in
+   state.power.checks (the last 30), modes being the top three by minutes
+   during the check (from state.modeMin). A check that went over 12 hours,
+   or where the percent went up (it was charging), is not kept, and says so
+   kindly; so is one under 5 minutes (too short to tell).
+   The game keeps its own clues too, per day in state.power.days (60 days),
+   from the minutes tick (minuteTick), a few dozen bytes a day:
+     on      minutes on screen (visible, touched or not)
+     rest    of those, minutes resting (REST)
+     an, n   running animations, summed over n one-a-minute samples
+     fm, fs, fn   the median frame interval (ms) and the share of frames
+             over 34 ms, each summed over fn samples of 30 frames
+   The Grown-up report shows the last five checks and this week's clues
+   under "Battery", after "Where the time goes"; so does tools/progress.js.
+   For the tests: Power.now() (the clock; replace it), Power._tick() (a
+   minute's sample now; a promise), Power.start(pct), Power.stop(pct).
+   ================================================================ */
+const Power=(()=>{
+  const P={now:()=>Date.now()};
+  const obj=o=>!!o&&typeof o==="object"&&!Array.isArray(o);
+  function S(){
+    if(!obj(state.power))state.power={checks:[],days:{},cur:null};
+    const s=state.power;if(!Array.isArray(s.checks))s.checks=[];if(!obj(s.days))s.days={};if(s.cur!==null&&!obj(s.cur))s.cur=null;
+    return s;
+  }
+  // a percent as typed: a whole number 0-100, or null
+  const pct=v=>{const t=String(v==null?"":v).trim(),n=+t;return t!==""&&isFinite(n)&&n>=0&&n<=100?Math.round(n):null;};
+  const clock=t=>{const d=new Date(t);let h=d.getHours();const m=d.getMinutes(),ap=h>=12?"pm":"am";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+ap;};
+  const nameOf=id=>{const L=Modes.list();return Object.prototype.hasOwnProperty.call(L,id)?L[id].name:String(id);};
+  let note="";      // what the last Stop said, until the next Start
+  function start(v){
+    const p=pct(v);if(p==null)return false;
+    const s=S(),d=today();
+    s.cur={t0:P.now(),pct0:p,saver:saverOn(),ver:APP_VERSION,d0:d,m0:Object.assign({},(state.modeMin||{})[d]||{})};
+    note="";save();render();return true;
+  }
+  // the minutes by mode since the check began: modeMin from its first day on, less what that day held at the start
+  function modesSince(c){
+    const mm=state.modeMin||{},tot={};
+    Object.keys(mm).filter(d=>d>=c.d0).forEach(d=>{const x=mm[d]||{};Object.keys(x).forEach(k=>{tot[k]=(tot[k]||0)+(+x[k]||0)-(d===c.d0?(+(c.m0||{})[k]||0):0);});});
+    const out={};Object.keys(tot).filter(k=>tot[k]>0).sort((a,b)=>tot[b]-tot[a]).slice(0,3).forEach(k=>{out[k]=tot[k];});
+    return out;
+  }
+  function stop(v){
+    const s=S(),c=s.cur;if(!c)return null;
+    const p=pct(v);if(p==null)return null;
+    s.cur=null;
+    const min=Math.round((P.now()-c.t0)/60000);let res;
+    if(p>c.pct0){res={kept:false,why:"up"};note="The battery went up, so the iPad was charging. That check was not kept; try one off the charger.";}
+    else if(min>12*60){res={kept:false,why:"long"};note="That check ran over 12 hours, so it was not kept. Start one when he sits down to play.";}
+    else if(min<5){res={kept:false,why:"short"};note="That was under 5 minutes, too short to tell. Half an hour or more works best.";}
+    else{
+      const rec={d:today(),min,pct0:c.pct0,pct1:p,pctPerHour:Math.round((c.pct0-p)/(min/60)*10)/10,saver:!!c.saver,ver:c.ver||"",modes:modesSince(c)};
+      s.checks.push(rec);if(s.checks.length>30)s.checks.splice(0,s.checks.length-30);
+      res={kept:true,rec};note="Kept: "+line(rec)+".";
+    }
+    save();render();return res;
+  }
+  const modeList=m=>Object.keys(m||{}).map(k=>nameOf(k).toLowerCase()+" "+m[k]+" min").join(", ");
+  const line=c=>`about ${c.pctPerHour}% an hour (Save battery ${c.saver?"on":"off"}), ${c.min} minutes${Object.keys(c.modes||{}).length?", "+modeList(c.modes):""}`;
+
+  // ---------- the settings row ----------
+  let asking="";      // "start" or "stop" while the number box is up
+  const $=id=>document.getElementById(id);
+  function render(){
+    const meta=$("batMeta");if(!meta)return;
+    const s=S(),c=s.cur,last=s.checks[s.checks.length-1];
+    $("batAsk").style.display=asking?"flex":"none";$("batBtn").style.display=asking?"none":"";
+    $("batBtn").textContent=c?"Stop":"Start";
+    if(c)meta.textContent=`Checking since ${clock(c.t0)}, ${c.pct0}%. Tap Stop when he is done and type the percent again.`;
+    else meta.textContent=(note?note+" ":"")+(note?"":"How fast does the game use the battery? Tap Start and type the percent from the top of the screen, let him play (half an hour or more), then tap Stop and type it again."+
+      (last?` Last check: ${line(last)}.`:""));
+  }
+  function ask(what){asking=what;render();const i=$("batPct");i.value="";try{i.focus();}catch(e){}}
+  if($("batBtn")){
+    $("batBtn").onclick=()=>ask(S().cur?"stop":"start");
+    $("batNo").onclick=()=>{asking="";render();};
+    const ok=()=>{const v=$("batPct").value;if(pct(v)==null){$("batQ").textContent="A number from 0 to 100, please:";return;}
+      $("batQ").textContent="Battery now, from the top of the screen:";
+      const was=asking;asking="";if(was==="start")start(v);else stop(v);};
+    $("batOk").onclick=ok;
+    $("batPct").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();ok();}});
+  }
+
+  // ---------- the daily clues ----------
+  function day(){
+    const s=S(),d=today();
+    const cut=new Date();cut.setDate(cut.getDate()-59);const oldest=ymd(cut);
+    Object.keys(s.days).forEach(k=>{if(k<oldest)delete s.days[k];});
+    return s.days[d]||(s.days[d]={on:0,rest:0,an:0,n:0,fm:0,fs:0,fn:0});
+  }
+  // 30 frame intervals: the median and the share over 34 ms (two frames' time at 60 Hz)
+  function frames(){
+    if(typeof requestAnimationFrame!=="function")return Promise.resolve(null);
+    // a slow page may not give 30 frames in 3 s: then what it did give, if that is 5 or more
+    const sum=t=>{const q=t.slice().sort((a,b)=>a-b),m=q.length>>1;return{med:q.length%2?q[m]:(q[m-1]+q[m])/2,slow:t.filter(v=>v>34).length/t.length};};
+    return new Promise(res=>{const t=[];let last=0,done=false;
+      const give=setTimeout(()=>{done=true;res(t.length>=5?sum(t):null);},3000);
+      const f=now=>{if(done)return;if(last)t.push(now-last);last=now;
+        if(t.length<30){requestAnimationFrame(f);return;}
+        done=true;clearTimeout(give);res(sum(t));};
+      requestAnimationFrame(f);});
+  }
+  function tick(){
+    if(document.visibilityState!=="visible")return Promise.resolve(false);
+    const x=day();x.on++;if(Rest.on())x.rest++;
+    let run=0;try{run=document.getAnimations().filter(a=>a.playState==="running").length;}catch(e){}
+    x.an+=run;x.n++;
+    saveIdle();
+    return frames().then(f=>{if(f){x.fm=Math.round((x.fm+f.med)*10)/10;x.fs=Math.round((x.fs+f.slow)*100)/100;x.fn++;}return true;});
+  }
+
+  // ---------- the Grown-up report ----------
+  function report(days){
+    const s=S(),ch=s.checks.slice(-5).reverse(),wk=(days||[]).map(d=>s.days[d]).filter(Boolean);
+    const t=k=>wk.reduce((a,x)=>a+(+x[k]||0),0),on=t("on");
+    let h=`<h3>Battery</h3>`;
+    h+=ch.length?`<div class="rbat">${ch.map(c=>`<p class="rnote">${esc(c.d)}: ${esc(line(c))}.</p>`).join("")}</div>`
+      :`<p class="rnote">No battery checks yet. Grown-up menu → Settings → Battery check: type the percent at the start and the end of a session.</p>`;
+    if(on)h+=`<p class="rnote" id="rPower">This week: rest ${Math.round(t("rest")/on*100)}% of screen time, ~${t("n")?Math.round(t("an")/t("n")):0} animations, frames ${t("fn")?(t("fm")/t("fn")).toFixed(1):"–"} ms${t("fn")?` (${Math.round(t("fs")/t("fn")*100)}% slow)`:""}.</p>`;
+    return h;
+  }
+  P.start=start;P.stop=stop;P.tick=tick;P._tick=tick;P.render=render;P.report=report;P.line=line;
+  return P;
 })();
 
 /* ================================================================
@@ -6013,8 +6339,8 @@ Object.assign(ANTICS,{
   sloth(cr,lv){ // the slowest yawn in the valley
     Sound.sfx.cry("yawn");vShout(cr,"yaaawn...");cAnim(cr,"c-nap",3000);
     const p=cAt(cr);fx(p.x+10,p.head,"💤",{n:3,ux:12,uy:-25,dx:26,dy:-55,jit:6,stagger:.7,d:1.6,size:18});
-    if(cr._el){cr._el.style.transitionDuration="3s";setTimeout(()=>{moveCritter(cr,cr.c<COLS/2?1:-1,0);},400);
-      setTimeout(()=>cr._el&&(cr._el.style.transitionDuration=""),3500);}
+    if(cr._el){cr._el.dataset.pace="3";setTimeout(()=>{moveCritter(cr,cr.c<COLS/2?1:-1,0);},400);
+      setTimeout(()=>{if(cr._el)delete cr._el.dataset.pace;},3500);}
     return 3600;
   },
   snake(cr,lv){ // slithers and hisses
@@ -6435,7 +6761,7 @@ const COLOR={3:"red",5:"blue",6:"green",7:"pink"};
 const MINE_LINES=["Thank you!","Wow, a shiny gem!","You beat the boss!","Oh no! Try again!","Here comes a big order!","Your egg hatched!"];
 
 const Mine=(()=>{
-  let cv,ctx,dpr=1,TS=48,vw=0,vh=0,tiles,ore,running=false,paused=false,lastT=0,time=0;
+  let cv,ctx,dpr=1,TS=48,vw=0,vh=0,tiles,ore,running=false,paused=false,lastT=0,time=0,parked=false;
   const P={x:SPAWN_X,y:SKY-0.95,w:.62,h:.92,vx:0,vy:0,face:1,onGround:false,digT:0,digKey:-1,walk:0};
   const cam={x:0,y:0};
   const input={jx:0,jy:0,dig:false,jump:false,jumpEdge:false};
@@ -6728,7 +7054,7 @@ const Mine=(()=>{
     if(!root){buildDom();buildTextures();}
     const m=M();gen();layerSeen=new Set(m.layers||[]);ENT.length=0;setBuild(false);lostAnimal();jobs();
     P.x=m.x||SPAWN_X;P.y=m.y||SKY-.95;P.vx=P.vy=0;if(solidBox(P.x,P.y))Object.assign(P,{x:SPAWN_X,y:SKY-.95});
-    root.classList.add("on");Modes.open("mine",root);running=true;paused=false;resize();hud();
+    root.classList.add("on");Modes.open("mine",root);running=true;paused=false;parked=false;resize();hud();
     cam.x=P.x*TS-vw/2;cam.y=P.y*TS-vh*.45;
     lastT=performance.now();requestAnimationFrame(loop);
     PET.x=P.x-1;PET.y=P.y;
@@ -6978,8 +7304,10 @@ const Mine=(()=>{
   }
   function loop(now){
     if(!running)return;
+    if(Rest.on()){parked=true;return;}      // REST: the loop waits for his next touch (Rest.onWake below)
     const dt=Math.min(.05,(now-lastT)/1000);lastT=now;time+=dt;
-    if(!paused){step(dt);
+    if(!paused){if(input.jx||input.jy||input.dig||input.jump)Rest.poke();      // steering counts as input
+      step(dt);
       for(const p of parts){p.vy+=16*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}
       for(const f of floats){f.y-=dt*.8;f.life-=dt;}
       for(let i=parts.length-1;i>=0;i--)if(parts[i].life<=0)parts.splice(i,1);
@@ -6990,6 +7318,7 @@ const Mine=(()=>{
       if(dirty&&Math.floor(time/3)!==Math.floor((time-dt)/3)){dirty=false;markDug();}}
     render();requestAnimationFrame(loop);
   }
+  Rest.onWake(()=>{if(!parked)return;parked=false;if(running){lastT=performance.now();requestAnimationFrame(loop);}});
 
   /* ---------- panels ---------- */
   const panel=root=>document.getElementById("mPanel"),card=()=>document.getElementById("mCard");
@@ -8364,6 +8693,7 @@ function openPicIt(){
 let lastTouch=Date.now();
 document.addEventListener("pointerdown",()=>{lastTouch=Date.now();},true);
 function minuteTick(){
+  try{Power.tick();}catch(e){}      // BATTERY CHECK: on screen, resting, animations, frames (on screen even untouched)
   if(document.visibilityState!=="visible"||Date.now()-lastTouch>90000)return;
   state.minutes[today()]=(state.minutes[today()]||0)+1;
   Modes.credit();save();
@@ -8443,6 +8773,7 @@ function openReport(){
     ${gT||gN?`<p class="rnote rgoal">Reading goal reached <b>${gN} of 7</b> days this week${gT?` (${gT} words a day, or a whole book)`:" (the goal is off now)"}.</p>`:""}
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}
+    ${Power.report(days)}
     ${Talk.report(days)}
     ${Reread.report(days)}
     ${Tracks.report(days)}
@@ -8480,7 +8811,7 @@ setTimeout(booksBadge,300);
    ================================================================ */
 const Adv=(()=>{
   const A=()=>state.adv;
-  let on=false,raf=0,lastT=0,hud=null,ash=null,petEl=null,noteEl=null,grassEls=[],landEls=[];
+  let on=false,raf=0,lastT=0,hud=null,ash=null,petEl=null,noteEl=null,grassEls=[],landEls=[],parked=false;
   const P={c:10,r:8,face:1,walk:0,moving:false,pc:10,pr:8};   // pc/pr = pet position
   const input={jx:0,jy:0};
   let near=null,grassRun=0,wildCool=0,inGrass=false;
@@ -8607,12 +8938,15 @@ const Adv=(()=>{
 
   /* ---------- the loop ---------- */
   function frame(now){
-    if(!on)return;raf=requestAnimationFrame(frame);
+    if(!on)return;
+    if(Rest.on()){parked=true;raf=0;return;}      // REST: the loop waits for his next touch (Rest.onWake below)
+    raf=requestAnimationFrame(frame);
     const dt=Math.min(.05,(now-lastT)/1000||0);lastT=now;
     if(busy()){P.moving=false;posAsh();return;}
     const jx=input.jx,jy=input.jy,mag=Math.hypot(jx,jy);
     P.moving=mag>.15;
     if(P.moving){
+      Rest.poke();      // walking counts as input
       const sp=4.2,old={c:P.c,r:P.r};
       P.c=Math.max(0,Math.min(COLS-1,P.c+jx*sp*dt));
       P.r=Math.max(firstRow(),Math.min(ROWS_MAX-1,P.r+jy*2.4*dt));
@@ -8633,6 +8967,8 @@ const Adv=(()=>{
     if(lab!==(near&&near.label)||!n){const b=hud.querySelector("#advAct");b.textContent=lab;b.classList.toggle("on",!!n);}
     near=n;
   }
+
+  Rest.onWake(()=>{if(!parked)return;parked=false;if(on&&!raf){lastT=performance.now();raf=requestAnimationFrame(frame);}});
 
   /* ---------- enter / leave ---------- */
   function buildHud(){
@@ -8666,7 +9002,7 @@ const Adv=(()=>{
   function enter(){
     if(!hud)buildHud();
     if(state.selected){state.selected=null;renderDock();}
-    on=true;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
+    on=true;parked=false;document.body.classList.add("exploring");hud.classList.add("on");Modes.open("adventure",hud);placeTop();
     // start where he is looking, at the front of the valley
     const W=worldW(),t=((cam+viewW()/2)/W-EDGE)/(1-EDGE*2);
     P.c=Math.max(0,Math.min(COLS-1,t*(COLS-1)));P.r=ROWS_MAX-1;P.pc=P.c-.9;P.pr=P.r;
@@ -9777,7 +10113,7 @@ const Race=(()=>{
     });
   }
   function finish(){
-    cancelAnimationFrame(raf);
+    cancelAnimationFrame(raf);R.done=true;
     // everyone else finishes at their own pace, instantly
     const order=R.cars.map(c=>({c,t:c.me?R.t:R.t+(100-c.x)/c.sp})).sort((a,b)=>a.t-b.t);
     const place=order.findIndex(o=>o.c.me)+1,gems=[0,6,3,2][place];
@@ -9790,7 +10126,7 @@ const Race=(()=>{
     ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{Modes.shut(ov);R=null;};
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
-  return{start,_R:()=>R};
+  return{start,_R:()=>R,busy:()=>!!R&&!R.done};      // busy: REST waits
 })();
 
 /* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
@@ -12239,7 +12575,8 @@ const Looks=(()=>{
       const el=document.createElement("div");el.className="tile lookprop";el.dataset.prop=p.id;el.dataset.look=L.id;
       el.dataset.baseFilter=f;if(p.lum)el.dataset.lum="1";
       el.style.cssText=`left:${g.x}px;top:${g.y*100}%;width:${size}px;height:${size}px;transform:translate(-50%,-100%);
-        z-index:${g.z-1};filter:${f}${p.lum&&lit?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""}`;
+        z-index:${g.z-1};filter:${f}${p.lum&&lit&&!saverOn()?" drop-shadow(0 0 14px rgba(255,214,110,.95))":""}`;
+      if(p.lum&&lit&&saverOn())el.classList.add("glow");      // SAVE BATTERY: a gradient behind it instead
       const inner=document.createElement("div");inner.style.cssText="width:100%;height:100%";
       if(p.sway){inner.className="sway";inner.style.animationDelay=(hashStr(p.id)%3000)/1000+"s";}
       inner.innerHTML=artOf(L,p);el.appendChild(inner);
@@ -12250,7 +12587,7 @@ const Looks=(()=>{
   const BAT=`<svg viewBox="0 0 40 22" aria-hidden="true"><path d="M20 7 L18.2 3.6 L17.2 7.4 Q12 4 7 5.4 Q3.6 3 .8 4.6 Q4.4 8.2 3.6 13 Q7.6 10.4 10.8 13.4 Q13.6 10.6 16.6 14 Q18.4 13 20 17.6 Q21.6 13 23.4 14 Q26.4 10.6 29.2 13.4 Q32.4 10.4 36.4 13 Q35.6 8.2 39.2 4.6 Q36.4 3 33 5.4 Q28 4 22.8 7.4 L21.8 3.6Z" fill="#3B2A4A"/>
     <circle cx="18.6" cy="9.4" r="1.1" fill="#FFD86B"/><circle cx="21.4" cy="9.4" r="1.1" fill="#FFD86B"/></svg>`;
   const PARTS={
-    bats(P){for(let i=0;i<7;i++){const b=document.createElement("div");b.className="lookp lbat";const w=26+Math.random()*18;
+    bats(P){for(let i=0;i<fewer(7);i++){const b=document.createElement("div");b.className="lookp lbat";const w=26+Math.random()*18;
       b.style.cssText=`top:${5+Math.random()*32}%;width:${w}px;height:${w*.55}px;animation-duration:${13+Math.random()*10}s;animation-delay:${-Math.random()*20}s`;
       b.innerHTML=BAT;P.appendChild(b);}}};
   // the look's particles, once it has earned them; left alone when they are already the right ones
@@ -12262,7 +12599,7 @@ const Looks=(()=>{
     [].slice.call(P.querySelectorAll(".lookp")).forEach(n=>n.remove());
     if(!want)return;
     if(PARTS[L.particles])PARTS[L.particles](P);
-    else if(L.drift)for(let i=0;i<12;i++){const d=document.createElement("div");d.className="lookp lfall";d.textContent=L.drift;
+    else if(L.drift)for(let i=0;i<fewer(12);i++){const d=document.createElement("div");d.className="lookp lfall";d.textContent=L.drift;
       d.style.cssText=`left:${Math.random()*100}%;top:-4%;font-size:${12+Math.random()*10}px;animation-duration:${10+Math.random()*9}s;animation-delay:${-Math.random()*14}s`;P.appendChild(d);}
     [].slice.call(P.querySelectorAll(".lookp")).forEach(n=>{n.dataset.lk=want;});
   }
@@ -13275,6 +13612,7 @@ const Factory=(()=>{
   }
   function tick(now){
     raf=0;if(!isOpen()||view!=="board"||hidden())return;
+    if(Rest.on())return;      // REST (never while it runs or asks): the loop waits, Rest.onWake starts it again
     const dt=Math.min(250,lastT?now-lastT:0);lastT=now;
     if(S&&S.running&&!S.done){acc+=dt;let n=0;while(acc>=STEP&&n<8){step(true);acc-=STEP;n++;}if(n>=8)acc=0;}else acc=0;
     draw();
@@ -13283,6 +13621,7 @@ const Factory=(()=>{
   function loop(){if(!raf&&isOpen()&&view==="board"&&!hidden()&&typeof requestAnimationFrame==="function"){lastT=0;acc=0;raf=requestAnimationFrame(tick);}}
   function stop(){if(raf){try{cancelAnimationFrame(raf);}catch(e){}raf=0;}}
   document.addEventListener("visibilitychange",()=>{if(hidden()){stop();if(S&&S.sandbox)keep();}else loop();});
+  Rest.onWake(loop);
   function toggle(){
     if(!S||S.done)return;
     if(!S.running&&!drills()){Sound.sfx.soft();say("💡 Put a drill on a rock first!");Sound.speak("Put a drill on a rock first!",.95);return;}
@@ -13685,6 +14024,8 @@ const Factory=(()=>{
 
   return{open,close,play,sandbox,map,LEVELS,SANDBOX,TOOLS,TIPS,engine:E,voiceLines,sim,sumQ,orderSay,sideOrder,
     get done(){return done();},stars:starsOf,isOpen,
+    // REST waits while the belts run or the order's question is up
+    busy:()=>isOpen()&&!!S&&((S.running&&!S.done)||!!S.q),
     // for the tests
     _w:()=>w,_S:()=>S&&{n:S.n,sandbox:S.sandbox,tool:S.tool,running:S.running,done:S.done,tip:S.tip.shown,cur:S.cur,kb:S.kb,
       order:S.order&&{parts:S.order.parts,pay:S.order.pay,k:S.order.k},result:S.result,q:S.q&&{ans:S.q.ans,level:S.q.level,text:S.q.text},miss:S.miss,
@@ -14836,18 +15177,20 @@ document.getElementById("chest").onclick=()=>Quests.open();
    ================================================================ */
 let bubbleT=null;
 function renderBuddy(){
-  let el=document.getElementById("buddyWorld");
+  let el=document.getElementById("buddyWorld"),fresh=false;
   if(!el){el=document.createElement("div");el.id="buddyWorld";
     el.innerHTML=`<div class="hop"></div><div class="bubble" id="buddyBubble"></div><div class="hitpad"></div>`;
     el.onclick=e=>{e.stopPropagation();buddyTalk();};
-    tilesEl.appendChild(el);}
-  else if(!el.isConnected)tilesEl.appendChild(el);
+    tilesEl.appendChild(el);fresh=true;}
+  else if(!el.isConnected){tilesEl.appendChild(el);fresh=true;}
   const b=state.buddy;
   const firstRow=ROWS_MAX-state.rows;if(b.r<firstRow)b.r=firstRow;
   const g=geom(b.c,b.r), size=baseSize()*g.scale*.9;
-  el.style.left=g.x+"px";el.style.top=g.y*100+"%";el.style.width=size+"px";el.style.height=size+"px";
+  glideTo(el,g.x,g.y*100,size,fresh?0:1.4,"cubic-bezier(.3,.8,.4,1)");      // a walk is a glide; a new buddy just stands there
   el.style.zIndex=g.z+6;
-  el.querySelector(".hop").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());
+  // his drawing is the same until he grows or changes hats: redraw it only then (a walk used to redraw it each step)
+  const art=stageIdx()+"|"+buddyHat();
+  if(el.dataset.art!==art){el.dataset.art=art;el.querySelector(".hop").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());}
 }
 function buddyGo(c,r){
   state.buddy={c:Math.max(0,Math.min(COLS-1,c)),r:Math.max(ROWS_MAX-state.rows,Math.min(ROWS_MAX-1,r))};
@@ -14875,7 +15218,7 @@ function buddyTalk(){
 }
 // buddy wanders when idle
 setInterval(()=>{
-  if(document.querySelector(".overlay.on"))return;
+  if(Rest.quiet()||document.querySelector(".overlay.on"))return;      // REST: the buddy naps too
   if(Math.random()<.5)return;
   const b=state.buddy||{c:10,r:ROWS_MAX-1};
   buddyGo(b.c+(Math.random()<.5?-1:1),b.r+(Math.random()<.7?0:(Math.random()<.5?-1:1)));
@@ -14951,24 +15294,50 @@ document.getElementById("recapBtn").onclick=()=>{hide("ovParent");showRecap();};
    ================================================================ */
 const Nature=(()=>{
   let ctx,master,wind,windGain,started=false,timer=null;
+  // REST and a hidden page hold it: the context is suspended and the chirps wait
+  const holds=new Set();
   function start(){
     if(started||!state.settings.nature)return;
     try{
       ctx=new (window.AudioContext||window.webkitAudioContext)();
       master=ctx.createGain();master.gain.value=.0;master.connect(ctx.destination);
-      const len=ctx.sampleRate*2, buf=ctx.createBuffer(1,len,ctx.sampleRate), d=buf.getChannelData(0);
-      let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}
-      wind=ctx.createBufferSource();wind.buffer=buf;wind.loop=true;
-      const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=420;
       windGain=ctx.createGain();windGain.gain.value=.08;   // half the old .16: the wind sits under the chirps rather than beside them
-      wind.connect(lp).connect(windGain).connect(master);wind.start();
-      // slow swell so the wind breathes
-      const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.08;lg.gain.value=.03;   // the swell scales with the wind
-      lfo.connect(lg).connect(windGain.gain);lfo.start();
+      windGain.connect(master);
+      if(!saverOn())windOn();      // SAVE BATTERY: no wind bed, the chirps and crickets stay
       master.gain.linearRampToValueAtTime(.55,ctx.currentTime+3);
-      started=true;schedule();
+      started=true;
+      if(holds.size)ctx.suspend();else schedule();
     }catch(e){}
   }
+  // the wind: looped filtered noise with a slow swell (an LFO on its gain)
+  let wbuf=null,lfo=null;
+  function windOn(){
+    if(wind)return;
+    if(!wbuf){const len=ctx.sampleRate*2,d=(wbuf=ctx.createBuffer(1,len,ctx.sampleRate)).getChannelData(0);
+      let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}}
+    wind=ctx.createBufferSource();wind.buffer=wbuf;wind.loop=true;
+    const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=420;
+    wind.connect(lp).connect(windGain);wind.start();
+    // slow swell so the wind breathes
+    const lg=ctx.createGain();lfo=ctx.createOscillator();lfo.frequency.value=.08;lg.gain.value=.03;   // the swell scales with the wind
+    lfo.connect(lg).connect(windGain.gain);lfo.start();
+  }
+  function windOff(){
+    if(!wind)return;
+    try{wind.stop();lfo.stop();wind.disconnect();lfo.disconnect();}catch(e){}
+    wind=null;lfo=null;
+  }
+  function hold(why,on){
+    const was=holds.size>0;
+    if(on)holds.add(why);else holds.delete(why);
+    if(!started)return;
+    try{
+      if(holds.size){clearTimeout(timer);timer=null;if(ctx.state==="running")ctx.suspend();}
+      else if(was){kick();clearTimeout(timer);timer=setTimeout(schedule,1500+Math.random()*3000);}
+    }catch(e){}
+  }
+  // called on his input too: a resume that did not take outside a touch takes now
+  function kick(){if(started&&!holds.size&&ctx.state==="suspended"){try{const r=ctx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}}}
   function chirp(){
     const t=ctx.currentTime, o=ctx.createOscillator(), g=ctx.createGain(), m=ctx.createOscillator(), mg=ctx.createGain();
     const night=phase().id==="night";
@@ -14986,7 +15355,7 @@ const Nature=(()=>{
     m.start(t);o.start(t);o.stop(t+1);m.stop(t+1);
   }
   function schedule(){
-    clearTimeout(timer);if(!started)return;
+    clearTimeout(timer);if(!started||holds.size)return;
     if(state.settings.nature&&!document.querySelector(".overlay.on"))chirp();
     // half as often as before (was 900/1800 + up to 2600 ms): a chirp or a cricket every 4-9 s by day, 2-7 s at night
     timer=setTimeout(schedule,(phase().id==="night"?1800:3600)+Math.random()*5200);
@@ -14996,7 +15365,11 @@ const Nature=(()=>{
     try{master.gain.linearRampToValueAtTime(0,ctx.currentTime+.8);setTimeout(()=>{ctx.close();},1000);}catch(e){}
     clearTimeout(timer);started=false;
   }
-  return{start,stop,retune:()=>{if(started){windGain.gain.value=phase().id==="night"?.09:.16;}}};
+  // stop() closes the context: a later start() makes new nodes, the wind too
+  function stopAll(){stop();wind=null;lfo=null;wbuf=null;}
+  return{start,stop:stopAll,hold,kick,retune:()=>{if(started){windGain.gain.value=phase().id==="night"?.09:.16;}},
+    wind:on=>{if(!started)return;try{if(on)windOn();else windOff();}catch(e){}},
+    _ctx:()=>ctx,_started:()=>started,_wind:()=>!!wind};
 })();
 
 
@@ -15167,7 +15540,7 @@ function checkBadges(){
   });
   if(fresh.length)save();
 }
-setInterval(checkBadges,6000);
+setInterval(()=>{if(!Rest.quiet())checkBadges();},6000);      // REST: nothing new to earn while nobody plays
 
 /* ================================================================
    7k. PARENT: daily chart + practise export
@@ -15218,11 +15591,11 @@ function applySeason(){
 const seasonWords=()=>season().words;
 function seedSeasonParticles(P){
   const z=season();
-  if(z.id==="winter")for(let i=0;i<24;i++){const f=document.createElement("div");f.className="flake";f.textContent="❄";
+  if(z.id==="winter")for(let i=0;i<fewer(24);i++){const f=document.createElement("div");f.className="flake";f.textContent="❄";
     f.style.cssText=`left:${Math.random()*100}%;top:-4%;font-size:${9+Math.random()*10}px;animation-duration:${9+Math.random()*9}s;animation-delay:${-Math.random()*14}s`;P.appendChild(f);}
-  if(z.id==="spring")for(let i=0;i<14;i++){const p=document.createElement("div");p.className="petal";
+  if(z.id==="spring")for(let i=0;i<fewer(14);i++){const p=document.createElement("div");p.className="petal";
     p.style.cssText=`left:${20+Math.random()*80}%;top:${10+Math.random()*30}%;animation-duration:${8+Math.random()*7}s;animation-delay:${-Math.random()*12}s`;P.appendChild(p);}
-  if(z.id==="summer")for(let i=0;i<10;i++){const d=document.createElement("div");d.className="seed";
+  if(z.id==="summer")for(let i=0;i<fewer(10);i++){const d=document.createElement("div");d.className="seed";
     d.style.cssText=`left:${Math.random()*100}%;top:${40+Math.random()*50}%;animation-duration:${12+Math.random()*8}s;animation-delay:${-Math.random()*16}s`;P.appendChild(d);}
 }
 
@@ -16425,6 +16798,8 @@ function renderSettings(){
   document.getElementById("optTTS").checked=state.settings.tts;
   document.getElementById("optAmbient").checked=state.settings.ambient;
   document.getElementById("optNature").checked=state.settings.nature!==false;
+  document.getElementById("optSaver").checked=saverOn();
+  try{Power.render();}catch(e){}      // BATTERY CHECK
   document.getElementById("optSpell").value=String(state.settings.spell!=null?state.settings.spell:.6);
   renderVoicePicker();
   document.getElementById("optSpeech").checked=!!state.settings.speech;
@@ -16463,6 +16838,7 @@ document.getElementById("optRate").oninput=e=>{state.settings.voiceRate=+e.targe
 document.getElementById("optRate").onchange=()=>Sound.speak("The dog had a nap in the sun.",1);
 document.getElementById("optNature").onchange=e=>{state.settings.nature=e.target.checked;
   if(e.target.checked)Nature.start();else Nature.stop();save();};
+document.getElementById("optSaver").onchange=e=>{state.settings.saver=e.target.checked;applySaver();save();};
 document.getElementById("optSpeech").onchange=e=>{state.settings.speech=e.target.checked;save();};
 document.getElementById("optFast").onchange=e=>{state.settings.fastTrack=e.target.checked;save();};
 document.getElementById("optGoal").onchange=e=>{state.settings.goal=+e.target.value;Goal.render();save();};
@@ -16567,6 +16943,7 @@ NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
 NULL_IS_MISSING.push("feast");      // FEAST TABLE
 NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTORY
 NULL_IS_MISSING.push("talk");      // TALK
+NULL_IS_MISSING.push("power","power.checks","power.days");      // BATTERY CHECK (power.cur null is "no check under way")
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];
