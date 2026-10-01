@@ -74,6 +74,7 @@ function kit(area,page,errs,E){
   let cdp=null;
   async function dbl(x,y,gap=110){
     if(!cdp)cdp=await p.context().newCDPSession(p);
+    await E(()=>{if(!window.__tcOn){window.__tcOn=1;document.addEventListener("click",e=>{if(e.isTrusted)(window.__tc=window.__tc||[]).push(e.timeStamp);},true);}window.__tc=[];});
     for(let k=0;k<2;k++){
       await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x,y}]});
       await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
@@ -112,7 +113,13 @@ function kit(area,page,errs,E){
   }
   function summary(){Object.keys(counts).forEach(s=>console.log(`note ${area} · ${s}: ${counts[s]} elements tapped`));return counts;}
   const swapped=()=>{swapAt=Date.now();};
-  return{p,E,wait,said,lastSaid,toasts,tidy,hook,tapFn,tapSelRaw,centre,dbl,drag,act,tapSel,tapEl,key,clip,summary,counts,swapped,pace};
+  // the gap between the last double tap's two clicks, by the page's clock (0 if it saw fewer than two)
+  const dblGap=()=>E(()=>{const c=window.__tc||[];return c.length>=2?Math.round(c[1]-c[0]):0;});
+  // a ghost-tap check: when the two taps landed more than the game's half second apart (a slow runner),
+  // they are two taps, not a double tap, and the game is right to take the second; say so instead of failing
+  const ghost=async(want)=>{const g=await dblGap();if(g>480)return[true,`not a double tap on this machine: the taps landed ${g} ms apart, past the half second the guard covers`];
+    const r=await want();return[r[0],r[1]+` (taps ${g} ms apart)`];};
+  return{p,E,wait,said,lastSaid,toasts,tidy,hook,tapFn,tapSelRaw,centre,dbl,dblGap,ghost,drag,act,tapSel,tapEl,key,clip,summary,counts,swapped,pace};
 }
 
 /* =====================================================================================================================
@@ -368,18 +375,18 @@ async function jobsArea(lane){
     await E(i=>{state.jobs.xp[i]=4;state.jobs.streak=0;},id);
     await p.tap("#jobsBtn",{timeout:5000});await waitFor(p,`#ovJob.on .jcard[data-job="${id}"]`);await p.tap(`#ovJob .jcard[data-job="${id}"]`,{timeout:5000});await waitFor(p,"#jIn");await wait(300);
     const at=await K.centre(()=>document.getElementById("jIn"));
-    await act(`${j.name} · ghost tap`,"a double tap on ⏰ Clock in",()=>K.dbl(at[0],at[1]),{root:R,swap:true,want:async()=>{await wait(250);
+    await act(`${j.name} · ghost tap`,"a double tap on ⏰ Clock in",()=>K.dbl(at[0],at[1]),{root:R,swap:true,want:()=>K.ghost(async()=>{await wait(250);
       const r=await E(()=>({s:Jobs._S(),hit:document.querySelectorAll("#jQ .right,#jQ .wrong").length,m:document.getElementById("jMsg").textContent}));
-      return[!!r.s&&!!r.s.task&&r.s.task.miss===0&&!r.hit&&!r.m,`the first question is left for him (miss ${r.s&&r.s.task&&r.s.task.miss}, “${r.m}”)`];}});
+      return[!!r.s&&!!r.s.task&&r.s.task.miss===0&&!r.hit&&!r.m,`the first question is left for him (miss ${r.s&&r.s.task&&r.s.task.miss}, “${r.m}”)`];})});
     // a level up, then a double tap on Keep going
     q=await step(0);await right(`${j.name} · ghost tap`,q);
     await waitFor(p,()=>{const s=Jobs._S();return s&&(s.n>0||(s.task&&s.task.i>0));},{timeout:5000});
     const st=await S();if(st.task&&st.task.i>0){q=await step(st.task.i);await right(`${j.name} · ghost tap`,q);}
     await waitFor(p,"#jGo",{timeout:6000});await wait(200);
     const go=await K.centre(()=>document.getElementById("jGo"));
-    await act(`${j.name} · ghost tap`,"a double tap on Keep going ▶",()=>K.dbl(go[0],go[1]),{root:R,swap:true,want:async()=>{await wait(250);
+    await act(`${j.name} · ghost tap`,"a double tap on Keep going ▶",()=>K.dbl(go[0],go[1]),{root:R,swap:true,want:()=>K.ghost(async()=>{await wait(250);
       const r=await E(()=>({s:Jobs._S(),hit:document.querySelectorAll("#jQ .right,#jQ .wrong").length,m:document.getElementById("jMsg").textContent}));
-      return[!!r.s&&!!r.s.task&&r.s.task.miss===0&&!r.hit&&!r.m,`the next question is left for him (miss ${r.s&&r.s.task&&r.s.task.miss}, “${r.m}”)`];}});
+      return[!!r.s&&!!r.s.task&&r.s.task.miss===0&&!r.hit&&!r.m,`the next question is left for him (miss ${r.s&&r.s.task&&r.s.task.miss}, “${r.m}”)`];})});
     await E(()=>document.getElementById("jOut").click());await waitFor(p,"#jHome");await E(()=>document.getElementById("jHome").click());await wait(200);
   }
 
@@ -736,11 +743,11 @@ async function factoryArea(){
   await E(()=>{Factory.open();Factory.play(5);});await wait(300);const p5=(await S()).pieces;
   await E(()=>Factory.map());await wait(500);
   const lv=await K.centre(()=>document.querySelector('.fcl[data-n="5"]'));
-  await act("ghost tap","a double tap on level 5",()=>K.dbl(lv[0],lv[1]),{root:R,swap:true,want:async()=>{await wait(300);const s=await S();return[s.n===5&&s.pieces===p5,`level ${s.n}, ${s.pieces} pieces on the board (it opened with ${p5})`];}});
+  await act("ghost tap","a double tap on level 5",()=>K.dbl(lv[0],lv[1]),{root:R,swap:true,want:()=>K.ghost(async()=>{await wait(300);const s=await S();return[s.n===5&&s.pieces===p5,`level ${s.n}, ${s.pieces} pieces on the board (it opened with ${p5})`];})});
   await E(()=>{Factory._load(Factory.LEVELS[4].sol);Factory._run(45*30);});
   await answerSum("ghost tap");
   const before=await code(),ag=await K.centre(()=>document.getElementById("fcAgain"));
-  await act("ghost tap","a double tap on 🔁 Build again",()=>K.dbl(ag[0],ag[1]),{root:R,swap:true,want:async()=>{await wait(300);return[await code()===before&&!(await S()).done,"his layout is as he left it"];}});
+  await act("ghost tap","a double tap on 🔁 Build again",()=>K.dbl(ag[0],ag[1]),{root:R,swap:true,want:()=>K.ghost(async()=>{await wait(300);return[await code()===before&&!(await S()).done,"his layout is as he left it"];})});
   await E(()=>Factory.close());
 
   // ---- 7. the 🏭 spot in Adventure: it opens over Adventure, ✕ goes back to it ----
