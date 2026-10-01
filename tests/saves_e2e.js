@@ -113,6 +113,7 @@ const srv=require("./page").serveApp({port:PORT,before(q,r){
     ok(mastered(s)===4&&s.wordsRead===48&&s.review.length===2,"block era: words read, mastered words and reviews kept");
     ok(same(s.customWords,[{w:"zip",p:["z","i","p"],t:1,custom:true}]),"block era: custom words kept");
     ok(same(s.settings,{pics:true,tts:true,ambient:false,tierOverride:0,nature:true,speech:false,timer:0,spell:.6,fastTrack:true,voice:null,voicePack:true,voiceRate:1,goal:12,together:"",
+      birthday:"",      // PARTY: his birthday, not set
       talk:false,eyesFree:false,      // TALK: Talk to me and Eyes-free, off
       saver:true}),      // SAVE BATTERY: on
       "block era: settings kept (ambient off), newer ones get their defaults "+J(s.settings));
@@ -150,6 +151,7 @@ const srv=require("./page").serveApp({port:PORT,before(q,r){
     ok(same(s.mine.blocks,{dirt:6,stone:0,sand:0,ladder:4,torch:3,sign:2})&&same(s.mine.vaults,{})&&same(s.mine.stat,{}),`${label}: v9 Mine fields get their defaults`);
     ok(booksDone(s)===3&&same(s.library,V8.library),`${label}: 3 books finished`);
     ok(same(s.settings,Object.assign({},V8.settings,{fastTrack:true,goal:12,together:""},
+      {birthday:""},      // PARTY: his birthday, not set
       {talk:false,eyesFree:false},{saver:true})),`${label}: settings kept (nature off, timer 20, spelling .4, voice), fast track, reading goal and Read together defaulted `+J(s.settings));
     ok(same(s.customWords,V8.customWords)&&same(s.notes,V8.notes)&&s.noteFrom==="Mom",`${label}: custom words and notes kept`);
     ok(lv(s.critters)==="fox:3 dog:2 wolf:1 frog:1 penguin:2"&&outs(s.critters)==="fox dog frog penguin",`${label}: animals and who is out kept `+lv(s.critters));

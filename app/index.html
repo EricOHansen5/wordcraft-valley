@@ -1429,6 +1429,94 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 @media (max-width:700px){.ltsheet{padding:14px}.ltsheet .bhead{flex-wrap:wrap}.ltsheet .bhead h2{font-size:21px}
   .ltwrap{flex-direction:column;gap:6px}.lttree{flex-basis:auto;width:200px}.ltlit{font-size:19px}
   .ltdoor{width:48px;height:56px}.ltdoor b{min-width:26px;height:26px;line-height:22px;font-size:14px}.ltq{min-height:0}}
+/* ---- FIREWORKS (Fourth of July): the 🎆 button, the look's sparkles, the night sky and the sparkler race ---- */
+#fireworksBtn{background:linear-gradient(160deg,#6A7BD6,#23307A)}
+.lfall[data-lk="july:sparks"]{animation-name:julyspark;text-shadow:0 0 10px rgba(255,236,160,.95)}
+.lfall[data-lk="july:sparks"]:nth-child(3n){margin-top:10vh;filter:hue-rotate(150deg) saturate(2.2)}
+.lfall[data-lk="july:sparks"]:nth-child(3n+1){margin-top:21vh;filter:hue-rotate(300deg) saturate(2.4)}
+@keyframes julyspark{0%,100%{transform:translate(0,5vh) scale(.2);opacity:0}2%{transform:translate(0,5vh) scale(1.7);opacity:1}
+  6%{transform:translate(0,6vh) scale(1.1);opacity:.85}13%{transform:translate(0,9vh) scale(.8);opacity:0}}
+.fwsheet{max-width:840px;border-color:#23307A;background:linear-gradient(180deg,#E6ECFF,var(--paper) 44%)}
+.fwsheet .bhead h2{color:#23409A}
+.fwstat{font-size:19px;font-weight:900;white-space:nowrap}
+.fwsky{position:relative;height:min(330px,40vh);min-height:190px;border:3px solid var(--ink);border-radius:22px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 125%,#3E53A6 0,#1B2659 46%,#0B1130 100%)}
+.fwsky::before{content:"";position:absolute;inset:0;opacity:.85;pointer-events:none;
+  background-image:radial-gradient(1.5px 1.5px at 8% 14%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 23% 34%,#fff 50%,transparent 60%),
+    radial-gradient(1.6px 1.6px at 41% 9%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 58% 27%,#fff 50%,transparent 60%),
+    radial-gradient(1.5px 1.5px at 74% 12%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 90% 31%,#fff 50%,transparent 60%),
+    radial-gradient(1.2px 1.2px at 33% 52%,#fff 50%,transparent 60%),radial-gradient(1.4px 1.4px at 83% 50%,#fff 50%,transparent 60%)}
+.fwsky canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.fwhills{position:absolute;left:0;right:0;bottom:0;width:100%;height:38%;display:block;pointer-events:none}
+.fwbuddy{position:absolute;left:3%;bottom:5%;width:74px;height:74px;pointer-events:none}.fwbuddy svg{width:100%;height:100%;display:block}
+.fwbig{position:absolute;left:50%;top:38%;font-size:44px;font-weight:900;color:#FFE27A;white-space:nowrap;pointer-events:none;opacity:0;
+  transform:translate(-50%,-50%);text-shadow:0 3px 0 #7A2E2E,0 0 18px rgba(255,210,90,.9)}
+.fwbig.on{animation:fwbig 3.4s ease-out forwards}
+@keyframes fwbig{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}
+  22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+.fwline{font-size:21px;font-weight:900;text-align:center;margin:10px 0 4px}
+.fwmeter{display:flex;gap:4px;justify-content:center;font-size:24px;line-height:1.2}
+.fwmeter i{font-style:normal;filter:grayscale(1);opacity:.32}.fwmeter i.on{filter:none;opacity:1}
+.fwpiece{font-weight:900;font-size:19px;color:#23409A;min-height:24px;margin:4px 0;text-align:center}
+.fwrow{justify-content:center}
+#fwRace.done{background:var(--paper-deep);color:var(--ink-soft)}
+.fwmsg{min-height:26px;font-weight:800;color:#23409A;margin:6px 0 0;text-align:center}
+/* the sparkler race: a night track, and a sparkler trail behind every car (a longer one on a boost) */
+.racesheet.sparkler .track{background:#1B2350}
+.racesheet.sparkler .lane{background:repeating-linear-gradient(90deg,#2A3470 0 40px,#262F66 40px 80px);border-bottom-color:#8FA0E0}
+.racesheet.sparkler .lane.me{background:repeating-linear-gradient(90deg,#3A4180 0 40px,#353C78 40px 80px)}
+.racesheet.sparkler .rcar::before{content:"";position:absolute;right:86%;top:46%;width:44px;height:4px;border-radius:2px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,216,77,0),#FFD84D 62%,#FFFFFF);box-shadow:0 0 8px 2px rgba(255,216,77,.75)}
+.racesheet.sparkler .rcar.boost::before{width:84px}
+.racesheet.sparkler .rcar::after{content:"✨";position:absolute;right:90%;top:22%;font-size:20px;pointer-events:none;animation:fwspark .36s steps(2) infinite}
+@keyframes fwspark{50%{transform:scale(1.4) rotate(28deg);opacity:.55}}
+@media (max-width:700px){.fwsheet{padding:14px}.fwsheet .bhead{flex-wrap:wrap}.fwsheet .bhead h2{font-size:21px}
+  .fwsky{height:220px}.fwbuddy{width:54px;height:54px}.fwbig{font-size:32px}.fwline{font-size:18px}.fwmeter{font-size:19px}}
+/* ---- PARTY (his birthday): the 🎂 button, the look's confetti, the party room and his book ---- */
+#partyBtn{background:linear-gradient(160deg,#FFD6EA,#F27BB5)}
+.lfall[data-lk="birthday:confetti"]{font-size:0!important;width:8px;height:12px;border-radius:2px;background:#FF6FAE;opacity:.95;animation-name:bdconfetti}
+.lfall[data-lk="birthday:confetti"]:nth-child(5n+1){background:#FFD84D}
+.lfall[data-lk="birthday:confetti"]:nth-child(5n+2){background:#5CC8FF;width:10px;height:7px}
+.lfall[data-lk="birthday:confetti"]:nth-child(5n+3){background:#7CD67C}
+.lfall[data-lk="birthday:confetti"]:nth-child(5n+4){background:#9B7BFF;width:6px;height:10px}
+.lfall[data-lk="birthday:confetti"]::before,.lfall[data-lk="birthday:confetti"]::after{content:"";position:absolute;width:7px;height:10px;border-radius:2px;pointer-events:none}
+.lfall[data-lk="birthday:confetti"]::before{left:40px;top:-64px;background:#5CC8FF}
+.lfall[data-lk="birthday:confetti"]::after{left:-34px;top:-118px;background:#FFD84D;width:9px;height:6px}
+@keyframes bdconfetti{0%{transform:translate(0,-20px) rotate(0)}25%{transform:translate(24px,28vh) rotate(200deg)}50%{transform:translate(-12px,58vh) rotate(400deg)}
+  75%{transform:translate(26px,88vh) rotate(600deg)}100%{transform:translate(6px,120vh) rotate(800deg)}}
+.ptsheet{max-width:860px;border-color:#C2458A;background:linear-gradient(180deg,#FFEFF7,var(--paper) 44%)}
+.ptsheet .bhead h2{color:#B03A7A}
+.ptroom{position:relative;border:3px solid var(--ink);border-radius:22px;overflow:hidden;padding:40px 10px 36px;
+  background:linear-gradient(180deg,#FFE9F4,#FFF5E6 74%,#F0D6AE 74%)}
+.ptbunting{position:absolute;left:0;top:2px;width:100%;height:60px;display:block}
+.ptballoons{position:absolute;top:34px;width:84px;height:108px;pointer-events:none}.ptballoons.l{left:2px}.ptballoons.r{right:2px}
+.ptballoons svg{width:100%;height:100%;display:block}
+.ptrow{position:relative;display:flex;align-items:flex-end;gap:8px;margin-top:84px}
+.pthost{flex:0 0 92px;position:relative}
+.ptbuddy svg{width:92px;height:92px;display:block}
+.ptbubble{position:absolute;left:4px;bottom:98px;z-index:3;white-space:nowrap;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:5px 10px;
+  font-size:17px;line-height:1.2;animation:pop .35s cubic-bezier(.2,1.3,.4,1)}
+.ptside{flex:1;min-width:0;display:flex;flex-direction:column}
+.ptguests{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;padding:0 8px;margin-bottom:calc(var(--ptg,60px) * -.3);position:relative;z-index:0}
+.ptguest{width:var(--ptg,60px);height:var(--ptg,60px);margin:0 -2px;animation:ptarrive .5s cubic-bezier(.2,1.3,.4,1) both}
+.ptguest svg{width:100%;height:100%;display:block}
+@keyframes ptarrive{from{transform:translateY(24px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+.pttable{position:relative;z-index:1;height:40px;border:3px solid var(--ink);border-radius:12px;background:repeating-linear-gradient(90deg,#FFFFFF 0 18px,#FFD1E6 18px 36px);
+  box-shadow:0 7px 0 -1px #C98A5A,0 7px 0 2px var(--ink)}
+.pttable::before,.pttable::after{content:"";position:absolute;bottom:-31px;width:12px;height:22px;background:#C98A5A;border:3px solid var(--ink);border-top:0;border-radius:0 0 4px 4px}
+.pttable::before{left:22px}.pttable::after{right:22px}
+.ptcake{position:absolute;left:50%;bottom:4px;width:136px;height:136px;transform:translateX(-50%);z-index:2}
+.ptcake svg{width:100%;height:100%;display:block}
+.ptline{font-size:21px;font-weight:900;text-align:center;margin:14px 0 2px;color:#B03A7A}
+.ptrow2{justify-content:center}
+.ptnote{min-height:22px;text-align:center;font-weight:800;color:var(--ink-soft);margin:6px 0 0}
+.ptpiece{font-weight:900;font-size:19px;color:#B03A7A;min-height:24px;margin:4px 0;text-align:center}
+/* his book: a storybook page (the .bpage look), with the party's own buttons */
+.bpage.ptbook{border-color:#C2458A}
+#pbRead{position:relative;overflow:hidden}#pbRead .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.28)}#pbRead .lab{position:relative}
+.bdset{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:700px){.ptsheet{padding:14px}.ptsheet .bhead h2{font-size:21px}.ptballoons{width:56px;height:72px}
+  .pthost{flex-basis:64px}.ptbuddy svg{width:64px;height:64px}.ptbubble{font-size:14px;bottom:68px}.ptcake{width:76px;height:76px}.ptline{font-size:18px}}
 /* ---- FEAST TABLE (Thanksgiving): the 🦃 button, the look's falling leaves and the table panel ---- */
 #feastBtn{background:linear-gradient(160deg,#FFD88F,#E0873A)}
 .lfall[data-lk="thanks:leaves"]{animation-name:leafdrift}
@@ -1791,6 +1879,8 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
     <button class="toolbtn" id="trickBtn" title="Trick-or-Read" aria-label="Trick-or-Read" style="display:none">🎃<span class="badge" id="trickBadge"></span></button>
     <button class="toolbtn" id="lightsBtn" title="Light the tree" aria-label="Light the tree" style="display:none">❄️<span class="badge" id="lightsBadge"></span></button>
+    <button class="toolbtn" id="fireworksBtn" title="Fireworks" aria-label="Fireworks" style="display:none">🎆<span class="badge" id="fireworksBadge"></span></button>
+    <button class="toolbtn" id="partyBtn" title="Birthday party" aria-label="Birthday party" style="display:none">🎂<span class="badge" id="partyBadge"></span></button>
     <button class="toolbtn" id="feastBtn" title="Feast table" aria-label="Feast table" style="display:none">🦃<span class="badge" id="feastBadge"></span></button>
     <button class="toolbtn" id="mailBtn" title="Word mail" aria-label="Word mail" style="display:none">💌<span class="badge" id="mailBadge"></span></button>
     <button class="toolbtn" id="eggsBtn" title="Egg hunt" aria-label="Egg hunt" style="display:none">🥚<span class="badge" id="eggsBadge"></span></button>
@@ -1998,6 +2088,9 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div class="row"><div class="grow"><div class="lbl">Hero name</div>
       <div class="meta">The name in the storybooks and in My Own Book. The game voice knows the name Asher; other names use the iPad voice.</div></div>
       <input id="optHero" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:140px"></div>
+    <div class="row"><div class="grow"><div class="lbl">Birthday</div>
+      <div class="meta">The week of his birthday (the day and the six before it) brings a 🎂 party: his animals at a cake, a book in his name and a free party hat. Leave it blank for none.</div></div>
+      <span class="bdset"><select id="optBdayM" aria-label="Birthday month"><option value="">Month</option></select><select id="optBdayD" aria-label="Birthday day"><option value="">Day</option></select></span></div>
     <div class="row"><div class="grow"><div class="lbl">Show picture choices</div>
       <div class="meta">Turn off when he can read without pictures.</div></div>
       <label class="switch"><input type="checkbox" id="optPics" checked></label></div>
@@ -4071,8 +4164,10 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // TODAY'S READING (7c) adds goal, the words a day (0 = off);
   // STORYBOOKS adds together, how "Read together" is played: "turns", "echo", or "" (ask the first time)
   // TALK adds talk ("Talk to me" is on) and eyesFree (its car mode)
+  // PARTY adds birthday, his birthday as "MM-DD" ("" when not set)
   settings:{pics:true,tts:true,ambient:true,nature:true,speech:false,tierOverride:0,timer:0,spell:.6,fastTrack:true,
     voice:null,voicePack:true,voiceRate:1,goal:12,together:"",
+    birthday:"",
     talk:false,eyesFree:false,
     // SAVE BATTERY: the lighter valley (fewer particles, plain light layers, no blur, no wind), on by default
     saver:true},customWords:[],pace:{},
@@ -4143,6 +4238,12 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   trick:{day:"",doors:[],candy:0,nights:0},
   // LIGHT THE TREE (Winter): today's date with its bulbs lit and the star, the advent doors opened this December, look pieces asked for
   lights:{day:"",bulbs:0,star:false,doors:[],granted:0},
+  // FIREWORKS (Fourth of July): today's date with the fireworks launched that day (words read) and whether its grand finale
+  // has asked for its look piece, and the date of the last sparkler race run to the end
+  july:{day:"",shots:0,finale:false,race:""},
+  // PARTY (his birthday): the year of the birthday whose week gave its look piece (0: none yet), the date the book in his
+  // name last paid, and the look pieces the party has asked for in all
+  birthday:{year:0,read:"",pieces:0},
   // FEAST TABLE (Thanksgiving): the table's date, the dishes put on it that day, full tables in all
   feast:{day:"",dishes:[],tables:0},
   // WORD MAIL (Valentine's): the mailbag's date, who sent each letter answered that day, full bags in all
@@ -5084,6 +5185,8 @@ const Modes=(()=>{
     maker:{name:"My own book",reading:true},
     trick:{name:"Trick-or-Read",reading:true},        // TRICK-OR-READ: a knock on a Halloween door
     lights:{name:"Light the tree",reading:true},       // LIGHT THE TREE: the Winter tree and its advent doors
+    fireworks:{name:"Fireworks",reading:true},         // FIREWORKS: the Fourth of July sky (and its sparkler race, a race)
+    party:{name:"Birthday party",reading:true},        // PARTY: his birthday party and the book in his name
     feast:{name:"Feast table",reading:true},           // FEAST TABLE: a Thanksgiving dish to read
     mail:{name:"Word mail",reading:true},              // WORD MAIL: a Valentine's letter to read and answer
     eggs:{name:"Egg hunt",reading:true},               // EGG HUNT: the word in an Easter egg
@@ -10198,16 +10301,19 @@ const Care=(()=>{
    At each word gate the race waits for him: read the word right and he
    gets a turbo boost; a miss just means no boost. Three gates; reading
    all three wins.
+   A holiday race runs on the same engine: start(v, o) with o = {cls (a class
+   on the sheet), title, once (no "Race again" at the end), done(place, gems)
+   (called once it has paid)}. The FIREWORKS sparkler race is one.
    ================================================================ */
 const Race=(()=>{
   let ov=null,R=null,raf=0;
-  function start(v){
-    const mine=VEH(v.id);if(!mine)return;
+  function start(v,o){
+    const mine=VEH(v.id);if(!mine)return;o=o||{};
     const rivals=VEHICLES.filter(x=>x.id!==v.id&&x.move!=="air"&&x.move!=="water"&&ART[x.id]).sort(()=>Math.random()-.5).slice(0,2);
-    R={v,cars:[{id:v.id,me:true,x:0,sp:8,name:"You"},{id:rivals[0].id,x:0,sp:9.4,name:rivals[0].name},{id:rivals[1].id,x:0,sp:7.6,name:rivals[1].name}],
+    R={v,o,cars:[{id:v.id,me:true,x:0,sp:8,name:"You"},{id:rivals[0].id,x:0,sp:9.4,name:rivals[0].name},{id:rivals[1].id,x:0,sp:7.6,name:rivals[1].name}],
       gates:[22,47,72],gi:0,boost:0,t:0,done:false,right:0,place:[]};
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovRace";document.body.appendChild(ov);}
-    ov.innerHTML=`<div class="sheet racesheet"><div class="bhead"><h2>🏁 Race!</h2><button class="bx" id="rX">✕</button></div>
+    ov.innerHTML=`<div class="sheet racesheet${o.cls?" "+o.cls:""}"><div class="bhead"><h2>${o.title||"🏁 Race!"}</h2><button class="bx" id="rX">✕</button></div>
       <div class="track">${R.cars.map((c,i)=>`<div class="lane${c.me?" me":""}"><div class="rcar" id="rc${i}">${drawThing(c.id,1)}</div><span class="rname">${c.name}</span></div>`).join("")}
         ${R.gates.map(gx=>`<div class="gate" style="left:${gx}%"></div>`).join("")}<div class="finish"></div></div>
       <div class="rq" id="rQ"><p class="wp">Read at the gates for a turbo boost! 🚀</p><button class="btn primary big" id="rGo">Go! 🏁</button></div></div>`;
@@ -10250,8 +10356,9 @@ const Race=(()=>{
     Sound.sfx[place===1?"fanfare":"chime"]();if(place===1)confetti();
     ov.querySelector("#rQ").innerHTML=`<div class="wdone"><div class="podium">${order.map((o,i)=>`<div class="pod p${i+1}${o.c.me?" me":""}"><div>${drawThing(o.c.id,1)}</div><b>${["🥇","🥈","🥉"][i]}</b></div>`).join("")}</div>
       <h2>${place===1?"You won!":place===2?"Second place!":"Third place!"}</h2><p class="mpaid">+${gems} 💎 · ${R.right} of 3 gates read</p>
-      <div class="mrow" style="justify-content:center"><button class="btn soft" id="rAgain">🔁 Race again</button><button class="btn primary big" id="rOk">Done</button></div></div>`;
-    ov.querySelector("#rAgain").onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{Modes.shut(ov);R=null;};
+      <div class="mrow" style="justify-content:center">${R.o.once?"":`<button class="btn soft" id="rAgain">🔁 Race again</button>`}<button class="btn primary big" id="rOk">Done</button></div></div>`;
+    const again=ov.querySelector("#rAgain");if(again)again.onclick=()=>start(v);ov.querySelector("#rOk").onclick=()=>{Modes.shut(ov);R=null;};
+    if(typeof R.o.done==="function")try{R.o.done(place,gems);}catch(e){}
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
   return{start,_R:()=>R,busy:()=>!!R&&!R.done};      // busy: REST waits
@@ -12522,7 +12629,7 @@ Store.item({id:"binoculars",shelf:"gear",name:"Binoculars",cost:{coins:45},art:"
                     drawing (default "look_<id>"), else `ic`, an emoji;
                     lum glows after dark like the lanterns
      hat            the ART drawing hat_<hat>
-     greet          said the first time the look gets a piece
+     greet          said the first time the look gets a piece; {hero} in it is his name
      pieces         the order he earns them: prop ids, the particles kind
                     and "hat" (props first, the hat last)
      names          what each piece is called ("You got the ghost!")
@@ -12593,6 +12700,17 @@ Object.assign(ART,{
     <circle cx="85" cy="38" r="6.5" fill="${dome("#FBF6EC",36,30)}"/>
     ${HI(40,17,6,3,.35)}</g>`;}
 });
+// the star hat (the Fourth of July look, FIREWORKS): a tall striped hat with a blue band and a gold star
+Object.assign(ART,{hat_star(){let st="";for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?2.5:5.8;
+    st+=(i?"L":"M")+(50+Math.cos(a)*rr).toFixed(1)+" "+(26.6+Math.sin(a)*rr).toFixed(1);}
+  return `<g data-hat="star"><path d="M12 33 Q50 44 88 33 Q82 26 50 26 Q18 26 12 33Z" fill="${grad("#2D4FA3","v",.3,.2)}"/>
+    <path d="M33 30 L35 4 Q50 1 65 4 L67 30 Q50 34 33 30Z" fill="${grad("#FBF6EC","v",.12,.14)}"/>
+    <path d="M38.4 3.2 L42.8 2.5 L43 32.6 L39 31.8Z M47.8 2 L52.2 2 L52.2 33.2 L47.8 33.2Z M57.2 2.5 L61.6 3.2 L61 31.8 L57 32.6Z" fill="#D8343F" stroke="none"/>
+    <path d="M33 30 L35 4 Q50 1 65 4 L67 30" fill="none"/>
+    <path d="M33.6 21 Q50 24.5 66.4 21 L67 30 Q50 34 33 30Z" fill="${grad("#2D4FA3","v",.3,.2)}"/>
+    <path d="${st}Z" fill="#FFD24D" stroke-width="1.3"/>
+    <circle cx="39.5" cy="25.6" r="1.3" fill="#FFFFFF" stroke="none"/><circle cx="60.5" cy="25.6" r="1.3" fill="#FFFFFF" stroke="none"/>
+    ${HI(41,12,2.4,7,.35,0)}</g>`;}});
 // the pilgrim hat (the Thanksgiving look, FEAST TABLE): a tall hat with a gold buckle and a leaf tucked in the band
 Object.assign(ART,{hat_pilgrim(){return `<g data-hat="pilgrim"><path d="M12 33 Q50 44 88 33 Q82 26 50 26 Q18 26 12 33Z" fill="${grad("#3A302C","v",.3,.2)}"/>
     <path d="M32 30 L35 5 Q50 2 65 5 L68 30 Q50 34 32 30Z" fill="${grad("#4A3F3A","v",.32,.2)}"/>
@@ -12623,6 +12741,7 @@ const Looks=(()=>{
   const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
   const get=id=>{for(let i=0;i<LOOKS.length;i++)if(LOOKS[i].id===id)return LOOKS[i];return null;};
   const nameOf=(L,p)=>(L.names&&L.names[p])||p;
+  const greetOf=L=>String(L.greet||"").replace(/\{hero\}/g,()=>heroName());
   const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 
   // ---------- what he has (reading never writes to the save) ----------
@@ -12669,7 +12788,7 @@ const Looks=(()=>{
     if(first)state.look=id;
     save();apply();badge(true);
     if(!(opts&&opts.quiet)){
-      if(first){Sound.sfx.win();toast(L.ic+" "+L.greet);buddySay(L.greet);Sound.speak(L.greet,.95);}
+      if(first){const g=greetOf(L);Sound.sfx.win();toast(L.ic+" "+g);buddySay(g);Sound.speak(g,.95);}
       else{const n=nameOf(L,next);Sound.sfx.chime();toast(`You got the ${n}! Look in your closet 🎨`);buddySay(`You got the ${n}!`);
         Sound.speak(`You got the ${n}! Look in your closet.`,.95);}
     }
@@ -12825,7 +12944,9 @@ const Looks=(()=>{
   // the fixed lines the looks speak, for the voice extractor: each greeting, each piece's name, and the two pieces around it
   function voiceLines(){
     const out=["You got the","Look in your closet"];
-    LOOKS.forEach(L=>{if(L.greet)out.push(L.greet);L.pieces.forEach(p=>out.push(nameOf(L,p)));});
+    LOOKS.forEach(L=>{if(L.greet)out.push(greetOf(L));L.pieces.forEach(p=>out.push(nameOf(L,p)));
+      // a greeting with his name in it is also said as the words around the name, which has a clip of its own
+      if(/\{hero\}/.test(L.greet||""))String(L.greet).split("{hero}").forEach(s=>{if(/[A-Za-z]/.test(s))out.push(s.trim());});});
     return out;
   }
   return{grant,pieces,has,done,inWindow,wear,current,hat,get,list:()=>LOOKS.slice(),add,mount,particles,tint,apply,open,close,voiceLines,
@@ -13224,6 +13345,701 @@ const Lights=(()=>{
     get bulbs(){return bulbs();},get star(){return star();},get opened(){return opened();},get ready(){return ready();},
     _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";hud();if(isOpen()){if(!live())close();else render();}},
     _q:()=>cur&&{n:cur.n,kind:cur.kind,miss:cur.miss,paid:cur.paid},_piece:()=>lastPiece};
+})();
+/* ================================================================
+   FIREWORKS — the Fourth of July look and a sky full of his reading, 28 June to 4 July (v10.3)
+   The Fourth of July look ("july", 🎆) joins LOOKS here as data (Looks.add). Its pieces, in the
+   order earned: little flags along a white fence, red, white and blue bunting on a small garage,
+   firework sparkles popping in the sky, and a star hat for the buddy (ART.hat_star, with the other
+   look hats). While it is worn the tint turns a deep-blue evening.
+   The mini-game exists only in the look's window, 28 June to 4 July: Looks.inWindow("july"), or
+   the same dates here. In the window a 🎆 button sits in the tool bar (never a gate), with the
+   fireworks still to go for today's finale on its badge. It opens a night sky over the valley:
+     the sky     every word he reads anywhere in the game that day launches a firework: what
+                 Quests.hit("read", n) counts, the same reads that light Light the tree's bulbs.
+                 A finished book (Quests.hit("book")), a sign or keeper page (Quests.hit("sign")),
+                 a Picture it sentence or a sentence in the shared builder (Read.sentence) sends
+                 up a big one. The ones launched while the sky is shut wait and go up when he
+                 opens it (after a reload today's go up again, twelve at most). One canvas, drawn
+                 with requestAnimationFrame only while the sky is open and something is in the
+                 air: a rocket climbs and bursts into dots that spread, drop a little and fade.
+     the finale  ten fireworks in a day (ten reads) make the grand finale: a fanfare, "Grand
+                 finale!" and a sky full of big bursts, then the next piece of the look
+                 (Looks.grant("july"), which says and shows it itself; the panel repeats it).
+                 One finale a day. When the tenth read comes somewhere else (a crate, a book) the
+                 cheer waits until he is back in the valley (or the piece is given at once if the
+                 app is put away), and the sky plays the finale the next time he opens it.
+     the race    ✨ Sparkler race: the usual race (Race.start, the engine Adventure's races run
+                 on) on a night track with sparkler trails behind the cars, in his own car. It
+                 pays what a race pays (6, 3 or 2 💎 by place) and runs once a day; a race left
+                 before the finish line doesn't count, so he can start it again.
+   Save: state.july = {day (the date of today's fireworks), shots (fireworks launched that day, one
+   a word read), finale (that day's finale has asked for its piece), race (the date of the last
+   sparkler race run to the end)}. Nothing is written outside the window, or before a read in it.
+   ================================================================ */
+Looks.add({id:"july",name:"Fourth of July",ic:"🎆",window:{from:[6,28],to:[7,4]},
+  tint:"linear-gradient(180deg,rgba(16,28,104,.36),rgba(48,66,164,.25) 55%,rgba(214,70,92,.1))",
+  particles:"sparks",drift:"✨",
+  props:[{id:"flags",at:{c:9,r:7},size:1.15},{id:"bunting",at:{c:13.5,r:6},size:1.2}],
+  hat:"star",
+  greet:"Happy Fourth of July! Watch the sky tonight.",
+  pieces:["flags","bunting","sparks","hat"],
+  names:{flags:"flags",bunting:"bunting",sparks:"firework sparkles",hat:"star hat"},
+  css:{hud:"linear-gradient(180deg,#DDE6FF,rgba(221,230,255,0))",
+    trim:"repeating-linear-gradient(90deg,#D8343F 0 14px,#FFFFFF 14px 22px,#2D4FA3 22px 36px,#FFFFFF 36px 44px)",
+    edge:"#2D4FA3",crate:"linear-gradient(160deg,#F0F4FF,#BFD0F2)"}});
+/* ---- the Fourth of July look's props (the same 100-box and ink as the seasonal builds) ---- */
+// a five-pointed star path: centre, outer and inner radius
+const fwStar=(x,y,R,r)=>{let d="";for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,k=i%2?r:R;d+=(i?"L":"M")+(x+Math.cos(a)*k).toFixed(1)+" "+(y+Math.sin(a)*k).toFixed(1);}return d+"Z";};
+Object.assign(ART,{
+  // little flags on sticks along a white picket fence, each waving a little differently
+  look_flags(r){
+    const posts=[16,38,60,82];let pk="",fl="";
+    posts.forEach((x,i)=>{
+      pk+=`<path d="M${x-5} 92 L${x-5} 60 L${x} 54 L${x+5} 60 L${x+5} 92Z" fill="${grad("#F4EEDF","h",.2,.18)}"/>`;
+      const y=16+(i%2)*9,w=+((r()-.5)*2.4).toFixed(1),sx=x+1;
+      const edge=yy=>`M${sx} ${yy} Q${sx+6} ${(yy-2.4+w).toFixed(1)} ${sx+11} ${yy} T${sx+22} ${yy}`;
+      const band=(y0,y1)=>`${edge(y0)} L${sx+22} ${y1} Q${sx+16} ${(y1+2.4-w).toFixed(1)} ${sx+11} ${y1} T${sx} ${y1}Z`;
+      fl+=`<path d="M${x} ${y-1} L${x} 58" fill="none" stroke-width="2.2"/><circle cx="${x}" cy="${y-2.6}" r="2.2" fill="#FFD24D" stroke-width="1.2"/>
+        <path d="${band(y,y+14)}" fill="#D8343F" stroke="none"/>
+        <path d="${band(y+3.6,y+5.8)}" fill="#FFFFFF" stroke="none"/><path d="${band(y+8.2,y+10.4)}" fill="#FFFFFF" stroke="none"/>
+        <path d="M${sx} ${y} Q${sx+4} ${(y-1.6+w/2).toFixed(1)} ${sx+9} ${(y-.6).toFixed(1)} L${sx+9} ${y+7.4} L${sx} ${y+7.6}Z" fill="#2D4FA3" stroke="none"/>
+        <circle cx="${sx+3}" cy="${y+2.6}" r=".9" fill="#FFFFFF" stroke="none"/><circle cx="${sx+6.4}" cy="${y+4.8}" r=".9" fill="#FFFFFF" stroke="none"/>
+        <path d="${band(y,y+14)}" fill="none" stroke-width="1.6"/>`;
+    });
+    return S(`${OCC}<path d="M6 66 L94 66 L94 72 L6 72Z" fill="${grad("#EDE4D0","v",.2,.2)}"/><path d="M6 80 L94 80 L94 86 L6 86Z" fill="${grad("#EDE4D0","v",.2,.2)}"/>${pk}${fl}`);
+  },
+  // red, white and blue bunting fans along the front of a small garage, a gold star on the roof
+  look_bunting(){
+    const fan=c=>`<path d="M${c-10} 52 A10 10 0 0 0 ${c+10} 52Z" fill="#D8343F" stroke-width="1.6"/>
+      <path d="M${c-6.6} 52 A6.6 6.6 0 0 0 ${c+6.6} 52Z" fill="#FFFFFF" stroke="none"/><path d="M${c-3.4} 52 A3.4 3.4 0 0 0 ${c+3.4} 52Z" fill="#2D4FA3" stroke="none"/>
+      <path d="M${c} 52 L${c} 61.5 M${c} 52 L${c-7} 59 M${c} 52 L${c+7} 59" fill="none" stroke-opacity=".3" stroke-width="1.2"/>`;
+    return S(`${OCC}<path d="M20 92 L20 50 L80 50 L80 92Z" fill="${grad("#E9DFCC","h",.2,.2)}"/>
+      <path d="M12 52 L50 28 L88 52Z" fill="${grad("#B85C44","v",.25,.25)}"/>
+      <path d="M31 92 L31 66 L69 66 L69 92Z" fill="${grad("#C7CDD6","v",.2,.2)}"/>
+      <path d="M31 73 L69 73 M31 80 L69 80 M31 87 L69 87" fill="none" stroke-opacity=".35" stroke-width="1.4"/>
+      ${fan(30)}${fan(50)}${fan(70)}<path d="${fwStar(50,40,5.4,2.3)}" fill="#FFD24D" stroke-width="1.2"/>${HI(26,74,2.4,9,.25,0)}`);
+  }
+});
+const Fireworks=(()=>{
+  const FINALE=10,LOOK="july",REPLAY=12,QMAX=40,
+    COLORS=["#FF5252","#FFFFFF","#5AA9FF","#FFD84D","#FF7AD9","#7CF29A","#FF9F43"];
+  let fake=null,ov=null,cv=null,cx=null,W=0,H=0,raf=0,last=0,next=0,fast=0,lastBoom=0,queue=[],rockets=[],dots=[],flashes=[],
+    seen=0,seenDay="",bigs=0,finaleSeen="",owed=false,pending=false,lastPiece=null,pieceDay="",greeted="",lastKey="",hooked=false;
+  const count={launched:0,burst:0,big:0,finales:0};
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const day=()=>fake||today();
+  // pure: is this date ("YYYY-MM-DD" or a Date) from 28 June to 4 July?
+  function inWindow(d){
+    let m,dd;
+    if(d instanceof Date){m=d.getMonth()+1;dd=d.getDate();}
+    else{const s=String(d==null?day():d);if(!/^\d{4}-\d{2}-\d{2}/.test(s))return false;m=+s.slice(5,7);dd=+s.slice(8,10);}
+    return (m===6&&dd>=28&&dd<=30)||(m===7&&dd>=1&&dd<=4);
+  }
+  // the Look system (LOOKS), when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the Look system's window, then the dates above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow(LOOK);}catch(e){}}
+    return inWindow(today());
+  }
+
+  /* ---------- the save (reading it never writes to it) ---------- */
+  const blank=()=>({day:"",shots:0,finale:false,race:""});
+  const saved=()=>isObj(state.july)?state.july:blank();
+  const shots=()=>{const j=saved();return j.day===day()?Math.max(0,Math.floor(+j.shots||0)):0;};
+  const finaled=()=>{const j=saved();return j.day===day()&&!!j.finale;};
+  const raced=()=>saved().race===day();
+  const toGo=()=>Math.max(0,FINALE-shots());
+  // the finale is due: ten today, and today's piece not asked for yet
+  const due=()=>live()&&shots()>=FINALE&&!finaled();
+  // for writing: a new day starts an empty sky (the race keeps its own date)
+  function J(){
+    if(!isObj(state.july))state.july=blank();
+    const j=state.july;
+    if(j.day!==day()){j.day=day();j.shots=0;j.finale=false;}
+    if(typeof j.race!=="string")j.race="";
+    return j;
+  }
+  // what the sky remembers is for one day: a new day forgets what went up
+  function fresh(){if(seenDay!==day()){seenDay=day();seen=0;bigs=0;queue=[];finaleSeen="";}}
+
+  /* ---------- what he reads, anywhere ---------- */
+  // k and n as Quests.hit gets them ("read" and the words, "book", "sign"), or "sentence" from the reading builder
+  function heard(k,n){
+    if(!live())return;
+    let add=0,big=false;
+    if(k==="read"){add=n==null?1:Math.max(0,Math.floor(+n||0));
+      const pic=document.getElementById("ovPic");if(pic&&pic.classList.contains("on"))big=true;}   // Picture it: he read a sentence
+    else if(k==="book"||k==="sign"||k==="sentence")big=true;
+    else return;
+    if(!add&&!big)return;
+    fresh();
+    if(add){const j=J();j.shots=Math.min(99999,(+j.shots||0)+add);save();}
+    if(big)bigs++;
+    count.launched+=add+(big?1:0);
+    hud();
+    if(isOpen()){pump();render();}
+    if(due())finale();
+  }
+  // the reads the daily quests and today's goal count go through Quests.hit, which is declared further down the
+  // page: hooked once the page has loaded (and again from the minute tick, in case), as Light the tree does
+  function hook(){
+    if(hooked)return;
+    try{if(typeof Quests==="undefined"||!Quests||typeof Quests.hit!=="function")return;}catch(e){return;}
+    hooked=true;
+    const hit0=Quests.hit;
+    Quests.hit=function(k,by){const r=hit0.apply(this,arguments);try{heard(k,by);}catch(e){}return r;};
+  }
+  // a sentence read in the shared builder (story quests, Trick-or-Read, the advent doors) sends up a big one
+  if(typeof Read!=="undefined"&&Read&&typeof Read.sentence==="function"){
+    const sent0=Read.sentence;
+    Read.sentence=function(host,done,bg){
+      return sent0.call(this,host,function(){
+        try{if(host&&String(host.dataset.ans||"")[0]==="#")heard("sentence");}catch(e){}
+        return typeof done==="function"?done.apply(this,arguments):undefined;},bg);
+    };
+  }
+
+  /* ---------- the sky: one canvas, drawn only while it is open and something is in the air ---------- */
+  function size(){
+    if(!cv||!cx)return;
+    const r=cv.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+    W=Math.max(1,r.width);H=Math.max(1,r.height);
+    cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+    try{cx.setTransform(dpr,0,0,dpr,0,0);}catch(e){}
+  }
+  // today's fireworks he hasn't seen go into the sky's queue (twelve at most at a time), then the big ones
+  function pump(){
+    fresh();
+    const n=shots()-seen;
+    if(n>0){for(let i=0;i<Math.min(n,REPLAY);i++)queue.push({big:false});seen=shots();}
+    for(;bigs>0;bigs--)queue.push({big:true});
+    if(queue.length>QMAX)queue.splice(0,queue.length-QMAX);
+    kick();
+  }
+  function kick(){
+    if(raf||!isOpen()||!cx||(!queue.length&&!rockets.length&&!dots.length&&!flashes.length))return;
+    last=0;raf=requestAnimationFrame(frame);
+  }
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  function launch(f){
+    const big=!!f.big;
+    rockets.push({x:W*(.12+Math.random()*.76),y:H+4,v:H*(1.05+Math.random()*.3),top:H*(big?.16+Math.random()*.14:.24+Math.random()*.26),
+      big,c:pick(COLORS),c2:pick(COLORS)});
+  }
+  // a burst: a flash, and dots flung out to fill a ball (a big one has a heart of another colour)
+  function burst(r){
+    const n=r.big?72:40,sp=Math.min(W,H)*(r.big?.68:.48);
+    for(let i=0;i<n;i++){const a=i/n*Math.PI*2+Math.random()*.25,inner=r.big&&i%3===0,v=sp*(inner?.28+Math.random()*.24:.55+Math.random()*.45);
+      dots.push({x:r.x,y:r.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,life:(r.big?1.9:1.35)*(.8+Math.random()*.4),c:inner?r.c2:r.c,s:r.big?3.4:3});}
+    flashes.push({x:r.x,y:r.y,t:0,r:r.big?30:20,c:r.c});
+    count.burst++;if(r.big)count.big++;
+    const t=Date.now();if(t-lastBoom>150){lastBoom=t;try{Sound.sfx.drum();}catch(e){}}
+  }
+  function frame(t){
+    raf=0;
+    if(!isOpen()||!cx){rockets=[];dots=[];flashes=[];return;}
+    const dt=last?Math.min(.05,(t-last)/1000):1/60;last=t;
+    if(queue.length&&t>=next){launch(queue.shift());next=t+(fast>0?170:340);if(fast>0)fast--;}
+    for(let i=rockets.length-1;i>=0;i--){const r=rockets[i];r.y-=r.v*dt;if(r.y<=r.top){rockets.splice(i,1);burst(r);}}
+    const k=Math.exp(-2.3*dt);
+    for(let i=dots.length-1;i>=0;i--){const d=dots[i];d.t+=dt;if(d.t>=d.life){dots.splice(i,1);continue;}
+      d.vx*=k;d.vy=d.vy*k+48*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;}
+    for(let i=flashes.length-1;i>=0;i--){flashes[i].t+=dt;if(flashes[i].t>=.24)flashes.splice(i,1);}
+    cx.clearRect(0,0,W,H);
+    flashes.forEach(f=>{cx.globalAlpha=.45*(1-f.t/.24);cx.fillStyle=f.c;cx.beginPath();cx.arc(f.x,f.y,f.r*(.6+f.t*2.5),0,Math.PI*2);cx.fill();});
+    cx.fillStyle="#FFF3C4";
+    rockets.forEach(r=>{cx.globalAlpha=1;cx.fillRect(r.x-2,r.y-2,4,4);cx.globalAlpha=.55;cx.fillRect(r.x-1.2,r.y+4,2.4,6);cx.globalAlpha=.25;cx.fillRect(r.x-1,r.y+12,2,7);});
+    dots.forEach(d=>{const a=1-d.t/d.life;cx.globalAlpha=a*a;cx.fillStyle=d.c;cx.fillRect(d.x-d.s/2,d.y-d.s/2,d.s,d.s);});
+    cx.globalAlpha=1;
+    if(queue.length||rockets.length||dots.length||flashes.length)raf=requestAnimationFrame(frame);
+  }
+
+  /* ---------- the grand finale: ten today ---------- */
+  function finale(){
+    if(pending||!due())return;
+    if(isOpen())cheer();
+    else if(!owed){owed=true;setTimeout(settle,1200);}
+  }
+  // the tenth read came in a crate or a book: the cheer waits until he is back in the valley (or the sky)
+  function settle(){
+    if(!owed||pending)return;
+    if(!due()){owed=false;return;}
+    const top=Modes.top();
+    if(top==="valley"||top==="fireworks")cheer();
+    else setTimeout(settle,1500);
+  }
+  // the sky's finale: a dozen big ones, quickly, and the words
+  function show(){
+    for(let i=0;i<12;i++)queue.push({big:true});fast=12;
+    const b=ov&&ov.querySelector("#fwBig");if(b){b.classList.remove("on");void b.offsetWidth;b.classList.add("on");}
+    kick();
+  }
+  function cheer(){
+    if(pending||!due())return;
+    pending=true;owed=false;
+    Sound.sfx.fanfare();
+    if(isOpen()){finaleSeen=day();show();}
+    else{try{confetti();}catch(e){}toast("🎆 Grand finale! Ten fireworks today!");}
+    try{buddyCheer();buddySay("Grand finale!");}catch(e){}
+    const said=Sound.speak("Grand finale! Ten fireworks!",.95);
+    // the look piece comes after the cheer (the Look system says a line of its own), or at once if the app is put away
+    const give=()=>{if(pending){pending=false;grant();}};
+    Promise.resolve(said).then(()=>setTimeout(give,250),give);setTimeout(give,5000);
+    if(isOpen())render();
+  }
+  // today's piece: asked for once, marked in the save first
+  function grant(){
+    if(!live()||finaled()||shots()<FINALE)return;
+    const j=J();j.finale=true;save();
+    count.finales++;
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant(LOOK);}catch(e){p=null;}}
+    lastPiece=p||null;hud();
+    if(isOpen())render();
+    if(!p)return;
+    let nm=String(p);
+    try{const LK=L.get&&L.get(LOOK);if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(e){}   // the piece's shown name ("star hat")
+    // the Look system toasts and speaks this line itself when it grants; the panel only repeats it
+    pieceDay=day();
+    const el=ov&&ov.querySelector("#fwPiece");if(el)el.textContent="🎁 You got the "+nm+"! Look in your closet 🎨";
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&(pending||owed)&&due()){pending=false;owed=false;grant();try{saveNow();}catch(e){}}});
+
+  /* ---------- the panel ---------- */
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+  const msg=t=>{const m=ov&&ov.querySelector("#fwMsg");if(m)m.textContent=t||"";};
+  // the valley at night along the bottom of the sky: two hills, houses with a lit window, pines and a flag
+  const HILLS=`<svg class="fwhills" viewBox="0 0 800 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <path d="M0 70 Q90 38 190 58 Q300 80 400 50 Q500 22 610 52 Q710 78 800 46 L800 120 L0 120Z" fill="#1E2C5C"/>
+    <path d="M0 92 Q120 70 250 86 Q380 102 500 80 Q640 60 800 84 L800 120 L0 120Z" fill="#141F42"/>
+    <path d="M300 90 L300 68 L316 56 L332 68 L332 90Z M520 84 L520 64 L534 53 L548 64 L548 84Z M140 94 L152 62 L164 94Z M660 92 L671 64 L682 92Z M690 94 L700 70 L710 94Z" fill="#0E1631"/>
+    <path d="M311 73h9v8h-9Z M530 68h8v7h-8Z" fill="#FFD86B"/>
+    <path d="M430 88 L430 50" stroke="#0E1631" stroke-width="3"/><path d="M431 50 L453 54 L431 59Z" fill="#D8343F"/></svg>`;
+  function build(){
+    ov=document.createElement("div");ov.className="overlay";ov.id="ovFireworks";
+    ov.innerHTML=`<div class="sheet fwsheet"><div class="bhead"><h2>🎆 Fireworks</h2><b class="fwstat" id="fwStat"></b><button class="bx" id="fwX" aria-label="Close">✕</button></div>
+      <div class="fwsky" id="fwSky"><canvas id="fwCanvas" aria-hidden="true"></canvas>${HILLS}<div class="fwbuddy" id="fwBuddy"></div><b class="fwbig" id="fwBig">Grand finale!</b></div>
+      <p class="fwline" id="fwLine" aria-live="polite"></p><div class="fwmeter" id="fwMeter" aria-hidden="true"></div><p class="fwpiece" id="fwPiece"></p>
+      <div class="mrow fwrow"><button class="btn primary big" id="fwRace">✨ Sparkler race</button></div><p class="fwmsg" id="fwMsg" aria-live="polite"></p></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#fwX").onclick=close;
+    ov.querySelector("#fwRace").onclick=()=>race();
+    cv=ov.querySelector("#fwCanvas");try{cx=cv.getContext("2d");}catch(e){cx=null;}
+    window.addEventListener("resize",()=>{if(isOpen())size();});
+  }
+  function render(){
+    if(!ov)return;
+    const n=shots(),fin=finaled()||pending,done=raced();
+    ov.querySelector("#fwStat").textContent="🎆 "+n;
+    ov.querySelector("#fwLine").textContent=fin?"🎇 Grand finale! Every word you read still sends one up."
+      :n?`🎆 ${n} ${n===1?"firework":"fireworks"} today. ${toGo()} more for the grand finale!`:"Read a word to launch your first firework!";
+    let m="";for(let i=0;i<FINALE;i++)m+=`<i class="${i<n?"on":""}">🎆</i>`;
+    ov.querySelector("#fwMeter").innerHTML=m;
+    const rb=ov.querySelector("#fwRace");
+    rb.textContent=done?"✨ Raced today!":"✨ Sparkler race";rb.classList.toggle("done",done);
+  }
+  // the 🎆 button: the sky, and what has gone up since he last looked
+  function open(){
+    if(!live())return false;
+    hook();fresh();
+    if(!ov)build();
+    if(!isOpen()){ov.classList.add("on");Modes.open("fireworks",ov);Sound.sfx.pop();msg("");
+      if(pieceDay!==day())ov.querySelector("#fwPiece").textContent="";}
+    try{ov.querySelector("#fwBuddy").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());}catch(e){}
+    size();render();
+    if(greeted!==day()){greeted=day();const n=shots();
+      setTimeout(()=>{if(isOpen()&&!pending)Sound.speak(n>=FINALE?"What a sky! Keep reading for more fireworks!":"Every word you read today launches a firework!",.95);},400);}
+    // a finale that came while he was reading somewhere else plays for him now
+    if(finaled()&&finaleSeen!==day()){finaleSeen=day();show();}
+    pump();
+    if(due())finale();
+    return true;
+  }
+  function close(){if(!ov)return;Modes.shut(ov);if(raf){cancelAnimationFrame(raf);raf=0;}rockets=[];dots=[];flashes=[];Sound.sfx.soft();}
+
+  /* ---------- the sparkler race: the usual race, once a day ---------- */
+  // his own car: a ground vehicle, the one out and of the highest level first; the starter car when he has none
+  function car(){
+    const ok=v=>!!v&&!!VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"&&!!ART[v.id];
+    const mine=(state.vehicles||[]).filter(ok).sort((a,b)=>((b.out!==false)-(a.out!==false))||((b.lv||1)-(a.lv||1)));
+    return mine[0]||{id:"v_car"};
+  }
+  function race(){
+    if(!live())return false;
+    if(raced()){Sound.sfx.soft();msg("You raced today! Another sparkler race tomorrow ✨");
+      Sound.speak("You raced today! Come back tomorrow for another sparkler race.",.95);return false;}
+    msg("");
+    // Race pays as it always does; done() marks today's race once it has
+    try{Race.start(car(),{cls:"sparkler",title:"✨ Sparkler race!",once:true,done:()=>{J().race=day();save();hud();render();}});}catch(e){return false;}
+    return Modes.top()==="race";
+  }
+
+  /* ---------- the tool bar ---------- */
+  function hud(){
+    const b=document.getElementById("fireworksBtn");if(!b)return;
+    const on=live();b.style.display=on?"":"none";
+    const n=document.getElementById("fireworksBadge");
+    if(n){const k=on&&!finaled()?toGo():0;n.textContent=k?String(k):"";n.classList.toggle("on",k>0);}
+  }
+  // the window opens and closes at midnight and a new day starts an empty sky; a finale still owed
+  // (the app was closed before it came) is given the next time round
+  function tick(){
+    hook();fresh();hud();
+    const k=live()+"|"+day();
+    if(k!==lastKey){lastKey=k;if(isOpen()){if(!live())close();else render();}}
+    if(due()&&!pending&&!owed)finale();
+  }
+  document.getElementById("fireworksBtn").onclick=()=>open();
+  setInterval(tick,60000);setTimeout(tick,0);setTimeout(tick,1500);setTimeout(tick,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
+
+  return{inWindow,live,open,close,hud,race,FINALE,
+    get shots(){return shots();},get finale(){return finaled();},get raced(){return raced();},get toGo(){return toGo();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";owed=false;tick();},
+    _bursts:()=>({launched:count.launched,burst:count.burst,big:count.big,finales:count.finales,queued:queue.length,air:rockets.length+dots.length+flashes.length}),
+    _piece:()=>lastPiece,_waiting:()=>owed||pending};
+})();
+/* ================================================================
+   PARTY — his birthday week: every animal he has at a cake, and a book in his name (v10.3)
+   Grown-up menu → Settings → Birthday sets settings.birthday ("MM-DD", "" for none). The week of
+   it, the birthday and the six days before (birthdayNear, a function window, so it can cross the
+   new year; never while the setting is blank), is the Birthday look's window ("birthday", 🎂) and
+   a 🎂 button sits in the tool bar (never a gate). The look's pieces, in the order the party gives
+   them: a bunch of balloons, a HAPPY BIRTHDAY banner, drifting confetti and, last, the cake on its
+   table; its tint is party pink and gold. There is no look hat: the party hat (HATS "party") is
+   free that week instead. The first time the game sees the week it goes into state.hats with a
+   toast, when he doesn't have it already.
+     the party   every kind of animal he has comes to a long table with a cake, and the buddy in the
+                 party hat says "Happy birthday, {hero}!" (said as "Happy birthday," and his name,
+                 so the recorded pieces can say it).
+     the book    "{hero}'s Big Day", seven pages made at his level: each page has lines from the
+                 richest down to one that decodes at level 1, and the first that passes the decode
+                 check at currentTier() is used (the title too). The friend in it is one of his own
+                 animals whose name he can read (else the fox). It reads like a storybook, with the
+                 page controls of one: the scene, words to tap and hear, "✓ I read it" once there
+                 has been time to read, "🔊 Hear it" and Next. Its pages count as reads (the daily
+                 goal, the quests, the fireworks) and the end as a finished book; the end pays what
+                 a book's first read pays (6 💎 and 2 a star; the third star is his birthday's) once
+                 a day, and the first end of a birthday week asks the Look system for the next piece
+                 (Looks.grant("birthday"), which says and shows it itself): a piece for each day
+                 of the week the book is read to the end (the first end of a day), four in all.
+   Save: state.birthday = {year (the year of the birthday whose week gave its piece; 0 none yet),
+   read (the date the book last paid), pieces (look pieces the party has asked for, in all)}.
+   Outside the week nothing is written.
+   ================================================================ */
+// his birthday from the setting ("MM-DD"): {m, d}, or null when it is blank or not a date
+function birthdayOf(s){
+  const x=/^(\d{1,2})-(\d{1,2})$/.exec(String(s==null?"":s).trim());if(!x)return null;
+  const m=+x[1],d=+x[2];
+  return m>=1&&m<=12&&d>=1&&d<=[31,29,31,30,31,30,31,31,30,31,30,31][m-1]?{m,d}:null;
+}
+// the birthday in year y (29 February is kept on the 28th in the other years)
+function birthdayIn(b,y){const leap=(y%4===0&&y%100!==0)||y%400===0;return new Date(y,b.m-1,b.m===2&&b.d===29&&!leap?28:b.d);}
+// the birthday whose week holds this date (the birthday and the six days before it), or null; s is the setting (his, when left out)
+function birthdayNear(date,s){
+  const b=birthdayOf(s===undefined?(state.settings||{}).birthday:s);
+  if(!b||!(date instanceof Date)||isNaN(date.getTime()))return null;
+  const t=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  for(let y=date.getFullYear();y<=date.getFullYear()+1;y++){
+    const B=birthdayIn(b,y),k=Math.round((Date.UTC(B.getFullYear(),B.getMonth(),B.getDate())-t)/864e5);
+    if(k>=0&&k<=6)return B;
+  }
+  return null;
+}
+// the look's window moves with the setting; its `from` is the birthday itself, for the Closet, which names
+// the month on a look not earned yet
+const BDAY_WINDOW=d=>!!birthdayNear(d);
+Object.defineProperty(BDAY_WINDOW,"from",{get:()=>{const b=birthdayOf((state.settings||{}).birthday);return b?[b.m,b.d]:undefined;}});
+Looks.add({id:"birthday",name:"Birthday",ic:"🎂",window:BDAY_WINDOW,
+  tint:"linear-gradient(180deg,rgba(255,130,196,.16),rgba(255,210,90,.14) 55%,rgba(150,118,255,.14))",
+  particles:"confetti",drift:"🎊",
+  props:[{id:"balloons",at:{c:7.5,r:7},size:1.2,sway:true},{id:"banner",at:{c:11,r:6.6},size:1.45},{id:"cake",at:{c:14.8,r:7},size:.95,lum:true}],
+  greet:"Happy birthday, {hero}!",
+  pieces:["balloons","banner","confetti","cake"],
+  names:{balloons:"balloons",banner:"birthday banner",confetti:"confetti",cake:"birthday cake"},
+  css:{hud:"linear-gradient(180deg,#FFE3F1,rgba(255,227,241,0))",
+    trim:"repeating-linear-gradient(90deg,#FF6FAE 0 12px,#FFD84D 12px 24px,#5CC8FF 24px 36px,#9B7BFF 36px 48px)",
+    edge:"#C2458A",crate:"linear-gradient(160deg,#FFF0F7,#FFC6E0)"}});
+/* ---- the Birthday look's props (the same 100-box and ink as the seasonal builds), and the party's cake ---- */
+const BDAY_COLORS=["#FF6FAE","#FFD84D","#5CC8FF","#7CD67C","#9B7BFF"];
+// pennants with the letters of a word on a string that sags between x0 and x1 at height y, each w wide
+function bdayPennants(word,x0,x1,y,sag,w){
+  let d=`<path d="M${x0} ${y} Q${(x0+x1)/2} ${y+2*sag} ${x1} ${y}" fill="none" stroke-width="1.2"/>`;
+  const n=word.length,start=(x0+x1)/2-n*w/2;
+  for(let i=0;i<n;i++){const ch=word[i];if(ch===" ")continue;
+    const cx=start+w*(i+.5),t=(cx-x0)/(x1-x0),yy=y+4*sag*t*(1-t);
+    d+=`<path d="M${(cx-w/2+.4).toFixed(1)} ${yy.toFixed(1)} L${(cx+w/2-.4).toFixed(1)} ${yy.toFixed(1)} L${cx.toFixed(1)} ${(yy+w*1.3).toFixed(1)}Z" fill="${BDAY_COLORS[i%BDAY_COLORS.length]}" stroke-width="1"/>
+      <text x="${cx.toFixed(1)}" y="${(yy+w*.66).toFixed(1)}" font-size="${(w*.62).toFixed(1)}" font-weight="900" text-anchor="middle" fill="${INK}" stroke="none">${ch}</text>`;}
+  return d;
+}
+// a birthday cake with three candles; the look's stands on a little round table
+function bdayCake(table){
+  const cand=[40,50,60].map((x,i)=>`<path d="M${x-1.8} 37 L${x-1.8} 25 L${x+1.8} 25 L${x+1.8} 37Z" fill="${["#5CC8FF","#FF6FAE","#FFD84D"][i]}" stroke-width="1.2"/>
+    <path d="M${x-1.8} 29 L${x+1.8} 27 M${x-1.8} 34 L${x+1.8} 32" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-opacity=".9"/>
+    <path d="M${x} 24 Q${x-3.2} 19 ${x} 13.5 Q${x+3.2} 19 ${x} 24Z" fill="#FFC53D" stroke-width="1"/><ellipse cx="${x}" cy="20.5" rx=".9" ry="2" fill="#FFF6C8" stroke="none"/>`).join("");
+  let sp="";for(let i=0;i<10;i++)sp+=`<path d="M${(30+i*4.4).toFixed(1)} ${i%2?60:65} l2.2 ${i%3?-1.4:1.4}" fill="none" stroke="${BDAY_COLORS[i%5]}" stroke-width="1.8" stroke-opacity="1"/>`;
+  return S(`${table?`${OCC}<path d="M24 74 L22 93 M76 74 L78 93 M50 77 L50 93" fill="none" stroke-width="3.6"/><ellipse cx="50" cy="72" rx="38" ry="7.5" fill="${grad("#D9A066","v",.2,.2)}"/>`:""}
+    <path d="M26 70 L26 50 Q50 45 74 50 L74 70 Q50 76 26 70Z" fill="${grad("#FBE3C4","h",.15,.18)}"/>${sp}
+    <path d="M26 51 Q30 58 34 52 Q38 60 42 52 Q46 58 50 52 Q54 60 58 52 Q62 58 66 52 Q70 60 74 51 L74 50 Q50 45 26 50Z" fill="#FF8FC0" stroke-width="1.4"/>
+    <ellipse cx="50" cy="49.5" rx="24" ry="5" fill="#FFB3D6" stroke-width="1.6"/>
+    <path d="M34 49 L34 38 Q50 34 66 38 L66 49 Q50 53 34 49Z" fill="${grad("#FFF1DC","h",.12,.15)}"/>
+    <ellipse cx="50" cy="37.5" rx="16" ry="3.8" fill="#FFFFFF" stroke-width="1.4"/>${cand}${HI(31,60,2,5,.35,0)}`);
+}
+Object.assign(ART,{
+  // a bunch of balloons tied to a little weight with a bow
+  look_balloons(r){
+    const B=[[30,30,BDAY_COLORS[0]],[50,20,BDAY_COLORS[1]],[70,30,BDAY_COLORS[2]],[39,47,BDAY_COLORS[4]],[61,47,BDAY_COLORS[3]]];
+    let s="",b="";
+    B.forEach(([x,y,c])=>{
+      s+=`<path d="M${x} ${y+14} Q${((x+50)/2+(r()-.5)*8).toFixed(1)} ${((y+102)/2).toFixed(1)} 50 86" fill="none" stroke-width="1.2" stroke-opacity=".7"/>`;
+      b+=`<ellipse cx="${x}" cy="${y}" rx="10" ry="12.5" fill="${dome(c,34,28)}" stroke-width="1.8"/><path d="M${x-2} ${y+14.5} L${x} ${y+12} L${x+2} ${y+14.5}Z" fill="${c}" stroke-width="1.2"/>${HI(x-4,y-5,2.4,4,.55,-20)}`;});
+    return S(`${OCC}${s}<path d="M44 92 L46 85 L54 85 L56 92Z" fill="${grad("#9A6A3E","h")}"/>
+      <path d="M50 86 Q43 80 41 86 Q45 91 50 87 Q55 91 59 86 Q57 80 50 86Z" fill="#FF6FAE" stroke-width="1.2"/>${b}`);
+  },
+  // HAPPY BIRTHDAY on two strings of pennants between two posts
+  look_banner(){
+    return S(`${OCC}<path d="M5 92 L5 22 L9 22 L9 92Z M91 92 L91 22 L95 22 L95 92Z" fill="${grad("#9A6A3E","h")}"/>
+      <circle cx="7" cy="21" r="3" fill="#FFD24D" stroke-width="1.2"/><circle cx="93" cy="21" r="3" fill="#FFD24D" stroke-width="1.2"/>
+      ${bdayPennants("HAPPY",8,92,27,3,11)}${bdayPennants("BIRTHDAY",8,92,52,3,9.4)}`);
+  },
+  look_cake(){return bdayCake(true);},
+  bday_cake(){return bdayCake(false);}
+});
+const Party=(()=>{
+  const LOOK="birthday",PAY=6,STAR=2,MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let fake=null,ov=null,view="",bk=null,page=0,helps=0,pending=false,lastPiece=null,pieceDay="",greeted="",lastKey="";
+  const isObj=x=>Object.prototype.toString.call(x)==="[object Object]";
+  const day=()=>fake||today();
+  const dateOf=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
+  // pure: is this date ("YYYY-MM-DD" or a Date) in the week of the birthday bday ("MM-DD"; his setting when left out)?
+  function inWindow(d,bday){const t=d instanceof Date?d:dateOf(d==null?day():d);return !!t&&!isNaN(t.getTime())&&!!birthdayNear(t,bday);}
+  // the Look system (LOOKS), when this build has it
+  function looks(){try{return typeof Looks!=="undefined"&&Looks?Looks:null;}catch(e){return null;}}
+  // today, in the game: the test date when one is set, then the Look system's window, then the week above
+  function live(){
+    if(fake)return inWindow(fake);
+    const L=looks();
+    if(L&&typeof L.inWindow==="function"){try{return !!L.inWindow(LOOK);}catch(e){}}
+    return inWindow(today());
+  }
+  // the year of the birthday this week is for (a week in late December can be for a birthday in early January)
+  function year(){const t=dateOf(day()),B=t&&birthdayNear(t);return B?B.getFullYear():0;}
+
+  /* ---------- the save (reading it never writes to it) ---------- */
+  const blank=()=>({year:0,read:"",pieces:0});
+  const saved=()=>isObj(state.birthday)?state.birthday:blank();
+  const paidToday=()=>saved().read===day();
+  const gaveThisYear=()=>{const y=year();return !!y&&+saved().year===y;};   // (kept for old saves' year field)
+  function B(){
+    if(!isObj(state.birthday))state.birthday=blank();
+    const b=state.birthday;if(typeof b.read!=="string")b.read="";b.year=+b.year||0;b.pieces=Math.max(0,Math.floor(+b.pieces||0));
+    return b;
+  }
+
+  /* ---------- the party hat: free the week of his birthday ---------- */
+  // into his wardrobe the first time the game sees the week, when he doesn't have it already
+  function hat(){
+    if(!live())return false;
+    if(!Array.isArray(state.hats))state.hats=[];
+    if(state.hats.indexOf("party")>=0)return false;
+    state.hats.push("party");save();
+    Sound.sfx.chime();toast("🥳 A party hat for your birthday! It's in the 📖 Wardrobe.");
+    try{buddyCheer();buddySay("A party hat for you!");}catch(e){}
+    if(Modes.top()==="valley")Sound.speak("A party hat for your birthday!",.95);
+    return true;
+  }
+
+  /* ---------- his book: "{hero}'s Big Day", made at his level ---------- */
+  // each page: its pictures, and its lines from the richest down to one that decodes at level 1 (a line can bring
+  // pictures of its own). {hero} is his name; {pal} and the picture "pal" are the friend (pal() below)
+  const TITLE=["{hero}'s Big Day","{hero}'s Big Box","{hero} and the Box"];
+  const BOOK=[
+    {items:[["ash",34,1.1],["bed",70,1.1]],lines:["It is {hero}'s birthday! Wake up, {hero}!","It is {hero}'s big day. Wake up, {hero}!",
+      "Wake up, {hero}! It is a big, fun time!","{hero} is up! Mom and Dad hug {hero}.","Mom and Dad ran to {hero}. Ha, ha!"]},
+    {items:[["pal",32,1],["box",68,.9]],lines:["The {pal} has a gift for {hero}.","The {pal} got {hero} a big gift.","The {pal} got {hero} a big box.",
+      "Look! The {pal} got {hero} a box."]},
+    {items:[["box",38,1],["hat",66,.62,24]],lines:["What is in the box? A party hat!","What is in the box? A hat with a star on it!",
+      "What is in the box? A hat!","{hero} taps the box. Pop! A hat!"]},
+    {items:[["ash",38,1.1],["hat",68,.7]],lines:["{hero} puts on the hat. He likes it a lot!","{hero} puts on the hat. It fits!",
+      "{hero} gets the hat on. It fits!","{hero} got the hat on. Ha, ha!"]},
+    {items:[["bday_cake",50,1.3]],lines:["Mom and Dad bake a big cake. What a treat!","Mom and Dad bake a big cake. It is pink!",
+      ["Mom and Dad get the big pan. It is hot!",[["pan",36,.95],["bday_cake",68,1.05]]],["Mom got the pan. Dad got the pot.",[["pan",34,.95],["pot",68,.95]]]]},
+    {items:[["ash",30,1.05],["bday_cake",66,1.2]],lines:["{hero} makes a wish and blows. Whoosh!","{hero} makes a wish. Puff! Puff!",
+      "{hero} has a wish. Puff! Puff!","Yes! {hero} gets a hug and a kiss!","Dad and {hero} hop and hop!"]},
+    {items:[["ash",24,1],["pal",52,.9],["bday_cake",79,1]],lines:["Happy birthday, {hero}! What a fun day!","What a fun day! It was the best, {hero}!",
+      "{hero} had the best fun!","{hero} had lots of fun. Yes!","{hero} got a hat and a box! Ha, ha!"]}
+  ];
+  // the friend: the first of his animals whose name he can read at this level (else the fox)
+  function pal(tier){
+    const by={};allWords().forEach(w=>{if(!w.tricky&&!by[w.w])by[w.w]=w;});
+    const ok=id=>!!by[id]&&by[id].t<=tier&&(!!ART[id]||(!!WORD_ART[id]&&!!ART[WORD_ART[id]]));
+    const c=(state.critters||[]).filter(x=>x&&ok(x.id))[0];
+    return c?c.id:"fox";
+  }
+  // the book at his level: for the title and each page, the first line that passes the decode check at currentTier()
+  function make(){
+    const tier=currentTier(),hero=heroName(),p=pal(tier);
+    const fill=s=>String(s).replace(/\{hero\}/g,()=>hero).replace(/\{pal\}/g,p);
+    const fits=s=>Decode.check(s,tier).every(x=>x.ok);
+    const choose=list=>{for(const l of list){const s=fill(Array.isArray(l)?l[0]:l);if(fits(s))return l;}return list[list.length-1];};
+    const pages=BOOK.map(pg=>{const l=choose(pg.lines),items=Array.isArray(l)?l[1]:pg.items;
+      return[fill(Array.isArray(l)?l[0]:l),items.map(it=>[it[0]==="pal"?p:it[0]].concat(it.slice(1)))];});
+    return{title:fill(choose(TITLE)),pages,t:tier,pal:p,bg:"meadow"};
+  }
+
+  /* ---------- the party ---------- */
+  const isOpen=()=>!!ov&&ov.classList.contains("on");
+  const greeting=()=>"Happy birthday, "+heroName()+"!";
+  // who comes: every kind of animal he has (a few from his lands while he has none)
+  function guests(){
+    const out=[],ids=[];
+    (state.critters||[]).forEach(c=>{if(c&&CRIT(c.id)&&ART[c.id]&&ids.indexOf(c.id)<0){ids.push(c.id);out.push({id:c.id,seed:+c.seed||0});}});
+    if(!out.length)CRITTERS.forEach(c=>{if(out.length<4&&c.b<=Math.max(0,+state.biome||0)&&ART[c.id])out.push({id:c.id,seed:1});});
+    return out;
+  }
+  function party(){
+    view="party";bk=make();
+    const g=guests(),n=g.length,size=n<=8?64:n<=14?54:n<=22?44:36;
+    ov.innerHTML=`<div class="sheet ptsheet"><div class="bhead"><h2>🎂 Birthday party</h2><button class="bx" id="ptX" aria-label="Close">✕</button></div>
+      <div class="ptroom"><svg class="ptbunting" viewBox="0 0 200 30" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><g stroke="${INK}" stroke-linejoin="round">${bdayPennants("HAPPY BIRTHDAY",2,198,3,2.5,12.6)}</g></svg>
+        <div class="ptballoons l">${ART.look_balloons(mulberry(3))}</div><div class="ptballoons r">${ART.look_balloons(mulberry(8))}</div>
+        <div class="ptrow"><div class="pthost"><div class="ptbuddy">${ART.buddy(stageIdx(),mulberry(42),"party")}</div><b class="ptbubble" id="ptBubble">${esc(greeting())}</b></div>
+          <div class="ptside"><div class="ptguests" id="ptGuests" style="--ptg:${size}px">${g.map((c,i)=>`<div class="ptguest" data-crit="${c.id}" style="animation-delay:${(i*.07).toFixed(2)}s">${drawThing(c.id,c.seed)}</div>`).join("")}</div>
+            <div class="pttable"><div class="ptcake">${ART.bday_cake()}</div></div></div></div></div>
+      <p class="ptline">${n>1?"Everyone came to your party!":"Your friend came to your party!"}</p>
+      <div class="mrow ptrow2"><button class="btn primary big" id="ptRead">📖 Read “${esc(bk.title)}”</button></div>
+      <p class="ptnote" id="ptNote">${paidToday()?"You read it today! Read it again for fun.":""}</p>
+      <p class="ptpiece" id="ptPiece">${lastPiece&&pieceDay===day()?esc(pieceLine(lastPiece)):""}</p></div>`;
+    ov.querySelector("#ptX").onclick=close;
+    ov.querySelector("#ptRead").onclick=()=>cover();
+  }
+  // the 🎂 button: the party, and the greeting
+  function open(){
+    if(!live())return false;
+    if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovParty";document.body.appendChild(ov);}
+    hat();party();
+    if(!isOpen()){ov.classList.add("on");Modes.open("party",ov);}
+    const first=greeted!==day();greeted=day();
+    if(first){Sound.sfx.fanfare();try{confetti();}catch(e){}}else Sound.sfx.pop();
+    setTimeout(()=>{if(isOpen()&&view==="party")Sound.speak(greeting(),.95);},first?700:350);
+    return true;
+  }
+  function close(){if(!ov)return;Modes.shut(ov);view="";Sound.sfx.soft();}
+
+  /* ---------- reading it: the cover, the pages and the end, as in a storybook ---------- */
+  function cover(){
+    if(!live()||!ov)return false;
+    bk=make();page=0;helps=0;view="cover";
+    ov.innerHTML=`<div class="bpage cover ptbook"><div class="bhead"><button class="bx" id="pbBack">‹ Party</button><button class="bx" id="pbX" aria-label="Close">✕</button></div>
+      <div class="bcoverart">${Books.scene(bk.bg,[["ash",30,1.1],["bday_cake",66,1.1]],bk.t)}</div>
+      <h1 class="btitle">${bk.title.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</h1>
+      <div class="mrow"><button class="btn primary big" id="pbStart">Read it! 📖</button></div></div>`;
+    Books.wireWords(ov.querySelector(".btitle"));
+    ov.querySelector("#pbBack").onclick=()=>{Sound.sfx.soft();party();};
+    ov.querySelector("#pbX").onclick=close;
+    ov.querySelector("#pbStart").onclick=()=>showPage();
+    Sound.sfx.chime();
+    return true;
+  }
+  function showPage(){
+    const my=page,[text,items]=bk.pages[my],t=bk.t,minMs=Math.max(1200,text.split(" ").length*380);view="page";
+    ov.innerHTML=`<div class="bpage ptbook"><div class="bhead"><button class="bx" id="pbX" aria-label="Close">✕</button><div class="bdots">${bk.pages.map((_,i)=>`<i class="${i<my?"d":i===my?"c":""}"></i>`).join("")}</div></div>
+      ${Books.scene(bk.bg,items,t)}
+      <div class="btext">${text.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</div>
+      <div class="mrow bctl"><button class="btn primary big" id="pbRead" disabled><span class="fill"></span><span class="lab">✓ I read it</span></button></div>
+      <div class="mrow bafter" style="display:none"><button class="btn soft" id="pbHear">🔊 Hear it</button><button class="btn primary big" id="pbNext">${my<bk.pages.length-1?"Next page ▶":"The end ▶"}</button></div>
+      <div class="blisten">${Books.art(Books.petWord(t),t)}</div></div>`;
+    const tx=ov.querySelector(".btext");
+    // a tap on a word to hear it is help, as in a storybook (counted before the word's own handler marks it busy)
+    tx.addEventListener("click",e=>{const w=e.target&&e.target.closest?e.target.closest(".bw"):null;if(w&&!w.classList.contains("on"))helps++;},true);
+    Books.wireWords(tx);
+    ov.querySelector("#pbX").onclick=close;
+    // "I read it" wakes up after enough time to read the page
+    const rb=ov.querySelector("#pbRead"),fl=rb.querySelector(".fill");
+    fl.style.transition=`width ${minMs}ms linear`;requestAnimationFrame(()=>requestAnimationFrame(()=>{fl.style.width="100%";}));
+    setTimeout(()=>{rb.disabled=false;},minMs);
+    rb.onclick=()=>{Sound.sfx.pop();ov.querySelector(".bctl").style.display="none";ov.querySelector(".bafter").style.display="";};
+    ov.querySelector("#pbHear").onclick=()=>Sound.say("sent:"+text,text,.9);
+    ov.querySelector("#pbNext").onclick=()=>{if(view!=="page"||page!==my)return;page++;if(page<bk.pages.length)showPage();else finish();};
+  }
+  // the end: its reads count as a finished book's; what a book's first read pays, once a day; the look's next piece, once a birthday
+  function finish(){
+    if(view==="end")return;
+    view="end";
+    const b=B(),pay=b.read!==day(),n=bk.pages.length,stars=2+(helps<=1?1:0),gems=pay?PAY+STAR*stars:0;
+    if(pay){b.read=day();state.gems=(+state.gems||0)+gems;}
+    state.wordsRead=(+state.wordsRead||0)+n;
+    try{Quests.hit("read",n);Quests.hit("book");}catch(e){}
+    save();try{renderHUD();}catch(e){}
+    hud();
+    Sound.sfx.fanfare();try{confetti();}catch(e){}
+    ov.innerHTML=`<div class="bpage end ptbook"><h2>The end! 🎉</h2><div class="bstars">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</div>
+      <ul class="bwhy"><li>⭐ You read the whole book</li><li>${helps<=1?"⭐":"☆"} You read it with almost no help</li><li>⭐ ${esc(greeting())}</li></ul>
+      <p class="mpaid" id="pbPaid">${pay?`+${gems} 💎`:"You read it again! 🎂"}</p><p class="ptpiece" id="pbPiece"></p>
+      <div class="mrow"><button class="btn primary big" id="pbParty">🎂 Back to the party</button></div></div>`;
+    ov.querySelector("#pbParty").onclick=()=>{Sound.sfx.soft();party();};
+    const said=Sound.speak("The end! Happy birthday!",.95);
+    // the look's piece comes after the cheer (the Look system says a line of its own), or at once if the app is put away
+    if(live()&&pay&&!pending){pending=true;const give=()=>{if(pending){pending=false;grant();}};
+      Promise.resolve(said).then(()=>setTimeout(give,250),give);setTimeout(give,5000);}
+  }
+  const pieceLine=p=>{let nm=String(p);try{const LK=Looks.get(LOOK);if(LK&&LK.names&&LK.names[nm])nm=LK.names[nm];}catch(e){}
+    return "🎁 You got the "+nm+"! Look in your closet 🎨";};
+  // a piece a day of the week (the first end of the day): marked in the save first
+  function grant(){
+    if(!live())return;
+    const b=B();b.year=year();b.pieces+=1;save();
+    let p=null;const L=looks();
+    if(L&&typeof L.grant==="function"){try{p=L.grant(LOOK);}catch(e){p=null;}}
+    lastPiece=p||null;if(!p)return;
+    pieceDay=day();
+    // the Look system toasts and speaks it when it grants; the page only repeats it
+    const el=isOpen()&&(ov.querySelector("#pbPiece")||ov.querySelector("#ptPiece"));if(el)el.textContent=pieceLine(p);
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&pending){pending=false;grant();try{saveNow();}catch(e){}}});
+
+  /* ---------- the Grown-up setting: Settings → Birthday, a month and a day ---------- */
+  function renderSettings(){
+    const m=document.getElementById("optBdayM"),d=document.getElementById("optBdayD");if(!m||!d)return;
+    if(m.options.length<13)m.innerHTML=`<option value="">Month</option>`+MON.map((x,i)=>`<option value="${i+1}">${x}</option>`).join("");
+    if(d.options.length<32){let h=`<option value="">Day</option>`;for(let i=1;i<=31;i++)h+=`<option value="${i}">${i}</option>`;d.innerHTML=h;}
+    const b=birthdayOf(state.settings.birthday);m.value=b?String(b.m):"";d.value=b?String(b.d):"";
+  }
+  // both picked make the setting (a day past the month's end moves back to its last day); either left blank clears it
+  function pickDate(){
+    const m=document.getElementById("optBdayM"),d=document.getElementById("optBdayD");if(!m||!d)return;
+    const mo=+m.value||0;let dd=+d.value||0;
+    if(mo&&dd){const last=[31,29,31,30,31,30,31,31,30,31,30,31][mo-1];if(dd>last){dd=last;d.value=String(dd);}}
+    state.settings.birthday=mo&&dd?String(mo).padStart(2,"0")+"-"+String(dd).padStart(2,"0"):"";
+    save();tick();
+  }
+  {const m=document.getElementById("optBdayM"),d=document.getElementById("optBdayD");if(m)m.onchange=pickDate;if(d)d.onchange=pickDate;}
+
+  /* ---------- the tool bar ---------- */
+  function hud(){
+    const b=document.getElementById("partyBtn");if(!b)return;
+    const on=live();b.style.display=on?"":"none";
+    const n=document.getElementById("partyBadge");if(n){const k=on&&!paidToday();n.textContent=k?"1":"";n.classList.toggle("on",k);}
+  }
+  // the week opens and closes at midnight (and when the setting changes); the party hat lands the first time round in it
+  function tick(){
+    hud();
+    const k=live()+"|"+day()+"|"+String((state.settings||{}).birthday||"");
+    if(k!==lastKey){lastKey=k;if(isOpen()&&!live())close();}
+    if(live())hat();
+  }
+  document.getElementById("partyBtn").onclick=()=>open();
+  setInterval(tick,60000);setTimeout(tick,0);setTimeout(tick,1500);setTimeout(tick,5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
+
+  return{inWindow,live,open,close,hud,renderSettings,cover,book:()=>make(),PAY,STAR,
+    get view(){return view;},get paid(){return paidToday();},
+    _setToday:ymd=>{fake=ymd?String(ymd):null;greeted="";lastKey="";tick();},
+    _state:()=>({view,page,helps,title:bk&&bk.title,pending}),_piece:()=>lastPiece};
 })();
 /* ================================================================
    FACTORY — drills, belts and machines fill the truck's order (after Lean Mine)
@@ -17612,6 +18428,7 @@ function renderSettings(){
   document.getElementById("optGoal").value=String(Goal.target());
   document.getElementById("optHero").value=heroName();
   try{Talk.renderSettings();}catch(e){}      // TALK
+  try{Party.renderSettings();}catch(e){}      // PARTY
 }
 document.getElementById("optPics").onchange=e=>{state.settings.pics=e.target.checked;save();};
 document.getElementById("optTTS").onchange=e=>{state.settings.tts=e.target.checked;save();};
@@ -17743,6 +18560,8 @@ NULL_IS_MISSING.push("look","looks");      // LOOKS
 NULL_IS_MISSING.push("recent");      // ROLLING WINDOW
 NULL_IS_MISSING.push("trick");      // TRICK-OR-READ
 NULL_IS_MISSING.push("lights");      // LIGHT THE TREE
+NULL_IS_MISSING.push("july");      // FIREWORKS
+NULL_IS_MISSING.push("birthday");      // PARTY
 NULL_IS_MISSING.push("feast");      // FEAST TABLE
 NULL_IS_MISSING.push("mail");      // WORD MAIL
 NULL_IS_MISSING.push("eggs");      // EGG HUNT
