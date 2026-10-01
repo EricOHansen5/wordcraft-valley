@@ -13,7 +13,7 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 | `app/voice/` | Pre-rendered game voice: Kokoro "af_heart", MP3, 24 kHz mono. `index.json` maps normalized text to a file. |
 | `app/manifest.webmanifest`, `app/icons/` | Files that make it installable as a home-screen app. |
 | `server/` | Node home server with no dependencies. It serves `app/` and handles backups (`/api/*`). Environment variables: `PORT DATA APP TOKEN KEEP`. |
-| `tests/` | jsdom and Playwright tests. `npm test` runs them all (a failed suite is retried once) and starts the server itself for the sync, multi and voice tests. `tests/page.js` gives the jsdom suites the page with its data inlined (`html()`) and the suites with their own server `serveApp()`; `tests/lib.js` is the helper for new Playwright suites. |
+| `tests/` | jsdom and Playwright tests. `npm test` runs them all (a failed suite is retried once; `tests/wip/` holds suites not yet green, which it skips) and starts the server itself for the sync, multi and voice tests. `tests/page.js` gives the jsdom suites the page with its data inlined (`html()`) and the suites with their own server `serveApp()`; `tests/lib.js` is the helper for new Playwright suites. |
 | `tools/release.js` | Bumps `sw.js` VERSION. |
 | `tools/progress.js` | Prints his progress from the home server's newest backup (`WCV_SERVER`, default `http://192.168.1.91:8088`; `--file` for a snapshot; `--json` for the state minus recordings). Use it to answer "how is he doing" before changing the game. |
 | `tools/voice/` | Voice generator (`gen.py`, then `index.py`). Its model files are not committed (see below). |
