@@ -62,10 +62,12 @@ function kit(area,page,errs,E){
     await pace();
     const h=await p.evaluateHandle(fn,arg),el=h.asElement();
     if(!el){await h.dispose();throw new Error("not found");}
-    try{await el.tap({timeout:3000});}finally{await h.dispose();}
+    // a greyed (disabled) button is tapped anyway, as a finger would: Playwright would otherwise wait for it to enable
+    const off=await el.evaluate(e=>!!e.disabled);
+    try{await el.tap({timeout:3000,force:off});}finally{await h.dispose();}
     return true;
   }
-  const tapSelRaw=async sel=>{await pace();await p.tap(sel,{timeout:3000});return true;};
+  const tapSelRaw=async sel=>{await pace();const off=await p.$eval(sel,e=>!!e.disabled).catch(()=>false);await p.tap(sel,{timeout:3000,force:off});return true;};
   // the centre of an element (scrolled into view)
   const centre=(fn,arg)=>E(([f,a])=>{const el=(0,eval)("("+f+")")(a);if(!el)return null;el.scrollIntoView({block:"nearest"});const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2];},[fn.toString(),arg]);
   // two quick touches on one spot (a child's double tap): the second lands on whatever the first put there
@@ -259,7 +261,10 @@ async function jobsArea(lane){
   await tapSel("Job board","💼 in the dock","#jobsBtn",{root:R,swap:true,want:()=>E(n=>[Modes.top()==="job"&&document.querySelectorAll("#ovJob.on .jcard").length===n,"mode "+Modes.top()],JOBS.length)});
   await clip("Job board",R);
   const cards=await E(()=>[...document.querySelectorAll("#ovJob .jcard")].map((c,i)=>({i,job:c.dataset.job||"",locked:c.classList.contains("locked"),name:c.querySelector("b").textContent,open:(c.querySelector(".jopen")||{}).textContent||""})));
-  ok(cards.filter(c=>!c.locked).map(c=>c.job).join()==="shop"&&cards.filter(c=>c.locked).length===3,`${A} · Job board at level 2: the Shopkeeper is open, three locked: `+cards.map(c=>c.name+(c.locked?" ("+c.open+")":"")).join(", "));
+  // the open jobs first (the board sorts by opening level), then the locked ones
+  const open2=JOBS.filter(j=>j.tier<=2).map(j=>j.id).sort().join(),shut2=JOBS.filter(j=>j.tier>2).length;
+  ok(cards.filter(c=>!c.locked).map(c=>c.job).sort().join()===open2&&cards.filter(c=>c.locked).length===shut2&&cards.every((c,i)=>!c.locked||i>=cards.length-shut2),
+    `${A} · Job board at level 2: ${open2} open and first, ${shut2} locked: `+cards.map(c=>c.name+(c.locked?" ("+c.open+")":"")).join(", "));
   for(const c of cards.filter(c=>c.locked)){const j=JOBS.find(x=>x.name===c.name);
     await tapEl("Job board",`the locked ${c.name} card`,i=>document.querySelectorAll("#ovJob .jcard")[i],c.i,{root:R,inert:true,
       want:async()=>[c.open==="Opens at level "+j.tier&&await E(()=>Modes.top()==="job"),`it says “${c.open}”`]});}

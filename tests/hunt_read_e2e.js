@@ -208,10 +208,12 @@ function spies(){
   // aim/settle wait (which waits out animations, up to ~1.5 s) can eat into that under a loaded
   // machine; skip it there and check it directly instead, with no aim overhead ahead of the tap
   await sweep("page (before I read it unlocks)",pageLong,{closers:{"#bClose":"valley"},skip:["#bRec","#bRead"]});
-  {await pageLong();const before=await E(()=>({dis:document.getElementById("bRead").disabled,dom:__dom()}));
+  {await pageLong();const before=await E(()=>({dis:document.getElementById("bRead").disabled,gems:state.gems,words:state.wordsRead}));
    ok(before.dis,"page (before I read it unlocks): ✓ I read it starts disabled");
    await E(()=>document.getElementById("bRead").click());await p.waitForTimeout(200);
-   ok(await E(()=>__dom())===before.dom,"page (before I read it unlocks): a tap on ✓ I read it while disabled does nothing");}
+   // the page keeps revealing its words meanwhile, so the whole DOM is not compared: the controls stay, nothing is paid
+   const after=await E(()=>({ctl:getComputedStyle(document.querySelector("#ovStory .bctl")).display,aft:getComputedStyle(document.querySelector("#ovStory .bafter")).display,gems:state.gems,words:state.wordsRead}));
+   ok(after.ctl!=="none"&&after.aft==="none"&&after.gems===before.gems&&after.words===before.words,"page (before I read it unlocks): a tap on ✓ I read it while disabled does nothing "+JSON.stringify(after));}
   {await page0();const t0=Date.now();const on=await waitFor(p,()=>{const r=document.getElementById("bRead");return r&&!r.disabled;},{timeout:4000});
    ok(on&&Date.now()-t0>=900,`page: "I read it" unlocks by itself after the reading time (${Date.now()-t0} ms for "A cat sat.")`);
    const before=await snapNums();await p.tap("#bRead");

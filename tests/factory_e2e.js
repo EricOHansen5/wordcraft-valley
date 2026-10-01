@@ -248,6 +248,8 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   // ---- 10. Adventure: the Factory is a spot to walk up to ----
   await seed(p,{gems:40,settings:{goal:0},grid:{"6,8":{id:"cottage",seed:3,lv:1},"10,6":{id:"factory",seed:1,lv:1}},factory:{lvl:3,stars:{F1:3,F2:3,F3:1},sandbox:null,orders:{day:"",paid:0}}});
   await quiet();await tidy();
+  // in a holiday window the mini-game's door sits on the building too (knock first, then use it); this is about the spot
+  await E(()=>{try{Trick._setToday("2026-06-01");}catch(e){}try{Feast._setToday("2026-06-01");}catch(e){}try{Lights._setToday("2026-06-01");}catch(e){}});
   await E(()=>Adv.enter());await wait(500);
   ok(await E(()=>!!document.querySelector(".tile.spot.fcspot .fcsign")),"Adventure: a 🏭 spot on the Factory building");
   await E(()=>{state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});Adv._P.c=10.2;Adv._P.r=6;});

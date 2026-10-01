@@ -6995,7 +6995,7 @@ const Mine=(()=>{
   const panel=root=>document.getElementById("mPanel"),card=()=>document.getElementById("mCard");
   // mode: the reading ("read") and writing ("write") panels are modes of their own inside the Mine
   function openPanel(html,mode){paused=true;input.dig=false;input.jx=input.jy=0;card().innerHTML=html;panel().classList.add("on");panelMode(mode);}
-  function closePanel(){panel().classList.remove("on");panelMode(null);paused=false;hud();}
+  function closePanel(){panel().classList.remove("on");panelMode(null);paused=false;clearTimeout(custT);hud();}
   let pMode=null;
   function panelMode(m){m=m||null;if(m===pMode)return;if(pMode)Modes.close(pMode,panel());pMode=m;if(m)Modes.open(m,panel());}
 
@@ -7026,7 +7026,7 @@ const Mine=(()=>{
   }
 
   // the shop: customers bring written orders
-  let shopQ=[],tray={},served=0,earned=0,hintOn=false;
+  let shopQ=[],tray={},served=0,earned=0,hintOn=false,custT=0;   // custT: the next customer on the way
   const QTY=["","a","two","three"];
   const GEMS=[3,5,6,7,8,9];
   const tomorrow=()=>{const d=new Date();d.setDate(d.getDate()+1);return ymd(d);};
@@ -7123,7 +7123,7 @@ const Mine=(()=>{
         Sound.sfx.win();Sound.say("sent:Thank you!","Thank you!",1);
         card().querySelector(".mcust").classList.add("happy");
         card().querySelector(".morder").insertAdjacentHTML("beforeend",`<div class="mpaid">+${pay} 🪙  +${gems} 💎</div>`);
-        save();setTimeout(nextCustomer,1300);
+        save();clearTimeout(custT);custT=setTimeout(nextCustomer,1300);
       }else{m.ordersWrong=(m.ordersWrong||0)+1;Sound.sfx.nope();hintOn=true;
         card().querySelector("#mHear").style.display="";
         const say=card().querySelector(".msay");say.classList.remove("shake");void say.offsetWidth;say.classList.add("shake");
@@ -7132,6 +7132,7 @@ const Mine=(()=>{
   }
   function toastIn(t){const el=document.createElement("div");el.className="mnote";el.textContent=t;card().appendChild(el);setTimeout(()=>el.remove(),2200);}
   function endShop(){
+    clearTimeout(custT);
     const m=M(),rest=Object.entries(m.bag).reduce((a,[o,n])=>a+OI(o).val*n,0);
     const tease=scheduleVip();
     openPanel(`<h2>🏪 Shop closed</h2><p class="sub">${served?`You served ${served} customer${served===1?"":"s"} and earned ${earned} coins!`:"No sales this time."}</p>
@@ -7143,6 +7144,7 @@ const Mine=(()=>{
   }
 
   // the pick shop: upgrades
+  let smithAt=-1e9,smithRow=-1;   // when the last upgrade was bought, and which row
   function openSmith(tab){
     if(tab==="bench")return openBench();
     const m=M(),rows=[];
@@ -7157,9 +7159,9 @@ const Mine=(()=>{
       <div class="msmith">${rows.map((r,i)=>`<div class="mup${r.done?" done":""}"><div class="ic">${r.ic}</div><div class="tx"><b>${r.name}</b><span>${r.desc}</span></div>
         ${r.done?`<span class="own">✓</span>`:`<button class="btn primary mini" data-i="${i}" ${m.coins<r.cost?"disabled":""}>${r.cost} 🪙</button>`}</div>`).join("")}</div>
       <div class="mrow"><button class="btn soft" id="mNew">New mine ↻</button><button class="btn primary" id="mClose">Done</button></div>`);
-    let bought=false;
-    card().querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{if(bought)return;const r=rows[+b.dataset.i];if(m.coins<r.cost)return;
-      bought=true;m.coins-=r.cost;r.buy();Sound.sfx.win();try{confetti();}catch(e){}save();openSmith();hud();toast(r.name+"!");});
+    // a double tap buys once: the panel is drawn again after a buy, so the second tap lands on the next upgrade's button
+    card().querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(i===smithRow&&performance.now()-smithAt<600)return;const r=rows[i];if(m.coins<r.cost)return;
+      smithAt=performance.now();smithRow=i;m.coins-=r.cost;r.buy();Sound.sfx.win();try{confetti();}catch(e){}save();openSmith();hud();toast(r.name+"!");});
     card().querySelector("#mTabBench").onclick=()=>openBench();
     card().querySelector("#mClose").onclick=closePanel;
     card().querySelector("#mNew").onclick=()=>{if(!confirm("Dig a brand new mine? The old tunnels fill back in, and everything you own stays."))return;

@@ -7,7 +7,7 @@
 //   · the screen closes back to where it came from.
 // The ones that pay are checked against docs/design.md (what a dig finds, what a task, a sale or a race pays), and
 // every paying button gets a double tap that must pay once. A miss never costs anything.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check}=require("../lib");
 (async()=>{
   const T=check("hunt_mine"),T0=Date.now();let tl=Date.now();
   // HUNT_TIME=1 prints how long each check took
