@@ -732,9 +732,11 @@ async function factoryArea(){
   await tapSel(sb,"✕","#fcX",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="","back in the valley"])});
 
   // ---- 6. the ghost tap: a double tap on a level or on Build again must not put a piece down or turn one ----
-  await E(()=>{Factory.open();Factory.map();});await wait(500);
+  // (a level keeps his layout for the rest of the visit, so the count to keep is whatever level 5 opens with)
+  await E(()=>{Factory.open();Factory.play(5);});await wait(300);const p5=(await S()).pieces;
+  await E(()=>Factory.map());await wait(500);
   const lv=await K.centre(()=>document.querySelector('.fcl[data-n="5"]'));
-  await act("ghost tap","a double tap on level 5",()=>K.dbl(lv[0],lv[1]),{root:R,swap:true,want:async()=>{await wait(300);const s=await S();return[s.n===5&&s.pieces===0,`level ${s.n}, ${s.pieces} pieces on the board`];}});
+  await act("ghost tap","a double tap on level 5",()=>K.dbl(lv[0],lv[1]),{root:R,swap:true,want:async()=>{await wait(300);const s=await S();return[s.n===5&&s.pieces===p5,`level ${s.n}, ${s.pieces} pieces on the board (it opened with ${p5})`];}});
   await E(()=>{Factory._load(Factory.LEVELS[4].sol);Factory._run(45*30);});
   await answerSum("ghost tap");
   const before=await code(),ag=await K.centre(()=>document.getElementById("fcAgain"));
@@ -742,12 +744,15 @@ async function factoryArea(){
   await E(()=>Factory.close());
 
   // ---- 7. the 🏭 spot in Adventure: it opens over Adventure, ✕ goes back to it ----
+  // (out of every holiday window: in October a Trick-or-Read door sits on the Factory building too)
+  await E(()=>{try{Trick._setToday("2026-06-01");}catch(e){}try{Feast._setToday("2026-06-01");}catch(e){}try{Lights._setToday("2026-06-01");}catch(e){}});
   await p.tap("#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");await wait(600);
   await E(()=>{state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});Adv._P.c=12.2;Adv._P.r=7;});
   await waitFor(p,()=>document.getElementById("advAct").textContent==="🏭 Factory",{timeout:8000});
   await tapSel("Adventure","🏭 Factory (the action button at the spot)","#advAct",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="adventure>factory",Modes.stack().join(">")])});
   await tapSel("Adventure","✕","#fcX",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="adventure","back to "+Modes.stack().join(">")])});
   await E(()=>Adv.exit());await wait(200);
+  await E(()=>{try{Trick._setToday(null);}catch(e){}try{Feast._setToday(null);}catch(e){}try{Lights._setToday(null);}catch(e){}});
 
   ok(!errs.length,`${A}: no page or console errors`+(errs.length?": "+errs.slice(0,3).join(" | "):""));
   K.summary();await close();
