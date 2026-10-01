@@ -7994,18 +7994,24 @@ const Books=(()=>{
     setTimeout(()=>{rb.disabled=false;},minMs);
     const done=()=>{ov.querySelector(".bctl").style.display="none";ov.querySelector(".bafter").style.display="";};
     rb.onclick=()=>{Sound.sfx.pop();done();};
-    const rec=ov.querySelector("#bRec");
+    // the recording belongs to this page (bid, pg) even if he has moved on by the time it stops
+    const rec=ov.querySelector("#bRec"),bid=book.id,pg=page;let recT=0;
+    const here=()=>rec.isConnected&&ov.classList.contains("on");
     if(rec)rec.onclick=async()=>{
-      if(rec.classList.contains("on")){rec.disabled=true;const blob=await Rec.stop();rec.classList.remove("on");
-        if(blob&&blob.size>800){await DB.set("blobs",`story:${book.id}:${page}`,blob);recs++;
+      if(rec.classList.contains("on")){rec.disabled=true;recOff=null;clearTimeout(recT);const blob=await Rec.stop();rec.classList.remove("on");
+        if(blob&&blob.size>800){await DB.set("blobs",`story:${bid}:${pg}`,blob);if(book&&book.id===bid)recs++;
           try{Talk.bankPage(blob,words);}catch(e){}   // TALK: his own voice for the matcher (when Talk to me is on)
-          const pl=ov.querySelector(".blisten");pl.classList.add("hear");rec.textContent="🎧 Listening…";
-          await playBlob(blob);pl.classList.remove("hear");pl.classList.add("love");Sound.sfx.chime();
-          setTimeout(()=>pl.classList.remove("love"),1400);}
-        done();return;}
+          if(here()){const pl=ov.querySelector(".blisten");pl.classList.add("hear");rec.textContent="🎧 Listening…";
+            await playBlob(blob);pl.classList.remove("hear");pl.classList.add("love");Sound.sfx.chime();
+            setTimeout(()=>pl.classList.remove("love"),1400);}}
+        if(here())done();return;}
       const okMic=await Rec.start();if(!okMic){toast("The microphone is off — tap ✓ I read it");rec.remove();return;}
+      // the page was left while the microphone was starting: let it go again
+      if(!here()){Rec.stop();return;}
       rec.classList.add("on");rec.textContent="⏹ Done reading";ov.querySelector(".blisten").classList.add("ears");
-      setTimeout(()=>{if(rec.classList.contains("on"))rec.click();},15000);
+      recT=setTimeout(()=>{if(rec.classList.contains("on"))rec.click();},15000);
+      // leaving the page (✕, the shelf) stops the microphone and drops the unfinished clip
+      recOff=()=>{clearTimeout(recT);rec.classList.remove("on");Rec.stop();};
     };
     ov.querySelector("#bHear").onclick=()=>Sound.say("sent:"+words,words,.9);
     ov.querySelector("#bNext").onclick=()=>{page++;if(page<book.pages.length)showPage();else quiz();};
@@ -8070,8 +8076,8 @@ const Books=(()=>{
     tgEnd(p);
   }
   // ---------- his audiobook ----------
-  let audio=null,stopped=false,audioRes=null;
-  function stopAudio(){stopped=true;if(audio){try{audio.pause();}catch(e){}audio=null;}if(audioRes){const r=audioRes;audioRes=null;r();}}
+  let audio=null,stopped=false,audioRes=null,recOff=null;
+  function stopAudio(){stopped=true;if(recOff){const f=recOff;recOff=null;f();}if(audio){try{audio.pause();}catch(e){}audio=null;}if(audioRes){const r=audioRes;audioRes=null;r();}}
   function playBlob(blob){return new Promise(res=>{audioRes=res;const done=()=>{if(audioRes===res)audioRes=null;res();};
     try{const u=URL.createObjectURL(blob),a=new Audio(u);audio=a;a.onended=()=>{URL.revokeObjectURL(u);done();};a.onerror=done;a.play().catch(done);}catch(e){done();}});}
   async function audiobook(i){
