@@ -296,7 +296,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(await keyToS("bin:pen"),"…the arrows to the pen");
   await p.keyboard.press("Space");
   ok(await sortNow()===JSON.stringify({pool:[],den:["fox"],pen:["pig","hen"]}),"Space puts the pig in the pen: "+await sortNow());
-  await p.keyboard.press("Enter");await p.waitForTimeout(1100);
+  await p.keyboard.press("Enter");await waitFor(p,()=>window.__sort.done.length>0,{timeout:8000});await p.waitForTimeout(300);
   ok(await E(()=>JSON.stringify(__sort.done))==="[false]","Enter checks: right, done once, not right the first time (two misses): "+await E(()=>JSON.stringify(__sort.done)));
   // a finger: the fox dragged onto the den goes in; a drag let go away from the bins moves nothing; the rest by taps, right the first time
   await mountSort();
@@ -307,7 +307,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   const fromP=await mid('#jQ .jscard[data-w="pig"]');
   await p.mouse.move(fromP.x,fromP.y);await p.mouse.down();await p.mouse.move(fromP.x+30,fromP.y-70,{steps:6});await p.mouse.up();await p.waitForTimeout(300);
   ok(await sortNow()===JSON.stringify({pool:["pig","hen"],den:["fox"],pen:[]}),"a drag let go away from the bins moves nothing: "+await sortNow());
-  await E(()=>{const h=document.getElementById("jQ");__job.right(h);__job.again(h);});await p.waitForTimeout(1100);
+  await E(()=>{const h=document.getElementById("jQ");__job.right(h);__job.again(h);});await waitFor(p,()=>window.__sort.done.length>0,{timeout:8000});await p.waitForTimeout(300);
   ok(await E(()=>JSON.stringify(__sort.done)==="[true]"&&__sort.miss===0),"the answer helper sorts the rest, ✓ twice: done once, right the first time "+await E(()=>JSON.stringify(__sort)));
   await clockOut();
 
