@@ -982,4 +982,7 @@ const AREAS={jobs1:()=>jobsArea(1),jobs2:()=>jobsArea(2),store:()=>storeArea(),f
   const lane=async()=>{while(queue.length){const a=queue.shift();await AREAS[a]().catch(e=>T.fail(`${a} crashed: ${e&&e.stack||e}`));}};
   await Promise.all([lane(),lane(),lane()]);
   T.done();
+  // exit once the output is written: something Playwright leaves open can keep node alive after the browsers close,
+  // and run-all would then time the suite out at five minutes and call it failed
+  process.stdout.write("",()=>process.exit(process.exitCode||0));
 })().catch(e=>{console.log("FAIL hunt_jobs crashed: "+(e&&e.stack||e));process.exit(1);});
