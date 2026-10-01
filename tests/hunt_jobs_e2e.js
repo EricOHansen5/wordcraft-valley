@@ -747,11 +747,13 @@ async function factoryArea(){
   // (out of every holiday window: in October a Trick-or-Read door sits on the Factory building too)
   await E(()=>{try{Trick._setToday("2026-06-01");}catch(e){}try{Feast._setToday("2026-06-01");}catch(e){}try{Lights._setToday("2026-06-01");}catch(e){}});
   await p.tap("#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");await wait(600);
-  await E(()=>{state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});Adv._P.c=12.2;Adv._P.r=7;});
+  // the keepers stand at fixed spots and their books come before a building's spot; one stands by 12,7
+  await E(()=>{window.__g0=state.guardians;state.guardians=[];state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});Adv._P.c=12.2;Adv._P.r=7;});
   await waitFor(p,()=>document.getElementById("advAct").textContent==="🏭 Factory",{timeout:8000});
   await tapSel("Adventure","🏭 Factory (the action button at the spot)","#advAct",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="adventure>factory",Modes.stack().join(">")])});
   await tapSel("Adventure","✕","#fcX",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="adventure","back to "+Modes.stack().join(">")])});
   await E(()=>Adv.exit());await wait(200);
+  await E(()=>{state.guardians=window.__g0;});
   await E(()=>{try{Trick._setToday(null);}catch(e){}try{Feast._setToday(null);}catch(e){}try{Lights._setToday(null);}catch(e){}});
 
   ok(!errs.length,`${A}: no page or console errors`+(errs.length?": "+errs.slice(0,3).join(" | "):""));
