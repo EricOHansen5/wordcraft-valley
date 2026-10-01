@@ -35,7 +35,7 @@ function spies(){
     for(let i=0;i<n;i++)v.setInt16(44+i*2,Math.round(300*Math.sin(i*2*Math.PI*220/sr)),true);
     return new Blob([b],{type:"audio/wav"});};
   // the save, without what moves by itself (positions, clocks, minute counts)
-  const DROP=new Set(["c","r","pc","pr","x","y","face","since","modeMin","modeOpens","minutes","at","t0","lastTouch","savedAt","seenHead","last"]);
+  const DROP=new Set(["c","r","pc","pr","x","y","face","since","modeMin","modeOpens","minutes","power","at","t0","lastTouch","savedAt","seenHead","last"]);
   // like save(): "_" fields (a mover's on-screen element, _el, and its animation) are never part of the save
   window.__dig=()=>{let s="";try{s=JSON.stringify(state,(k,v)=>DROP.has(k)||(k&&k[0]==="_")?undefined:v);}catch(e){}return hash(s);};
   window.__dom=()=>hash([...document.querySelectorAll(".overlay.on,#advHud.on")].map(o=>o.id+"|"+o.className+"|"+o.innerHTML).join("#"));
