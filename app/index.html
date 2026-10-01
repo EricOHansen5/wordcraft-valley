@@ -7157,8 +7157,9 @@ const Mine=(()=>{
       <div class="msmith">${rows.map((r,i)=>`<div class="mup${r.done?" done":""}"><div class="ic">${r.ic}</div><div class="tx"><b>${r.name}</b><span>${r.desc}</span></div>
         ${r.done?`<span class="own">✓</span>`:`<button class="btn primary mini" data-i="${i}" ${m.coins<r.cost?"disabled":""}>${r.cost} 🪙</button>`}</div>`).join("")}</div>
       <div class="mrow"><button class="btn soft" id="mNew">New mine ↻</button><button class="btn primary" id="mClose">Done</button></div>`);
-    card().querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const r=rows[+b.dataset.i];if(m.coins<r.cost)return;
-      m.coins-=r.cost;r.buy();Sound.sfx.win();try{confetti();}catch(e){}save();openSmith();hud();toast(r.name+"!");});
+    let bought=false;
+    card().querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{if(bought)return;const r=rows[+b.dataset.i];if(m.coins<r.cost)return;
+      bought=true;m.coins-=r.cost;r.buy();Sound.sfx.win();try{confetti();}catch(e){}save();openSmith();hud();toast(r.name+"!");});
     card().querySelector("#mTabBench").onclick=()=>openBench();
     card().querySelector("#mClose").onclick=closePanel;
     card().querySelector("#mNew").onclick=()=>{if(!confirm("Dig a brand new mine? The old tunnels fill back in, and everything you own stays."))return;
