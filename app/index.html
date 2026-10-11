@@ -4165,8 +4165,10 @@ function voiceRow(){
   dl.onclick=async()=>{dl.disabled=true;const n=await VoicePack.prefetch((a,b)=>{dl.textContent=`⬇️ ${Math.round(a/b*100)}%`;});
     state.voiceCached=Date.now();save();dl.textContent=n?"✓ Saved for offline":"Not available";};
 }
-// quietly make the voice work offline the first time the game runs from the server
-setTimeout(()=>{if(!state.voiceCached&&location.protocol.startsWith("http"))VoicePack.load().then(j=>{if(j)VoicePack.prefetch().then(n=>{if(n){state.voiceCached=Date.now();save();}});});},20000);
+// quietly make the voice work offline the first time the game runs from the server, and once more after the
+// clips were made again (VOICE_SINCE: when REV in tools/voice/clips.py last moved; the old takes left with their cache)
+const VOICE_SINCE=Date.UTC(2026,9,12);
+setTimeout(()=>{if((+state.voiceCached||0)<VOICE_SINCE&&location.protocol.startsWith("http"))VoicePack.load().then(j=>{if(j)VoicePack.prefetch().then(n=>{if(n){state.voiceCached=Date.now();save();}});});},20000);
 
 /* ================================================================
    5. STATE

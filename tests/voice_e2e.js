@@ -19,6 +19,6 @@ const {chromium}=require("playwright");
   await p.evaluate(()=>{state.settings.voicePack=true;openParent();document.querySelector('.tab[data-tab="set"]').click();});await p.waitForTimeout(300);
   await p.evaluate(()=>document.getElementById("optPack").scrollIntoView());await p.screenshot({path:"voice_row.png"});
   await p.evaluate(()=>{const n=document.querySelector("#soNo");if(n)n.click();document.getElementById("packDl").click();});await p.waitForTimeout(20000);
-  const cached=await p.evaluate(async()=>{const c=await caches.open("wcv-voice-1");return (await c.keys()).length;});
+  const cached=await p.evaluate(async()=>{const c=await caches.open("wcv-voice-2");return (await c.keys()).length;});
   ok(cached>100,"voice clips cached for offline: "+cached);
   console.log("errors:",errs.length?errs:"none");await b.close();})();

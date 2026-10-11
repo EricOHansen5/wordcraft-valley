@@ -1,14 +1,17 @@
-import json,re,hashlib,os,shutil
+import json,os,shutil
+from clips import norm,name
 d=json.load(open("voice_texts.json"))
-norm=lambda t:re.sub(r"\s+"," ",re.sub(r"[^a-z0-9' ]+"," ",t.lower().replace("’","'"))).strip()
+dst="../../app/voice";os.makedirs(dst,exist_ok=True)
 keys=set(norm(t) for t in d["words"]+d["sents"]);keys.discard("")
 idx={};miss=0
 for k in sorted(keys):
-    f=hashlib.sha1(k.encode()).hexdigest()[:12]+".mp3"
-    if os.path.exists("out/"+f):idx[k]=f
+    f=name(k)
+    if os.path.exists("out/"+f) or os.path.exists(f"{dst}/{f}"):idx[k]=f
     else:miss+=1
-dst="../../app/voice";os.makedirs(dst,exist_ok=True)
 for f in set(idx.values()):
     if not os.path.exists(f"{dst}/{f}"):shutil.copy("out/"+f,dst)
+# a clip no line uses any more (an older take, a line that left the game) goes, once every line has its clip
+keep=set(idx.values());old=[] if miss else [f for f in os.listdir(dst) if f.endswith(".mp3") and f not in keep]
+for f in old:os.remove(f"{dst}/{f}")
 json.dump(idx,open(dst+"/index.json","w"),separators=(",",":"))
-print("clips",len(idx),"missing",miss)
+print("clips",len(idx),"missing",miss,"old clips removed",len(old))

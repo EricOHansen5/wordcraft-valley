@@ -14,7 +14,7 @@ const srv=require("./page").serveApp({port:8771,static:true},async()=>{
   await p.reload();await p.waitForTimeout(1500);
   console.log("SW controlling:",await p.evaluate(()=>!!navigator.serviceWorker.controller));
   // after install, the shell cache holds every SHELL file, the data scripts among them
-  const cached=await p.evaluate(async()=>{const k=(await caches.keys()).filter(n=>/^wcv-/.test(n)&&n!=="wcv-voice-1");
+  const cached=await p.evaluate(async()=>{const k=(await caches.keys()).filter(n=>/^wcv-/.test(n)&&n!=="wcv-voice-2");
     const out=[];for(const n of k)(await (await caches.open(n)).keys()).forEach(r=>out.push(new URL(r.url).pathname));return {names:k,paths:out};});
   const want=SHELL.map(f=>f==="./"?"/":"/"+f),gone=want.filter(f=>cached.paths.indexOf(f)<0);
   ok(cached.names.length===1&&!gone.length&&DATA.length&&DATA.every(f=>cached.paths.indexOf("/"+f)>=0),

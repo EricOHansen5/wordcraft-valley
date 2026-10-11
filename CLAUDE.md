@@ -9,14 +9,14 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 | `app/index.html` | **The game's code. This is the source of truth.** CSS, HTML and all the JS inline (~1.1 MB, ~16k lines). Its data comes from `app/art/` and `app/content/`, loaded by `<script src>` tags just before the game script. |
 | `app/art/` | Picture data: `openmoji.js` (`WCV.openmoji`: `OM`, `OMV`, `OMW`, `OMX`, `OMN`, `OMB`; OpenMoji, CC BY-SA) and `fluent.js` (`WCV.fluent`, the `FLU` map; Fluent Emoji, MIT). ~1.2 MB of long lines: don't read them whole. |
 | `app/content/` | Reading data: `words.js` (`WCV.words`: `WORDS` with the tricky-word checklist, and `WORD_ART`), `books.js` (`WCV.books`: `BOOKS`, format described at the top), `sentences.js` (`WCV.sentences`: `SIGNS`, `QUEST_POOL`), `fluency.js` (`WCV.fluency`: the one-minute reading check's stories and the Hasbrouck & Tindal 2017 norms). |
-| `app/sw.js` | Service worker for offline play. The shell cache (`SHELL`, keyed by `VERSION`) holds the page and every file in `art/` and `content/`, cache-only and replaced whole by each new version; the voice clips use a separate persistent cache, `wcv-voice-1`. |
+| `app/sw.js` | Service worker for offline play. The shell cache (`SHELL`, keyed by `VERSION`) holds the page and every file in `art/` and `content/`, cache-only and replaced whole by each new version; the voice clips use a separate persistent cache, `wcv-voice-2`. |
 | `app/voice/` | Pre-rendered game voice: Kokoro "af_heart", MP3, 24 kHz mono. `index.json` maps normalized text to a file. |
 | `app/manifest.webmanifest`, `app/icons/` | Files that make it installable as a home-screen app. |
 | `server/` | Node home server with no dependencies. It serves `app/` and handles backups (`/api/*`). Environment variables: `PORT DATA APP TOKEN KEEP`. |
 | `tests/` | jsdom and Playwright tests. `npm test` runs them all (a failed suite is retried once; `tests/wip/` holds suites not yet green, which it skips) and starts the server itself for the sync, multi and voice tests. `tests/page.js` gives the jsdom suites the page with its data inlined (`html()`) and the suites with their own server `serveApp()`; `tests/lib.js` is the helper for new Playwright suites. |
 | `tools/release.js` | Bumps `sw.js` VERSION. |
 | `tools/progress.js` | Prints his progress from the home server's newest backup (`WCV_SERVER`, default `http://192.168.1.91:8088`; `--file` for a snapshot; `--json` for the state minus recordings). Use it to answer "how is he doing" before changing the game. |
-| `tools/voice/` | Voice generator (`gen.py`, then `index.py`). Its model files are not committed (see below). |
+| `tools/voice/` | Voice generator (`gen.py`, then `index.py`; `check.py` listens to the clips for a vowel in front of a word). `clips.py` holds what they share, with `REV`, which is part of every clip's file name. Its model files are not committed (see below). |
 | `src/modules/` | Readable copies of the modules as they were inserted up to v9. **Reference only**: `app/index.html` may have moved on. |
 | `src/history/` | The one-time Python patch scripts that built the file. They have hard-coded old paths and are **not re-runnable**; kept for history. |
 | `docs/design.md` | Design doc covering every version (v1 → v9) and the "Still on the list" backlog. |
@@ -66,6 +66,7 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 - **Voice.** Spoken lines are played from `app/voice/` when the exact text (or a few whole indexed pieces) exists; otherwise the device voice is used. A new fixed line should get a clip:
   1. Run `npm run voice:extract`. It reads the game and adds every missing fixed line to `tools/voice/voice_texts.json`; a line built at run time from a variable has to be added by hand.
   2. In `tools/voice`, run `python gen.py 0 1` and then `python index.py`.
+  - Clips are cached for good (the server sends them as immutable), so never re-render a clip under its old name. To change how clips are made, bump `REV` in `tools/voice/clips.py`, re-render them all, run `python check.py`, and move `VOICE` in `app/sw.js` and `VOICE_SINCE` in `app/index.html` on.
 - Art: OpenMoji (CC BY-SA) and Fluent Emoji (MIT) are in `app/art/`. Keep the attributions in Parent mode → About.
 
 ## Workflow for any change
