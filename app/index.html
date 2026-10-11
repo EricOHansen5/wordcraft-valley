@@ -1810,13 +1810,16 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   #toast,#coach{bottom:calc(env(safe-area-inset-bottom) + 236px)}
 }
 /* ---------------- REST ----------------
-   body.rest: nobody has touched the game for 45 s (REST in the script). Everything that moves in
-   #app (the HUD, the valley, the tool bar) holds still where it is; the overlays, the Mine, the
-   Factory and a race are outside #app and are left alone.
+   body.rest: nobody has touched the game for 45 s, or for 3 minutes while something was waiting
+   on him (REST in the script). Everything that moves holds still where it is: the HUD, the valley
+   and the tool bar, and the sheets, the Mine and the Factory too.
+   body.covered: a sheet, the Mine or the Factory is open on top of the valley (Rest.cover in the
+   script), so #app (the HUD, the valley, the tool bar) holds still behind it until it closes.
    body.flat: resting now (and Save battery, later). The four light layers are laid on as plain
    alpha instead of blending (their strength is set by applyGrade), and the glass has no blur
    behind it, a plainer fill instead. */
-body.rest #app *,body.rest #app *::before,body.rest #app *::after{animation-play-state:paused!important}
+body.rest *,body.rest *::before,body.rest *::after,
+body.covered #app *,body.covered #app *::before,body.covered #app *::after{animation-play-state:paused!important}
 body.flat #grade,body.flat #glow,body.flat #sunbeam,body.flat #seasonTint{mix-blend-mode:normal}
 body.flat{--glass:rgba(255,252,246,.9)}
 body.flat .iconbtn,body.flat .pan,body.flat .slot,body.flat .overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -3998,8 +4001,9 @@ const Sound=(()=>{
   // Long, natural pauses come from punctuation, not from slowing everything down.
   // the recorded game voice first; the device voice only for lines it doesn't have
   function speak(t,rate=.95,pitch=1.0){
-    if(typeof VoicePack!=="undefined"&&state.settings.voicePack!==false)return VoicePack.play(t).then(ok=>ok?undefined:ttsSpeak(t,rate,pitch));
-    return ttsSpeak(t,rate,pitch);
+    const here=v=>{try{Rest.stay();}catch(e){}return v;};here();      // REST: a line being spoken holds a rest off, to its last word
+    if(typeof VoicePack!=="undefined"&&state.settings.voicePack!==false)return VoicePack.play(t).then(ok=>ok?undefined:ttsSpeak(t,rate,pitch)).then(here);
+    return ttsSpeak(t,rate,pitch).then(here);
   }
   function ttsSpeak(t,rate=.95,pitch=1.0){
     if(!state.settings.tts||!window.speechSynthesis)return Promise.resolve();
@@ -4636,7 +4640,7 @@ function nearest(cr,kind){
   return best?{o:best,d:bd}:null;
 }
 setInterval(()=>{
-  if(!state.critters.length||Rest.quiet())return;      // REST: nobody watching
+  if(!state.critters.length||Rest.away())return;      // REST: nobody watching, or the valley is covered
   const quiet=!!document.querySelector(".overlay.on");
   const night=isNight();
   state.critters.forEach(cr=>{
@@ -4883,7 +4887,7 @@ function launchRocket(v,fromPad){
 
 // traffic: everything keeps moving on its own
 setInterval(()=>{
-  const vs=state.vehicles||[];if(!vs.length||Rest.quiet())return;      // REST: nobody watching
+  const vs=state.vehicles||[];if(!vs.length||Rest.away())return;      // REST: nobody watching, or the valley is covered
   const quiet=!!document.querySelector(".overlay.on");
   vs.forEach(v=>{
     if(v.busy||v.hold||v.out===false)return;const m=VEH(v.id);if(!m)return;const roll=Math.random();
@@ -5174,7 +5178,7 @@ function setStreak(n){
   el.classList.toggle("on",n>=2);document.getElementById("streakN").textContent=n;
 }
 setInterval(()=>{
-  if(!state.settings.ambient||Rest.quiet()||Math.random()>.18)return;      // REST: no rain for nobody
+  if(!state.settings.ambient||Rest.away()||Math.random()>.18)return;      // REST: no rain for nobody
   const W=document.getElementById("weather");
   for(let i=0;i<fewer(40);i++){const d=document.createElement("div");d.className="drop";
     d.style.cssText=`left:${Math.random()*100}%;top:${-20+Math.random()*40}%;
@@ -5257,7 +5261,9 @@ const Modes=(()=>{
   const of=el=>(el&&(OV[el.id]||el.dataset.mode))||"other";
   const alive=e=>!e.el||(document.documentElement.contains(e.el)&&e.el.classList.contains("on"));
   function drop(i){const e=stack.splice(i,1)[0];if(e)lastClose[e.id]=Date.now();}
-  function reconcile(){for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i]))drop(i);}
+  // REST: what he is looking at changed, so what is covered sleeps and what is uncovered wakes
+  const changed=()=>{try{Rest.cover();}catch(e){}};
+  function reconcile(){let n=0;for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i])){drop(i);n++;}if(n)changed();}
   function watch(el){
     if(!mo&&typeof MutationObserver!=="undefined"){mo=new MutationObserver(reconcile);mo.observe(document.body,{childList:true});}
     if(mo)mo.observe(el,{attributes:true,attributeFilter:["class"]});
@@ -5275,6 +5281,7 @@ const Modes=(()=>{
     const visit=!stack.some(e=>e.id===id)&&Date.now()-(lastClose[id]||0)>SAME_VISIT;
     stack.push({id,el:el||null});
     if(visit)bump("modeOpens",id);
+    changed();
     return true;
   }
   // one more for this mode today; days older than 60 are dropped as it writes
@@ -5288,7 +5295,7 @@ const Modes=(()=>{
   }
   // by element when there is one, otherwise the innermost open mode with that id
   function close(id,el){
-    for(let i=stack.length-1;i>=0;i--){const e=stack[i];if(el?e.el===el:e.id===id){drop(i);return;}}
+    for(let i=stack.length-1;i>=0;i--){const e=stack[i];if(el?e.el===el:e.id===id){drop(i);changed();return;}}
   }
   function shut(el){if(!el)return;el.classList.remove("on");close(null,el);}
   function top(){reconcile();return stack.length?stack[stack.length-1].id:"valley";}
@@ -5298,36 +5305,52 @@ const Modes=(()=>{
 })();
 
 /* ================================================================
-   REST — the game holds still when nobody is playing
-   After 45 s with no touch, pointer or key, document.body gets the class
-   "rest" and the game stops spending the battery on what nobody is
-   watching:
-     - every animation in #app (the HUD, the valley, the tool bar) pauses
-       where it is (CSS "REST"); the overlays, the Mine, the Factory and
-       a race are outside #app and are left alone
+   REST — the game holds still when nobody is playing or looking
+   Two things put a scene to sleep.
+   1. Nobody is playing. After 45 s with no touch, pointer or key,
+   document.body gets the class "rest" and the game stops spending the
+   battery on what nobody is watching:
+     - every animation pauses where it is (CSS "REST"): the HUD, the
+       valley and the tool bar, and the sheets, the Mine and the Factory
      - the animals, vehicles and buddy stop wandering, and the rain and
-       the badge check skip their ticks (Rest.quiet())
+       the badge check skip their ticks (Rest.away(), Rest.quiet())
      - the four light layers blend as plain alpha and the glass loses its
        blur (body.flat, applyGrade in WORLD)
      - Nature's and Sound's audio contexts are suspended
-     - the Mine's, Adventure's and the Factory's frame loops park
+     - the Mine's, Adventure's, the Factory's and a race's frame loops park
    Any input takes it off at once and starts everything again; the audio
    is resumed inside that input event, so iOS allows it.
-   It never comes on while something is waiting on him: a mode with
-   reading:true in Modes (a crate word, a book page or its quiz, Talk to
-   me, Word Wilds...) or a Job is open, a race is on, or the Factory is
-   running or asking its question. In Adventure and the Mine, steering
-   counts as input: their loops call Rest.poke() while Ash or the miner
-   is moving. A mode opening counts too.
+   While something is waiting on him it takes longer, 3 minutes
+   (Rest._deepMs): a mode with reading:true in Modes (a crate word, a
+   book page or its quiz, Talk to me, Word Wilds...) or a Job is open, a
+   race is on, or the Factory is running or asking its question. A child
+   sounding out a word may not touch the screen for a while; an iPad left
+   on a book page should still go to sleep.
+   Being there without touching also counts, and holds a rest off without
+   ever ending one (Rest.stay()): the game voice speaking, and the
+   microphone open (Rest.mic(stream)). In Adventure and the Mine,
+   steering counts as input: their loops call Rest.poke() while Ash or
+   the miner is moving. A mode opening counts too.
+   2. Nobody is looking. While anything but Adventure is open on top of
+   the valley (Modes.top(): a sheet, the Mine, the Factory), body gets
+   the class "covered": every animation in #app pauses, and the animals,
+   vehicles, buddy and rain skip their ticks (Rest.away()). Adventure's
+   loop parks under a sheet, and the Mine's under its own panels. Modes
+   calls Rest.cover() whenever what is open changes, so the valley is
+   back the moment the cover closes. The badge check goes on: badges are
+   earned in the Mine too.
    While the page is hidden the same timers skip (Rest.quiet()) and the
    audio is suspended as well.
-   Rest.on() is true while resting; Rest.onWake(fn) runs fn when it ends.
-   For the tests: Rest._idleMs (45000), Rest.now() (the clock; replace it
-   to jump ahead), Rest.check() (look now, not at the next timer).
+   Rest.on() is true while resting, Rest.covered() while the valley is
+   covered; Rest.onWake(fn) runs fn when a rest ends and when what is
+   open changes (fn starts a parked loop again if it may run).
+   For the tests: Rest._idleMs (45000), Rest._deepMs (180000), Rest.now()
+   (the clock; replace it to jump ahead), Rest.check() (look now, not at
+   the next timer).
    ================================================================ */
 const Rest=(()=>{
-  const R={_idleMs:45000,now:()=>Date.now()};
-  let last=0,on=false,timer=null;const wakers=[];
+  const R={_idleMs:45000,_deepMs:180000,now:()=>Date.now()};
+  let last=0,on=false,covered=false,timer=null;const wakers=[];
   const hidden=()=>document.visibilityState==="hidden";
   function waiting(){
     let st=[],L={};try{st=Modes.stack();L=Modes.list();}catch(e){}
@@ -5342,7 +5365,8 @@ const Rest=(()=>{
     if(on)return;
     const idle=R.now()-last;
     if(idle<R._idleMs){arm(R._idleMs-idle);return;}
-    if(hidden()||waiting()){arm(5000);return;}
+    if(hidden()){arm(5000);return;}
+    if(waiting()&&idle<R._deepMs){arm(R._deepMs-idle);return;}      // waiting on him: 3 minutes, not 45 s
     on=true;clearTimeout(timer);timer=null;
     document.body.classList.add("rest");
     try{applyGrade();}catch(e){}
@@ -5360,6 +5384,21 @@ const Rest=(()=>{
     wakers.forEach(f=>{try{f();}catch(e){}});
     arm(R._idleMs);
   }
+  // he is there with no touch to show for it (the game voice speaking, the microphone open): this holds a rest
+  // off, and never ends one
+  function stay(){if(!on)last=R.now();}
+  function mic(stream){
+    stay();
+    const iv=setInterval(()=>{let live=false;try{live=stream.getTracks().some(t=>t.readyState==="live");}catch(e){}
+      if(live)stay();else clearInterval(iv);},5000);
+  }
+  // what is open changed (Modes): the valley sleeps under anything but Adventure, and a parked loop looks again
+  function cover(){
+    let top="valley";try{top=Modes.top();}catch(e){}
+    const c=top!=="valley"&&top!=="adventure";
+    if(c!==covered){covered=c;document.body.classList.toggle("covered",c);}
+    if(!on)wakers.forEach(f=>{try{f();}catch(e){}});
+  }
   // his input: also where a suspended audio context gets its resume, inside the event
   function input(){poke();try{Nature.kick();}catch(e){}}
   ["pointerdown","pointermove","pointerup","touchstart","touchend","keydown","wheel"].forEach(ev=>
@@ -5372,6 +5411,7 @@ const Rest=(()=>{
   });
   last=R.now();arm(R._idleMs);
   R.on=()=>on;R.quiet=()=>on||hidden();R.poke=poke;R.check=check;
+  R.covered=()=>covered;R.away=()=>on||covered||hidden();R.cover=cover;R.stay=stay;R.mic=mic;
   R.onWake=fn=>{wakers.push(fn);};
   return R;
 })();
@@ -7250,6 +7290,7 @@ const Mine=(()=>{
   function resize(){
     dpr=Math.min(2,window.devicePixelRatio||1);vw=root.clientWidth;vh=root.clientHeight;
     cv.width=vw*dpr;cv.height=vh*dpr;TS=Math.round(Math.max(40,Math.min(66,vh/11)));
+    unpark();      // a new size wipes the canvas: a parked loop draws it again
   }
   function toast(msg,ms){const t=root.querySelector("#mToast");t.textContent=msg;t.classList.add("on");clearTimeout(t._h);
     t._h=setTimeout(()=>t.classList.remove("on"),ms||2200);}
@@ -7532,15 +7573,18 @@ const Mine=(()=>{
       cam.x+=(Math.max(0,Math.min(MW*TS-vw,tx))-cam.x)*Math.min(1,dt*8);cam.y+=(Math.max(0,Math.min(MH*TS-vh,ty))-cam.y)*Math.min(1,dt*8);
       if(Math.floor(time*2)!==Math.floor((time-dt)*2))hud();
       if(dirty&&Math.floor(time/3)!==Math.floor((time-dt)/3)){dirty=false;markDug();}}
-    render();requestAnimationFrame(loop);
+    render();
+    if(paused){parked=true;return;}      // REST: a panel is over the Mine; this frame stays up until it closes (unpark)
+    requestAnimationFrame(loop);
   }
-  Rest.onWake(()=>{if(!parked)return;parked=false;if(running){lastT=performance.now();requestAnimationFrame(loop);}});
+  function unpark(){if(!parked)return;parked=false;if(running){lastT=performance.now();requestAnimationFrame(loop);}}
+  Rest.onWake(unpark);
 
   /* ---------- panels ---------- */
   const panel=root=>document.getElementById("mPanel"),card=()=>document.getElementById("mCard");
   // mode: the reading ("read") and writing ("write") panels are modes of their own inside the Mine
   function openPanel(html,mode){paused=true;input.dig=false;input.jx=input.jy=0;card().innerHTML=html;panel().classList.add("on");panelMode(mode);}
-  function closePanel(){panel().classList.remove("on");panelMode(null);paused=false;clearTimeout(custT);hud();}
+  function closePanel(){panel().classList.remove("on");panelMode(null);paused=false;unpark();clearTimeout(custT);hud();}
   let pMode=null;
   function panelMode(m){m=m||null;if(m===pMode)return;if(pMode)Modes.close(pMode,panel());pMode=m;if(m)Modes.open(m,panel());}
 
@@ -8727,7 +8771,7 @@ const Rec=(()=>{
   async function start(){
     if(mr){try{await stop();}catch(e){}}
     let s=null;
-    try{s=await navigator.mediaDevices.getUserMedia({audio:true});stream=s;mr=new MediaRecorder(s);chunks=[];
+    try{s=await navigator.mediaDevices.getUserMedia({audio:true});stream=s;try{Rest.mic(s);}catch(e){}mr=new MediaRecorder(s);chunks=[];
       mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};mr.start();return true;}
     catch(e){try{MicCheck.note("recording",e);}catch(x){}try{if(s)s.getTracks().forEach(t=>t.stop());}catch(x){}mr=null;return false;}
   }
@@ -9386,6 +9430,7 @@ const Adv=(()=>{
   function frame(now){
     if(!on)return;
     if(Rest.on()){parked=true;raf=0;return;}      // REST: the loop waits for his next touch (Rest.onWake below)
+    if(Rest.covered()){P.moving=false;posAsh();parked=true;raf=0;return;}      // ...or for the sheet over the valley to close
     raf=requestAnimationFrame(frame);
     const dt=Math.min(.05,(now-lastT)/1000||0);lastT=now;
     if(busy()){P.moving=false;posAsh();return;}
@@ -10589,7 +10634,9 @@ const Race=(()=>{
   function run(){
     let last=performance.now();
     const step=now=>{
-      if(!R)return;const dt=Math.min(.05,(now-last)/1000);last=now;
+      if(!R)return;
+      if(Rest.on()){R.parked=()=>{last=performance.now();raf=requestAnimationFrame(step);};return;}      // REST: the race waits where it is
+      const dt=Math.min(.05,(now-last)/1000);last=now;
       const me=R.cars[0];
       if(!R.paused&&me.x>=R.gates[R.gi]){R.paused=true;gate();}
       if(!R.paused){
@@ -10626,7 +10673,8 @@ const Race=(()=>{
     if(typeof R.o.done==="function")try{R.o.done(place,gems);}catch(e){}
   }
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
-  return{start,_R:()=>R,busy:()=>!!R&&!R.done};      // busy: REST waits
+  Rest.onWake(()=>{if(!R||!R.parked)return;const go=R.parked;R.parked=null;if(!R.done)go();});
+  return{start,_R:()=>R,busy:()=>!!R&&!R.done};      // busy: REST waits longer
 })();
 
 /* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
@@ -14836,7 +14884,7 @@ const Factory=(()=>{
   }
   function tick(now){
     raf=0;if(!isOpen()||view!=="board"||hidden())return;
-    if(Rest.on())return;      // REST (never while it runs or asks): the loop waits, Rest.onWake starts it again
+    if(Rest.on())return;      // REST (after 3 minutes while it runs or asks): the loop waits, Rest.onWake starts it again
     const dt=Math.min(250,lastT?now-lastT:0);lastT=now;
     if(S&&S.running&&!S.done){acc+=dt;let n=0;while(acc>=STEP&&n<8){step(true);acc-=STEP;n++;}if(n>=8)acc=0;}else acc=0;
     draw();
@@ -15648,6 +15696,7 @@ const Talk=(()=>{
   async function record(opt){
     opt=opt||{};if(!micOk()){try{MicCheck.note("talk");}catch(x){}return null;}
     let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){try{MicCheck.note("talk",e);}catch(x){}return null;}
+    try{Rest.mic(stream);}catch(e){}
     let mr;try{mr=new MediaRecorder(stream);}catch(e){try{stream.getTracks().forEach(t=>t.stop());}catch(_){}return null;}
     const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
     // the level as he talks, for "has he started" and "has he finished"
@@ -16442,7 +16491,7 @@ function buddyTalk(){
 }
 // buddy wanders when idle
 setInterval(()=>{
-  if(Rest.quiet()||document.querySelector(".overlay.on"))return;      // REST: the buddy naps too
+  if(Rest.away()||document.querySelector(".overlay.on"))return;      // REST: the buddy naps too
   if(Math.random()<.5)return;
   const b=state.buddy||{c:10,r:ROWS_MAX-1};
   buddyGo(b.c+(Math.random()<.5?-1:1),b.r+(Math.random()<.7?0:(Math.random()<.5?-1:1)));
@@ -18633,7 +18682,7 @@ async function renderStudio(){
 async function toggleRecord(key,btn){
   if(recorder&&recorder.state==="recording"){recorder.stop();return;}
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});try{Rest.mic(stream);}catch(e){}
     const chunks=[];recorder=new MediaRecorder(stream);recKey=key;
     btn.classList.add("rec");btn.textContent="⏹";
     recorder.ondataavailable=e=>chunks.push(e.data);

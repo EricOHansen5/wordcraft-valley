@@ -1,5 +1,6 @@
-// Battery: REST (the game holds still after 45 s with nobody touching it), Save battery, and the Battery check.
-// Rest._idleMs is set short and Rest.check() asked, instead of waiting 45 s.
+// Battery: REST (the game holds still after 45 s with nobody touching it, 3 minutes while something waits on him;
+// the valley holds still while a sheet, the Mine or the Factory covers it), Save battery, and the Battery check.
+// Rest._idleMs and Rest._deepMs are set short and Rest.check() asked, instead of waiting 45 s or 3 minutes.
 // The audio contexts are a stub that records suspend() and resume().
 const {launch,waitFor,check}=require("./lib");
 
@@ -44,6 +45,15 @@ const AUDIO_STUB=()=>{
   const awake=()=>E(()=>{Rest._idleMs=45000;Rest.poke();});
   // a touch; the idle time goes back to 45 s first (a rest already on stays on until the touch), so a slow runner
   // cannot rest again between the touch and the next check
+  // a key: his input too, and it presses nothing on a sheet
+  const key=async()=>{await E(()=>{Rest._idleMs=45000;Rest._deepMs=180000;});await p.keyboard.press("Shift");await wait(150);};
+  // every CSS animation on the page, wherever it is
+  const allAnims=()=>E(()=>{const r={run:0,paused:0};document.getAnimations().forEach(a=>{if(!(a instanceof CSSAnimation))return;
+    if(a.playState==="running")r.run++;else if(a.playState==="paused")r.paused++;});return r;});
+  // frames asked for in a stretch of time: a frame loop that is running asks for one every frame
+  const rafs=async ms=>{await E(()=>{if(!window.__rafOn){const r=window.requestAnimationFrame;window.requestAnimationFrame=function(fn){window.__raf++;return r.call(window,fn);};window.__rafOn=1;}window.__raf=0;});
+    await wait(ms);return E(()=>window.__raf);};
+  const covered=()=>E(()=>document.body.classList.contains("covered"));
   const tap=async()=>{const b=await E(()=>{Rest._idleMs=45000;const r=document.getElementById("hudMid").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};});
     await p.touchscreen.tap(b.x,b.y);await wait(150);};
   await tidy();
@@ -86,21 +96,47 @@ const AUDIO_STUB=()=>{
   const moved=await E(()=>window.__moves);await E(()=>{Math.random=window.__rnd;});
   ok(moved>0,"awake again: the animals and vehicles wander ("+moved+" steps in 5.6 s)");
 
-  // ---- 4. never while a crate question waits on him ----
+  // ---- 4. while a crate question waits on him: not after 45 s, but after 3 minutes; the voice holds it off ----
   await p.click("#crateBtn");await waitFor(p,"#ovCrates.on #crateRow .crate");
   await p.click("#crateRow .crate:not(.write):not(.pic):not(.swap)");
   ok(await waitFor(p,"#ovRead.on"),"a crate word is open");
   await goIdle();await wait(400);await E(()=>Rest.check());
-  ok(!(await resting()),"no rest while a crate question waits on him (modes "+J(await E(()=>Modes.stack()))+")");
+  ok(!(await resting()),"no rest after the short time while a crate question waits on him (modes "+J(await E(()=>Modes.stack()))+")");
+  // something that moves in the sheet, to see it hold still
+  await E(()=>{const st=document.createElement("style");st.textContent="@keyframes pwT{to{opacity:.5}}";document.head.appendChild(st);
+    const d=document.createElement("div");d.id="pwT";d.style.animation="pwT 1s infinite";document.querySelector("#ovRead .sheet").appendChild(d);});
+  // the game voice: a line being spoken counts as him being there, from its first word to its last
+  const said=await E(async()=>{const s=Rest.stay;let n=0;Rest.stay=()=>{n++;s();};const at=n;const pr=Sound.speak("hat");const start=n-at;await pr;Rest.stay=s;return{start,all:n-at};});
+  ok(said.start>=1&&said.all>said.start,"a spoken line tells Rest he is there when it starts and when it ends "+J(said));
+  await E(()=>{Rest._idleMs=300;Rest._deepMs=700;});
+  for(let i=0;i<5;i++){await wait(250);await E(()=>Rest.stay());}
+  await E(()=>Rest.check());
+  ok(!(await resting()),"the long time is up, but the voice kept speaking: no rest");
+  await wait(900);await E(()=>Rest.check());
+  ok(await resting(),"the long time with no touch and no voice: it rests with the question still open");
+  const s1=await allAnims();
+  ok(s1.run===0&&await E(()=>document.getElementById("pwT").getAnimations()[0].playState==="paused"),"resting: what moves in the sheet holds still too, nothing on the page runs "+J(s1));
+  await E(()=>Rest.stay());
+  ok(await resting(),"the voice never ends a rest");
+  await key();
+  ok(!(await resting())&&await E(()=>document.getElementById("pwT").getAnimations()[0].playState==="running")&&await E(()=>document.getElementById("ovRead").classList.contains("on")),
+    "a key takes it off, the sheet moves again and the question is still there");
+  await E(()=>document.getElementById("pwT").remove());
   await tidy();await goIdle();
-  ok(await resting(),"...and it comes once the question is put away");
+  ok(await resting(),"...and with the question put away it comes after the short time");
   await tap();await awake();
 
-  // ---- 5. never during a Factory run ----
+  // ---- 5. a Factory run: not after 45 s, but after 3 minutes ----
   await E(()=>{Factory.play(1);Factory._run(1);});
   ok(await E(()=>Factory._S().running&&Factory.busy()),"the Factory is running");
   await goIdle();await wait(400);await E(()=>Rest.check());
-  ok(!(await resting()),"no rest during a Factory run");
+  ok(!(await resting()),"no rest after the short time during a Factory run");
+  await E(()=>{Rest._deepMs=300;});await wait(450);await E(()=>Rest.check());
+  ok(await resting(),"after the long time a running Factory rests too");
+  const w0=await E(()=>Factory._w().t);await wait(500);
+  ok(await E(t=>Factory._w().t===t,w0),"...and its belts stand still");
+  await key();await wait(500);
+  ok(!(await resting())&&await E(t=>Factory._S().running&&Factory._w().t>t,w0),"a key: it runs on from where it was");
   await E(()=>Factory.close());await goIdle();
   ok(await resting(),"...and it comes once the Factory is closed");
   await tap();await awake();await tidy();
@@ -128,9 +164,62 @@ const AUDIO_STUB=()=>{
   await tap();
   ok(await E(()=>!Rest.quiet()&&Nature._ctx().state==="running"),"visible again and touched: the sounds run");
 
+  // ---- 7a. what is covered sleeps: the valley under a sheet, the Mine or the Factory ----
+  await tidy();await awake();await wait(300);
+  const b0=await anims();
+  ok(!(await covered())&&b0.run>20&&b0.paused===0,"the valley on top: not covered, its loops run "+J(b0));
+  await p.click("#albumBtn");await waitFor(p,"#ovAlbum.on");
+  const b1=await anims();
+  ok(await covered()&&b1.run===0&&b1.paused>=b0.run,"the sticker book open: the valley behind it is covered and every loop in #app is paused "+J(b1));
+  await E(()=>{window.__moves=0;Math.random=()=>.3;});await wait(6000);
+  const hid=await E(()=>window.__moves);await E(()=>{Math.random=window.__rnd;});
+  ok(hid===0&&!(await resting()),"covered: 6 s of wander ticks and nothing walks or drives, and this is not a rest ("+hid+" steps)");
+  await tidy();await wait(200);
+  const b2=await anims();
+  ok(!(await covered())&&b2.paused===0&&b2.run>=b0.run,"the sheet closed: the valley is back at once "+J(b2));
+  await E(()=>{window.__moves=0;Math.random=()=>.3;});await wait(5600);
+  const walk=await E(()=>window.__moves);await E(()=>{Math.random=window.__rnd;});
+  ok(walk>0,"...and the animals and vehicles wander again ("+walk+" steps in 5.6 s)");
+  // the Mine covers the valley; a panel covers the Mine
+  await awake();await E(()=>Mine.enter());await wait(500);
+  const m0=await anims(),f0=await rafs(600);
+  ok(await covered()&&await E(()=>Modes.top()==="mine")&&m0.run===0,"the Mine open: the valley behind it holds still "+J(m0));
+  await E(()=>{state.mine.bag={};Mine._openShop();});await wait(300);
+  const f1=await rafs(600);
+  ok(f0>=4&&f1<=1&&await E(()=>!!document.querySelector("#mPanel.on")),"a panel over the Mine parks the Mine's frame loop ("+f0+" frames in 0.6 s, then "+f1+")");
+  await E(()=>document.getElementById("mClose").click());await wait(200);
+  const f2=await rafs(600);
+  ok(f2>=4,"the panel closed: the Mine's loop runs again ("+f2+" frames in 0.6 s)");
+  await E(()=>Mine.exit());await wait(400);
+  ok(!(await covered())&&(await anims()).run>=b0.run,"out of the Mine: the valley is back");
+  // Adventure plays in the valley, so it is not a cover; a sheet over it is
+  await awake();await p.click("#advBtn");await wait(700);
+  const g0=await rafs(600);
+  ok(await E(()=>Modes.top()==="adventure")&&!(await covered())&&(await anims()).run>20&&g0>=4,"Adventure: the valley is not covered and its loop runs ("+g0+" frames in 0.6 s)");
+  await E(()=>{renderAlbum();show("ovAlbum");});await wait(300);
+  const g1=await rafs(600);
+  ok(await covered()&&g1<=1,"a sheet over Adventure: covered, and Adventure's loop is parked ("+g1+" frames in 0.6 s)");
+  await tidy();await wait(200);
+  const g2=await rafs(600);
+  ok(!(await covered())&&g2>=4,"the sheet closed: Adventure's loop runs again ("+g2+" frames in 0.6 s)");
+  await awake();await E(()=>{const b=document.getElementById("advDone");if(b)b.click();});await wait(300);
+  await E(()=>Factory.play(1));await wait(300);
+  ok(await covered()&&await E(()=>Modes.top()==="factory"),"the Factory open: the valley is covered");
+  await E(()=>Factory.close());await wait(300);
+  ok(!(await covered()),"the Factory closed: not covered");
+
+  // ---- 7a2. the microphone open holds a rest off, and lets it come once it is closed ----
+  await tidy();await awake();
+  await E(()=>{window.__mic={readyState:"live"};Rest.mic({getTracks:()=>[window.__mic]});Rest._idleMs=6000;});
+  await wait(7200);await E(()=>Rest.check());
+  ok(!(await resting()),"the microphone is open: no rest though nothing was touched for longer than the idle time");
+  await E(()=>{window.__mic.readyState="ended";});await wait(9500);await E(()=>Rest.check());
+  ok(await resting(),"the microphone closed: the rest comes");
+  await tap();await awake();
+
   // ---- 7b. the movers step with a transform (a glide), not a left/top transition ----
   await tidy();await awake();
-  await E(()=>{window.__quiet=Rest.quiet;Rest.quiet=()=>true;});      // the wander ticks hold off: only these steps move
+  await E(()=>{window.__quiet=Rest.away;Rest.away=()=>true;});      // the wander ticks hold off: only these steps move
   const gl=await E(()=>{const out={};
     const anchor=el=>{const r=el.getBoundingClientRect(),t=tilesEl.getBoundingClientRect();return{x:r.left+r.width/2-t.left,y:r.bottom-t.top};};
     const cr=state.critters.find(c=>c._el);for(const dc of [3,-3,5,-5,7,-7]){const c0=cr.c;moveCritter(cr,dc,0);if(cr.c!==c0)break;}
@@ -151,7 +240,7 @@ const AUDIO_STUB=()=>{
     const want=(x,topPct)=>[x,topPct/100*tilesEl.clientHeight];const {cr,v}=window.__glide;
     const res=[[cr._el],[v._el],[document.getElementById("buddyWorld")]].map(([el])=>{const a=f(el),w=want(parseFloat(el.style.left),parseFloat(el.style.top));
       return Math.round(Math.hypot(a[0]-w[0],a[1]-w[1]));});return res;});
-  await E(()=>{Rest.quiet=window.__quiet;});
+  await E(()=>{Rest.away=window.__quiet;});
   ok(land.every(d=>d<=2),"each ends standing on its new spot, bottom middle on it (off by "+J(land)+" px)");
 
   // ---- 8. Save battery: half the particles, no blur, plain light layers, glows as a gradient, the front row sways, no wind ----
