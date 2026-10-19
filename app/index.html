@@ -10966,13 +10966,7 @@ const Dungeon=(()=>{
     if(k&&"LBW".includes(ch))return door(k);
     const m=monAt(c,r);if(m){fight(m);return true;}
     if(bossAt(c,r)){fightBoss();return true;}
-    if(ch==="P"||ch==="G"){
-      R.taken.push(ROOM.id+":p"+c+","+r);V.cells[r][c]=".";paint(c,r);Sound.sfx.pop();
-      const what=ch==="P"?(ROOM.pots||{})[c+","+r]:"";
-      if(what==="key"){R.keys++;say(L("key"));}
-      else if(what==="heart")heal();
-      else{const x=Math.random();if(x<1/6)heal();else if(x<1/3){state.gems+=1;renderHUD();say("+1 💎",false);}}
-      hud();save();return true;}
+    if(ch==="P"||ch==="G"){smash(c,r);return true;}
     if(ch==="C"){if(has("taken","c"+c+","+r))return false;
       R.taken.push(ROOM.id+":c"+c+","+r);const what=((ROOM.chests||{})[c+","+r]||{}).item;Sound.sfx.chime();
       if(what==="key"){R.keys++;say(L("key"));}
@@ -10985,13 +10979,43 @@ const Dungeon=(()=>{
     if(ch==="S"){hitSwitch();return true;}
     Sound.sfx.soft();return false;
   }
+  // a pot or bush breaks: what was in it (a key, a heart), or by chance a heart (1 in 6) or a gem
+  function smash(c,r){
+    const R=run(),ch=cell(c,r);R.taken.push(ROOM.id+":p"+c+","+r);V.cells[r][c]=".";paint(c,r);Sound.sfx.pop();
+    const what=ch==="P"?(ROOM.pots||{})[c+","+r]:"";
+    if(what==="key"){R.keys++;say(L("key"));}
+    else if(what==="heart")heal();
+    else{const x=Math.random();if(x<1/6)heal();else if(x<1/3){state.gems+=1;renderHUD();say("+1 💎",false);}}
+    hud();save();
+  }
   function heal(){const R=run();R.halves=Math.min(dungeonState().maxHearts*2,R.halves+2);say(L("heart"));}
   function hitSwitch(){
     const R=run(),k=ROOM.id+":switch",i=R.opened.indexOf(k);if(i>=0)R.opened.splice(i,1);else R.opened.push(k);
     Sound.sfx.chime();save();draw();
   }
-  // the dungeon's item; the boomerang comes in its own part below
-  function useItem(){return false;}
+  /* the boomerang: up to 4 tiles straight ahead, over floor, pits, water and lava; walls, doors, blocks, chests,
+     signs and raised barriers stop it. It hits the first switch (the barriers flip), stuns the first monster (his
+     next battle with it starts with a free hit), or breaks the first pot or bush and brings back what was in it.
+     What it does is decided when he throws; the switch's barriers flip when it comes back. Returns {dist, hit}. */
+  const FLY=new Set([".","@","F","_","^","~","%"]);
+  function useItem(){
+    if(!active()||D.item!=="boomerang"||!dungeonState().items.boomerang)return false;
+    const R=run(),[dx,dy]=DIRS[R.face];let dist=0,hit=null,at=null;
+    for(let i=1;i<=4;i++){const c=R.pos[0]+dx*i,r=R.pos[1]+dy*i,ch=cell(c,r);
+      if(edgeAt(c,r)||c<1||r<1||c>11||r>7)break;
+      const m=monAt(c,r);if(m){dist=i;hit="monster";at=m;break;}
+      if(bossAt(c,r)){dist=i;hit="boss";break;}
+      if(ch==="S"){dist=i;hit="switch";break;}
+      if(ch==="P"||ch==="G"){dist=i;hit="pot";at=[c,r];break;}
+      if(!FLY.has(ch))break;dist=i;}
+    const b=ov.querySelector("#dBoom");Sound.sfx.soft();
+    if(b){place(b,R.pos[0],R.pos[1]);b.classList.add("on");void b.offsetWidth;place(b,R.pos[0]+dx*dist,R.pos[1]+dy*dist);
+      setTimeout(()=>place(b,R.pos[0],R.pos[1]),220);setTimeout(()=>b.classList.remove("on"),440);}
+    if(hit==="monster"){at.stunned=true;const el=ov.querySelector(`.dmon[data-uid="${at.uid}"]`);if(el)el.classList.add("stunned");}
+    if(hit==="pot")smash(at[0],at[1]);
+    if(hit==="switch")setTimeout(hitSwitch,440);
+    return{dist,hit};
+  }
 
   // ---------- a word door: read the word to open it (no hearts at stake outside a battle) ----------
   let wov=null;

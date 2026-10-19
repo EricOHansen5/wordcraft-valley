@@ -88,6 +88,23 @@ const {launch,check,waitFor}=require("./lib");
   ok((await run()).halves===6,"the fairy fills his hearts");
   await E(()=>Dungeon._go("f6",2,3,"n"));await E(()=>Dungeon.act());await wait(200);
   ok((await visited())===8&&await E(()=>!!document.querySelector("#dMini .mskull")),"the map chest shows every room and the boss room's skull");
+  // ---- 3. the boomerang ----
+  await E(()=>Dungeon._go("f5",3,6,"w"));
+  ok((await tile(1,6)).t==="R"&&await E(()=>!Dungeon._walkable(1,6)&&!Dungeon._walkable(2,7)),"the boss key chest sits behind a red barrier");
+  ok(await E(()=>Dungeon.useItem())===false,"no boomerang yet: the item button does nothing");
+  ok(await E(()=>document.getElementById("dItem").style.display==="none"),"...and is hidden");
+  await E(()=>Dungeon._go("f4",3,2,"w"));await E(()=>Dungeon.act());await wait(200);
+  ok(await E(()=>state.dungeon.items.boomerang===true&&document.getElementById("dItem").style.display!=="none"),"the chest in the item room gives the boomerang, and the item button shows");
+  await E(()=>Dungeon._go("f4",1,1,"w"));
+  ok((await E(()=>Dungeon.useItem())).dist===0,"thrown at a wall right beside him, the boomerang goes nowhere");
+  await E(()=>Dungeon._go("f5",6,2,"e"));const th=await E(()=>Dungeon.useItem());await wait(700);
+  ok(th.hit==="switch"&&(await tile(1,6)).t==="."&&await E(()=>Dungeon._walkable(2,7)),"across the pit, the boomerang hits the switch and the barrier drops "+J(th));
+  await E(()=>Dungeon._go("f5",6,3,"s"));const st=await E(()=>Dungeon.useItem());await wait(600);
+  ok(st.hit==="monster"&&await E(()=>Dungeon._V().mons[0].stunned&&!!document.querySelector("#ovDungeon .dmon.stunned")),"it stuns a monster two tiles away "+J(st));
+  await E(()=>{const r=Dungeon._run();r.halves=3;r.taken=r.taken.filter(k=>k!=="f1:p2,1");Dungeon._go("f1",2,4,"n");});
+  const pt=await E(()=>Dungeon.useItem());await wait(600);
+  ok(pt.hit==="pot"&&(await run()).halves===5&&(await tile(2,1)).t===".","it breaks a pot three tiles away and brings back its heart "+J(pt));
+
   // a reload resumes the run
   const keep=await run();
   await E(()=>saveNow());await wait(700);await p.reload();await waitFor(p,()=>/^Version/.test((document.getElementById("appVer")||{}).textContent||""));await wait(1500);
