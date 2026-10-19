@@ -347,6 +347,7 @@ select{width:auto;max-width:100%}
   background:#fff;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink),var(--lift);
   opacity:0;pointer-events:none;transition:all .3s}
 #coach.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#coach.top{top:calc(env(safe-area-inset-top) + 14px);bottom:auto}
 #coach .face{width:56px;height:56px;flex:0 0 auto}
 #coach .face svg{width:100%;height:100%}
 #coach .say{font-weight:800;font-size:17px;line-height:1.3}
@@ -1837,6 +1838,13 @@ body.rest #ovHome .hfish,#ovHome.under .hfish{animation-play-state:paused}
 .htile{position:relative;width:118px;height:118px;flex:none;background:rgba(255,250,240,.96);border:2.5px solid #2e2620;border-radius:18px;box-shadow:0 4px 0 rgba(0,0,0,.18);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:15px;color:#2e2620;padding:6px}
 .htile .hemo{font-size:46px;line-height:1}.htile svg{width:56px;height:56px}
+#ovHome .htile{width:118px;height:118px;min-width:0;padding:6px;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  color:#2e2620;background:rgba(255,250,240,.96);border:2.5px solid #2e2620;border-radius:18px;box-shadow:0 4px 0 rgba(0,0,0,.18);font-size:15px;font-weight:800;line-height:1.1;text-align:center;
+  transition:transform .08s}
+#ovHome .htile:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+#ovHome .htile [hidden]{display:none!important}
+#ovHome .htile .badge{position:absolute;top:-8px;right:-8px}
+@media (max-width:820px){#ovHome .htile{width:104px;height:104px}}
 .htile .hbadge,.htile .hnew{position:absolute;top:-8px;right:-8px;background:#e94b3c;color:#fff;border-radius:10px;font-size:12px;padding:2px 7px;border:2px solid #fff}
 .htile .hnew{right:auto;left:-8px;background:#2a9cd0}
 @media (max-width:820px){.htile{width:104px;height:104px}.hbud{width:96px;height:96px}.hsay{font-size:18px}}
@@ -2308,7 +2316,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-19d"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-19e"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -5398,7 +5406,7 @@ const Modes=(()=>{
   const alive=e=>!e.el||(document.documentElement.contains(e.el)&&e.el.classList.contains("on"));
   function drop(i){const e=stack.splice(i,1)[0];if(e)lastClose[e.id]=Date.now();}
   // REST: what he is looking at changed, so what is covered sleeps and what is uncovered wakes
-  const changed=()=>{try{Rest.cover();}catch(e){}try{if(!stack.length)Home.stackEmpty();}catch(e){}};
+  const changed=()=>{try{Rest.cover();}catch(e){}try{if(!stack.length)Home.stackEmpty();else Home.backOnTop();}catch(e){}};
   function reconcile(){let n=0;for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i])){drop(i);n++;}if(n)changed();}
   function watch(el){
     if(!mo&&typeof MutationObserver!=="undefined"){mo=new MutationObserver(reconcile);mo.observe(document.body,{childList:true});}
@@ -5417,6 +5425,7 @@ const Modes=(()=>{
     const visit=!stack.some(e=>e.id===id)&&Date.now()-(lastClose[id]||0)>SAME_VISIT;
     stack.push({id,el:el||null});
     if(visit)bump("modeOpens",id);
+    try{Games.played(id);}catch(e){}      // HOME: a game opened any way (a cave door, a signpost, its building) is not NEW any more
     changed();
     return true;
   }
@@ -5464,6 +5473,10 @@ const Games=(()=>{
   function list(){return all.filter(vis).sort((a,b)=>(a.order||0)-(b.order||0));}
   function seen(){if(!state.home||typeof state.home!=="object")state.home={seen:{}};if(!state.home.seen||typeof state.home.seen!=="object")state.home.seen={};return state.home.seen;}
   const isNew=id=>!seen()[id];
+  // a mode opened (any way in) marks its game seen: the mode ids that are games, and their game ids
+  const BY_MODE={dungeon:"dungeons",job:"jobs",factory:"factory",mine:"mine",adventure:"adventure",book:"books",quests:"quests",
+    trick:"trick",lights:"lights",fireworks:"fireworks",party:"party",feast:"feast",mail:"mail",eggs:"eggs"};
+  function played(mode){const id=BY_MODE[mode];if(!id||!state||!state.home)return;const s=seen();if(!s[id]){s[id]=today();save();}}
   function open(id){const g=get(id);if(!g)return false;const s=seen();if(!s[id]){s[id]=today();save();}
     if(g.inValley)try{Home.hide();}catch(e){}
     try{g.open();}catch(e){console.warn("game "+id+" did not open:",e&&e.message);}return true;}
@@ -5472,13 +5485,13 @@ const Games=(()=>{
     const el=document.getElementById(btnId),fn=el&&el.onclick;
     add(Object.assign({id,btn:btnId,open:()=>{if(fn)fn.call(el,{});}},meta||{}));
   }
-  return{add,get,list,open,isNew,fromButton,_all:()=>all.slice()};
+  return{add,get,list,open,isNew,fromButton,played,_all:()=>all.slice()};
 })();
 // an old save marks as seen the games it has clearly played already, once, so Home is not covered in NEW
 function homeSeenFill(s){
   if(!s.home||typeof s.home!=="object")s.home={seen:{},filled:false};
   if(!s.home.seen||typeof s.home.seen!=="object")s.home.seen={};
-  if(s.home.filled)return;
+  if(s.home.filled===2)return;
   const d=today(),seen=s.home.seen,mark=id=>{if(!seen[id])seen[id]=d;},has=o=>!!o&&typeof o==="object"&&Object.keys(o).length>0;
   mark("valley");mark("quests");
   if((+s.tour||0)>=6)s.tour=TOUR.length;      // the tour gained a step (the Valley tile): a finished tour stays finished
@@ -5489,7 +5502,11 @@ function homeSeenFill(s){
   if(s.dungeon&&s.dungeon.seen)mark("dungeons");
   if(s.adv&&s.adv.seenIntro)mark("adventure");
   if(s.factory&&((+s.factory.lvl||0)>0||has(s.factory.stars)))mark("factory");
-  s.home.filled=true;
+  // the holidays he has played (pass 2)
+  const day=o=>!!o&&typeof o==="object"&&(!!o.day||(+o.nights||0)>0||(Array.isArray(o.read)?o.read.length>0:!!o.read));      // mail keeps read as a list, the birthday as a day
+  if(day(s.trick))mark("trick");if(day(s.lights))mark("lights");if(day(s.july))mark("fireworks");if(day(s.birthday))mark("party");
+  if(day(s.feast))mark("feast");if(day(s.mail))mark("mail");if(day(s.eggs))mark("eggs");
+  s.home.filled=2;
 }
 
 /* ================================================================
@@ -5503,7 +5520,7 @@ function homeSeenFill(s){
    (#ovHome.under, set by Rest.cover).
    ================================================================ */
 const Home=(()=>{
-  let ov=null,spoke=false,lastOpen=0;
+  let ov=null,spoke=false,lastOpen=0;const els={};      // els: one tile element per game, kept between redraws
   const isOn=()=>!!(ov&&ov.classList.contains("on"));
   function build(){
     ov=document.createElement("div");ov.className="overlay";ov.id="ovHome";
@@ -5552,13 +5569,15 @@ const Home=(()=>{
     // the rest are made here. A tile not in the list now is put away (kept, so its badge code still finds it).
     const box=ov.querySelector(".htiles"),keep=[];
     Games.list().forEach(g=>{let b="";try{b=g.badge?g.badge()||"":"";}catch(e){}
-      let el=g.btn?document.getElementById(g.btn):null;
-      const marks=el?[...el.querySelectorAll("[id],.badge,.purse")]:[];
-      if(!el){el=document.createElement("button");}
-      el.className="htile";el.dataset.game=g.id;el.style.display="";el.setAttribute("aria-label",g.name);
+      let el=els[g.id]||(g.btn?document.getElementById(g.btn):null);
+      if(!el)el=document.createElement("button");
+      if(!el.__tile){      // first time: the old button's marks (its badge spans, ids other code writes to) are kept, its pictures hidden
+        el.__marks=[...el.querySelectorAll("[id],.badge,.purse")];el.__marks.forEach(m=>{if(!m.classList.contains("badge")&&!m.classList.contains("purse"))m.hidden=true;});
+        el.classList.remove("toolbtn");el.__tile=true;}
+      els[g.id]=el;el.classList.add("htile");el.dataset.game=g.id;el.style.display="";el.setAttribute("aria-label",g.name);
       el.innerHTML=`${icon(g.icon)}<b>${esc(g.name)}</b>${b?`<span class="hbadge">${esc(b)}</span>`:""}${Games.isNew(g.id)?`<span class="hnew">NEW</span>`:""}`;
-      marks.forEach(m=>el.appendChild(m));
-      el.onclick=()=>tap(g.id);keep.push(el);box.appendChild(el);});
+      el.__marks.forEach(m=>el.appendChild(m));
+      el.onclick=()=>tap(g.id);keep.push(el);if(el.parentNode!==box||box.children[keep.length-1]!==el)box.appendChild(el);});
     [...box.children].forEach(c=>{if(keep.indexOf(c)<0)parked().appendChild(c);});
     if(!spoke&&isOn()){spoke=true;Sound.speak(sg.say,.95);}
   }
@@ -5594,7 +5613,10 @@ const Home=(()=>{
     ["Trick-or-Read","Light the tree","Fireworks","Birthday party","Feast table","Word mail","Egg hunt"].forEach(n=>out.push("It's "+n+" time!"));
     return out.filter((x,i)=>out.indexOf(x)===i);
   }
-  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,voiceLines,// the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
+  // a game closed and Home is on top again: redraw it (NEW marks, the buddy's line, badges)
+  let rT=null;
+  function backOnTop(){if(!isOn())return;clearTimeout(rT);rT=setTimeout(()=>{if(isOn()&&Modes.top()==="home")render();},0);}
+  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,voiceLines,backOnTop,// the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
   // test server sets), with Home built all the same so the page is laid out as it is for him
   start(){ready=true;if(window.WCV_START==="valley"&&!inValley){inValley=true;if(!ov)build();render();return;}if(!inValley)show();},get _valley(){return inValley;},_ov:()=>ov};
 })();
@@ -7205,7 +7227,9 @@ function maybeBubble(o,id){
 }
 
 /* ---- evolution ---- */
-function whenClear(fn){if(document.querySelector(".overlay.on"))setTimeout(()=>whenClear(fn),600);else fn();}
+// is a sheet open? Home (the start screen under everything) does not count
+function anyOpen(){return!!document.querySelector(".overlay.on:not(#ovHome)");}
+function whenClear(fn){if(anyOpen())setTimeout(()=>whenClear(fn),600);else fn();}
 function evolveScene(from,to){
   let ov=document.getElementById("ovEvo");
   if(!ov){ov=document.createElement("div");ov.id="ovEvo";ov.className="evo";
@@ -9790,6 +9814,8 @@ const Adv=(()=>{
     addEventListener("blur",()=>{for(const k in keys)keys[k]=0;upd();});
   }
   function enter(){
+    if(on)return;      // already exploring (a second tile or door): nothing new
+    try{if(Home.isOn())Home.hide();}catch(e){}      // HOME: Adventure plays in the valley, so Home steps aside (Trick-or-Read, the egg hunt...)
     if(!hud)buildHud();
     settle();   // an egg hunt from another day gives back the treasure hunt it put aside
     if(state.selected){state.selected=null;renderDock();}
@@ -17473,7 +17499,13 @@ const Coach={
     document.getElementById("coachFace").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());
     document.getElementById("coachSay").textContent=st.say;
     c.classList.add("on");
-    if(st.target){const t=document.querySelector(st.target);if(t)t.classList.add("coach-target");}
+    if(st.target){let t=document.querySelector(st.target);
+      // HOME: the target is a Home tile but he is in the valley: point at 🏠 instead
+      try{const ho=document.getElementById("ovHome");if(t&&ho&&ho.contains(t)&&!Home.isOn())t=document.getElementById("homeBtn");}catch(e){}
+      if(t)t.classList.add("coach-target");
+      // a target low on the screen (Home's tiles in portrait): the bubble goes to the top so it never covers it
+      c.classList.toggle("top",!!t&&t.getBoundingClientRect().top>innerHeight/2);}
+    else c.classList.remove("top");
     Sound.speak(st.say,.95);
   },
   reach(ev){
@@ -17490,7 +17522,7 @@ const Coach={
   },
   skip(){state.tour=TOUR.length;save();document.querySelectorAll(".coach-target").forEach(x=>x.classList.remove("coach-target"));
     document.getElementById("coach").classList.remove("on");},
-  restart(){state.tour=0;save();hide("ovParent");this.show();}
+  restart(){state.tour=0;save();hide("ovParent");try{Home.home();}catch(e){}this.show();}
 };
 document.getElementById("coachSkip").onclick=()=>Coach.skip();
 document.getElementById("tourBtn").onclick=()=>Coach.restart();
@@ -19390,11 +19422,11 @@ function arrival(c,res,text){
 /* Upgrading costs gems AND a bit of reading: build a word for ★, put a
    story in order for ★★ gold. Gems are only taken once it's read. */
 let pendingUpgrade=null;
-function startUpgrade(u){
+function startUpgrade(u){      // (closes the sheets it opens over, never Home)
   const t=upgradeTarget(u);if(!t||t.lv>=MAX_LV)return;
   if(state.gems<t.cost){toast(`You need ${t.cost} gems to upgrade the ${t.name.toLowerCase()}`);Sound.sfx.nope();return;}
   pendingUpgrade=u;
-  document.querySelectorAll(".overlay.on").forEach(o=>Modes.shut(o));
+  document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);});
   const tier=currentTier();
   if(t.lv===1){
     const pool=allWords().filter(w=>w.t<=tier&&w.p.length>=2&&w.p.length<=5);
@@ -19793,7 +19825,7 @@ setInterval(()=>{
   if(!state.settings.timer||document.body.dataset.yawned)return;
   if((Date.now()-sessionStart)/60000>state.settings.timer){
     document.body.dataset.yawned="1";
-    if(!document.querySelector(".overlay.on"))showRecap();
+    if(!anyOpen())showRecap();
     else toast("Your buddy is getting sleepy 😴");
   }
 },20000);

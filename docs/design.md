@@ -787,7 +787,8 @@ The design is `docs/superpowers/specs/2026-10-19-home-screen-design.md`.
 - **His buddy says one thing**, the first that applies: today's reading goal ("Want to read 8 more words today?" with 📦 Let's read!), a game he has never opened ("Try the new Dungeons!"), a holiday in season ("It's Trick-or-Read time!"), or "What do you want to play?". It is spoken once when Home appears.
 - **Every game is a tile:** Read words, Valley, Dungeons, Gem Mine, Adventure, Books, Jobs, the Factory (once built), Quests, and each holiday in its season. NEW marks a game until he first opens it (on an old save, games he has already played start as seen). Closing a game comes back to Home.
 - **The valley** is the Valley tile. Its tool bar keeps only valley things (📐 plans, 🎨 closet, 📖 sticker book, 🏪 Trading Post) and gains 🏠 Home. What he starts in the valley (the Factory building, a race in Adventure) comes back to the valley.
-- **A new player's tour** starts on Home (the crate tile), then asks him to tap the Valley tile before the building steps.
+- **A new player's tour** starts on Home (the crate tile), then asks him to tap the Valley tile before the building steps. In the valley, a step whose tile is on Home points at 🏠; over a tile low on the screen the buddy's bubble moves to the top.
+- A game opened any way (a cave door, a signpost, a holiday he played before Home) is no longer NEW. Tiles press down when tapped.
 - Under the hood: a `Games` registry; a new game is one `Games.add` where its code lives, with no change to Home or the valley. The saves gain `state.home` (the games he has opened). The old tool bar buttons are the Home tiles, with the same ids.
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 

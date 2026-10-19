@@ -153,6 +153,58 @@ const {launch,check,waitFor,seed}=require("./lib");
   ok(await E(()=>state.tour===3&&!!document.querySelector("#craftBtn.coach-target")),"tapping it moves the tour on to the plans, in the valley");
   ok(await E(()=>TOUR.length===7),"the tour has its one new step");
 
+  // ---- review fixes (all under the real start: the game opens on Home) ----
+  await seed(p,{phase:2,settings:{goal:0},trick:{nights:2,day:"2026-10-18"},lights:{day:"2025-12-10"}},{home:true});await wait(2600);await ix();
+  const fx=s=>E(s);
+  // 1. any way into Adventure while Home is up (Trick-or-Read, the egg hunt) puts Home away; a second enter does not mount twice
+  await fx(()=>{Home.home();});await wait(300);
+  const a1=await fx(()=>{Adv.enter();Adv.enter();return{home:Home.isOn(),top:Modes.top(),advs:Modes.stack().filter(m=>m==="adventure").length};});
+  ok(!a1.home&&a1.top==="adventure"&&a1.advs===1,"Adventure entered from anywhere while Home is up puts Home away, once "+J(a1));
+  await fx(()=>document.getElementById("advDone").click());
+  ok(await until(()=>Home.isOn()),"...and Done exploring comes back to Home");await wait(700);
+  // 2. what waits for "nothing open" (the buddy's evolution, the play timer's recap) does not wait for Home
+  await fx(()=>{window.__wc=0;whenClear(()=>{window.__wc=1;});});await wait(300);
+  ok(await fx(()=>window.__wc===1&&Home.isOn()),"whenClear runs while only Home is up (the buddy's evolution plays on Home)");
+  ok(await fx(()=>typeof anyOpen==="function"&&anyOpen()===false&&Home.isOn()),"anyOpen() is false with only Home up");
+  // 3. every tile looks the same: the old tool bar look does not leak in, and nothing on Home moves but the sea
+  const look=await fx(()=>{const t=[...document.querySelectorAll("#ovHome .htile")].map(x=>({id:x.dataset.game,h:Math.round(x.getBoundingClientRect().height),c:getComputedStyle(x).color}));
+    const moving=document.getElementById("ovHome").getAnimations({subtree:true}).filter(a=>a.playState==="running"&&!(a.effect&&a.effect.target&&a.effect.target.closest(".hfish")));
+    return{hs:[...new Set(t.map(x=>x.h))],colors:[...new Set(t.map(x=>x.c))],moving:moving.length,crateArt:!!document.querySelector("#ovHome #crateBtn #crateIcon:not([hidden])")};});
+  ok(look.hs.length===1&&look.colors.length===1,"every tile has the same size and text colour "+J(look));
+  ok(look.moving===0,"nothing on Home moves but the fish ("+look.moving+" other animations)");
+  ok(!look.crateArt,"the crate tile shows one picture, not the old crate drawing too");
+  // 4. games he played before Home (a holiday) are not NEW; a game opened another way stops being NEW
+  ok(await fx(()=>!Games.isNew("trick")&&!Games.isNew("lights")),"a holiday he has played before is not NEW");
+  await fx(()=>{delete state.home.seen.dungeons;Home.valley();});await wait(300);
+  await fx(()=>{Dungeon.open();});await wait(300);await ix();await wait(200);
+  ok(await fx(()=>!Games.isNew("dungeons")),"opening the dungeons another way (the cave door) marks them seen");
+  // 5. Home is redrawn when a game closes; a redraw keeps the tour's mark and does not pile up tiles
+  await fx(()=>{Home.home();Games.list().forEach(g=>{state.home.seen[g.id]=today();});delete state.home.seen.books;state.settings.goal=0;Home.render();});await wait(300);
+  const say=await fx(()=>document.getElementById("hSay").textContent);
+  ok(/Try the new Books/.test(say),"a game never opened is suggested "+J(say));
+  await p.click('#ovHome .htile[data-game="books"]');await wait(500);await ix();
+  ok(await until(()=>Home.isOn()&&!/Try the new Books/.test(document.getElementById("hSay").textContent)&&!document.querySelector('#ovHome .htile[data-game="books"] .hnew')),
+    "closing it, Home is redrawn: no more NEW or \"Try the new Books!\"");
+  const keep=await fx(()=>{const v=document.querySelector('#ovHome .htile[data-game="valley"]');v.__mark=1;document.getElementById("crateBtn").classList.add("coach-target");
+    for(let i=0;i<6;i++){renderHUD();Home.render();}return new Promise(r=>setTimeout(()=>r({same:document.querySelector('#ovHome .htile[data-game="valley"]').__mark===1,
+      coach:document.getElementById("crateBtn").classList.contains("coach-target"),park:(document.getElementById("homePark")||{children:[]}).children.length,
+      tiles:document.querySelectorAll("#ovHome .htile").length}),100));});
+  ok(keep.same&&keep.coach,"a redraw keeps the same tiles and the tour's mark "+J(keep));
+  ok(keep.park<=10,"redraws do not pile up hidden tiles "+J(keep));
+  await fx(()=>document.getElementById("crateBtn").classList.remove("coach-target"));
+  // 6. the tour: off on the valley, it points at 🏠; restarting it goes Home; in portrait the bubble does not cover its tile
+  await fx(()=>{state.tour=0;Home.valley();Coach.show();});await wait(300);
+  ok(await fx(()=>document.getElementById("homeBtn").classList.contains("coach-target")),"a tour step whose tile is on Home points at 🏠 when he is in the valley");
+  await fx(()=>Coach.restart());await wait(500);
+  ok(await fx(()=>Home.isOn()&&document.getElementById("crateBtn").classList.contains("coach-target")),"restarting the tour goes Home and points at the crate tile");
+  await p.setViewportSize({width:768,height:1024});await wait(400);
+  const ov=await fx(()=>{state.tour=2;Coach.show();const c=document.getElementById("coach").getBoundingClientRect();
+    return["crateBtn"].concat([...document.querySelectorAll('#ovHome .htile[data-game="valley"]')].map(()=>"valley")).map(id=>{
+      const t=(id==="valley"?document.querySelector('#ovHome .htile[data-game="valley"]'):document.getElementById(id)).getBoundingClientRect();
+      return!(c.right<t.left||c.left>t.right||c.bottom<t.top||c.top>t.bottom);});});
+  ok(ov.every(x=>!x),"in portrait the tour's bubble does not cover the crate or Valley tile "+J(ov));
+  await fx(()=>Coach.skip());await p.setViewportSize({width:1024,height:768});await wait(300);
+
   // ---- voice: every line Home says has a clip ----
   const index=JSON.parse(require("fs").readFileSync(require("path").join(__dirname,"../app/voice/index.json"),"utf8"));
   let hl=[];try{hl=await E(()=>Home.voiceLines());}catch(e){}
