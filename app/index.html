@@ -7461,8 +7461,31 @@ const Mine=(()=>{
 
   /* ---------- world ---------- */
   const idx=(x,y)=>y*MW+x;
+  // the world: first the part that comes from the seed alone, made once per seed (the warm-up makes it before he opens
+  // the mine), then what he has done to it
+  let base=null,bases=0;
   function gen(){
-    const m=M(),r=mulberry(m.seed);tiles=new Uint8Array(MW*MH);ore=new Uint8Array(MW*MH);
+    const m=M();if(!base||base.seed!==m.seed)genBase(m.seed);
+    tiles=base.tiles.slice();ore=base.ore.slice();gameSigns=Object.assign({},base.signs);
+    // apply what has already been dug
+    const dug=decode(m.dug);for(let i=0;i<dug.length;i++)if(dug[i]&&tiles[i]!==T.SIGN)tiles[i]=T.AIR;
+    // word vaults: locked rooms with treasure, one a little under each boss
+    VAULTS=[];
+    {const r4=mulberry(m.seed^0x7a11);[20,45,72,100].forEach((d,n)=>{const y0=SKY+d,x0=TOWN+3+Math.floor(r4()*(MW-TOWN-12)),left=r4()<.5,prize=[4,5,7,8][n];
+      if(y0+5>=MH-2)return;
+      for(let yy=0;yy<5;yy++)for(let xx=0;xx<7;xx++){const i=idx(x0+xx,y0+yy),wall=yy===0||yy===4||xx===0||xx===6;
+        tiles[i]=wall?T.VAULT:T.AIR;ore[i]=0;}
+      [[2,3,10],[3,3,prize],[4,3,10]].forEach(([xx,yy,o])=>{const i=idx(x0+xx,y0+yy);if(!dug[i]){tiles[i]=T.STONE;ore[i]=o;}});
+      const door=[left?x0:x0+6,y0+2];tiles[idx(door[0],door[1])]=m.vaults[n]?T.AIR:T.VDOOR;
+      VAULTS.push({k:n,n,d,door,x0,y0});});}
+    // what he has built
+    for(const[k,t]of Object.entries(m.placed)){const i=+k;if(i>=0&&i<tiles.length&&tiles[i]!==T.VAULT&&tiles[i]!==T.VDOOR){tiles[i]=t;ore[i]=0;}}
+    // a magic seal across the whole mine under every boss not yet beaten
+    BOSSES.forEach(b=>{if(m.bosses[b.id])return;const y=SKY+b.d;for(let x=1;x<MW-1;x++){tiles[idx(x,y)]=T.SEAL;ore[idx(x,y)]=0;}});
+  }
+  function genBase(seed){
+    const keep=[tiles,ore,gameSigns];bases++;
+    const r=mulberry(seed);tiles=new Uint8Array(MW*MH);ore=new Uint8Array(MW*MH);
     const wob=[];for(let x=0;x<MW;x++)wob.push([0,1,2,3,4].map(()=>Math.floor(r()*5)-2));
     for(let y=SKY;y<MH;y++)for(let x=0;x<MW;x++){
       const d=y-SKY,i=idx(x,y);let t;
@@ -7479,7 +7502,7 @@ const Mine=(()=>{
         x=Math.max(TOWN+1,Math.min(MW-2,x+(r()<.5?-1:1)*(r()<.7?1:0)));y=Math.max(SKY+6,Math.min(MH-4,y+(r()<.5?-1:1)*(r()<.4?1:0)));}}
     // sand pockets that fall when dug under (their own random stream, so ores stay put)
     // small pockets, and never right over an open cave, so it only falls when HE digs under it
-    {const r2=mulberry(m.seed^0x5a17);for(let k=0;k<12;k++){const cx=TOWN+2+Math.floor(r2()*(MW-TOWN-4)),cy=SKY+3+Math.floor(r2()*34);
+    {const r2=mulberry(seed^0x5a17);for(let k=0;k<12;k++){const cx=TOWN+2+Math.floor(r2()*(MW-TOWN-4)),cy=SKY+3+Math.floor(r2()*34);
       for(let dy=0;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=cx+dx,y=cy+dy;if(x<1||x>MW-2)continue;
         const i=idx(x,y);if((tiles[i]===T.DIRT||tiles[i]===T.STONE)&&tiles[idx(x,y+1)]!==T.AIR&&tiles[idx(x,y+2)]!==T.AIR)tiles[i]=T.SAND;}}}
     // lava pools deep down
@@ -7499,25 +7522,11 @@ const Mine=(()=>{
     [[20,2,1],[22,1,1],[21,3,2],[24,2,2],[23,4,9]].forEach(([x,d,o])=>{ore[idx(x,SKY+d)]=o;});
     // a few signs from the mine itself, in caves along the way
     gameSigns={};
-    {const r3=mulberry(m.seed^0x3c3c),HINTS=[[3,"Dig down to find gems!"],[8,"Read the word stone to crack it."],[15,"A bat lives in this cave."],
+    {const r3=mulberry(seed^0x3c3c),HINTS=[[3,"Dig down to find gems!"],[8,"Read the word stone to crack it."],[15,"A bat lives in this cave."],
       [26,"Sand can fall on you!"],[40,"It is dark. Put up a torch!"],[64,"Hot rock! You need lava boots."],[90,"The dragon is not far."]];
       for(const[d,txt]of HINTS){for(let k=0;k<200;k++){const x=TOWN+2+Math.floor(r3()*(MW-TOWN-4)),y=SKY+d+Math.floor(r3()*6);
         const i=idx(x,y);if(tiles[i]===T.AIR&&tiles[idx(x,y+1)]!==T.AIR&&tiles[idx(x,y+1)]!==T.LAVA){tiles[i]=T.SIGN;gameSigns[i]=txt;break;}}}}
-    // apply what has already been dug
-    const dug=decode(m.dug);for(let i=0;i<dug.length;i++)if(dug[i]&&tiles[i]!==T.SIGN)tiles[i]=T.AIR;
-    // word vaults: locked rooms with treasure, one a little under each boss
-    VAULTS=[];
-    {const r4=mulberry(m.seed^0x7a11);[20,45,72,100].forEach((d,n)=>{const y0=SKY+d,x0=TOWN+3+Math.floor(r4()*(MW-TOWN-12)),left=r4()<.5,prize=[4,5,7,8][n];
-      if(y0+5>=MH-2)return;
-      for(let yy=0;yy<5;yy++)for(let xx=0;xx<7;xx++){const i=idx(x0+xx,y0+yy),wall=yy===0||yy===4||xx===0||xx===6;
-        tiles[i]=wall?T.VAULT:T.AIR;ore[i]=0;}
-      [[2,3,10],[3,3,prize],[4,3,10]].forEach(([xx,yy,o])=>{const i=idx(x0+xx,y0+yy);if(!dug[i]){tiles[i]=T.STONE;ore[i]=o;}});
-      const door=[left?x0:x0+6,y0+2];tiles[idx(door[0],door[1])]=m.vaults[n]?T.AIR:T.VDOOR;
-      VAULTS.push({k:n,n,d,door,x0,y0});});}
-    // what he has built
-    for(const[k,t]of Object.entries(m.placed)){const i=+k;if(i>=0&&i<tiles.length&&tiles[i]!==T.VAULT&&tiles[i]!==T.VDOOR){tiles[i]=t;ore[i]=0;}}
-    // a magic seal across the whole mine under every boss not yet beaten
-    BOSSES.forEach(b=>{if(m.bosses[b.id])return;const y=SKY+b.d;for(let x=1;x<MW-1;x++){tiles[idx(x,y)]=T.SEAL;ore[idx(x,y)]=0;}});
+    base={seed,tiles,ore,signs:gameSigns};[tiles,ore,gameSigns]=keep;
   }
   function encode(){let bits="";const b=new Uint8Array(Math.ceil(MW*MH/8));
     for(let i=0;i<MW*MH;i++)if(tiles[i]===T.AIR&&i>=idx(0,SKY))b[i>>3]|=1<<(i&7);
@@ -7531,9 +7540,12 @@ const Mine=(()=>{
 
   /* ---------- pixel textures ---------- */
   function mk(n=16){const c=document.createElement("canvas");c.width=c.height=n;return c;}
-  function pix(pal,seed,extra){const c=mk(),g=c.getContext("2d"),r=mulberry(seed);
-    for(let y=0;y<16;y++)for(let x=0;x<16;x++){g.fillStyle=pal[Math.floor(r()*pal.length)];g.fillRect(x,y,1,1);}
-    if(extra)extra(g,r);return c;}
+  // "#8B5E34" or "rgb(58,39,22)" as [r,g,b]
+  const rgbOf=c=>{if(c[0]==="#"){const n=parseInt(c.slice(1),16);return[n>>16,(n>>8)&255,n&255];}return c.slice(4,-1).split(",").map(Number);};
+  // 16x16 random pixels from the palette, written in one go (a fillRect per pixel made the first opening slow)
+  function pix(pal,seed,extra){const c=mk(),g=c.getContext("2d"),r=mulberry(seed),cols=pal.map(rgbOf),im=g.createImageData(16,16),d=im.data;
+    for(let i=0;i<256;i++){const q=cols[Math.floor(r()*cols.length)];d[i*4]=q[0];d[i*4+1]=q[1];d[i*4+2]=q[2];d[i*4+3]=255;}
+    g.putImageData(im,0,0);if(extra)extra(g,r);return c;}
   const dark=(hex,k)=>{const n=parseInt(hex.slice(1),16);const f=v=>Math.round(v*k);
     return `rgb(${f(n>>16)},${f((n>>8)&255)},${f(n&255)})`;};
   const PAL={[T.DIRT]:["#8B5E34","#7A5230","#9C6B3C","#84582F"],[T.STONE]:["#8E8E8E","#7D7D7D","#A0A0A0","#888888"],
@@ -7541,6 +7553,7 @@ const Mine=(()=>{
     [T.CRYS]:["#3E3A6E","#34305E","#4A4680","#3A3668"],[T.BED]:["#2B2B2B","#1E1E1E","#3A3A3A"],
     [T.FOUND]:["#9A9488","#8A8478","#A8A294"],[T.LAVA]:["#FF6A1A","#FF9A2E","#E24A12","#FFB84A"],
     [T.SEAL]:["#3B2A6E","#4A3A86","#2E2058","#43307A"],[T.SAND]:["#E8D08A","#D9BF74","#F0DA9A","#DCC37E"]};
+  let texOk=false;
   function buildTextures(){
     for(const t of [T.DIRT,T.STONE,T.DEEP,T.HOT,T.CRYS,T.BED,T.FOUND,T.LAVA,T.SEAL,T.SAND]){
       tex[t]=[0,1,2].map(v=>pix(PAL[t],t*31+v,(g,r)=>{
@@ -7562,7 +7575,14 @@ const Mine=(()=>{
       else{g.fillStyle="#8B5A2B";g.fillRect(3,6,10,7);g.fillStyle="#C98C3E";g.fillRect(3,5,10,3);g.fillStyle="#FFC83D";g.fillRect(7,8,2,3);
         g.fillStyle="#2E2620";g.fillRect(3,8,10,1);}
       oreTex[o]=c;}
+    texOk=true;
   }
+  // tests: one number for every block texture's pixels (the ore pictures have text in them, which differs by machine)
+  function texSig(){if(!tex[T.DIRT])return 0;let h=2166136261;const add=c=>{const d=c.getContext("2d").getImageData(0,0,16,16).data;for(let i=0;i<d.length;i++)h=Math.imul(h^d[i],16777619)>>>0;};
+    Object.keys(tex).sort((a,b)=>a-b).forEach(t=>{tex[t].forEach(add);add(back[t]);});return h;}
+  // tests: the world as one number (its blocks, ores, the mine's own signs and the vaults)
+  function worldSig(){let h=2166136261;const add=v=>{h=Math.imul(h^v,16777619)>>>0;};tiles.forEach(add);ore.forEach(add);
+    const s=JSON.stringify([gameSigns,VAULTS]);for(let i=0;i<s.length;i++)add(s.charCodeAt(i));return h;}
   const iconCache={};
   function oreIcon(k){
     if(iconCache[k])return iconCache[k];
@@ -7643,9 +7663,9 @@ const Mine=(()=>{
   }
 
   /* ---------- DOM ---------- */
-  let root;
+  let root,builds=0;
   function buildDom(){
-    root=document.createElement("div");root.id="mineMode";
+    builds++;root=document.createElement("div");root.id="mineMode";
     root.innerHTML=`<canvas id="mineCv"></canvas>
       <div class="mhud"><button class="mpill" id="mBack">🏡 Valley</button><div class="mpill" id="mCoins">🪙 0</div>
         <div class="mpill" id="mBag">🎒 0/10</div><div class="mpill" id="mDepth">⛏️ Surface</div>
@@ -7710,9 +7730,10 @@ const Mine=(()=>{
   }
   function resize(){
     dpr=Math.min(2,window.devicePixelRatio||1);vw=root.clientWidth;vh=root.clientHeight;
-    cv.width=vw*dpr;cv.height=vh*dpr;TS=Math.round(Math.max(40,Math.min(66,vh/11)));
+    const w=Math.floor(vw*dpr),h=Math.floor(vh*dpr);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}TS=tsFor(vh);
     unpark();      // a new size wipes the canvas: a parked loop draws it again
   }
+  const tsFor=h=>Math.round(Math.max(40,Math.min(66,h/11)));      // a block's size on screen
   function toast(msg,ms){const t=root.querySelector("#mToast");t.textContent=msg;t.classList.add("on");clearTimeout(t._h);
     t._h=setTimeout(()=>t.classList.remove("on"),ms||2200);}
   function banner(msg){const b=root.querySelector("#mBanner");b.textContent=msg;b.classList.remove("on");void b.offsetWidth;b.classList.add("on");}
@@ -7729,7 +7750,7 @@ const Mine=(()=>{
 
   /* ---------- enter / leave ---------- */
   function enter(){
-    if(!root){buildDom();buildTextures();}
+    if(!root)buildDom();if(!texOk)buildTextures();
     const m=M();gen();layerSeen=new Set(m.layers||[]);ENT.length=0;setBuild(false);lostAnimal();jobs();
     P.x=m.x||SPAWN_X;P.y=m.y||SKY-.95;P.vx=P.vy=0;if(solidBox(P.x,P.y))Object.assign(P,{x:SPAWN_X,y:SKY-.95});
     root.classList.add("on");Modes.open("mine",root);running=true;paused=false;parked=false;resize();hud();
@@ -7742,6 +7763,25 @@ const Mine=(()=>{
     else if(!m.pet&&!m.petHint&&(state.critters||[]).length){m.petHint=1;toast("Tap 🐾 to bring a pet from your valley!",3500);}
     else if(!m.lost.rescued&&m.lost.hinted!==today()){m.lost.hinted=today();toast(`🐾 A lost ${CRIT(m.lost.id).name.toLowerCase()} is somewhere in the mine! Follow the arrows.`,4200);}
     else toast("Dig down and find gems! Sell them at your shop.",3000);
+  }
+  // made once, before he first taps the mine (see the warm-up below Mine): the page parts, the textures, the world's
+  // seed part, and one hidden layout so the browser has the HUD's emoji ready (it readies each emoji once per font, so
+  // the ones the labels and messages use go once into each place they show up). Opening the mine then only starts it.
+  function warm(){
+    if(running||typeof CanvasRenderingContext2D==="undefined")return;      // no canvas (the jsdom tests): nothing to make
+    if(!root)buildDom();if(!texOk)buildTextures();
+    const W=BUILDINGS_M.map(b=>b.label.split(" ")[0]).join("")+Object.keys(PERKS).map(k=>PERKS[k].ic).join("")+"🐾🔐🐹📖👀⬇⬆➡⬅🧨🥚",
+      els=["#mToast","#mAct","#mLost","#mPet"].map(q=>root.querySelector(q)),was=els.map(e=>[e.textContent,e.getAttribute("style")]);
+    const s=root.style;s.visibility="hidden";s.display="block";els.forEach(e=>{e.textContent=W;e.style.display="flex";});
+    const ts=tsFor(root.clientHeight);
+    els.forEach((e,i)=>{e.textContent=was[i][0];if(was[i][1]==null)e.removeAttribute("style");else e.setAttribute("style",was[i][1]);});root.removeAttribute("style");
+    const sd=state&&state.mine&&state.mine.seed;if(sd!=null&&(!base||base.seed!==sd))genBase(sd);
+    // and one go at drawing, where no one sees it, so the browser has each texture and the fonts of the town's signs ready
+    const d=Math.min(2,window.devicePixelRatio||1),g=mk(8).getContext("2d");g.setTransform(d,0,0,d,0,0);
+    for(const t in tex){tex[t].forEach(c=>g.drawImage(c,0,0,ts+1,ts+1));g.drawImage(back[t],0,0,ts+1,ts+1);}
+    for(const o in oreTex)g.drawImage(oreTex[o],0,0,ts+1,ts+1);
+    g.font=`900 ${Math.round(ts*.36)}px system-ui,-apple-system,sans-serif`;g.fillText("VALLEY MY SHOP BIG PICKS CLOTHES MUSEUM MINE ⬇",0,4);
+    g.font=`800 ${Math.round(ts*.34)}px system-ui,sans-serif`;g.fillText("Dig down to find gems!",0,4);
   }
   function exit(){
     const m=M();m.x=P.x;m.y=P.y;markDug();dirty=false;running=false;panelMode(null);root.classList.remove("on");Modes.close("mine",root);
@@ -8739,15 +8779,17 @@ const Mine=(()=>{
   function avatar(){const m=M(),k=JSON.stringify(m.look)+m.pick;if(avC&&avK===k)return avC;
     const c=document.createElement("canvas");c.width=200;c.height=240;
     drawMiner(c.getContext("2d"),100,228,165,m.look,1,0,false,0,PICKS[m.pick].col);avK=k;return avC=c.toDataURL();}
-  return{avatar,enter,exit,_toast:m=>toast(m,3000),_startBoss:i=>startBoss(i),_tnt:()=>placeTnt(),_openMuseum:()=>openMuseum(),_openBench:()=>openBench(),
+  return{avatar,enter,exit,warm,_toast:m=>toast(m,3000),_startBoss:i=>startBoss(i),_tnt:()=>placeTnt(),_openMuseum:()=>openMuseum(),_openBench:()=>openBench(),
     _openPets:()=>openPets(),_hatch:()=>hatchEggs(),_collect:(x,y,o)=>collectOre(x,y,o),_PET:PET,_setTime:v=>{bossCool=v;},_now:()=>time,_ans:()=>battle&&battle.ans,
     // test hooks
     _p:P,_in:input,_tile:(x,y)=>tileAt(x,y),_ore:(x,y)=>ore[idx(x,y)],_setOre:(x,y,o)=>{ore[idx(x,y)]=o;},_setTile:(x,y,t)=>{tiles[idx(x,y)]=t;},_openShop:()=>openShop(),
     _openSmith:()=>openSmith(),_build:v=>setBuild(v),_sel:k=>{sel=k;hotbar();},_ents:ENT,_vaults:()=>VAULTS,_jobs:()=>jobs(),_openJobs:()=>openJobs(),_lost:()=>lostAnimal(),
-    _openVault:k=>openVault(VAULTS[k]),_near:()=>nearAct(),_gameSigns:()=>gameSigns,_spawn:()=>spawn(),_openWardrobe:f=>openWardrobe(f),_running:()=>running,_paused:()=>paused,_gen:()=>gen(),SKY,TOWN};
+    _openVault:k=>openVault(VAULTS[k]),_near:()=>nearAct(),_gameSigns:()=>gameSigns,_spawn:()=>spawn(),_openWardrobe:f=>openWardrobe(f),_running:()=>running,_paused:()=>paused,_gen:()=>gen(),_builds:()=>builds,_bases:()=>bases,_texSig:()=>texSig(),_worldSig:()=>worldSig(),SKY,TOWN};
 })();
 document.getElementById("mineBtn").onclick=()=>{Sound.sfx.pop();Mine.enter();};
 Games.fromButton("mine","mineBtn",{name:"Gem Mine",icon:"⛏️",order:40});
+// the mine gets ready a few seconds after the game starts, when it is idle (older Safari has no requestIdleCallback)
+setTimeout(()=>{const go=()=>{try{Mine.warm();}catch(e){}};if(window.requestIdleCallback)requestIdleCallback(go,{timeout:3000});else go();},2500);
 {const valleyToast=toast;toast=function(msg){valleyToast(msg);if(Mine._running()&&/^Quest done/.test(msg))Mine._toast(msg);};}
 
 /* The storybooks are in content/books.js, one per line in shelf order; the format is described there.
