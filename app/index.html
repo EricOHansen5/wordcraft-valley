@@ -1985,6 +1985,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <button id="booksBtn"><span class="dic">📚</span><span class="dlb">Books</span><span class="badge" id="bookBadge"></span></button>
     <div id="slots" style="display:flex;gap:9px"></div>
     <button class="toolbtn" id="questBtn" title="Today's quests">📜<span class="badge" id="questBadge"></span></button>
+    <button class="toolbtn" id="homeBtn" title="Home" aria-label="Home">🏠</button>
     <button class="toolbtn" id="craftBtn" title="Building plans">📐<span class="badge" id="planBadge"></span></button>
     <button class="toolbtn" id="closetBtn" title="Closet" aria-label="Closet">🎨<span class="badge" id="closetBadge"></span></button>
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
@@ -5397,7 +5398,7 @@ const Modes=(()=>{
   const alive=e=>!e.el||(document.documentElement.contains(e.el)&&e.el.classList.contains("on"));
   function drop(i){const e=stack.splice(i,1)[0];if(e)lastClose[e.id]=Date.now();}
   // REST: what he is looking at changed, so what is covered sleeps and what is uncovered wakes
-  const changed=()=>{try{Rest.cover();}catch(e){}};
+  const changed=()=>{try{Rest.cover();}catch(e){}try{if(!stack.length)Home.stackEmpty();}catch(e){}};
   function reconcile(){let n=0;for(let i=stack.length-1;i>=0;i--)if(!alive(stack[i])){drop(i);n++;}if(n)changed();}
   function watch(el){
     if(!mo&&typeof MutationObserver!=="undefined"){mo=new MutationObserver(reconcile);mo.observe(document.body,{childList:true});}
@@ -5466,7 +5467,12 @@ const Games=(()=>{
   function open(id){const g=get(id);if(!g)return false;const s=seen();if(!s[id]){s[id]=today();save();}
     if(g.inValley)try{Home.hide();}catch(e){}
     try{g.open();}catch(e){console.warn("game "+id+" did not open:",e&&e.message);}return true;}
-  return{add,get,list,open,isNew,_all:()=>all.slice()};
+  // a game that used to be a tool bar button: its tile is that button (same id, its badge, its action)
+  function fromButton(id,btnId,meta){
+    const el=document.getElementById(btnId),fn=el&&el.onclick;
+    add(Object.assign({id,btn:btnId,open:()=>{if(fn)fn.call(el,{});}},meta||{}));
+  }
+  return{add,get,list,open,isNew,fromButton,_all:()=>all.slice()};
 })();
 // an old save marks as seen the games it has clearly played already, once, so Home is not covered in NEW
 function homeSeenFill(s){
@@ -5475,6 +5481,7 @@ function homeSeenFill(s){
   if(s.home.filled)return;
   const d=today(),seen=s.home.seen,mark=id=>{if(!seen[id])seen[id]=d;},has=o=>!!o&&typeof o==="object"&&Object.keys(o).length>0;
   mark("valley");mark("quests");
+  if((+s.tour||0)>=6)s.tour=TOUR.length;      // the tour gained a step (the Valley tile): a finished tour stays finished
   if((+s.crateCount||0)>0)mark("crates");
   if(s.mine&&s.mine.made)mark("mine");
   if(has(s.library))mark("books");
@@ -5541,13 +5548,23 @@ const Home=(()=>{
     ov.querySelector("#hSay").textContent=sg.say;
     ov.querySelector("#hGoWrap").innerHTML=sg.game?`<button class="btn primary big" id="hGo" data-game="${sg.game}">${esc(sg.button||"Go!")}</button>`:"";
     const go=ov.querySelector("#hGo");if(go)go.onclick=()=>tap(sg.game);
-    ov.querySelector(".htiles").innerHTML=Games.list().map(g=>{let b="";try{b=g.badge?g.badge()||"":"";}catch(e){}
-      return`<button class="htile" data-game="${g.id}"${g.btn?` id="${g.btn}"`:""} aria-label="${esc(g.name)}">${icon(g.icon)}<b>${esc(g.name)}</b>${
-        b?`<span class="hbadge">${esc(b)}</span>`:""}${Games.isNew(g.id)?`<span class="hnew">NEW</span>`:""}</button>`;}).join("");
-    ov.querySelectorAll(".htile").forEach(t=>t.onclick=()=>tap(t.dataset.game));
+    // a game that was a tool bar button: its tile is that same button (its id, its badge spans, its action);
+    // the rest are made here. A tile not in the list now is put away (kept, so its badge code still finds it).
+    const box=ov.querySelector(".htiles"),keep=[];
+    Games.list().forEach(g=>{let b="";try{b=g.badge?g.badge()||"":"";}catch(e){}
+      let el=g.btn?document.getElementById(g.btn):null;
+      const marks=el?[...el.querySelectorAll("[id],.badge,.purse")]:[];
+      if(!el){el=document.createElement("button");}
+      el.className="htile";el.dataset.game=g.id;el.style.display="";el.setAttribute("aria-label",g.name);
+      el.innerHTML=`${icon(g.icon)}<b>${esc(g.name)}</b>${b?`<span class="hbadge">${esc(b)}</span>`:""}${Games.isNew(g.id)?`<span class="hnew">NEW</span>`:""}`;
+      marks.forEach(m=>el.appendChild(m));
+      el.onclick=()=>tap(g.id);keep.push(el);box.appendChild(el);});
+    [...box.children].forEach(c=>{if(keep.indexOf(c)<0)parked().appendChild(c);});
     if(!spoke&&isOn()){spoke=true;Sound.speak(sg.say,.95);}
   }
   // a tap on a tile or the button: one game at a time (a second tap within 0.6 s is the same tap)
+  // tiles not shown now wait here (hidden), so the code that updates their badges still finds them
+  function parked(){let p=document.getElementById("homePark");if(!p){p=document.createElement("div");p.id="homePark";p.hidden=true;document.body.appendChild(p);}return p;}
   function tap(id){const now=Date.now();if(now-lastOpen<600)return;lastOpen=now;Sound.sfx.pop();Games.open(id);}
   function show(){
     if(!ov)build();
@@ -5555,7 +5572,18 @@ const Home=(()=>{
     render();
   }
   function hide(){if(ov&&isOn())Modes.shut(ov);}
-  return{show,hide,isOn,render,suggestion,_ov:()=>ov};
+  // he chose the valley: Home goes, and stays away until 🏠 (what he starts in the valley comes back to the valley)
+  let inValley=false,dragTip=false;
+  function valley(){inValley=true;hide();try{Coach.reach("valley");}catch(e){}
+    if(!dragTip&&camMax()>20){dragTip=true;setTimeout(()=>{if(!isOn())toast("Drag the valley to look around \u2190 \u2192");},900);}}
+  function home(){inValley=false;show();}
+  // when the last game closes and he did not choose the valley, Home comes back (after a moment, so one game
+  // closing as the next opens, crates then a word, does not flash Home)
+  let ready=false,backT=null;
+  function stackEmpty(){if(!ready||inValley)return;clearTimeout(backT);
+    backT=setTimeout(()=>{if(!inValley&&!isOn()&&!Modes.stack().length)show();},350);}
+  Games.add({id:"valley",name:"Valley",icon:"🏡",order:20,open:()=>valley()});
+  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,start(){ready=true;show();},get _valley(){return inValley;},_ov:()=>ov};
 })();
 
 /* ================================================================
@@ -5928,6 +5956,7 @@ document.getElementById("crateBtn").onclick=()=>{
   });
   Sound.sfx.soft();show("ovCrates");Coach.reach("crates");
 };
+Games.fromButton("crates","crateBtn",{name:"Read words",icon:"📦",order:10});
 
 let cur=null, usedEar=false, misses=0;
 /* ---- the reading ladder ----
@@ -8581,6 +8610,7 @@ const Mine=(()=>{
     _openVault:k=>openVault(VAULTS[k]),_near:()=>nearAct(),_gameSigns:()=>gameSigns,_spawn:()=>spawn(),_openWardrobe:f=>openWardrobe(f),_running:()=>running,_paused:()=>paused,_gen:()=>gen(),SKY,TOWN};
 })();
 document.getElementById("mineBtn").onclick=()=>{Sound.sfx.pop();Mine.enter();};
+Games.fromButton("mine","mineBtn",{name:"Gem Mine",icon:"⛏️",order:40});
 {const valleyToast=toast;toast=function(msg){valleyToast(msg);if(Mine._running()&&/^Quest done/.test(msg))Mine._toast(msg);};}
 
 /* The storybooks are in content/books.js, one per line in shelf order; the format is described there.
@@ -9399,6 +9429,7 @@ function booksBadge(){
   const mb=document.getElementById("mBooks");if(mb)mb.classList.toggle("new",!!n);
 }
 document.getElementById("booksBtn").onclick=()=>{Sound.sfx.pop();Books.shelf();};
+Games.fromButton("books","booksBtn",{name:"Books",icon:"📚",order:60});
 
 /* ---- Picture It: read a sentence, pick the matching scene ---- */
 let picOv=null;
@@ -10104,6 +10135,7 @@ function advBadge(){const b=document.getElementById("advBadge");if(!b)return;con
   let q=false;try{q=Quest.available()||Quest2.available();}catch(e){}
   b.textContent=note?"💌":q&&!n?"❗":n?"NEW":"";b.classList.toggle("on",note||n||q);}
 document.getElementById("advBtn").onclick=()=>{Sound.sfx.pop();Adv.enter();advBadge();};
+Games.fromButton("adventure","advBtn",{name:"Adventure",icon:"🧭",order:50,inValley:true});
 setTimeout(advBadge,1500);
 
 /* ================================================================
@@ -11378,6 +11410,7 @@ const Dungeon=(()=>{
   });
 
   document.getElementById("dungeonBtn").onclick=()=>{Sound.sfx.pop();open();};
+  Games.fromButton("dungeons","dungeonBtn",{name:"Dungeons",icon:"🗝️",order:30});
   setTimeout(()=>{try{badge();}catch(e){}},1500);
   // a cave door in Adventure for each open dungeon, at a place kept in the save
   Adv.provide(()=>list().filter(isOpen).map(d=>{const S=dungeonState();
@@ -12199,6 +12232,7 @@ const Jobs=(()=>{
   // the dock button shows ⏰ while he is clocked in
   function badge(){const b=document.getElementById("jobsBadge");if(!b)return;const on=!!(state.jobs&&state.jobs.current);b.textContent=on?"⏰":"";b.classList.toggle("on",on);}
   document.getElementById("jobsBtn").onclick=()=>open();
+  Games.fromButton("jobs","jobsBtn",{name:"Jobs",icon:"💼",order:70,show:()=>REG.length>0});
   setTimeout(()=>{try{badge();}catch(e){}},1500);
   // the Job board in Adventure: a signpost at the first of these places with no building next to it
   // candidate spots for the signpost: never the bottom-left corner, which the Adventure joystick covers on a touch screen
@@ -14545,6 +14579,7 @@ const Lights=(()=>{
     if(live()&&!pending&&due()>granted())grant();
   }
   document.getElementById("lightsBtn").onclick=()=>open();
+  Games.fromButton("lights","lightsBtn",{name:"Light the tree",icon:"❄️",order:110,show:()=>live(),suggest:()=>live()?{say:"It's Light the tree time!"}:null});
   setInterval(tick,60000);setTimeout(tick,0);setTimeout(tick,1500);setTimeout(tick,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
 
@@ -14902,6 +14937,7 @@ const Fireworks=(()=>{
     if(due()&&!pending&&!owed)finale();
   }
   document.getElementById("fireworksBtn").onclick=()=>open();
+  Games.fromButton("fireworks","fireworksBtn",{name:"Fireworks",icon:"🎆",order:120,show:()=>live(),suggest:()=>live()?{say:"It's Fireworks time!"}:null});
   setInterval(tick,60000);setTimeout(tick,0);setTimeout(tick,1500);setTimeout(tick,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
 
@@ -15241,6 +15277,7 @@ const Party=(()=>{
     if(live())hat();
   }
   document.getElementById("partyBtn").onclick=()=>open();
+  Games.fromButton("party","partyBtn",{name:"Birthday party",icon:"🎂",order:130,show:()=>live(),suggest:()=>live()?{say:"It's Birthday party time!"}:null});
   setInterval(tick,60000);setTimeout(tick,0);setTimeout(tick,1500);setTimeout(tick,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
 
@@ -16164,6 +16201,7 @@ const Factory=(()=>{
 
   /* ---------- in the valley and in Adventure ---------- */
   // Adventure: the placed Factory is a spot of its own (after the other spots, so a Halloween door on it still wins)
+  Games.add({id:"factory",name:"Factory",icon:"🏭",order:80,show:()=>Object.keys(state.grid||{}).some(k=>state.grid[k]&&state.grid[k].id==="factory"),open:()=>Factory.open()});
   setTimeout(()=>{try{Adv.provide(()=>Object.keys(state.grid||{}).filter(k=>state.grid[k]&&state.grid[k].id==="factory").map(k=>{const p=k.split(",").map(Number);
     return{c:p[0],r:p[1],size:.42,low:true,cls:"fcspot",html:`<div class="fcsign">🏭</div>`,label:"🏭 Factory",act:()=>open()};}));}catch(e){}},0);
 
@@ -17339,6 +17377,7 @@ const Quests={
   }
 };
 document.getElementById("questBtn").onclick=()=>{Quests.render();show("ovQuests");Sound.sfx.soft();};
+Games.fromButton("quests","questBtn",{name:"Quests",icon:"📜",order:90});
 document.getElementById("chest").onclick=()=>Quests.open();
 
 /* ================================================================
@@ -17405,6 +17444,7 @@ setInterval(()=>{
 const TOUR=[
   {say:"Hi! I'm Sprout. Tap the crate to find a word!",target:"#crateBtn",until:"crates"},
   {say:"Tap the letters to hear them, then find the picture!",target:null,until:"read"},
+  {say:"Now tap the valley to visit your animals!",target:'[data-game="valley"]',until:"valley"},
   {say:"You did it! Now tap the plans to build something.",target:"#craftBtn",until:"plans"},
   {say:"Tap Build it!",target:"#craftGrid .btn",until:"built"},
   {say:"Now tap a spot in the valley to put it down.",target:null,until:"placed"},
@@ -18080,6 +18120,7 @@ const Trick=(()=>{
   // the window opens and closes at midnight, and the doors open again each day (and the badge catches up with the loaded save)
   function tick(){hud();const k=active()+"|"+day();if(k===lastKey)return;lastKey=k;try{Adv.redraw();}catch(e){}}
   document.getElementById("trickBtn").onclick=go;
+  Games.fromButton("trick","trickBtn",{name:"Trick-or-Read",icon:"🎃",order:100,show:()=>active(),suggest:()=>active()?{say:"It's Trick-or-Read time!"}:null});
   setInterval(tick,60000);setTimeout(tick,1500);setTimeout(tick,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
   hud();
@@ -18379,6 +18420,7 @@ const Feast=(()=>{
   }
   // the window opens and closes at midnight, and the table is cleared each day (and the badge catches up with the loaded save)
   document.getElementById("feastBtn").onclick=()=>open();
+  Games.fromButton("feast","feastBtn",{name:"Feast table",icon:"🦃",order:140,show:()=>active(),suggest:()=>active()?{say:"It's Feast table time!"}:null});
   setInterval(hud,60000);setTimeout(hud,1500);setTimeout(hud,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")hud();});
   hud();
@@ -18718,6 +18760,7 @@ const Mail=(()=>{
   }
   // the window opens and closes at midnight, and the bag is emptied each day (and the badge catches up with the loaded save)
   document.getElementById("mailBtn").onclick=()=>open();
+  Games.fromButton("mail","mailBtn",{name:"Word mail",icon:"💌",order:150,show:()=>active(),suggest:()=>active()?{say:"It's Word mail time!"}:null});
   setInterval(hud,60000);setTimeout(hud,1500);setTimeout(hud,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")hud();});
   hud();
@@ -19039,6 +19082,7 @@ const Eggs=(()=>{
   // the window opens and closes at midnight: a hunt from another day is put away (a treasure hunt it put aside comes back)
   function tick(){hud();const k=active()+"|"+day();if(k===lastKey)return;lastKey=k;try{Adv.settle();}catch(x){}}
   document.getElementById("eggsBtn").onclick=()=>go();
+  Games.fromButton("eggs","eggsBtn",{name:"Egg hunt",icon:"🥚",order:160,show:()=>active(),suggest:()=>active()?{say:"It's Egg hunt time!"}:null});
   setInterval(tick,60000);setTimeout(tick,1500);setTimeout(tick,5000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tick();});
   hud();
@@ -19415,6 +19459,7 @@ document.querySelectorAll("[data-atab]").forEach(t=>t.onclick=()=>{
   document.querySelectorAll("[data-atab]").forEach(x=>x.classList.remove("on"));t.classList.add("on");
   albumTab=t.dataset.atab;renderAlbum();const sh=t.closest(".sheet");if(sh)sh.scrollTop=0;});
 document.getElementById("albumBtn").onclick=()=>{renderAlbum();show("ovAlbum");Sound.sfx.soft();};
+document.getElementById("homeBtn").onclick=()=>{Sound.sfx.pop();Home.home();};
 function renderAlbum(){
   const g=document.getElementById("albumGrid");g.innerHTML="";
   if(albumTab==="words"){
@@ -19915,7 +19960,8 @@ function loadSave(saved){
     for(let b=0;b<=state.biome;b++)if(!state.guardians.includes(b)){setTimeout(()=>wakeGuardian(b),1500);break;}
   }
   if((state.tour||0)<TOUR.length)setTimeout(()=>Coach.show(),900);
-  else if(camMax()>20)setTimeout(()=>toast("Drag the valley to look around \u2190 \u2192"),2200);
+  // HOME: the game opens on Home; the valley's drag tip waits until he goes to the valley (Home.valley)
+  setTimeout(()=>{try{Home.start();}catch(e){console.warn("Home did not start:",e&&e.message);}},0);
   document.body.addEventListener("touchstart",()=>Nature.start(),{once:true});
   document.body.addEventListener("pointerdown",()=>Nature.start(),{once:true});
   try{ if(navigator.audioSession)navigator.audioSession.type="playback"; }catch(e){}

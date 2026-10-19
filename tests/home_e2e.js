@@ -42,7 +42,7 @@ const {launch,check,waitFor,seed}=require("./lib");
     Games.add({id:"t2",name:"Test 2",icon:"🧩",order:16,show:()=>true,badge:()=>"3",open:()=>{window.__t2=(window.__t2||0)+1;}});
     state.home.seen.t1="2026-10-01";
     window.__said=[];const s=Sound.speak;Sound.speak=(t,r)=>{window.__said.push(String(t));return s(t,r);};
-    Home.show();});
+    Home.hide();Home.show();});
   await wait(400);
   ok(await E(()=>!!document.querySelector("#ovHome.on")&&Modes.top()==="home"&&document.body.classList.contains("covered")),"Home shows over the valley, which sleeps behind it");
   const bar=await E(()=>({goal:document.getElementById("hGoal").textContent,gems:document.getElementById("hGems").textContent,coins:document.getElementById("hCoins").textContent}));
@@ -67,8 +67,10 @@ const {launch,check,waitFor,seed}=require("./lib");
     Games.list().forEach(g=>{state.home.seen[g.id]=state.home.seen[g.id]||"2026-10-01";});Home.render();});
   sg=await sug();
   ok(/It's Party time!/.test(sg.say)&&sg.go==="t3","a game in season with a suggestion: its line and its button "+J(sg));
-  await E(()=>{Games.add({id:"t3",name:"Party",icon:"🎂",order:17,show:()=>false,open:()=>{}});Home.render();});sg=await sug();
+  await E(()=>{Games.add({id:"t3",name:"Party",icon:"🎂",order:17,show:()=>false,open:()=>{}});
+    Games._all().forEach(g=>{if(g.suggest){g.__sg=g.suggest;g.suggest=null;}});Home.render();});sg=await sug();   // no game in season now (a real holiday may be)
   ok(/What do you want to play\?/.test(sg.say)&&!sg.go,"otherwise: \"What do you want to play?\" and no button "+J(sg));
+  await E(()=>{Games._all().forEach(g=>{if(g.__sg){g.suggest=g.__sg;delete g.__sg;}});});
   // the button and the tiles open their game; two quick taps open one game
   await E(()=>{Goal.ensure().words=12;Home.render();});
   await E(()=>{window.__crates=0;if(!Games.get("crates"))Games.add({id:"crates",name:"Read words",icon:"📦",order:10,open:()=>{}});const g=Games.get("crates");if(g){const o=g.open;g.open=()=>{window.__crates++;};window.__cratesOpen=o;}});
@@ -97,6 +99,59 @@ const {launch,check,waitFor,seed}=require("./lib");
     const sc=document.querySelector("#ovHome .htiles");return{bad,scrolls:sc&&sc.scrollHeight>sc.clientHeight+1?"rows scroll":"fits"};});
   ok(!fit.bad.length,"768x1024: every tile and the button fit, 44 px or more "+J(fit));
   await p.setViewportSize({width:1024,height:768});
+
+  // ---- games and navigation ----
+  await seed(p,{phase:2,settings:{goal:0}});await wait(2600);
+  await ix();   // pop-ups that came at boot (a keeper waking): they sit over Home, as they should
+  const onHome=()=>E(()=>!!document.querySelector("#ovHome.on"));
+  const until=async(f,a,ms)=>{const t0=Date.now();while(Date.now()-t0<(ms||6000)){if(await E(f,a))return true;await wait(100);}return false;};
+  ok(await onHome(),"the game opens on Home");
+  const ids=await E(()=>[...document.querySelectorAll("#ovHome .htile")].map(x=>x.dataset.game));
+  ok(["crates","valley","dungeons","mine","adventure","books","quests"].every(k=>ids.indexOf(k)>=0),"Home has a tile for every game "+J(ids));
+  ok(await E(()=>!!document.querySelector("#ovHome #crateBtn")&&!!document.querySelector("#ovHome #mineBtn")&&!!document.querySelector("#ovHome #advBtn")),"the tiles carry the old button ids");
+  ok(await E(()=>!document.querySelector("#ovHome.on .htile:not([data-game])")),"every tile is a registered game");
+  // each opens its game, and closing it comes back to Home
+  const round=async(id,isOpen,shut,name)=>{
+    await p.click(`#ovHome .htile[data-game="${id}"]`);
+    const opened=await until(isOpen);
+    await wait(300);await E(shut);
+    const back=await until(()=>!!document.querySelector("#ovHome.on"));
+    ok(opened&&back,`${name}: opens from its tile, and closing it comes back to Home`);await wait(700);};
+  await round("crates",()=>!!document.querySelector("#ovCrates.on"),()=>Modes.shut(document.getElementById("ovCrates")),"Read words");
+  await round("mine",()=>!!document.querySelector("#mineMode.on"),()=>Mine.exit(),"Gem Mine");
+  await round("dungeons",()=>!!document.querySelector("#ovDungeons.on"),()=>document.getElementById("dmX").click(),"Dungeons");
+  await round("books",()=>Modes.top()==="book",()=>document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);}),"Books");
+  await round("quests",()=>!!document.querySelector("#ovQuests.on"),()=>Modes.shut(document.getElementById("ovQuests")),"Quests");
+  // Adventure plays in the valley: Home steps aside and comes back
+  await p.click('#ovHome .htile[data-game="adventure"]');
+  ok(await until(()=>Modes.top()==="adventure"&&!document.querySelector("#ovHome.on")),"Adventure: Home steps aside");
+  await wait(400);await E(()=>document.getElementById("advDone").click());
+  ok(await until(()=>!!document.querySelector("#ovHome.on")),"...and comes back when Adventure ends");
+  await wait(700);
+  // the valley, and Home from the valley
+  await p.click('#ovHome .htile[data-game="valley"]');await wait(500);
+  ok(!(await onHome())&&await E(()=>Modes.top()==="valley"),"the Valley tile goes to the valley");
+  const dock=await E(()=>[...document.querySelectorAll("#dock > button")].filter(b=>b.offsetParent!==null).map(b=>b.id).sort());
+  ok(J(dock)===J(["albumBtn","closetBtn","craftBtn","homeBtn","storeBtn"]),"the valley's tool bar keeps only its own tools and 🏠 "+J(dock));
+  await p.click("#albumBtn");await wait(400);await E(()=>Modes.shut(document.getElementById("ovAlbum")));await wait(800);
+  ok(!(await onHome()),"in the valley, closing the sticker book stays in the valley");
+  await E(()=>Factory.open());await wait(500);await E(()=>Factory.close());await wait(800);
+  ok(!(await onHome()),"the Factory opened from the valley comes back to the valley");
+  await p.click("#homeBtn");
+  ok(await until(()=>!!document.querySelector("#ovHome.on")),"🏠 in the valley goes Home");
+  await wait(700);
+  // a pop-up over Home closes back to Home
+  await E(()=>{try{showRecap();}catch(e){window.__noRecap=String(e);}});await wait(500);
+  const rc=await E(()=>{const o=[...document.querySelectorAll(".overlay.on")].find(x=>x.id!=="ovHome");if(o)Modes.shut(o);return!!o;});
+  ok(rc&&await until(()=>!!document.querySelector("#ovHome.on")),"a pop-up that opens over Home closes back to Home");
+  // a brand-new save's tour: the crate on Home, then the valley, then the plans in the valley
+  await seed(p,{},{base:null});await wait(1500);
+  ok(await E(()=>!!document.querySelector("#ovHome.on #crateBtn.coach-target")),"a new save's tour starts by pointing at the crate tile on Home");
+  await E(()=>{document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);});state.tour=2;Coach.show();});await wait(400);
+  ok(await E(()=>!!document.querySelector('#ovHome.on [data-game="valley"].coach-target')),"after the first word the tour points at the Valley tile");
+  await p.click('#ovHome .htile[data-game="valley"]');await wait(700);
+  ok(await E(()=>state.tour===3&&!!document.querySelector("#craftBtn.coach-target")),"tapping it moves the tour on to the plans, in the valley");
+  ok(await E(()=>TOUR.length===7),"the tour has its one new step");
 
   ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();t.done();
