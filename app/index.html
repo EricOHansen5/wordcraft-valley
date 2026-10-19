@@ -2272,7 +2272,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-11a"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-19a"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -11186,7 +11186,18 @@ const Dungeon=(()=>{
     if(!S.caves[d.id]){const p=Adv.freePos(2.5);S.caves[d.id]={c:p.c,r:p.r};save();}
     const p=S.caves[d.id];
     return{c:p.c,r:p.r,size:.7,cls:"dcave",html:`<div class="dcv">${drawThing("t_door")}<b>${d.name.toUpperCase()}</b></div>`,label:"🗝️ "+d.name,act:()=>open()};}));
-  return{open,isOpen,byId,list,badge,enter,exit,step,act,useItem:()=>useItem(),
+  // every fixed line the dungeons speak (tools/voice/extract.js adds them to the voice list): the lines, the signs,
+  // the boss's lines, the monsters' names and their friend sentences word by word (a word tapped is spoken), the moves
+  function voiceLines(){
+    const out=[],add=t=>{if(t&&out.indexOf(t)<0)out.push(t);};
+    Object.values(DUNGEONS.lines).forEach(add);
+    DUNGEONS.list.forEach(d=>d.rooms.forEach(r=>Object.values(r.signs||{}).forEach(add)));
+    Object.values(DUNGEONS.bosses).forEach(b=>{add(b.taunt);add(b.friendly);add(b.name);});
+    Object.values(DUNGEONS.monsters).forEach(m=>{add(m.name);add(m.move+"!");m.friend.replace(/[.!?,]/g,"").split(" ").forEach(add);});
+    ["Bite!","Kick!","Peck!","Stomp!","Bonk!","Tap its name!"].forEach(add);
+    return out;
+  }
+  return{open,isOpen,byId,list,badge,enter,exit,step,act,useItem:()=>useItem(),voiceLines,
     _run:run,_room:()=>ROOM,_tile:(c,r)=>cell(c,r),_V:()=>V,
     _go(id,c,r,f){const R=run();stopWalk();queue=[];moving=false;R.room=id;R.pos=[c,r];R.face=f||R.face;R.entry=null;
       if(R.visited.indexOf(id)<0)R.visited.push(id);ROOM=roomById(id);draw();},
@@ -11265,7 +11276,7 @@ const Battle=(()=>{
   function right(){
     if(!B||B.over)return;
     const f=fighter(B.active),n=beats(f.type,B.type)?2:1;
-    B.hp=Math.max(0,B.hp-n);if(!B.boss)B.f.hp=B.hp;state.wordsRead++;
+    B.hp=Math.max(0,B.hp-n);if(!B.boss)B.f.hp=B.hp;state.wordsRead++;try{Quests.hit("read");}catch(e){}
     const el=ov.querySelector(".bfoe");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
     Sound.sfx.boing&&Sound.sfx.boing();Sound.speak(f.move,1);foe();save();
     if(B.hp<=0)setTimeout(win,500);else setTimeout(ask,700);

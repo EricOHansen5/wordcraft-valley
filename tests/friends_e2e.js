@@ -18,7 +18,9 @@ const {launch,check,waitFor}=require("./lib");
     for(let i=0;i<4&&await E(()=>!!(Battle._B()&&!Battle._B().over));i++){
       const r0=await E(()=>Battle._B().round);await E(()=>window.__answer("#ovBattle .bq"));await until(r0=>!Battle._B()||Battle._B().round>r0,r0);}
     await until(()=>!document.querySelector("#ovBattle.on"));await wait(300);};
-  await tidy();await E(()=>{Battle._only("pic");Dungeon.enter("forest");});await wait(300);
+  await tidy();await E(()=>{Battle._only("pic");Dungeon.enter("forest");
+    // today's quests: the two dungeon ones
+    state.quests={date:today(),list:QUEST_POOL.filter(q=>q.id==="dbattle"||q.id==="dfriend").map(q=>Object.assign({},q,{p:0})),opened:true};});await wait(300);
 
   // ---- 1. the first win over Dot: it wants to be friends ----
   await win(3,3);
@@ -59,6 +61,9 @@ const {launch,check,waitFor}=require("./lib");
   await win(9,5);await wait(800);
   ok(await E(()=>!document.querySelector("#ovFriend.on")),"after the first win, an offer comes only 1 time in 3 (none at a roll of .9)");
   await E(()=>{Math.random=window.__rnd;});
+
+  const qs=await E(()=>state.quests.list.map(q=>q.id+":"+q.p+"/"+q.n).join(" "));
+  ok(qs==="dbattle:3/3 dfriend:1/1","the daily quests count dungeon wins and a new friend: "+qs);
 
   // ---- 3. the Word-Dex, the team picker, and what never offers a monster ----
   await tidy();await E(()=>Dex.open());await wait(300);

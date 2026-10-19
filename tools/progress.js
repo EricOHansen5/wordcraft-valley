@@ -82,6 +82,12 @@ function report(snap){
   const math=s.tracks&&s.tracks.math&&s.tracks.math.stats;
   if(math&&Object.keys(math).length)p("Math at the jobs: ",Object.entries(math).map(([k,v])=>k+" "+(v.right||0)+"/"+(v.seen||0)).join(", "));else p("Math at the jobs: none yet");
   if(s.factory)p("Factory: level ",s.factory.lvl||0," reached, stars ",sum(s.factory.stars),s.factory.sandbox?", sandbox saved":"");
+  // Word Dungeons: cleared, monster friends, the team, battles won, and how often a run started over
+  const dg=s.dungeon;
+  if(dg&&dg.stats){const st=dg.stats,cl=Object.keys(dg.cleared||{}),fr=Object.keys(dg.friends||{});
+    p("Dungeons: ",cl.length?"cleared "+cl.join(", "):"none cleared yet",", friends ",fr.length?fr.join(", "):"none",", team ",(dg.team||[]).join(", ")||"not picked",
+      ", battles won ",st.wins||0," of ",st.battles||0,", runs ",st.runs||0,", restarts ",st.restarts||0,", hearts ",dg.maxHearts||3);}
+  else p("Dungeons: not visited yet");
   // ---- holidays, looks ----
   const looks=Object.entries(s.looks||{}).map(([k,v])=>k+" "+((v&&v.pieces)||[]).length+" pieces").join(", ");
   p("Looks: ",s.look?"wearing "+s.look:"the plain valley",looks?"; earned: "+looks:"");

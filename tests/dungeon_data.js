@@ -158,5 +158,13 @@ setTimeout(()=>{
   ok(!untyped.length,"every animal has a type"+(untyped.length?" (none for: "+untyped.join(", ")+")":""));
   ok(Object.values(D.types).every(t=>["fire","water","leaf"].includes(t)),"every type is fire, water or leaf");
   ok(Object.values(D.monsters).every(m=>["fire","water","leaf"].includes(m.type)&&m.hp>0&&m.move&&m.friend&&Array.isArray(m.look)&&m.look.length===2),"every monster has a type, hp, a move, a friend sentence and two look-alike names");
+  // the daily quests know the dungeons
+  const qp=w.eval("QUEST_POOL.filter(q=>q.k==='dungeon'||q.k==='dfriend').map(q=>q.id+':'+q.k+':'+q.n).sort().join(',')");
+  ok(qp==="dbattle:dungeon:3,dfriend:dfriend:1","two daily quests: win 3 dungeon battles, make a monster friend ("+qp+")");
+  // every fixed line the dungeons say has a recorded clip
+  const index=JSON.parse(require("fs").readFileSync(require("path").join(__dirname,"../app/voice/index.json"),"utf8"));
+  let lines=[];try{lines=w.eval("Dungeon.voiceLines()");}catch(e){}
+  const noClip=lines.filter(t=>!index[w.eval(`VoicePack.norm(${JSON.stringify(t)})`)]);
+  ok(lines.length>20&&!noClip.length,`every dungeon line has a voice clip (${lines.length} lines`+(noClip.length?`; none yet for: ${noClip.slice(0,12).join(" | ")}`:"")+")");
   done();
 },1500);

@@ -41,6 +41,8 @@ QUEST_POOL:[
   {id:"write1", ic:"\u270d\ufe0f", t:"Write a word",              k:"write",  n:1},
   {id:"poke5",  ic:"\ud83d\udd0d", t:"Find 5 surprises in trees, rocks and flowers", k:"poke", n:5},
   {id:"newveh", ic:"\ud83d\udd11", t:"Get a new vehicle",         k:"newveh", n:1},
-  {id:"upgrade",ic:"\u2b06\ufe0f", t:"Upgrade something",         k:"upgrade",n:1}
+  {id:"upgrade",ic:"\u2b06\ufe0f", t:"Upgrade something",         k:"upgrade",n:1},
+  {id:"dbattle",ic:"\u2694\ufe0f", t:"Win 3 dungeon battles",     k:"dungeon",n:3},
+  {id:"dfriend",ic:"\ud83e\udd1d", t:"Make a monster friend",     k:"dfriend",n:1}
 ]
 };

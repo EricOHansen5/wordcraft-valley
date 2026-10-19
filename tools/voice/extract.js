@@ -13,7 +13,7 @@
 // sampled from each job's and track's generators; numbers already have clips), and the Looks' greetings and the
 // pieces of their "You got the …" lines (Looks.voiceLines(), from the LOOKS data), and the Factory's fixed lines and the pieces
 // its orders and sums are spoken from (Factory.voiceLines(): level intros, tips, "Send", the colour names, "toys"),
-// and Talk to me's fixed lines and pieces, with "yes" and "no" (Talk.voiceLines(): tier B's references for a yes/no answer). Existing entries are
+// and the Word Dungeons' lines, signs, names and moves (Dungeon.voiceLines()), and Talk to me's fixed lines and pieces, with "yes" and "no" (Talk.voiceLines(): tier B's references for a yes/no answer). Existing entries are
 // never removed; the lists are deduped by the same norm() that gen.py, index.py and the game use, sorted,
 // and written one entry per line so a diff shows exactly what is new. {hero} is expanded over def().hero if the game ever has one.
 "use strict";
@@ -54,6 +54,7 @@ function load(){
     looks:typeof Looks!=="undefined"&&Looks.voiceLines?Looks.voiceLines():[],
     factory:typeof Factory!=="undefined"&&Factory.voiceLines?Factory.voiceLines():[],
     talk:typeof Talk!=="undefined"&&Talk.voiceLines?Talk.voiceLines():[],
+    dungeon:typeof Dungeon!=="undefined"&&Dungeon.voiceLines?Dungeon.voiceLines():[],
     hero:(def()||{}).hero||null})`);
   w.close();
   return Object.assign(JSON.parse(data),{html,errors});
@@ -174,7 +175,8 @@ function collect(d){
       (d.jobs||[]).map(t=>({text:t,from:"jobs"})),
       (d.looks||[]).map(t=>({text:t,from:"looks"})),
       (d.factory||[]).map(t=>({text:t,from:"factory"})),
-      (d.talk||[]).map(t=>({text:t,from:"talk"}))),
+      (d.talk||[]).map(t=>({text:t,from:"talk"})),
+      (d.dungeon||[]).map(t=>({text:t,from:"dungeon"}))),
     skipped:sp.skipped,hero:!!d.hero,heroUsed:/\{hero\}/.test(src)};
 }
 const cmp=(a,b)=>{const x=norm(a),y=norm(b);return x<y?-1:x>y?1:a<b?-1:a>b?1:0;};
