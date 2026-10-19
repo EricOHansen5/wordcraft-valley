@@ -1863,6 +1863,18 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .dbtns{display:flex;gap:12px;align-items:center}.dbtns #dAct{width:76px;height:76px;border-radius:50%;font-size:34px}
 .dbtns #dItem{width:62px;height:62px;border-radius:50%;padding:6px}.dbtns #dItem svg{width:100%;height:100%}
 
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;max-height:52vh;overflow:auto;margin:8px 0}
+.tcard{border:2.5px solid #2e2620;border-radius:14px;background:#fffaf0;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:44px}
+.tcard .tart{width:60px;height:60px}.tcard.on{background:#ffe9a8;box-shadow:0 0 0 3px #d9a400}
+.bsheet{max-width:820px}.barena{display:flex;align-items:center;justify-content:space-around;gap:10px}
+.bme,.bfoe{display:flex;flex-direction:column;align-items:center;gap:2px}.bart{width:110px;height:110px}.bart img,.bart svg{width:100%;height:100%;object-fit:contain}
+.bvs{font-weight:900;font-size:22px;opacity:.6}.bhp{font-size:18px;letter-spacing:1px}
+.bme.hit,.bfoe.hit{animation:bhit .4s}@keyframes bhit{30%{transform:translateX(-10px) rotate(-4deg);filter:brightness(1.6)}60%{transform:translateX(8px)}}
+.bhint{text-align:center;font-weight:800;color:#b34a00;min-height:1.2em;margin:4px 0}.bhint:not(.on){visibility:hidden}
+.bteam{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.bmon{border:2.5px solid #2e2620;border-radius:14px;background:#fffaf0;padding:4px 8px;display:flex;flex-direction:column;align-items:center;min-width:64px;min-height:64px}
+.bmon .bart{width:48px;height:48px}.bmon.active{background:#ffe9a8;box-shadow:0 0 0 3px #d9a400}
+
 /* ---------------- REST ----------------
    body.rest: nobody has touched the game for 45 s, or for 3 minutes while something was waiting
    on him (REST in the script). Everything that moves holds still where it is: the HUD, the valley
@@ -10764,6 +10776,15 @@ function dungeonState(){
   Object.keys(d.stats).forEach(k=>{if(typeof s.stats[k]!=="number")s.stats[k]=0;});
   return s;
 }
+// the fighters he has: every animal (and monster friend) in his collection, once each
+function dungeonOwned(){const ids=[];(state.critters||[]).forEach(c=>{if(c&&c.id&&ids.indexOf(c.id)<0)ids.push(c.id);});return ids;}
+// three that cover the types if he can (fire, water, leaf), the most experienced first
+function dungeonSuggest(){
+  const S=dungeonState(),xp=id=>S.xp[id]||0,ids=dungeonOwned().sort((a,b)=>xp(b)-xp(a)),out=[];
+  ["fire","water","leaf"].forEach(t=>{const f=ids.find(id=>typeOf(id)===t&&out.indexOf(id)<0);if(f)out.push(f);});
+  ids.forEach(id=>{if(out.length<3&&out.indexOf(id)<0)out.push(id);});
+  return out.slice(0,3);
+}
 const Dungeon=(()=>{
   const IC={forest:"🌿",water:"💧",fire:"🔥"};
   const list=()=>DUNGEONS.list;
@@ -10784,10 +10805,32 @@ const Dungeon=(()=>{
       <div class="dmaps">${list().map(d=>{const o=isOpen(d),c=!!S.cleared[d.id],b=DUNGEONS.bosses[d.boss];
         return`<div class="dmap ${o?"open":"locked"}${c?" cleared":""}" data-d="${d.id}"><div class="dic">${IC[d.id]||"🗝️"}</div><h3>${d.name}</h3>
           <div class="dbadge">${c?"🏅":""}</div>${c&&b?`<div class="dtro">${drawThing(b.art)}</div>`:""}
-          ${o?`<button class="btn primary big" data-go="${d.id}">Go! ▶</button>`:`<div class="dlv">🔒 ${why(d)}</div>`}</div>`;}).join("")}</div></div>`;
+          ${o?`<button class="btn primary big" data-go="${d.id}">Go! ▶</button>`:`<div class="dlv">🔒 ${why(d)}</div>`}</div>`;}).join("")}</div>
+      ${dungeonOwned().length?`<div class="mrow" style="justify-content:center"><button class="btn soft" data-team>👥 My team</button></div>`:""}</div>`;
     if(!mapOv.classList.contains("on")){mapOv.classList.add("on");Modes.open("dungeon",mapOv);}
     mapOv.querySelector("#dmX").onclick=()=>{Sound.sfx.soft();Modes.shut(mapOv);};
     mapOv.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{Sound.sfx.pop();enter(b.dataset.go);});
+    const tb=mapOv.querySelector("[data-team]");if(tb)tb.onclick=()=>{Sound.sfx.pop();pickTeam(()=>{});};
+  }
+  // the team: up to three of his animals and monster friends; Suggest picks one of each type
+  let tov=null;
+  function pickTeam(then){
+    const S=dungeonState(),own=dungeonOwned();let sel=S.team.filter(id=>own.indexOf(id)>=0);
+    if(!tov){tov=document.createElement("div");tov.className="overlay";tov.id="ovTeam";document.body.appendChild(tov);}
+    const IC={fire:"🔥",water:"💧",leaf:"🌿"},stars=id=>[3,6,10,15,21].filter(n=>(S.xp[id]||0)>=n).length;
+    const name=id=>{if(id.indexOf("m_")===0){const m=DUNGEONS.monsters[id.slice(2)];return m?m.name:id;}const c=CRIT(id);return c?c.name:id;};
+    tov.innerHTML=`<div class="sheet"><div class="bhead"><h2>👥 Pick your team</h2><button class="bx" id="tX" aria-label="Close">✕</button></div>
+      <p class="sub">Up to three. 🔥 beats 🌿, 🌿 beats 💧, 💧 beats 🔥.</p>
+      <div class="tgrid">${own.map(id=>`<button class="tcard" data-id="${id}" data-type="${typeOf(id)}"><div class="tart">${drawThing(id,1)}</div>
+        <b>${name(id)}</b><span>${IC[typeOf(id)]}${"⭐".repeat(stars(id))}</span></button>`).join("")}</div>
+      <div class="mrow" style="justify-content:center"><button class="btn soft" id="tSuggest">✨ Suggest</button><button class="btn primary big" id="tGo">Go! ▶</button></div></div>`;
+    const mark=()=>{tov.querySelectorAll(".tcard").forEach(c=>c.classList.toggle("on",sel.indexOf(c.dataset.id)>=0));tov.querySelector("#tGo").disabled=!sel.length;};
+    tov.querySelectorAll(".tcard").forEach(c=>c.onclick=()=>{const id=c.dataset.id,i=sel.indexOf(id);
+      if(i>=0)sel.splice(i,1);else if(sel.length<3)sel.push(id);else{sel.shift();sel.push(id);}Sound.sfx.pop();mark();});
+    tov.querySelector("#tSuggest").onclick=()=>{sel=dungeonSuggest();Sound.sfx.chime();mark();};
+    tov.querySelector("#tX").onclick=()=>Modes.shut(tov);
+    tov.querySelector("#tGo").onclick=()=>{if(!sel.length)return;S.team=sel.slice();save();Modes.shut(tov);then();};
+    mark();tov.classList.add("on");Modes.open("dungeon",tov);
   }
 
   /* ---------- the run ----------
@@ -10808,7 +10851,7 @@ const Dungeon=(()=>{
   function newRun(d){
     const st=roomById(d.start);let pos=[6,6];st.grid.forEach((s,r)=>{const c=s.indexOf("@");if(c>=0)pos=[c,r];});
     return{d:d.id,room:d.start,pos,entry:null,face:"n",halves:dungeonState().maxHearts*2,keys:0,bossKey:false,map:false,
-      opened:[],taken:[],beaten:[],visited:[d.start],fairy:false,blocks:{}};
+      opened:[],taken:[],beaten:[],visited:[d.start],fairy:false,blocks:{},hurt:{}};
   }
   // what the room looks like now: the grid with what he has done to it
   function build(){
@@ -10823,7 +10866,7 @@ const Dungeon=(()=>{
     bs.forEach(b=>{cells[b[1]][b[0]]="O";});
     const shut=new Set();if(rm.shutUntil==="plate"&&!solved)Object.keys(MID).forEach(k=>{if(k!==R.entry&&cells[MID[k][1]][MID[k][0]]==="D")shut.add(k);});
     const mons=[];let i=0;rm.grid.forEach((s,r)=>[...s].forEach((ch,c)=>{if(ch!=="M")return;const m=(rm.monsters||[])[i],uid=rm.id+":"+i;i++;
-      if(m&&R.beaten.indexOf(uid)<0)mons.push({uid,kind:m.kind,path:m.path,c,r,hp:(DUNGEONS.monsters[m.kind]||{}).hp||3,stunned:false});}));
+      if(m&&R.beaten.indexOf(uid)<0)mons.push({uid,kind:m.kind,path:m.path,c,r,hp:R.hurt&&R.hurt[uid]!=null?R.hurt[uid]:((DUNGEONS.monsters[m.kind]||{}).hp||3),stunned:false});}));
     V={cells,shut,mons,boss:rm.boss&&!(dungeonState().cleared[D.id]&&R.bossBeaten)?{c:6,r:3}:null};
   }
   const cell=(c,r)=>V.cells[r]&&V.cells[r][c];
@@ -11028,8 +11071,38 @@ const Dungeon=(()=>{
       R.opened.push(ROOM.id+":"+k);V.cells[r][c]="D";Modes.shut(wov);paint(c,r);Sound.sfx.chime();save();}));
   }
 
-  // ---------- battles (the Battle part below fills these in) ----------
-  let fight=m=>{},fightBoss=()=>{};
+  // ---------- battles (Battle, below) ----------
+  let fighting=false,frozen=false;
+  function fight(m){
+    if(fighting)return;fighting=true;stopWalk();queue=[];
+    const free=m.stunned?1:0;m.stunned=false;const el=ov.querySelector(`.dmon[data-uid="${m.uid}"]`);if(el)el.classList.remove("stunned");
+    Battle.start(m,{free}).then(res=>{fighting=false;afterFight(m,res);});
+  }
+  let fightBoss=()=>{};
+  function afterFight(m,res){
+    const R=run();if(!R)return;
+    if(res==="won"){R.beaten.push(m.uid);if(R.hurt)delete R.hurt[m.uid];V.mons=V.mons.filter(x=>x!==m);
+      const el=ov.querySelector(`.dmon[data-uid="${m.uid}"]`);if(el)el.remove();save();}
+    else if(res==="fled"){R.hurt=R.hurt||{};R.hurt[m.uid]=m.hp;const [dx,dy]=DIRS[R.face],c=R.pos[0]-dx,r=R.pos[1]-dy;
+      if(walkable(c,r)&&!edgeAt(c,r)){R.pos=[c,r];place(ov.querySelector("#dAsh"),c,r);}save();}
+    else if(res==="lost")restart();
+    hud();
+  }
+  // zero hearts: back to the entrance with full hearts; gems, friends, experience and the item are kept
+  function restart(){
+    const S=dungeonState();S.stats.restarts++;S.run=newRun(D);ROOM=roomById(D.start);queue=[];stopWalk();draw();save();say(L("tired"));
+  }
+  // monsters take a step about once a second (never while resting, hidden, in a battle or a sheet)
+  setInterval(()=>{
+    if(frozen||fighting||!active()||Modes.top()!=="dungeon"||Rest.on()||document.visibilityState==="hidden"||!V)return;
+    const R=run();
+    V.mons.slice().forEach(m=>{
+      if(m.stunned||Math.random()<.35)return;
+      const ks=Object.keys(DIRS),k=ks[Math.floor(Math.random()*4)],c=m.c+DIRS[k][0],r=m.r+DIRS[k][1];
+      if(c===R.pos[0]&&r===R.pos[1]){fight(m);return;}
+      if(fighting||edgeAt(c,r)||!walkable(c,r)||cell(c,r)==="F"||cell(c,r)==="_")return;
+      m.c=c;m.r=r;const el=ov.querySelector(`.dmon[data-uid="${m.uid}"]`);if(el)place(el,c,r);});
+  },1000);
 
   // ---------- in and out ----------
   function mount(){
@@ -11055,8 +11128,11 @@ const Dungeon=(()=>{
   }
   function enter(id){
     const d=byId(id);if(!d||!isOpen(d))return false;
-    const S=dungeonState();D=d;queue=[];stopWalk();
+    const S=dungeonState(),own=dungeonOwned();
+    if(own.length&&!S.team.filter(x=>own.indexOf(x)>=0).length){pickTeam(()=>enter(id));return true;}
+    D=d;queue=[];stopWalk();fighting=false;
     if(!S.run||S.run.d!==id){S.run=newRun(d);S.stats.runs++;}
+    else{const R=S.run;R.hurt=R.hurt||{};if(R.entry)R.pos=inside(R.entry);}
     ROOM=roomById(S.run.room)||roomById(d.start);
     mount();draw();save();
     return true;
@@ -11083,9 +11159,109 @@ const Dungeon=(()=>{
     _go(id,c,r,f){const R=run();stopWalk();queue=[];moving=false;R.room=id;R.pos=[c,r];R.face=f||R.face;R.entry=null;
       if(R.visited.indexOf(id)<0)R.visited.push(id);ROOM=roomById(id);draw();},
     // for the parts below
-    _hooks(h){if(h.fight)fight=h.fight;if(h.fightBoss)fightBoss=h.fightBoss;if(h.useItem)useItem=h.useItem;},
+    _hooks(h){if(h.fightBoss)fightBoss=h.fightBoss;},_freeze(v){frozen=!!v;},_restart:()=>restart(),pickTeam,
     _say:say,_draw:()=>draw(),_hud:()=>hud(),_D:()=>D,_place:place,_ov:()=>ov,_walkable:(c,r)=>walkable(c,r),_cell:cell,_edge:edgeAt,_DIRS:DIRS};
 })();
+
+/* ---------- Battle: one reading question a turn ----------
+   Right: the fighter's move hits (2 when its type beats the foe's). Each wrong tap: the foe hits back, half a
+   heart, at most one heart a question. A double tap is one answer (Read.once, and the engines' own guards).
+   The questions rotate: read the word / pick the word / build it, and from level 2 every third is a sentence.
+   Battle.start(foe,{free}) resolves "won", "lost" (no hearts left) or "fled" (Back off). foe is a room
+   monster ({uid, kind, hp}) or a boss id. */
+const Battle=(()=>{
+  const MOVES={hunter:"Bite!",prey:"Kick!",flyer:"Peck!",brawler:"Stomp!"},IC={fire:"🔥",water:"💧",leaf:"🌿"};
+  const HINT={"water>fire":"waterFire","fire>leaf":"fireLeaf","leaf>water":"leafWater"};
+  const STARS=[3,6,10,15,21];
+  let ov=null,B=null,only=null,obs=null;
+  function fighter(id){
+    if(id==="buddy")return{id,name:STAGES[stageIdx()].name,type:"leaf",art:ART.buddy(stageIdx(),mulberry(42),buddyHat()),move:"Bonk!"};
+    if(String(id).indexOf("m_")===0){const m=DUNGEONS.monsters[id.slice(2)]||{};return{id,name:m.name||id,type:typeOf(id),art:drawThing(id),move:(m.move||"Bonk")+"!"};}
+    const c=CRIT(id)||{name:id,kind:"brawler"};return{id,name:c.name,type:typeOf(id),art:drawThing(id,1),move:MOVES[c.kind]||"Bonk!"};
+  }
+  function team(){const S=dungeonState(),own=dungeonOwned();let t=S.team.filter(id=>own.indexOf(id)>=0);
+    if(!t.length)t=own.length?dungeonSuggest():["buddy"];return t.slice(0,3);}
+  const halves=()=>(Dungeon._run()||{}).halves||0;
+  function hearts(){const el=ov.querySelector("#bHearts"),h=halves(),max=dungeonState().maxHearts;let s="";
+    for(let i=0;i<max;i++){const v=h-2*i;s+=`<span class="dh ${v>=2?"full":v===1?"half":"empty"}">${v>=1?"❤️":"🤍"}</span>`;}el.innerHTML=s;el.dataset.halves=h;}
+  function foe(){const el=ov.querySelector(".bfoe");el.dataset.hp=B.hp;el.querySelector(".bhp").innerHTML="🖤".repeat(B.hp)+"🤍".repeat(Math.max(0,B.max-B.hp));}
+  function me(){const f=fighter(B.active),el=ov.querySelector(".bme");el.dataset.type=f.type;
+    el.innerHTML=`<div class="bart">${f.art}</div><b>${esc(f.name)}</b><span class="btype">${IC[f.type]}</span>`;}
+  function bar(){const S=dungeonState();ov.querySelector(".bteam").innerHTML=B.team.map(id=>{const f=fighter(id),st=STARS.filter(n=>(S.xp[id]||0)>=n).length;
+      return`<button class="bmon${id===B.active?" active":""}" data-id="${id}" data-type="${f.type}"><div class="bart">${f.art}</div><span>${IC[f.type]}${"⭐".repeat(st)}</span></button>`;}).join("");
+    ov.querySelectorAll(".bteam .bmon").forEach(b=>b.onclick=()=>{if(B.over||b.dataset.id===B.active)return;B.active=b.dataset.id;Sound.sfx.pop();me();bar();hint();});}
+  function hint(){const f=fighter(B.active),k=HINT[B.type+">"+f.type],el=ov.querySelector(".bhint");
+    if(k){el.textContent=DUNGEONS.lines[k];el.classList.add("on");Sound.speak(DUNGEONS.lines[k],.95);}else el.classList.remove("on");}
+  function mount(){
+    if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovBattle";document.body.appendChild(ov);}
+    ov.innerHTML=`<div class="sheet bsheet"><div class="bhead"><h2>⚔️ ${esc(B.name)}!</h2><div id="bHearts" class="dhearts"></div></div>
+      <div class="barena"><div class="bme"></div><div class="bvs">VS</div>
+        <div class="bfoe" data-type="${B.type}"><div class="bart">${B.art}</div><b>${esc(B.name)}</b><span class="btype">${IC[B.type]}</span><div class="bhp"></div></div></div>
+      <p class="bhint"></p><div class="bq"></div><div class="bteam"></div>
+      <div class="mrow" style="justify-content:center"><button class="btn soft" id="bBack">🏃 Back off</button></div></div>`;
+    ov.querySelector("#bBack").onclick=()=>end("fled");
+    if(!ov.classList.contains("on")){ov.classList.add("on");Modes.open("battle",ov);}
+    hearts();foe();me();bar();
+  }
+  function start(f,opt){
+    opt=opt||{};
+    return new Promise(res=>{
+      const boss=typeof f==="string",data=boss?DUNGEONS.bosses[f]:DUNGEONS.monsters[f.kind];
+      B={f,boss,kind:boss?f:f.kind,name:data.name,type:data.type,art:drawThing(data.art),max:data.hp,hp:boss?data.hp:(f.hp!=null?f.hp:data.hp),
+        team:team(),active:null,round:0,lostQ:0,lastWrong:0,res,over:false};
+      B.active=B.team[0];
+      dungeonState().stats.battles++;
+      mount();hint();
+      if(opt.free){B.hp=Math.max(0,B.hp-opt.free);if(!boss)f.hp=B.hp;foe();}
+      if(B.hp<=0){setTimeout(win,700);return;}
+      ask();
+    });
+  }
+  function ask(){
+    if(!B||B.over)return;
+    const host=ov.querySelector(".bq");delete host.dataset.ans;delete host.dataset.tiles;host.innerHTML="";B.round++;B.lostQ=0;
+    const kinds=["pic","wordPick","build"];
+    let k=only||((currentTier()>=2&&B.round%3===0)?"sentence":kinds[(B.round-1)%3]);
+    if(obs)obs.disconnect();
+    obs=new MutationObserver(recs=>{if(recs.some(r=>r.target.classList&&(r.target.classList.contains("wrong")||r.target.classList.contains("bad"))))wrong();});
+    obs.observe(host,{subtree:true,attributes:true,attributeFilter:["class"]});
+    Read[k](host,Read.once(()=>right()));
+  }
+  function right(){
+    if(!B||B.over)return;
+    const f=fighter(B.active),n=beats(f.type,B.type)?2:1;
+    B.hp=Math.max(0,B.hp-n);if(!B.boss)B.f.hp=B.hp;state.wordsRead++;
+    const el=ov.querySelector(".bfoe");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
+    Sound.sfx.boing&&Sound.sfx.boing();Sound.speak(f.move,1);foe();save();
+    if(B.hp<=0)setTimeout(win,500);else setTimeout(ask,700);
+  }
+  function wrong(){
+    if(!B||B.over)return;const now=Date.now();if(now-B.lastWrong<400)return;B.lastWrong=now;
+    if(B.lostQ>=2)return;B.lostQ++;
+    const R=Dungeon._run();R.halves=Math.max(0,R.halves-1);hearts();Dungeon._hud();save();
+    const el=ov.querySelector(".bme");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
+    if(R.halves<=0)setTimeout(()=>end("lost"),600);
+  }
+  function win(){
+    if(!B||B.over)return;const S=dungeonState();
+    state.gems+=B.boss?10:2;S.stats.wins++;
+    if(B.active!=="buddy"){const before=S.xp[B.active]||0;S.xp[B.active]=before+1;
+      if(STARS.indexOf(before+1)>=0)toast("⭐ "+fighter(B.active).name+" got a level star!");}
+    renderHUD();save();try{Quests.hit("dungeon");}catch(e){}
+    Sound.sfx.fanfare();
+    const kind=B.kind,boss=B.boss;
+    setTimeout(()=>{end("won",()=>boss?Promise.resolve(false):Friends.offer(kind));},700);
+  }
+  // close the sheet; "then" (befriending) runs before the result goes back to the room
+  function end(res,then){
+    if(!B)return;const b=B;b.over=true;if(obs){obs.disconnect();obs=null;}Modes.shut(ov);B=null;
+    const go=()=>b.res(res);
+    if(then)Promise.resolve().then(then).then(go,go);else go();
+  }
+  return{start,_B:()=>B,_only:k=>{only=k||null;},fighter,team};
+})();
+// Friends: befriending monsters (filled in below)
+let Friends={offer:()=>Promise.resolve(false),has:()=>false};
 
 /* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
    under the finger (the first question after ⏰ Clock in, a belt on the Factory board after a level button), and
