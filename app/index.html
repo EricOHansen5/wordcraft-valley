@@ -5565,10 +5565,11 @@ const Home=(()=>{
   // a tap on a tile or the button: one game at a time (a second tap within 0.6 s is the same tap)
   // tiles not shown now wait here (hidden), so the code that updates their badges still finds them
   function parked(){let p=document.getElementById("homePark");if(!p){p=document.createElement("div");p.id="homePark";p.hidden=true;document.body.appendChild(p);}return p;}
-  function tap(id){const now=Date.now();if(now-lastOpen<600)return;lastOpen=now;Sound.sfx.pop();Games.open(id);}
+  // only a tap on Home itself is held to one game per 0.6 s; a click from code while Home is hidden always goes
+  function tap(id){const now=Date.now();if(isOn()&&now-lastOpen<600)return;lastOpen=now;Sound.sfx.pop();Games.open(id);}
   function show(){
     if(!ov)build();
-    if(!isOn()){ov.classList.add("on");spoke=false;Modes.open("home",ov);}
+    if(!isOn()){ov.classList.add("on");spoke=false;lastOpen=0;Modes.open("home",ov);}      // a new visit: a fresh line, and the first tap counts
     render();
   }
   function hide(){if(ov&&isOn())Modes.shut(ov);}
@@ -5583,7 +5584,17 @@ const Home=(()=>{
   function stackEmpty(){if(!ready||inValley)return;clearTimeout(backT);
     backT=setTimeout(()=>{if(!inValley&&!isOn()&&!Modes.stack().length)show();},350);}
   Games.add({id:"valley",name:"Valley",icon:"🏡",order:20,open:()=>valley()});
-  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,// the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
+  // every fixed line Home can say (tools/voice/extract.js adds them to the voice list). "Want to read N more words
+  // today?" is spoken from its pieces: the two halves here, the number from its own clip.
+  function voiceLines(){
+    const out=["What do you want to play?","Want to read","more words today?"];
+    Games._all().forEach(g=>{out.push("Try the new "+g.name+"!");let x=null;try{x=g.suggest&&g.suggest();}catch(e){}
+      if(x&&x.say)out.push(x.say);});
+    // the holidays say "It's <name> time!" only in season: list them all the same
+    ["Trick-or-Read","Light the tree","Fireworks","Birthday party","Feast table","Word mail","Egg hunt"].forEach(n=>out.push("It's "+n+" time!"));
+    return out.filter((x,i)=>out.indexOf(x)===i);
+  }
+  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,voiceLines,// the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
   // test server sets), with Home built all the same so the page is laid out as it is for him
   start(){ready=true;if(window.WCV_START==="valley"&&!inValley){inValley=true;if(!ov)build();render();return;}if(!inValley)show();},get _valley(){return inValley;},_ov:()=>ov};
 })();

@@ -49,6 +49,7 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
   24. LEVELS, UPGRADES
   25. PARENT MODE
   26. BOOT
+- **The game opens on Home** (HOME, after MODES): an under-the-sea start screen with the buddy's suggestion and a tile per game. **A new game is one `Games.add({id, name, icon, order, show, badge, suggest, open})` call where its code lives** (GAMES); Home draws its tiles from `Games.list()`, so neither Home nor the valley changes. Closing a game returns to Home unless he chose the valley. Tests: pages from the test server start in the valley (`window.WCV_START`); `launch({home:true})` starts on Home; a game's old button id is its Home tile, tapped with `tile(page, "#mineBtn")` from `tests/lib.js`.
 - **Data lives in `app/art/` and `app/content/`.** Each file is a classic script (not a module) that sets one property: `"use strict";window.WCV=window.WCV||{};WCV.books=[...];`. In `index.html` each moved constant is one line where it used to be (`const BOOKS=WCV.books;`), so the code uses `BOOKS`, `WORDS`, `WORD_ART`, `SIGNS`, `QUEST_POOL`, `OM`…`OMB` and `FLU` as before. Keep these files plain data and ASCII only (write anything else as a Unicode escape). To add a data file: add its `<script src>` before the game script, add its name to `DATA_SETS` (the "files did not load" guard at the top of the game script), and add it to `SHELL` in `sw.js`. `tests/version_check.js` checks the page and `SHELL` agree.
 - Key globals:
   - `state` (the whole save), `save()`, `renderHUD()`, `toast()`, `WCV` (the data sets)
@@ -56,6 +57,7 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
   - `allWords()`, `currentTier()`, `drawWord()`, `drawThing()`, `WORD_ART`
   - `Read.pic / Read.wordPick`
   - `Adv.hookCrit / hookVeh / redraw`, `Quests.hit()`
+  - `Games.add / list / open`, `Home.show / valley / home`
 - Saves live in IndexedDB `wordcraft-valley` v2 (stores `kv` and `blobs`). **Never break old saves.** Add fields with defaults and don't rename existing ones.
 - Tests find answers through `host.dataset.ans` / `dataset.tiles`. Keep those attributes on answer hosts.
 

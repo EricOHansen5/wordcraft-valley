@@ -55,6 +55,7 @@ function load(){
     factory:typeof Factory!=="undefined"&&Factory.voiceLines?Factory.voiceLines():[],
     talk:typeof Talk!=="undefined"&&Talk.voiceLines?Talk.voiceLines():[],
     dungeon:typeof Dungeon!=="undefined"&&Dungeon.voiceLines?Dungeon.voiceLines():[],
+    home:typeof Home!=="undefined"&&Home.voiceLines?Home.voiceLines():[],
     hero:(def()||{}).hero||null})`);
   w.close();
   return Object.assign(JSON.parse(data),{html,errors});
@@ -176,7 +177,8 @@ function collect(d){
       (d.looks||[]).map(t=>({text:t,from:"looks"})),
       (d.factory||[]).map(t=>({text:t,from:"factory"})),
       (d.talk||[]).map(t=>({text:t,from:"talk"})),
-      (d.dungeon||[]).map(t=>({text:t,from:"dungeon"}))),
+      (d.dungeon||[]).map(t=>({text:t,from:"dungeon"})),
+      (d.home||[]).map(t=>({text:t,from:"home"}))),
     skipped:sp.skipped,hero:!!d.hero,heroUsed:/\{hero\}/.test(src)};
 }
 const cmp=(a,b)=>{const x=norm(a),y=norm(b);return x<y?-1:x>y?1:a<b?-1:a>b?1:0;};

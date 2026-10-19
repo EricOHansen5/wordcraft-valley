@@ -153,6 +153,12 @@ const {launch,check,waitFor,seed}=require("./lib");
   ok(await E(()=>state.tour===3&&!!document.querySelector("#craftBtn.coach-target")),"tapping it moves the tour on to the plans, in the valley");
   ok(await E(()=>TOUR.length===7),"the tour has its one new step");
 
+  // ---- voice: every line Home says has a clip ----
+  const index=JSON.parse(require("fs").readFileSync(require("path").join(__dirname,"../app/voice/index.json"),"utf8"));
+  let hl=[];try{hl=await E(()=>Home.voiceLines());}catch(e){}
+  const noClip=[];for(const l of hl){const k=await E(t=>VoicePack.norm(t),l);if(!index[k])noClip.push(l);}
+  ok(hl.length>5&&!noClip.length,`every line Home says has a voice clip (${hl.length} lines`+(noClip.length?`; none yet for: ${noClip.slice(0,10).join(" | ")}`:"")+")");
+
   ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();t.done();
 })().catch(e=>{console.log("FAIL crashed: "+(e&&e.stack||e));process.exit(1);});

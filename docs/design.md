@@ -780,6 +780,15 @@ Zelda-style dungeons with Pokémon-style reading battles, to pull him back in (h
 - Battle stars (⚔️ ⭐) show on an animal's sticker book card. An animal from a creature pack fights under its own name and picture.
 - The battle sheet fits the iPad in landscape, sentence rounds too (smaller fighters, Back off beside the team).
 - Fixes: holding a key no longer carries Ash two tiles too far; no battle starts while he goes through a door; a run saved with no hearts left starts over at the entrance; walking keeps the game from resting; Enter can no longer press the map's hidden Go button.
+
+### v10.12 — Home: an under-the-sea start screen
+The design is `docs/superpowers/specs/2026-10-19-home-screen-design.md`.
+- **The game opens on Home**, not the valley: sun rays in blue water, coral and shells on the sand, and two fish, a blowfish and a turtle slowly drifting across (the only motion; it holds still when the game rests or a game is open on top).
+- **His buddy says one thing**, the first that applies: today's reading goal ("Want to read 8 more words today?" with 📦 Let's read!), a game he has never opened ("Try the new Dungeons!"), a holiday in season ("It's Trick-or-Read time!"), or "What do you want to play?". It is spoken once when Home appears.
+- **Every game is a tile:** Read words, Valley, Dungeons, Gem Mine, Adventure, Books, Jobs, the Factory (once built), Quests, and each holiday in its season. NEW marks a game until he first opens it (on an old save, games he has already played start as seen). Closing a game comes back to Home.
+- **The valley** is the Valley tile. Its tool bar keeps only valley things (📐 plans, 🎨 closet, 📖 sticker book, 🏪 Trading Post) and gains 🏠 Home. What he starts in the valley (the Factory building, a race in Adventure) comes back to the valley.
+- **A new player's tour** starts on Home (the crate tile), then asks him to tap the Valley tile before the building steps.
+- Under the hood: a `Games` registry; a new game is one `Games.add` where its code lives, with no change to Home or the valley. The saves gain `state.home` (the games he has opened). The old tool bar buttons are the Home tiles, with the same ids.
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 
 ### Still on the list (v4 roadmap, in build order)
