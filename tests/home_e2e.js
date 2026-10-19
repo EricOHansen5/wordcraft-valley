@@ -101,8 +101,9 @@ const {launch,check,waitFor,seed}=require("./lib");
   await p.setViewportSize({width:1024,height:768});
 
   // ---- games and navigation ----
-  await seed(p,{phase:2,settings:{goal:0}},{home:true});await wait(2600);
-  await ix();   // pop-ups that came at boot (a keeper waking): they sit over Home, as they should
+  // every land's keeper awake: a keeper still asleep would wake when he goes to the valley (home_minors_e2e)
+  await seed(p,{phase:2,settings:{goal:0},guardians:[0,1,2]},{home:true});await wait(2600);
+  await ix();   // pop-ups that came at boot: they sit over Home, as they should
   const onHome=()=>E(()=>!!document.querySelector("#ovHome.on"));
   const until=async(f,a,ms)=>{const t0=Date.now();while(Date.now()-t0<(ms||6000)){if(await E(f,a))return true;await wait(100);}return false;};
   ok(await onHome(),"the game opens on Home");
@@ -154,7 +155,7 @@ const {launch,check,waitFor,seed}=require("./lib");
   ok(await E(()=>TOUR.length===7),"the tour has its one new step");
 
   // ---- review fixes (all under the real start: the game opens on Home) ----
-  await seed(p,{phase:2,settings:{goal:0},trick:{nights:2,day:"2026-10-18"},lights:{day:"2025-12-10"}},{home:true});await wait(2600);await ix();
+  await seed(p,{phase:2,settings:{goal:0},guardians:[0,1,2],trick:{nights:2,day:"2026-10-18"},lights:{day:"2025-12-10"}},{home:true});await wait(2600);await ix();
   const fx=s=>E(s);
   // 1. any way into Adventure while Home is up (Trick-or-Read, the egg hunt) puts Home away; a second enter does not mount twice
   await fx(()=>{Home.home();});await wait(300);
@@ -181,10 +182,10 @@ const {launch,check,waitFor,seed}=require("./lib");
   // 5. Home is redrawn when a game closes; a redraw keeps the tour's mark and does not pile up tiles
   await fx(()=>{Home.home();Games.list().forEach(g=>{state.home.seen[g.id]=today();});delete state.home.seen.books;state.settings.goal=0;Home.render();});await wait(300);
   const say=await fx(()=>document.getElementById("hSay").textContent);
-  ok(/Try the new Books/.test(say),"a game never opened is suggested "+J(say));
+  ok(/Let's read a book!/.test(say),"a game never opened is suggested, in its own words "+J(say));
   await p.click('#ovHome .htile[data-game="books"]');await wait(500);await ix();
-  ok(await until(()=>Home.isOn()&&!/Try the new Books/.test(document.getElementById("hSay").textContent)&&!document.querySelector('#ovHome .htile[data-game="books"] .hnew')),
-    "closing it, Home is redrawn: no more NEW or \"Try the new Books!\"");
+  ok(await until(()=>Home.isOn()&&!/Let's read a book!/.test(document.getElementById("hSay").textContent)&&!document.querySelector('#ovHome .htile[data-game="books"] .hnew')),
+    "closing it, Home is redrawn: no more NEW or \"Let's read a book!\"");
   const keep=await fx(()=>{const v=document.querySelector('#ovHome .htile[data-game="valley"]');v.__mark=1;document.getElementById("crateBtn").classList.add("coach-target");
     for(let i=0;i<6;i++){renderHUD();Home.render();}return new Promise(r=>setTimeout(()=>r({same:document.querySelector('#ovHome .htile[data-game="valley"]').__mark===1,
       coach:document.getElementById("crateBtn").classList.contains("coach-target"),park:(document.getElementById("homePark")||{children:[]}).children.length,

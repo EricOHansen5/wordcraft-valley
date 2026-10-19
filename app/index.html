@@ -1850,6 +1850,7 @@ body.rest #ovHome .hfish,#ovHome.under .hfish{animation-play-state:paused}
 #ovHome .htile:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
 #ovHome .htile [hidden]{display:none!important}
 #ovHome .htile .badge{position:absolute;top:-8px;right:-8px}
+#ovHome .htile .badge.hdup{display:none}
 @media (max-width:820px){#ovHome .htile{width:104px;height:104px}}
 .htile .hbadge,.htile .hnew{position:absolute;top:-8px;right:-8px;background:#e94b3c;color:#fff;border-radius:10px;font-size:12px;padding:2px 7px;border:2px solid #fff}
 .htile .hnew{right:auto;left:-8px;background:#2a9cd0}
@@ -2020,7 +2021,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
   <h2>Pick a crate</h2><p class="sub">Read the word to wake up what's inside.</p>
   <div id="crateRow"></div>
   <div id="talkEntry" style="display:none"><button class="btn primary big" id="talkBtn">🎤 Talk to me</button></div>
-  <div class="sheetfoot"><button class="btn soft" data-close>Back to my valley</button></div>
+  <div class="sheetfoot"><button class="btn soft" data-close data-back="Back to my valley">Back to my valley</button></div>
 </div></div>
 
 <div class="overlay" id="ovRead"><div class="sheet">
@@ -2067,7 +2068,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
   <div id="questList"></div>
   <div id="chest">🧰</div>
   <p class="sub" id="chestSub" style="text-align:center;margin-top:6px"></p>
-  <div class="sheetfoot"><button class="btn soft" data-close>Back to the valley</button></div>
+  <div class="sheetfoot"><button class="btn soft" data-close data-back="Back to the valley">Back to the valley</button></div>
 </div></div>
 
 <div class="overlay" id="ovPhoto"><div class="sheet" style="max-width:640px;text-align:center">
@@ -2090,7 +2091,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div><b id="rBuilt">0</b><span>things built</span></div>
   </div>
   <p class="sub" id="recapLine"></p>
-  <button class="btn primary" data-close>Back to the valley</button>
+  <button class="btn primary" data-close data-back="Back to the valley">Back to the valley</button>
 </div></div>
 
 <!-- cut-scene -->
@@ -2307,7 +2308,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
       <button class="btn soft" id="resetBtn" style="border-color:var(--berry);color:var(--berry)">Start over</button>
     </div>
   </div>
-  <div class="sheetfoot"><button class="btn primary" data-close>Back to the valley</button></div>
+  <div class="sheetfoot"><button class="btn primary" data-close data-back="Back to the valley">Back to the valley</button></div>
 </div></div>
 
 <div id="fx"></div><div id="toast"></div>
@@ -4105,6 +4106,8 @@ const Sound=(()=>{
     rumble:()=>{growl(34,1.6,.22);hiss(actx().currentTime,1.4,.12,"lowpass",200);},
     evo:()=>{for(let i=0;i<24;i++)setTimeout(()=>tone(330*Math.pow(2,(i%12)/12)*(i>=12?2:1),.12,"triangle",.07),i*135);},
     tuk:()=>{const t=actx().currentTime;[0,.14,.28,.42].forEach(d=>osc("square",880,t+d,.08,.04,3000));}};
+  // every sound effect is counted (Sound.played()), so a tap that opens a game can tell whether the game made a sound of its own
+  let played=0;Object.keys(sfx).forEach(k=>{const f=sfx[k];sfx[k]=function(){played++;return f.apply(this,arguments);};});
   async function url(k){if(cache.has(k))return cache.get(k);
     const b=await DB.get("blobs","aud:"+k);const u=b?URL.createObjectURL(b):null;cache.set(k,u);return u;}
   /* Voice choice. iOS ships several natural voices (the "Enhanced" and
@@ -4140,9 +4143,16 @@ const Sound=(()=>{
   // the recorded game voice first; the device voice only for lines it doesn't have
   function speak(t,rate=.95,pitch=1.0){
     const here=v=>{try{Rest.stay();}catch(e){}return v;};here();      // REST: a line being spoken holds a rest off, to its last word
-    if(typeof VoicePack!=="undefined"&&state.settings.voicePack!==false)return VoicePack.play(t).then(ok=>ok?undefined:ttsSpeak(t,rate,pitch)).then(here);
-    return ttsSpeak(t,rate,pitch).then(here);
+    talking++;talkT=Date.now();const done=v=>{talking=Math.max(0,talking-1);return v;};
+    if(typeof VoicePack!=="undefined"&&state.settings.voicePack!==false)return VoicePack.play(t).then(ok=>ok?undefined:ttsSpeak(t,rate,pitch)).then(here).then(done,done);
+    return ttsSpeak(t,rate,pitch).then(here).then(done,done);
   }
+  // one voice at a time: busy() while a line is being said (12 s at most, so a lost line never holds the rest up);
+  // speakQuiet() waits for the line before it to finish (8 s at most), for lines that come on their own (a greeting)
+  let talking=0,talkT=0;
+  const busy=()=>talking>0&&Date.now()-talkT<12000;
+  function speakQuiet(t,rate,pitch){const t0=Date.now();
+    return new Promise(res=>{(function go(){if(busy()&&Date.now()-t0<8000){setTimeout(go,200);return;}res(Sound.speak(t,rate,pitch));})();});}
   function ttsSpeak(t,rate=.95,pitch=1.0){
     if(!state.settings.tts||!window.speechSynthesis)return Promise.resolve();
     try{VoicePack.stop();}catch(e){}
@@ -4237,7 +4247,7 @@ const Sound=(()=>{
       if(Phonics.known(ph))return Phonics.play(actx(),ph);
       return speak(fallback,.8);}
     return speak(fallback,rate>=.9?rate:.82);}
-  return{say,sfx,speak,stream,ctx:()=>actx(),hold,stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
+  return{say,sfx,speak,speakQuiet,busy,played:()=>played,stream,ctx:()=>actx(),hold,stopVoice:()=>{try{speechSynthesis.cancel();}catch(e){}},voices:englishVoices,current:pickVoice,scoreVoice,
     has:k=>DB.get("blobs","aud:"+k).then(b=>!!b),
     invalidate:k=>{const u=cache.get(k);if(u)URL.revokeObjectURL(u);cache.delete(k);}};
 })();
@@ -4357,9 +4367,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   treats:{},
   // LEVELS, UPGRADES: upgrades done
   upgrades:0,
-  // HOME: the games he has opened from Home ({id:"YYYY-MM-DD"}; NEW shows until then), and whether an old save's
-  // played games were marked seen yet (homeSeenFill, once)
-  home:{seen:{},filled:false},
+  // HOME: the games he has opened from Home ({id:"YYYY-MM-DD"}; NEW shows until then), whether an old save's
+  // played games were marked seen yet (homeSeenFill, once), and the tour's length the save is on (7: with the Valley step)
+  home:{seen:{},filled:false,steps:7},
   // WORD DUNGEONS: his battle team (critter ids), hearts, the items found, the dungeons cleared, the monsters befriended,
   // each fighter's experience, the run in progress (resumed at its room's door), counts, the map seen, the cave doors' places
   dungeon:{team:[],maxHearts:3,items:{boomerang:false,hookshot:false,bombs:false},cleared:{},friends:{},xp:{},run:null,
@@ -5509,6 +5519,8 @@ const Modes=(()=>{
        show()    the tile is there when true (a holiday in season, the Factory once built)
        badge()   "" or a short badge (a count, ⏰); Home adds NEW itself for a game never opened
        suggest() optional {say} for the buddy's line on Home (the holidays use it)
+       tryLine   optional: what the buddy says while the game is new ("Let's read a book!"); without it, its
+                 suggest() line, or "Try the new <name>!"
        open()    opens the game
        btn       the old tool bar id the tile now carries ("crateBtn"), so badges and tests find it
        inValley  the game plays inside the valley (Adventure): Home steps aside for it
@@ -5560,18 +5572,26 @@ function homeSeenFill(s){
   s.home.filled=2;
 }
 
+// the tour gained a step at 2 (the Valley tile): a save part-way through the old six (2 to 5) moves on one, so it
+// stays on the same step; once, as loadSave fills in home.steps. (homeSeenFill has already finished a finished one.)
+function homeTourFix(s){const t=+s.tour||0;if(t>=2&&t<=5)s.tour=t+1;}
+
 /* ================================================================
    HOME — the start screen: under the sea, his buddy, a tile for every game
    #ovHome sits over the valley (which sleeps behind it) and under every game. The bar shows
    today's reading ring, gems, coins and the Grown-up gear. The buddy says one thing, the first
    that applies: today's goal not met ("Want to read 8 more words today?" and the crates), a game
-   he has never opened ("Try the new Dungeons!"), a game in season (its suggest()), or "What do you
-   want to play?". The line is spoken once each time Home shows. The tiles are Games.list().
+   he has never opened (its tryLine, "Let's explore the Dungeons!"), a game in season (its suggest()), or
+   "What do you want to play?". The line is spoken once each time Home shows, after any line being said
+   already, and not while the tour is on (the tour's bubble speaks). The tiles are Games.list(); a tile
+   shows NEW once (an old button's own NEW badge hides behind Home's). What lives in the valley (a keeper
+   waking, the first car) waits until he goes there (Home.whenValley), and the way back from a game says
+   where it goes: "🏠 Home", or in the valley its own words (data-back, Home.backText).
    The fish and the turtle drift (the only motion); they hold still at rest and under a game
    (#ovHome.under, set by Rest.cover).
    ================================================================ */
 const Home=(()=>{
-  let ov=null,spoke=false,lastOpen=0;const els={};      // els: one tile element per game, kept between redraws
+  let ov=null,spoke=false,lastOpen=0,visits=0;const els={};      // els: one tile element per game, kept between redraws
   const isOn=()=>!!(ov&&ov.classList.contains("on"));
   function build(){
     ov=document.createElement("div");ov.className="overlay";ov.id="ovHome";
@@ -5598,11 +5618,13 @@ const Home=(()=>{
       if(t>0&&w<t)return{say:`Want to read ${t-w} more words today?`,game:"crates",button:"📦 Let's read!"};}catch(e){}
     const list=Games.list();
     const fresh=list.find(g=>Games.isNew(g.id));
-    if(fresh)return{say:`Try the new ${fresh.name}!`,game:fresh.id,button:(isEmoji(fresh.icon)?fresh.icon+" ":"")+fresh.name};
+    if(fresh)return{say:tryLine(fresh),game:fresh.id,button:(isEmoji(fresh.icon)?fresh.icon+" ":"")+fresh.name};
     for(const g of list){let x=null;try{x=g.suggest&&g.suggest();}catch(e){}
       if(x&&x.say)return{say:x.say,game:g.id,button:(isEmoji(g.icon)?g.icon+" ":"")+g.name};}
     return{say:"What do you want to play?",game:null};
   }
+  // a new game's line: its own, its season's, or "Try the new <name>!"
+  function tryLine(g){if(g.tryLine)return g.tryLine;let x=null;try{x=g.suggest&&g.suggest();}catch(e){}return x&&x.say?x.say:"Try the new "+g.name+"!";}
   const isEmoji=i=>!!i&&!ART[i];
   const icon=i=>ART[i]?drawThing(i):`<span class="hemo">${i||"🎮"}</span>`;
   function render(){
@@ -5624,52 +5646,79 @@ const Home=(()=>{
       if(!el)el=document.createElement("button");
       if(!el.__tile){      // first time: the old button's marks (its badge spans, ids other code writes to) are kept, its pictures hidden
         el.__marks=[...el.querySelectorAll("[id],.badge,.purse")];el.__marks.forEach(m=>{if(!m.classList.contains("badge")&&!m.classList.contains("purse"))m.hidden=true;});
-        el.classList.remove("toolbtn");el.__tile=true;}
+        el.classList.remove("toolbtn");el.__tile=true;
+        // an old badge that says NEW too (the dungeons, Adventure, a new book) hides while Home's NEW shows, also when it changes later
+        if(typeof MutationObserver!=="undefined")el.__marks.forEach(m=>{if(m.classList.contains("badge"))new MutationObserver(()=>dedupe(el)).observe(m,{childList:true,characterData:true,subtree:true});});}
       els[g.id]=el;el.classList.add("htile");el.dataset.game=g.id;el.style.display="";el.setAttribute("aria-label",g.name);
       el.innerHTML=`${icon(g.icon)}<b>${esc(g.name)}</b>${b?`<span class="hbadge">${esc(b)}</span>`:""}${Games.isNew(g.id)?`<span class="hnew">NEW</span>`:""}`;
-      el.__marks.forEach(m=>el.appendChild(m));
+      el.__marks.forEach(m=>el.appendChild(m));dedupe(el);
       el.onclick=()=>tap(g.id);keep.push(el);if(el.parentNode!==box||box.children[keep.length-1]!==el)box.appendChild(el);});
     [...box.children].forEach(c=>{if(keep.indexOf(c)<0)parked().appendChild(c);});
-    if(!spoke&&isOn()){spoke=true;Sound.speak(sg.say,.95);}
+    if(!spoke&&isOn()){spoke=true;talk(sg.say);}
+  }
+  function dedupe(el){const n=!!el.querySelector(".hnew");(el.__marks||[]).forEach(m=>{if(m.classList.contains("badge"))m.classList.toggle("hdup",n&&m.textContent.trim()==="NEW");});}
+  // the buddy's line: not while the tour is on (its bubble says its own), and only once whatever is being said has
+  // finished (a greeting at boot, a game's last word); Home's own line from before is simply replaced. Given up after 8 s.
+  let mine=false;
+  function talk(line){
+    try{if((+state.tour||0)<TOUR.length)return;}catch(e){}
+    const v=visits,t0=Date.now();
+    (function go(){if(!isOn()||v!==visits)return;
+      if(Sound.busy()&&!mine){if(Date.now()-t0<8000)setTimeout(go,200);return;}
+      mine=true;const off=()=>{mine=false;};Promise.resolve(Sound.speak(line,.95)).then(off,off);})();
   }
   // a tap on a tile or the button: one game at a time (a second tap within 0.6 s is the same tap)
   // tiles not shown now wait here (hidden), so the code that updates their badges still finds them
   function parked(){let p=document.getElementById("homePark");if(!p){p=document.createElement("div");p.id="homePark";p.hidden=true;document.body.appendChild(p);}return p;}
   // only a tap on Home itself is held to one game per 0.6 s; a click from code while Home is hidden always goes
-  function tap(id){const now=Date.now();if(isOn()&&now-lastOpen<600)return;lastOpen=now;Sound.sfx.pop();Games.open(id);}
+  // one sound: Home's pop only when the game makes none of its own as it opens
+  function tap(id){const now=Date.now();if(isOn()&&now-lastOpen<600)return;lastOpen=now;
+    const n=Sound.played();Games.open(id);if(Sound.played()===n)Sound.sfx.pop();}
   function show(){
     if(!ov)build();
-    if(!isOn()){ov.classList.add("on");spoke=false;lastOpen=0;Modes.open("home",ov);}      // a new visit: a fresh line, and the first tap counts
+    if(!isOn()){ov.classList.add("on");spoke=false;lastOpen=0;visits++;Modes.open("home",ov);}      // a new visit: a fresh line, and the first tap counts
     render();
   }
   function hide(){if(ov&&isOn())Modes.shut(ov);}
   // he chose the valley: Home goes, and stays away until 🏠 (what he starts in the valley comes back to the valley)
   let inValley=false,dragTip=false;
-  function valley(){inValley=true;hide();try{Coach.reach("valley");}catch(e){}
-    if(!dragTip&&camMax()>20){dragTip=true;setTimeout(()=>{if(!isOn())toast("Drag the valley to look around \u2190 \u2192");},900);}}
-  function home(){inValley=false;show();}
+  function valley(){inValley=true;hide();syncBack();try{Coach.reach("valley");}catch(e){}
+    if(!dragTip&&camMax()>20){dragTip=true;setTimeout(()=>{if(!isOn())toast("Drag the valley to look around \u2190 \u2192");},900);}
+    // what waited for the valley happens now, one after another
+    Object.keys(later).forEach((k,i)=>{const f=later[k];delete later[k];setTimeout(()=>{try{f();}catch(e){}},700+i*2000);});}
+  function home(){inValley=false;show();syncBack();}
+  // what happens in the valley itself (a keeper waking, the first car) waits until he is there: valleyNow() is true
+  // once he chose the valley and Home is away; whenValley(key,fn) runs fn then (one per key, the last one asked)
+  const later={};
+  const valleyNow=()=>!ready||(inValley&&!isOn());
+  function whenValley(k,fn){if(valleyNow()){fn();return;}later[k]=fn;}
+  // the way back from a game says where it goes: "🏠 Home" while closing it comes back to Home, in the valley its own
+  // words (a button's data-back). syncBack() runs when that changes and as games open (a sheet made later is caught too).
+  const backText=v=>inValley?v:"🏠 Home";
+  function syncBack(){document.querySelectorAll("[data-back]").forEach(b=>{const t=backText(b.dataset.back);if(b.textContent!==t)b.textContent=t;});}
   // when the last game closes and he did not choose the valley, Home comes back (after a moment, so one game
   // closing as the next opens, crates then a word, does not flash Home)
   let ready=false,backT=null;
-  function stackEmpty(){if(!ready||inValley)return;clearTimeout(backT);
+  function stackEmpty(){syncBack();if(!ready||inValley)return;clearTimeout(backT);
     backT=setTimeout(()=>{if(!inValley&&!isOn()&&!Modes.stack().length)show();},350);}
-  Games.add({id:"valley",name:"Valley",icon:"🏡",order:20,open:()=>valley()});
+  Games.add({id:"valley",name:"Valley",icon:"🏡",order:20,tryLine:"Let's visit the valley!",open:()=>valley()});
   // every fixed line Home can say (tools/voice/extract.js adds them to the voice list). "Want to read N more words
   // today?" is spoken from its pieces: the two halves here, the number from its own clip.
   function voiceLines(){
     const out=["What do you want to play?","Want to read","more words today?"];
-    Games._all().forEach(g=>{out.push("Try the new "+g.name+"!");let x=null;try{x=g.suggest&&g.suggest();}catch(e){}
-      if(x&&x.say)out.push(x.say);});
+    Games._all().forEach(g=>{if(g.tryLine)out.push(g.tryLine);else if(!g.suggest)out.push("Try the new "+g.name+"!");
+      let x=null;try{x=g.suggest&&g.suggest();}catch(e){}if(x&&x.say)out.push(x.say);});
     // the holidays say "It's <name> time!" only in season: list them all the same
     ["Trick-or-Read","Light the tree","Fireworks","Birthday party","Feast table","Word mail","Egg hunt"].forEach(n=>out.push("It's "+n+" time!"));
     return out.filter((x,i)=>out.indexOf(x)===i);
   }
   // a game closed and Home is on top again: redraw it (NEW marks, the buddy's line, badges)
   let rT=null;
-  function backOnTop(){if(!isOn())return;clearTimeout(rT);rT=setTimeout(()=>{if(isOn()&&Modes.top()==="home")render();},0);}
-  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,voiceLines,backOnTop,// the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
+  function backOnTop(){syncBack();if(!isOn())return;clearTimeout(rT);rT=setTimeout(()=>{if(isOn()&&Modes.top()==="home")render();},0);}
+  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,voiceLines,backOnTop,valleyNow,whenValley,backText,
+  // the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
   // test server sets), with Home built all the same so the page is laid out as it is for him
-  start(){ready=true;if(window.WCV_START==="valley"&&!inValley){inValley=true;if(!ov)build();render();return;}if(!inValley)show();},get _valley(){return inValley;},_ov:()=>ov};
+  start(){ready=true;if(window.WCV_START==="valley"&&!inValley){inValley=true;if(!ov)build();render();syncBack();return;}if(!inValley)show();syncBack();},get _valley(){return inValley;},_ov:()=>ov};
 })();
 
 /* ================================================================
@@ -6042,7 +6091,7 @@ document.getElementById("crateBtn").onclick=()=>{
   });
   Sound.sfx.soft();show("ovCrates");Coach.reach("crates");
 };
-Games.fromButton("crates","crateBtn",{name:"Read words",icon:"📦",order:10});
+Games.fromButton("crates","crateBtn",{name:"Read words",icon:"📦",order:10,tryLine:"Let's read some words!"});
 
 let cur=null, usedEar=false, misses=0;
 /* ---- the reading ladder ----
@@ -9517,7 +9566,7 @@ function booksBadge(){
   const mb=document.getElementById("mBooks");if(mb)mb.classList.toggle("new",!!n);
 }
 document.getElementById("booksBtn").onclick=()=>{Sound.sfx.pop();Books.shelf();};
-Games.fromButton("books","booksBtn",{name:"Books",icon:"📚",order:60});
+Games.fromButton("books","booksBtn",{name:"Books",icon:"📚",order:60,tryLine:"Let's read a book!"});
 
 /* ---- Picture It: read a sentence, pick the matching scene ---- */
 let picOv=null;
@@ -10225,7 +10274,7 @@ function advBadge(){const b=document.getElementById("advBadge");if(!b)return;con
   let q=false;try{q=Quest.available()||Quest2.available();}catch(e){}
   b.textContent=note?"💌":q&&!n?"❗":n?"NEW":"";b.classList.toggle("on",note||n||q);}
 document.getElementById("advBtn").onclick=()=>{Sound.sfx.pop();Adv.enter();advBadge();};
-Games.fromButton("adventure","advBtn",{name:"Adventure",icon:"🧭",order:50,inValley:true});
+Games.fromButton("adventure","advBtn",{name:"Adventure",icon:"🧭",order:50,inValley:true,tryLine:"Let's go on an adventure!"});
 setTimeout(advBadge,1500);
 
 /* ================================================================
@@ -11500,7 +11549,7 @@ const Dungeon=(()=>{
   });
 
   document.getElementById("dungeonBtn").onclick=()=>{Sound.sfx.pop();open();};
-  Games.fromButton("dungeons","dungeonBtn",{name:"Dungeons",icon:"🗝️",order:30});
+  Games.fromButton("dungeons","dungeonBtn",{name:"Dungeons",icon:"🗝️",order:30,tryLine:"Let's explore the dungeons!"});
   setTimeout(()=>{try{badge();}catch(e){}},1500);
   // a cave door in Adventure for each open dungeon, at a place kept in the save
   Adv.provide(()=>list().filter(isOpen).map(d=>{const S=dungeonState();
@@ -12314,7 +12363,7 @@ const Jobs=(()=>{
     if(!ov)return;Ghost.mark();
     ov.innerHTML=`<div class="sheet jobsheet"><div class="jbig">${s?s.job.icon:"💼"}</div><h2>Great work today!</h2>
       <p class="mpaid">${s?s.n:0} task${s&&s.n===1?"":"s"} · +${s?s.coins:0} 🪙</p>${s&&s.tips?`<p class="sub">🎉 ${s.tips} tip${s.tips===1?"":"s"}</p>`:""}
-      <div class="mrow"><button class="btn soft" id="jBoard">💼 Job board</button><button class="btn primary big" id="jHome">🏡 Back to the valley</button></div></div>`;
+      <div class="mrow"><button class="btn soft" id="jBoard">💼 Job board</button><button class="btn primary big" id="jHome" data-back="🏡 Back to the valley">${esc(Home.backText("🏡 Back to the valley"))}</button></div></div>`;
     ov.querySelector("#jBoard").onclick=()=>{Sound.sfx.pop();board();};
     ov.querySelector("#jHome").onclick=close;
     Sound.sfx.chime();Sound.speak("Great work today!",.95);
@@ -12322,7 +12371,7 @@ const Jobs=(()=>{
   // the dock button shows ⏰ while he is clocked in
   function badge(){const b=document.getElementById("jobsBadge");if(!b)return;const on=!!(state.jobs&&state.jobs.current);b.textContent=on?"⏰":"";b.classList.toggle("on",on);}
   document.getElementById("jobsBtn").onclick=()=>open();
-  Games.fromButton("jobs","jobsBtn",{name:"Jobs",icon:"💼",order:70,show:()=>REG.length>0});
+  Games.fromButton("jobs","jobsBtn",{name:"Jobs",icon:"💼",order:70,show:()=>REG.length>0,tryLine:"Let's go to work!"});
   setTimeout(()=>{try{badge();}catch(e){}},1500);
   // the Job board in Adventure: a signpost at the first of these places with no building next to it
   // candidate spots for the signpost: never the bottom-left corner, which the Adventure joystick covers on a touch screen
@@ -14897,12 +14946,13 @@ const Fireworks=(()=>{
     if(isOpen())cheer();
     else if(!owed){owed=true;setTimeout(settle,1200);}
   }
-  // the tenth read came in a crate or a book: the cheer waits until he is back in the valley (or the sky)
+  // the tenth read came in a crate or a book: the cheer waits until he is back in the valley, on Home or in the sky,
+  // and for any line being said to finish
   function settle(){
     if(!owed||pending)return;
     if(!due()){owed=false;return;}
     const top=Modes.top();
-    if(top==="valley"||top==="fireworks")cheer();
+    if((top==="valley"||top==="home"||top==="fireworks")&&!Sound.busy())cheer();
     else setTimeout(settle,1500);
   }
   // the sky's finale: a dozen big ones, quickly, and the words
@@ -15183,7 +15233,7 @@ const Party=(()=>{
     state.hats.push("party");save();
     Sound.sfx.chime();toast("🥳 A party hat for your birthday! It's in the 📖 Wardrobe.");
     try{buddyCheer();buddySay("A party hat for you!");}catch(e){}
-    if(Modes.top()==="valley")Sound.speak("A party hat for your birthday!",.95);
+    const top=Modes.top();if(top==="valley"||top==="home")Sound.speakQuiet("A party hat for your birthday!",.95);      // HOME: not over a game
     return true;
   }
 
@@ -16291,7 +16341,7 @@ const Factory=(()=>{
 
   /* ---------- in the valley and in Adventure ---------- */
   // Adventure: the placed Factory is a spot of its own (after the other spots, so a Halloween door on it still wins)
-  Games.add({id:"factory",name:"Factory",icon:"🏭",order:80,show:()=>Object.keys(state.grid||{}).some(k=>state.grid[k]&&state.grid[k].id==="factory"),open:()=>Factory.open()});
+  Games.add({id:"factory",name:"Factory",icon:"🏭",order:80,tryLine:"Let's build in the Factory!",show:()=>Object.keys(state.grid||{}).some(k=>state.grid[k]&&state.grid[k].id==="factory"),open:()=>Factory.open()});
   setTimeout(()=>{try{Adv.provide(()=>Object.keys(state.grid||{}).filter(k=>state.grid[k]&&state.grid[k].id==="factory").map(k=>{const p=k.split(",").map(Number);
     return{c:p[0],r:p[1],size:.42,low:true,cls:"fcspot",html:`<div class="fcsign">🏭</div>`,label:"🏭 Factory",act:()=>open()};}));}catch(e){}},0);
 
@@ -17467,7 +17517,7 @@ const Quests={
   }
 };
 document.getElementById("questBtn").onclick=()=>{Quests.render();show("ovQuests");Sound.sfx.soft();};
-Games.fromButton("quests","questBtn",{name:"Quests",icon:"📜",order:90});
+Games.fromButton("quests","questBtn",{name:"Quests",icon:"📜",order:90,tryLine:"Let's do today's quests!"});
 document.getElementById("chest").onclick=()=>Quests.open();
 
 /* ================================================================
@@ -17691,6 +17741,8 @@ const Nature=(()=>{
 let sceneQ=null;
 function wakeGuardian(b){
   const g=GUARDIANS[b];if(!g||state.guardians.includes(b))return;
+  // HOME: the keeper wakes in the valley, so while he is on Home (or in a game from it) it waits until he goes there
+  try{if(!Home.valleyNow()){Home.whenValley("keeper",()=>wakeGuardian(b));return;}}catch(e){}
   state.guardians.push(b);save();
   sceneQ={g,i:0};
   const art=document.getElementById("sceneArt");
@@ -17892,7 +17944,7 @@ function applySeason(){
   if(state.seasonSeen!==z.id){
     state.seasonSeen=z.id;
     if(!state.blueprints.includes(z.plan.id))state.blueprints.push(z.plan.id);
-    setTimeout(()=>{buddySay(z.greet);Sound.speak(z.greet,.95);toast("Free plan: "+z.plan.name+" — it's in your plans 📐");
+    setTimeout(()=>{buddySay(z.greet);Sound.speakQuiet(z.greet,.95);toast("Free plan: "+z.plan.name+" — it's in your plans 📐");
       document.getElementById("planBadge").classList.add("on");},2200);
     save();
   }
@@ -20017,6 +20069,8 @@ function bootFixups(){
    new valley made at startup is kept (it needs no conversions). */
 function loadSave(saved){
   const had=isPlain(saved);
+  // HOME: a save from before the tour's Valley step has no home.steps (read before the defaults fill it in)
+  const sixSteps=had&&!(isPlain(saved.home)&&saved.home.steps===7);
   // a save from before versions were counted is at 0, not at the newest
   const from=had?(+saved.v||0):SAVE_V;
   state=withDefaults(had?saved:state);
@@ -20025,6 +20079,7 @@ function loadSave(saved){
   while((state.v||0)<SAVE_V){state.v=(state.v||0)+1;const m=MIGRATIONS[state.v];if(m){m(state);ran=true;}}
   bootFixups();
   homeSeenFill(state);
+  if(sixSteps)homeTourFix(state);
   return ran;
 }
 
@@ -20046,7 +20101,9 @@ function loadSave(saved){
   renderWorld();renderDock();renderHUD();seedParticles();applyNight();setStreak(0);
   Quests.ensure();Quests.badge();applySeason();
   // a first car for every valley, once the tour is out of the way
-  const giveStarter=()=>{if(state.vehStarter)return;state.vehStarter=true;
+  const giveStarter=()=>{if(state.vehStarter)return;
+    try{if(!Home.valleyNow()){Home.whenValley("car",giveStarter);return;}}catch(e){}      // HOME: the car drives into the valley he can see
+    state.vehStarter=true;
     const v=addVehicle("v_car",true);if(!v)return;Sound.sfx.veh("honk");
     buddySay("Beep beep! A car drove into the valley!");toast("Tap the car! Read vehicle words to unlock more.");
     setTimeout(()=>driveVehicle(v,v.c<COLS/2?3:-3,0,.35),400);save();};
