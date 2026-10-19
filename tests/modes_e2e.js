@@ -17,7 +17,7 @@ const {launch,reload,waitFor,check}=require("./lib");
   await p.waitForTimeout(100);
 
   // 1. the table
-  const IDS=["valley","read","book","pic","sign","note","story","wild","care","write","maker","mine","adventure","race","dex","craft","album","quests","reward","evo","scene","recap","photo","gate","parent","report","store","other","job","trick","closet","dungeon","battle"];
+  const IDS=["valley","read","book","pic","sign","note","story","wild","care","write","maker","mine","adventure","race","dex","craft","album","quests","reward","evo","scene","recap","photo","gate","parent","report","store","other","job","trick","closet","dungeon","battle","home"];
   IDS.push("lights");   // LIGHT THE TREE
   IDS.push("fireworks");   // FIREWORKS
   IDS.push("party");   // PARTY

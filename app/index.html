@@ -4306,6 +4306,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   treats:{},
   // LEVELS, UPGRADES: upgrades done
   upgrades:0,
+  // HOME: the games he has opened from Home ({id:"YYYY-MM-DD"}; NEW shows until then), and whether an old save's
+  // played games were marked seen yet (homeSeenFill, once)
+  home:{seen:{},filled:false},
   // WORD DUNGEONS: his battle team (critter ids), hearts, the items found, the dungeons cleared, the monsters befriended,
   // each fighter's experience, the run in progress (resumed at its room's door), counts, the map seen, the cave doors' places
   dungeon:{team:[],maxHearts:3,items:{boomerang:false,hookshot:false,bombs:false},cleared:{},friends:{},xp:{},run:null,
@@ -5340,6 +5343,7 @@ const Modes=(()=>{
     report:{name:"Reading report",reading:false},
     store:{name:"Trading Post",reading:false},         // TRADING POST: the two shelves
     closet:{name:"Closet",reading:false},              // LOOKS: the 🎨 Closet
+    home:{name:"Home",reading:false},                  // HOME: the start screen, where he picks a game
     dungeon:{name:"Dungeons",reading:false},           // WORD DUNGEONS: the map and the rooms
     battle:{name:"Dungeon battles",reading:true},      // WORD DUNGEONS: a battle, a word door, making a friend
     other:{name:"Other",reading:false}};
@@ -5348,7 +5352,7 @@ const Modes=(()=>{
     ovRecap:"recap",ovScene:"scene",ovBook:"book",ovAlbum:"album",ovGate:"gate",ovParent:"parent",advHud:"adventure",
     ovStory:"book",ovPic:"pic",ovReport:"report",ovDex:"dex",ovWild:"wild",ovNote:"note",ovQuest:"story",ovMaker:"maker",
     ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine",
-    ovDungeons:"dungeon",ovDungeon:"dungeon",ovBattle:"battle"};
+    ovDungeons:"dungeon",ovDungeon:"dungeon",ovBattle:"battle",ovHome:"home"};
   const stack=[];            // {id, el}, innermost last
   const SAME_VISIT=2000,lastClose={};
   let guardFn=null,mo=null;
@@ -5397,6 +5401,52 @@ const Modes=(()=>{
   const credit=()=>bump("modeMin",top());
   return{open,close,shut,top,of,credit,list:()=>MODES,stack:()=>{reconcile();return stack.map(e=>e.id);},guard:fn=>{guardFn=fn||null;}};
 })();
+
+/* ================================================================
+   GAMES — every game Home can open, in one list
+   A game adds itself where its code lives:
+     Games.add({id, name, icon, order, show, badge, suggest, open, btn, inValley})
+       icon      an emoji, or an ART id (drawn with drawThing)
+       order     tiles sort by it
+       show()    the tile is there when true (a holiday in season, the Factory once built)
+       badge()   "" or a short badge (a count, ⏰); Home adds NEW itself for a game never opened
+       suggest() optional {say} for the buddy's line on Home (the holidays use it)
+       open()    opens the game
+       btn       the old tool bar id the tile now carries ("crateBtn"), so badges and tests find it
+       inValley  the game plays inside the valley (Adventure): Home steps aside for it
+   Games.list() is the games whose show() is true, in order; Games.open(id) marks the game
+   seen (state.home.seen) and opens it. Adding a game is one Games.add: Home and the valley
+   need no change.
+   ================================================================ */
+const Games=(()=>{
+  const all=[];
+  function add(g){if(!g||!g.id)return;const i=all.findIndex(x=>x.id===g.id);if(i>=0)all[i]=g;else all.push(g);}
+  const get=id=>all.find(g=>g.id===id);
+  const vis=g=>{try{return!g.show||!!g.show();}catch(e){return false;}};
+  function list(){return all.filter(vis).sort((a,b)=>(a.order||0)-(b.order||0));}
+  function seen(){if(!state.home||typeof state.home!=="object")state.home={seen:{}};if(!state.home.seen||typeof state.home.seen!=="object")state.home.seen={};return state.home.seen;}
+  const isNew=id=>!seen()[id];
+  function open(id){const g=get(id);if(!g)return false;const s=seen();if(!s[id]){s[id]=today();save();}
+    if(g.inValley)try{Home.hide();}catch(e){}
+    try{g.open();}catch(e){console.warn("game "+id+" did not open:",e&&e.message);}return true;}
+  return{add,get,list,open,isNew,_all:()=>all.slice()};
+})();
+// an old save marks as seen the games it has clearly played already, once, so Home is not covered in NEW
+function homeSeenFill(s){
+  if(!s.home||typeof s.home!=="object")s.home={seen:{},filled:false};
+  if(!s.home.seen||typeof s.home.seen!=="object")s.home.seen={};
+  if(s.home.filled)return;
+  const d=today(),seen=s.home.seen,mark=id=>{if(!seen[id])seen[id]=d;},has=o=>!!o&&typeof o==="object"&&Object.keys(o).length>0;
+  mark("valley");mark("quests");
+  if((+s.crateCount||0)>0)mark("crates");
+  if(s.mine&&s.mine.made)mark("mine");
+  if(has(s.library))mark("books");
+  if(s.jobs&&has(s.jobs.xp))mark("jobs");
+  if(s.dungeon&&s.dungeon.seen)mark("dungeons");
+  if(s.adv&&s.adv.seenIntro)mark("adventure");
+  if(s.factory&&((+s.factory.lvl||0)>0||has(s.factory.stars)))mark("factory");
+  s.home.filled=true;
+}
 
 /* ================================================================
    REST — the game holds still when nobody is playing or looking
@@ -19722,6 +19772,7 @@ function loadSave(saved){
   let ran=false;
   while((state.v||0)<SAVE_V){state.v=(state.v||0)+1;const m=MIGRATIONS[state.v];if(m){m(state);ran=true;}}
   bootFixups();
+  homeSeenFill(state);
   return ran;
 }
 
