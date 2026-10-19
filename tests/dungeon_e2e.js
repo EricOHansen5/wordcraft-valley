@@ -97,7 +97,9 @@ const {launch,check,waitFor}=require("./lib");
   ok(await E(()=>state.dungeon.items.boomerang===true&&document.getElementById("dItem").style.display!=="none"),"the chest in the item room gives the boomerang, and the item button shows");
   await E(()=>Dungeon._go("f4",1,1,"w"));
   ok((await E(()=>Dungeon.useItem())).dist===0,"thrown at a wall right beside him, the boomerang goes nowhere");
-  await E(()=>Dungeon._go("f5",6,2,"e"));const th=await E(()=>Dungeon.useItem());await wait(700);
+  await wait(500);   // the boomerang thrown at the wall is back
+  await E(()=>Dungeon._go("f5",6,2,"e"));const two=await E(()=>{const a=Dungeon.useItem(),b=Dungeon.useItem();return{a,b};});await wait(1300);const th=two.a;
+  ok(two.b===false,"a second throw while the boomerang is out does nothing (a double tap flips the switch once)");
   ok(th.hit==="switch"&&(await tile(1,6)).t==="."&&await E(()=>Dungeon._walkable(2,7)),"across the pit, the boomerang hits the switch and the barrier drops "+J(th));
   await E(()=>Dungeon._go("f5",6,3,"s"));const st=await E(()=>Dungeon.useItem());await wait(600);
   ok(st.hit==="monster"&&await E(()=>Dungeon._V().mons[0].stunned&&!!document.querySelector("#ovDungeon .dmon.stunned")),"it stuns a monster two tiles away "+J(st));

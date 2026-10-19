@@ -95,6 +95,25 @@ const {launch,check,waitFor,seed}=require("./lib");
   ok((await hp())===0||await closed(),"a stunned Cap starts one hit down (1 → 0 here: the free hit wins)");
   await closed();
 
+  // ---- 6b. the last hit wins, even with Back off tapped right after it ----
+  await E(()=>{const r=Dungeon._run();r.beaten=r.beaten.filter(u=>u!=="f1:1");r.hurt={"f1:1":1};Dungeon._go("f1",9,4,"s");});
+  await p.keyboard.press("ArrowDown");await waitFor(p,()=>!!document.querySelector("#ovBattle.on .bq[data-ans]"));
+  await p.click('#ovBattle .bmon[data-id="lion"]');await wait(150);
+  const k0=await E(()=>({gems:state.gems,wins:state.dungeon.stats.wins}));
+  await E(()=>window.__answer("#ovBattle .bq"));await until(()=>!Battle._B()||Battle._B().hp<=0);
+  await E(()=>{const b=document.getElementById("bBack");if(b)b.click();});await closed();await wait(300);
+  const k1=await E(()=>({gems:state.gems,wins:state.dungeon.stats.wins,beaten:Dungeon._run().beaten.indexOf("f1:1")>=0}));
+  ok(k1.beaten&&k1.gems===k0.gems+2&&k1.wins===k0.wins+1,"Back off after the last hit still wins, once "+J({k0,k1}));
+  // ---- 6c. Back off gives him a moment: no monster starts a battle for 2 s ----
+  await E(()=>{const r=Dungeon._run();r.beaten=r.beaten.filter(u=>u!=="f1:1");r.hurt={};Dungeon._go("f1",8,5,"e");});
+  await p.keyboard.press("ArrowRight");await waitFor(p,()=>!!document.querySelector("#ovBattle.on"));
+  await p.click("#bBack");await closed();
+  await E(()=>{window.__rnd=Math.random;Math.random=()=>.5;Dungeon._freeze(false);});   // .5: Cap steps west, toward Ash, every second
+  await wait(2200);const again=await E(()=>!!document.querySelector("#ovBattle.on"));
+  await E(()=>{Math.random=window.__rnd;Dungeon._freeze(true);});
+  ok(!again,"after Back off, no monster starts a battle for 2 s");
+  await closed().then(()=>{});await E(()=>{const b=document.getElementById("bBack");if(b&&document.querySelector("#ovBattle.on"))b.click();});await closed();
+
   // ---- 7. zero hearts: back to the entrance, keeping what he earned ----
   await E(()=>{const r=Dungeon._run();r.beaten=[];r.halves=1;Dungeon._go("f1",4,3,"w");});
   const keep=await E(()=>({gems:state.gems,xp:JSON.stringify(state.dungeon.xp),boom:state.dungeon.items.boomerang,restarts:state.dungeon.stats.restarts}).valueOf());
@@ -146,11 +165,15 @@ const {launch,check,waitFor,seed}=require("./lib");
   await p.click('#ovBattle .bmon[data-id="lion"]');await wait(200);
   for(let i=0;i<8&&await E(()=>!!document.querySelector("#ovBattle.on"));i++)await right();
   ok(await closed(),"the lion (fire) beats Mad Log (leaf)");await wait(600);
+  // right after the boss: a tap on the room does no harm, and leaving keeps the map from popping up later
+  await p.click('#ovDungeon .dt[data-c="5"][data-r="5"]',{timeout:3000}).catch(()=>{});
+  const e0=errs.length;await E(()=>Dungeon.exit());await wait(3600);
+  ok(errs.length===e0&&await E(()=>!document.querySelector("#ovDungeons.on")),"after beating the boss, a tap does no harm and leaving keeps the map from popping up "+J(errs.slice(e0)));
+  await E(()=>Dungeon.open());await wait(300);
   const cl=await E(()=>({max:state.dungeon.maxHearts,cleared:!!state.dungeon.cleared.forest,run:state.dungeon.run,gems:state.gems}));
   ok(cl.max===4&&cl.cleared&&cl.run===null&&cl.gems>=gB+10,"beating the boss: a heart container (3 → 4), the dungeon cleared, the run over, 10 gems "+J(cl));
   await E(()=>checkBadges());
   ok(await E(()=>(state.badges||[]).indexOf("d_forest")>=0),"...and the Forest Temple badge");
-  await until(()=>!!document.querySelector('#ovDungeons.on .dmap[data-d="forest"].cleared'));
   ok(await E(()=>!!document.querySelector('#ovDungeons.on .dmap[data-d="forest"].cleared .dtro svg')),"the map shows the Forest Temple cleared, with its trophy");
   // a replay: battle gems and the boss's 10, but no second heart container
   await E(()=>{Dungeon.enter("forest");Dungeon._freeze(true);Dungeon._run().bossKey=true;Dungeon._go("fB",6,4,"n");});await wait(300);

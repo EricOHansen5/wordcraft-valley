@@ -1826,7 +1826,7 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 /* the run: a room of 13x9 tiles of size --T (Dungeon.size), the bar on top, the buttons below */
 #ovDungeon{z-index:45;padding:0;background:#231c2e;backdrop-filter:none;-webkit-backdrop-filter:none;flex-direction:column;align-items:stretch;justify-content:flex-start;
   touch-action:none;user-select:none;-webkit-user-select:none}
-#ovDword,#ovBattle{z-index:50}
+#ovDword,#ovBattle,#ovFriend,#ovTeam{z-index:50}
 .dtop{display:flex;align-items:center;gap:12px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));color:#fff}
 .dhearts{display:flex;gap:2px;font-size:24px}.dh.half{opacity:.55}.dh.empty{opacity:.7}
 .dkeys,.dbk{display:flex;align-items:center;gap:4px;font-weight:900;font-size:18px}.dkeys svg,.dbk svg{width:30px;height:30px}
@@ -2272,7 +2272,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-19a"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-19b"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -10953,7 +10953,7 @@ const Dungeon=(()=>{
   // ---------- moving ----------
   function face(dir){const R=run();R.face=dir;const a=ov.querySelector("#dAsh");a.dataset.face=dir;a.className="dash face-"+dir;}
   function dirOf(dx,dy){return Object.keys(DIRS).find(k=>DIRS[k][0]===dx&&DIRS[k][1]===dy);}
-  const active=()=>!!(ov&&ov.classList.contains("on")&&run()&&ROOM&&!document.querySelector("#ovDword.on,#ovBattle.on"));
+  const active=()=>!!(ov&&ov.classList.contains("on")&&run()&&ROOM&&!document.querySelector("#ovDword.on,#ovBattle.on,#ovFriend.on,#ovTeam.on"));
   // one step; while Ash glides, up to two more wait their turn
   function step(dx,dy){
     if(!active())return false;
@@ -11003,6 +11003,7 @@ const Dungeon=(()=>{
   }
   // tap a tile: walk there by the shortest way (round monsters, blocks and walls)
   function walkTo(tc,tr){
+    if(!active())return false;
     const R=run(),start=R.pos.join(","),prev={},q=[R.pos];prev[start]=null;
     while(q.length){const p=q.shift();if(p[0]===tc&&p[1]===tr)break;
       for(const k in DIRS){const n=[p[0]+DIRS[k][0],p[1]+DIRS[k][1]],key=n.join(",");if(key in prev)continue;
@@ -11047,17 +11048,24 @@ const Dungeon=(()=>{
     hud();save();
   }
   function heal(){const R=run();R.halves=Math.min(dungeonState().maxHearts*2,R.halves+2);say(L("heart"));}
-  function hitSwitch(){
+  // the switch flips the room's barriers (a double tap on the action button is one hit); only those tiles redraw,
+  // so monsters, a stun and unsolved blocks stay as they are
+  function hitSwitch(fromItem){
+    const now=Date.now();if(!fromItem&&now<switchCool)return;switchCool=now+700;
     const R=run(),k=ROOM.id+":switch",i=R.opened.indexOf(k);if(i>=0)R.opened.splice(i,1);else R.opened.push(k);
-    Sound.sfx.chime();save();draw();
+    const down=R.opened.indexOf(k)>=0;
+    ROOM.grid.forEach((row,r)=>[...row].forEach((ch,c)=>{if(ch==="R"||ch==="U"){V.cells[r][c]=down?".":ch;paint(c,r);}}));
+    Sound.sfx.chime();save();
   }
   /* the boomerang: up to 4 tiles straight ahead, over floor, pits, water and lava; walls, doors, blocks, chests,
      signs and raised barriers stop it. It hits the first switch (the barriers flip), stuns the first monster (his
      next battle with it starts with a free hit), or breaks the first pot or bush and brings back what was in it.
      What it does is decided when he throws; the switch's barriers flip when it comes back. Returns {dist, hit}. */
   const FLY=new Set([".","@","F","_","^","~","%"]);
+  let flying=false,switchCool=0;
   function useItem(){
-    if(!active()||D.item!=="boomerang"||!dungeonState().items.boomerang)return false;
+    if(!active()||D.item!=="boomerang"||!dungeonState().items.boomerang||flying)return false;
+    flying=true;setTimeout(()=>{flying=false;},460);
     const R=run(),[dx,dy]=DIRS[R.face];let dist=0,hit=null,at=null;
     for(let i=1;i<=4;i++){const c=R.pos[0]+dx*i,r=R.pos[1]+dy*i,ch=cell(c,r);
       if(edgeAt(c,r)||c<1||r<1||c>11||r>7)break;
@@ -11071,7 +11079,7 @@ const Dungeon=(()=>{
       setTimeout(()=>place(b,R.pos[0],R.pos[1]),220);setTimeout(()=>b.classList.remove("on"),440);}
     if(hit==="monster"){at.stunned=true;const el=ov.querySelector(`.dmon[data-uid="${at.uid}"]`);if(el)el.classList.add("stunned");}
     if(hit==="pot")smash(at[0],at[1]);
-    if(hit==="switch")setTimeout(hitSwitch,440);
+    if(hit==="switch"){const rid=ROOM.id;setTimeout(()=>{if(ROOM&&ROOM.id===rid&&!fighting)hitSwitch(true);},440);}
     return{dist,hit};
   }
 
@@ -11101,7 +11109,7 @@ const Dungeon=(()=>{
   function afterBoss(res){
     if(res==="lost"){restart();return;}
     const R=run(),S=dungeonState();
-    if(res==="fled"){const [dx,dy]=DIRS[R.face],c=R.pos[0]-dx,r=R.pos[1]-dy;if(walkable(c,r)&&!edgeAt(c,r)){R.pos=[c,r];place(ov.querySelector("#dAsh"),c,r);}save();return;}
+    if(res==="fled"){backAway(6,3);save();return;}
     const first=!S.cleared[D.id],b=DUNGEONS.bosses[D.boss];
     if(first)S.maxHearts=Math.min(6,S.maxHearts+1);
     S.cleared[D.id]={at:today(),runs:(S.cleared[D.id]||{}).runs?S.cleared[D.id].runs+1:1};
@@ -11109,16 +11117,24 @@ const Dungeon=(()=>{
     say(b.friendly);if(first)setTimeout(()=>{toast("❤️ A new heart! You have "+S.maxHearts+" hearts now.");Sound.sfx.fanfare();},1800);
     try{checkBadges();}catch(e){}
     S.run=null;save();
-    setTimeout(()=>{if(ov&&ov.classList.contains("on"))Modes.shut(ov);open();},3200);
+    clearTimeout(mapT);mapT=setTimeout(()=>{mapT=null;if(ov&&ov.classList.contains("on")){Modes.shut(ov);open();}},3200);
   }
   function afterFight(m,res){
     const R=run();if(!R)return;
     if(res==="won"){R.beaten.push(m.uid);if(R.hurt)delete R.hurt[m.uid];V.mons=V.mons.filter(x=>x!==m);
       const el=ov.querySelector(`.dmon[data-uid="${m.uid}"]`);if(el)el.remove();save();}
-    else if(res==="fled"){R.hurt=R.hurt||{};R.hurt[m.uid]=m.hp;const [dx,dy]=DIRS[R.face],c=R.pos[0]-dx,r=R.pos[1]-dy;
-      if(walkable(c,r)&&!edgeAt(c,r)){R.pos=[c,r];place(ov.querySelector("#dAsh"),c,r);}save();}
+    else if(res==="fled"){R.hurt=R.hurt||{};R.hurt[m.uid]=m.hp;backAway(m.c,m.r);save();}
     else if(res==="lost")restart();
     hud();
+  }
+  // Back off: one step away from what he fought (or any free step), then a moment before a monster may start a battle
+  let grace=0;
+  function backAway(fc,fr){
+    const R=run(),dx=Math.sign(R.pos[0]-fc),dy=Math.sign(R.pos[1]-fr);
+    const tries=[[dx,dy]].concat(Object.values(DIRS)).filter(v=>Math.abs(v[0])+Math.abs(v[1])===1);
+    const ok=tries.find(v=>{const c=R.pos[0]+v[0],r=R.pos[1]+v[1];return walkable(c,r)&&!edgeAt(c,r);});
+    if(ok){R.pos=[R.pos[0]+ok[0],R.pos[1]+ok[1]];place(ov.querySelector("#dAsh"),R.pos[0],R.pos[1]);}
+    grace=Date.now()+2500;
   }
   // zero hearts: back to the entrance with full hearts; gems, friends, experience and the item are kept
   function restart(){
@@ -11131,7 +11147,7 @@ const Dungeon=(()=>{
     V.mons.slice().forEach(m=>{
       if(m.stunned||Math.random()<.35)return;
       const ks=Object.keys(DIRS),k=ks[Math.floor(Math.random()*4)],c=m.c+DIRS[k][0],r=m.r+DIRS[k][1];
-      if(c===R.pos[0]&&r===R.pos[1]){fight(m);return;}
+      if(c===R.pos[0]&&r===R.pos[1]){if(Date.now()>=grace)fight(m);return;}
       if(fighting||edgeAt(c,r)||!walkable(c,r)||cell(c,r)==="F"||cell(c,r)==="_")return;
       m.c=c;m.r=r;const el=ov.querySelector(`.dmon[data-uid="${m.uid}"]`);if(el)place(el,c,r);});
   },1000);
@@ -11169,7 +11185,8 @@ const Dungeon=(()=>{
     mount();draw();save();
     return true;
   }
-  function exit(){stopWalk();queue=[];if(ov)Modes.shut(ov);save();Sound.sfx.soft();}
+  let mapT=null;
+  function exit(){stopWalk();queue=[];clearTimeout(mapT);mapT=null;if(ov)Modes.shut(ov);save();Sound.sfx.soft();}
   // the keyboard: arrows or WASD to walk, space for the action, X for the item
   document.addEventListener("keydown",e=>{
     if(!active()||Modes.top()!=="dungeon")return;
@@ -11194,7 +11211,7 @@ const Dungeon=(()=>{
     DUNGEONS.list.forEach(d=>d.rooms.forEach(r=>Object.values(r.signs||{}).forEach(add)));
     Object.values(DUNGEONS.bosses).forEach(b=>{add(b.taunt);add(b.friendly);add(b.name);});
     Object.values(DUNGEONS.monsters).forEach(m=>{add(m.name);add(m.move+"!");m.friend.replace(/[.!?,]/g,"").split(" ").forEach(add);});
-    ["Bite!","Kick!","Peck!","Stomp!","Bonk!","Tap its name!"].forEach(add);
+    ["Bite!","Kick!","Peck!","Stomp!","Bonk!","Tap its name!","Try again!"].forEach(add);
     return out;
   }
   return{open,isOpen,byId,list,badge,enter,exit,step,act,useItem:()=>useItem(),voiceLines,
@@ -11232,7 +11249,7 @@ const Battle=(()=>{
     el.innerHTML=`<div class="bart">${f.art}</div><b>${esc(f.name)}</b><span class="btype">${IC[f.type]}</span>`;}
   function bar(){const S=dungeonState();ov.querySelector(".bteam").innerHTML=B.team.map(id=>{const f=fighter(id),st=STARS.filter(n=>(S.xp[id]||0)>=n).length;
       return`<button class="bmon${id===B.active?" active":""}" data-id="${id}" data-type="${f.type}"><div class="bart">${f.art}</div><span>${IC[f.type]}${"⭐".repeat(st)}</span></button>`;}).join("");
-    ov.querySelectorAll(".bteam .bmon").forEach(b=>b.onclick=()=>{if(B.over||b.dataset.id===B.active)return;B.active=b.dataset.id;Sound.sfx.pop();me();bar();hint();});}
+    ov.querySelectorAll(".bteam .bmon").forEach(b=>b.onclick=()=>{if(B.over||B.done||b.dataset.id===B.active)return;B.active=b.dataset.id;Sound.sfx.pop();me();bar();hint();});}
   function hint(){const f=fighter(B.active),k=HINT[B.type+">"+f.type],el=ov.querySelector(".bhint");
     if(k){el.textContent=DUNGEONS.lines[k];el.classList.add("on");Sound.speak(DUNGEONS.lines[k],.95);}else el.classList.remove("on");}
   function mount(){
@@ -11242,9 +11259,9 @@ const Battle=(()=>{
         <div class="bfoe" data-type="${B.type}"><div class="bart">${B.art}</div><b>${esc(B.name)}</b><span class="btype">${IC[B.type]}</span><div class="bhp"></div></div></div>
       <p class="bhint"></p><div class="bq"></div><div class="bteam"></div>
       <div class="mrow" style="justify-content:center">${B.item?`<button class="btn primary" id="bItem">${drawThing("i_boomerang")} Use the boomerang!</button>`:""}<button class="btn soft" id="bBack">🏃 Back off</button></div></div>`;
-    ov.querySelector("#bBack").onclick=()=>end("fled");
+    ov.querySelector("#bBack").onclick=()=>{if(B&&!B.done)end("fled");};
     const it=ov.querySelector("#bItem");if(it)it.onclick=()=>{if(B.over||B.itemUsed)return;B.itemUsed=true;it.remove();
-      B.hp=Math.max(0,B.hp-1);foe();Sound.sfx.boing&&Sound.sfx.boing();const el=ov.querySelector(".bfoe");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
+      B.hp=Math.max(0,B.hp-1);if(B.hp<=0)B.done=true;foe();Sound.sfx.boing&&Sound.sfx.boing();const el=ov.querySelector(".bfoe");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
       if(B.hp<=0)setTimeout(win,500);};
     if(!ov.classList.contains("on")){ov.classList.add("on");Modes.open("battle",ov);}
     hearts();foe();me();bar();
@@ -11258,7 +11275,7 @@ const Battle=(()=>{
       B.active=B.team[0];
       dungeonState().stats.battles++;
       mount();hint();
-      if(opt.free){B.hp=Math.max(0,B.hp-opt.free);if(!boss)f.hp=B.hp;foe();}
+      if(opt.free){B.hp=Math.max(0,B.hp-opt.free);if(!boss)f.hp=B.hp;if(B.hp<=0)B.done=true;foe();}
       if(B.hp<=0){setTimeout(win,700);return;}
       ask();
     });
@@ -11269,6 +11286,8 @@ const Battle=(()=>{
     const kinds=["pic","wordPick","build"];
     let k=B.boss?(B.round%3===0?"sentence":kinds[(B.round-1)%3]):(only||((currentTier()>=2&&B.round%3===0)?"sentence":kinds[(B.round-1)%3]));
     if(obs)obs.disconnect();
+    // a miss is an element in the question gaining the class "wrong" or "bad": every Read engine marks its misses so,
+    // and never adds either class on a right answer. A new engine must keep to that.
     obs=new MutationObserver(recs=>{if(recs.some(r=>r.target.classList&&(r.target.classList.contains("wrong")||r.target.classList.contains("bad"))))wrong();});
     obs.observe(host,{subtree:true,attributes:true,attributeFilter:["class"]});
     Read[k](host,Read.once(()=>right()));
@@ -11276,20 +11295,20 @@ const Battle=(()=>{
   function right(){
     if(!B||B.over)return;
     const f=fighter(B.active),n=beats(f.type,B.type)?2:1;
-    B.hp=Math.max(0,B.hp-n);if(!B.boss)B.f.hp=B.hp;state.wordsRead++;try{Quests.hit("read");}catch(e){}
+    B.hp=Math.max(0,B.hp-n);if(!B.boss)B.f.hp=B.hp;if(B.hp<=0)B.done=true;state.wordsRead++;try{Quests.hit("read");}catch(e){}
     const el=ov.querySelector(".bfoe");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
     Sound.sfx.boing&&Sound.sfx.boing();Sound.speak(f.move,1);foe();save();
     if(B.hp<=0)setTimeout(win,500);else setTimeout(ask,700);
   }
   function wrong(){
-    if(!B||B.over)return;const now=Date.now();if(now-B.lastWrong<400)return;B.lastWrong=now;
+    if(!B||B.over||B.done)return;const now=Date.now();if(now-B.lastWrong<400)return;B.lastWrong=now;
     if(B.lostQ>=2)return;B.lostQ++;
     const R=Dungeon._run();R.halves=Math.max(0,R.halves-1);hearts();Dungeon._hud();save();
     const el=ov.querySelector(".bme");el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");
     if(R.halves<=0)setTimeout(()=>end("lost"),600);
   }
   function win(){
-    if(!B||B.over)return;const S=dungeonState();
+    if(!B||B.over||B.won)return;B.won=true;const S=dungeonState();
     state.gems+=B.boss?10:2;S.stats.wins++;
     if(B.active!=="buddy"){const before=S.xp[B.active]||0;S.xp[B.active]=before+1;
       if(STARS.indexOf(before+1)>=0)toast("⭐ "+fighter(B.active).name+" got a level star!");}
@@ -11318,26 +11337,36 @@ const Friends=(()=>{
     const S=dungeonState(),n=S.beat[kind]||0;S.beat[kind]=n+1;save();
     if(has(kind)||!DUNGEONS.monsters[kind])return Promise.resolve(false);
     if(n>0&&Math.random()>=1/3)return Promise.resolve(false);
-    return new Promise(res=>ask(kind,res));
+    return new Promise(res=>ask(kind,res,n===0?2:1));
   }
-  function ask(kind,res){
+  // tries: 2 on the first offer of a kind (a second try at each step), 1 after that
+  function ask(kind,res,tries){
     const m=DUNGEONS.monsters[kind];
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFriend";document.body.appendChild(ov);}
     ov.innerHTML=`<div class="sheet fsheet"><div class="fart">${drawThing(m.art)}</div><h2>It wants to be your friend!</h2><div class="fq"></div></div>`;
     ov.classList.add("on");Modes.open("battle",ov);
     const host=ov.querySelector(".fq"),done=ok=>{setTimeout(()=>{Modes.shut(ov);res(ok);},ok?1600:1400);};
-    const miss=()=>{host.innerHTML=`<p class="wp">${DUNGEONS.lines.nextTime}</p>`;delete host.dataset.ans;Sound.sfx.soft();Sound.speak(DUNGEONS.lines.nextTime,.95);done(false);};
+    let left=tries||1;
+    const miss=again=>{left--;if(left>0){Sound.sfx.soft();Sound.speak("Try again!",.95);const t=document.createElement("p");t.className="wp ftry";t.textContent="Try again!";
+        const old=host.querySelector(".ftry");if(old)old.remove();host.prepend(t);setTimeout(again,700);return;}
+      host.innerHTML=`<p class="wp">${DUNGEONS.lines.nextTime}</p>`;delete host.dataset.ans;Sound.sfx.soft();Sound.speak(DUNGEONS.lines.nextTime,.95);done(false);};
     // 1. its name
-    const names=Read.shuffle([m.name].concat(m.look));
-    host.dataset.ans=m.name;
-    host.innerHTML=`<p class="wp">Tap its name!</p><div class="wopts">${names.map(n=>`<button class="wwopt" data-w="${esc(n)}">${esc(n)}</button>`).join("")}</div>`;
-    Sound.speak("Tap its name!",.95);
-    let used=false;
-    host.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{if(used)return;used=true;
-      if(b.dataset.w!==m.name){b.classList.add("wrong");miss();return;}
-      b.classList.add("right");Sound.sfx.win();setTimeout(sentence,700);});
+    function name(){
+      const names=Read.shuffle([m.name].concat(m.look));
+      host.dataset.ans=m.name;
+      const keep=host.querySelector(".ftry");
+      host.innerHTML=`<p class="wp">Tap its name!</p><div class="wopts">${names.map(n=>`<button class="wwopt" data-w="${esc(n)}">${esc(n)}</button>`).join("")}</div>`;
+      if(keep)host.prepend(keep);
+      Sound.speak("Tap its name!",.95);
+      let used=false;
+      host.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{if(used)return;used=true;
+        if(b.dataset.w!==m.name){b.classList.add("wrong");miss(name);return;}
+        b.classList.add("right");Sound.sfx.win();setTimeout(sentence,700);});
+    }
+    name();
     // 2. its sentence, and its picture among three
     function sentence(){
+      ov.querySelector(".fart").style.visibility="hidden";      // its picture would give the answer away
       const others=Read.shuffle(Object.keys(DUNGEONS.monsters).filter(k=>k!==kind)).slice(0,2).map(k=>DUNGEONS.monsters[k].art);
       const pics=Read.shuffle([m.art].concat(others)),at=pics.indexOf(m.art);
       host.dataset.ans="#"+at;
@@ -11346,7 +11375,7 @@ const Friends=(()=>{
       try{Books.wireWords(host.querySelector(".btext"));}catch(e){}
       let fin=false;
       host.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{if(fin)return;fin=true;
-        if(+b.dataset.i!==at){b.classList.add("wrong");miss();return;}
+        if(+b.dataset.i!==at){b.classList.add("wrong");miss(sentence);return;}
         b.classList.add("right");befriend(kind);host.innerHTML=`<p class="wp">${esc(m.name)} is your friend! NEW in your Word-Dex!</p>`;delete host.dataset.ans;done(true);});
     }
   }
@@ -17064,11 +17093,16 @@ const Quests={
   ensure(){
     if(state.quests&&state.quests.date===today())return;
     const rnd=mulberry(hashStr(today()));
-    const pool=QUEST_POOL.slice().sort(()=>rnd()-.5);
+    const pool=QUEST_POOL.filter(q=>this.ready(q)).sort(()=>rnd()-.5);
     // always one reading quest so the day cannot be finished by tapping alone
     const reading=pool.find(q=>q.k==="read"), rest=pool.filter(q=>q.k!=="read"&&q.k!=="master").slice(0,2);
     state.quests={date:today(),list:[reading,...rest].map(q=>({...q,p:0})),opened:false};
     save();
+  },
+  // a quest he can do today: WORD DUNGEONS' friend quest needs a monster left to befriend in a dungeon he can enter
+  ready(q){
+    if(!q||q.k!=="dfriend")return true;
+    try{const S=dungeonState();return DUNGEONS.list.some(d=>Dungeon.isOpen(d)&&(d.monsters||[]).some(k=>!S.friends[k]));}catch(e){return false;}
   },
   hit(k,by=1){
     this.ensure();
