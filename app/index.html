@@ -1863,6 +1863,8 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .dbtns{display:flex;gap:12px;align-items:center}.dbtns #dAct{width:76px;height:76px;border-radius:50%;font-size:34px}
 .dbtns #dItem{width:62px;height:62px;border-radius:50%;padding:6px}.dbtns #dItem svg{width:100%;height:100%}
 
+.dextabs{display:flex;gap:8px;justify-content:center;margin:4px 0}.dextabs .on{background:#ffe9a8}
+.fsheet{text-align:center;max-width:640px}.fsheet .fart{width:120px;height:120px;margin:0 auto}
 .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;max-height:52vh;overflow:auto;margin:8px 0}
 .tcard{border:2.5px solid #2e2620;border-radius:14px;background:#fffaf0;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:44px}
 .tcard .tart{width:60px;height:60px}.tcard.on{background:#ffe9a8;box-shadow:0 0 0 3px #d9a400}
@@ -3412,7 +3414,11 @@ const CRITTERS=[
   {id:"lizard",name:"Lizard",b:6,kind:"prey",rar:1,cry:"chitter"},{id:"scorpion",name:"Scorpion",b:6,kind:"hunter",rar:1,cry:"chitter"},
   {id:"rhino",name:"Rhino",b:6,kind:"brawler",rar:2,cry:"snort"},{id:"eagle",name:"Eagle",b:6,kind:"flyer",rar:2,cry:"screech"},
   {id:"sauropod",name:"Longneck",b:6,kind:"brawler",rar:3,cry:"bellow"}];
-const CRIT=id=>CRITTERS.find(c=>c.id===id);
+// WORD DUNGEONS: a monster friend (m_<kind>) is an animal of his too, made from its monster; CRITTERS itself
+// stays animals only, so Word Wilds, rewards and shops never offer a monster
+const monsterCrit=id=>{if(String(id||"").indexOf("m_")!==0)return undefined;const m=DUNGEONS.monsters[String(id).slice(2)];
+  return m?{id,name:m.name,b:0,kind:"brawler",rar:1,cry:"buzz",monster:true}:undefined;};
+const CRIT=id=>CRITTERS.find(c=>c.id===id)||monsterCrit(id);
 
 /* ---- vehicles ----
    move: how it gets around (road, rail, air, water, snow)
@@ -3467,6 +3473,7 @@ const VEH_WORD={van:"v_van",cab:"v_taxi",bus:"v_bus",jet:"v_plane",truck:"v_truc
   bike:"v_bike",sled:"v_sled",rocket:"v_rocket",car:"v_car",jeep:"v_suv",boat:"v_sailboat",
   train:"v_train",plane:"v_plane",sub:"v_submarine",tram:"v_tram",dump:"v_dumptruck",crane:"v_crane"};
 CRITTERS.forEach(c=>NAMES[c.id]=c.name);
+Object.keys(WCV.dungeons.monsters).forEach(k=>{NAMES["m_"+k]=WCV.dungeons.monsters[k].name;});   // WORD DUNGEONS: monster friends
 const SIGNS=WCV.sentences.SIGNS;   // content/sentences.js
 const DUNGEONS=WCV.dungeons;   // content/dungeons.js (Word Dungeons: rooms, monsters, the type table)
 // battle types: fire beats leaf, leaf beats water, water beats fire. A monster friend m_<kind> has its monster's type; anything else is leaf.
@@ -4299,7 +4306,7 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // WORD DUNGEONS: his battle team (critter ids), hearts, the items found, the dungeons cleared, the monsters befriended,
   // each fighter's experience, the run in progress (resumed at its room's door), counts, the map seen, the cave doors' places
   dungeon:{team:[],maxHearts:3,items:{boomerang:false,hookshot:false,bombs:false},cleared:{},friends:{},xp:{},run:null,
-    stats:{battles:0,wins:0,runs:0,restarts:0},seen:false,caves:{}},
+    stats:{battles:0,wins:0,runs:0,restarts:0},seen:false,caves:{},beat:{}},
   // GEM MINE: miner, shop, tunnels, museum, pets. There is no `w` (world width) on purpose:
   // the Mine stamps it on first use, and a mine saved without one is from the narrower world
   // and gets fresh tunnels. The seed is new each time def() runs; a saved mine keeps its own.
@@ -5083,7 +5090,7 @@ tilesEl.addEventListener("click",e=>{
   const{c,r}=cellOf(key);buddyGo(c+1,r);buddySay("Nice spot!");Coach.reach("placed");
 });
 function addItem(id,n=1){
-  if(CRITTERS.some(c=>c.id===id)||packCreatures.some(c=>c.id===id)){
+  if(CRITTERS.some(c=>c.id===id)||packCreatures.some(c=>c.id===id)||monsterCrit(id)){
     const have=state.critters.find(c=>c.id===id);
     if(have)return levelOrPay("animal",have);
     const pc=packCreatures.find(c=>c.id===id);
@@ -9761,13 +9768,20 @@ const Dex={
     if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovDex";document.body.appendChild(ov);}
     const dex=Adv._A().dex,all=CRITTERS,got=all.filter(c=>(dex[c.id]||{}).caught).length;
     ov.innerHTML=`<div class="sheet dexsheet"><div class="bhead"><h2>📔 Word-Dex</h2><b class="dexn">${got} / ${all.length} friends</b><button class="bx" id="dexX">✕</button></div>
+      <div class="dextabs"><button class="btn soft on" data-tab="a">🐾 Animals</button><button class="btn soft" data-tab="m">🗝️ Dungeon friends</button></div>
       <p class="sub">Walk in the tall grass to meet wild animals. Read to make them your friends!</p>
-      <div class="dexgrid">${all.map((c,i)=>{const d=dex[c.id]||{};const st=d.caught?"got":d.seen?"seen":"none";
+      <div class="dexgrid mgrid" style="display:none">${Object.keys(DUNGEONS.monsters).map(k=>{const m=DUNGEONS.monsters[k],got=!!dungeonState().friends[k];
+        return`<div class="dexc ${got?"got":"none"}" data-id="m_${k}"><div class="dart">${got?drawThing(m.art):"?"}</div><b>${got?esc(m.name):"&nbsp;"}</b></div>`;}).join("")}</div>
+      <div class="dexgrid agrid">${all.map((c,i)=>{const d=dex[c.id]||{};const st=d.caught?"got":d.seen?"seen":"none";
         return`<button class="dexc ${st}${d.shiny?" shiny":""}" data-id="${c.id}"><i>#${String(i+1).padStart(2,"0")}</i>
           <div class="dart">${st==="none"?"?":drawThing(c.id,5)}</div><b>${st==="got"?c.name:st==="seen"?"???":"&nbsp;"}</b>
           ${d.shiny?`<span class="spk">✨</span>`:""}${c.rar===3?`<span class="leg">★</span>`:""}</button>`;}).join("")}</div></div>`;
     ov.classList.add("on");Modes.open("dex",ov);
     ov.querySelector("#dexX").onclick=()=>Modes.shut(ov);
+    ov.querySelectorAll(".dextabs [data-tab]").forEach(b=>b.onclick=()=>{const m=b.dataset.tab==="m";Sound.sfx.pop();
+      ov.querySelectorAll(".dextabs [data-tab]").forEach(x=>x.classList.toggle("on",x===b));
+      ov.querySelector(".mgrid").style.display=m?"":"none";ov.querySelector(".agrid").style.display=m?"none":"";
+      ov.querySelector(".sub").textContent=m?"Win dungeon battles, then read to make monsters your friends!":"Walk in the tall grass to meet wild animals. Read to make them your friends!";});
     ov.querySelectorAll(".dexc.got").forEach(b=>b.onclick=()=>{const c=CRIT(b.dataset.id);const s=`The ${c.name.toLowerCase()}. ${Dex.facts[c.kind]||""}`;
       Sound.sfx.cry(c.cry);setTimeout(()=>Sound.say("sent:"+s,s,.9),350);b.classList.add("pop");setTimeout(()=>b.classList.remove("pop"),600);});
     ov.querySelectorAll(".dexc.seen").forEach(b=>b.onclick=()=>{Sound.sfx.soft();toast("You met this one! Find it in the grass again.");});
@@ -11281,8 +11295,57 @@ const Battle=(()=>{
   }
   return{start,_B:()=>B,_only:k=>{only=k||null;},fighter,team};
 })();
-// Friends: befriending monsters (filled in below)
-let Friends={offer:()=>Promise.resolve(false),has:()=>false};
+/* ---------- Friends: a monster that wants to be friends ----------
+   After a win: always the first time he beats a kind, then 1 time in 3, never once it is his friend.
+   He picks its name among three look-alikes, then reads its friend sentence and finds its picture.
+   Both right: it joins his collection (state.critters, the Word-Dex's Dungeon friends, the team). A miss:
+   "Maybe next time!", nothing lost. */
+const Friends=(()=>{
+  let ov=null;
+  const has=kind=>!!dungeonState().friends[kind];
+  function offer(kind){
+    const S=dungeonState(),n=S.beat[kind]||0;S.beat[kind]=n+1;save();
+    if(has(kind)||!DUNGEONS.monsters[kind])return Promise.resolve(false);
+    if(n>0&&Math.random()>=1/3)return Promise.resolve(false);
+    return new Promise(res=>ask(kind,res));
+  }
+  function ask(kind,res){
+    const m=DUNGEONS.monsters[kind];
+    if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovFriend";document.body.appendChild(ov);}
+    ov.innerHTML=`<div class="sheet fsheet"><div class="fart">${drawThing(m.art)}</div><h2>It wants to be your friend!</h2><div class="fq"></div></div>`;
+    ov.classList.add("on");Modes.open("battle",ov);
+    const host=ov.querySelector(".fq"),done=ok=>{setTimeout(()=>{Modes.shut(ov);res(ok);},ok?1600:1400);};
+    const miss=()=>{host.innerHTML=`<p class="wp">${DUNGEONS.lines.nextTime}</p>`;delete host.dataset.ans;Sound.sfx.soft();Sound.speak(DUNGEONS.lines.nextTime,.95);done(false);};
+    // 1. its name
+    const names=Read.shuffle([m.name].concat(m.look));
+    host.dataset.ans=m.name;
+    host.innerHTML=`<p class="wp">Tap its name!</p><div class="wopts">${names.map(n=>`<button class="wwopt" data-w="${esc(n)}">${esc(n)}</button>`).join("")}</div>`;
+    Sound.speak("Tap its name!",.95);
+    let used=false;
+    host.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{if(used)return;used=true;
+      if(b.dataset.w!==m.name){b.classList.add("wrong");miss();return;}
+      b.classList.add("right");Sound.sfx.win();setTimeout(sentence,700);});
+    // 2. its sentence, and its picture among three
+    function sentence(){
+      const others=Read.shuffle(Object.keys(DUNGEONS.monsters).filter(k=>k!==kind)).slice(0,2).map(k=>DUNGEONS.monsters[k].art);
+      const pics=Read.shuffle([m.art].concat(others)),at=pics.indexOf(m.art);
+      host.dataset.ans="#"+at;
+      host.innerHTML=`<p class="wp">Read it, then find the picture!</p><div class="btext">${m.friend.split(" ").map(w=>`<span class="bw">${esc(w)}</span>`).join(" ")}</div>
+        <div class="psopts">${pics.map((a,i)=>`<button class="psopt" data-i="${i}">${drawThing(a)}</button>`).join("")}</div>`;
+      try{Books.wireWords(host.querySelector(".btext"));}catch(e){}
+      let fin=false;
+      host.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{if(fin)return;fin=true;
+        if(+b.dataset.i!==at){b.classList.add("wrong");miss();return;}
+        b.classList.add("right");befriend(kind);host.innerHTML=`<p class="wp">${esc(m.name)} is your friend! NEW in your Word-Dex!</p>`;delete host.dataset.ans;done(true);});
+    }
+  }
+  function befriend(kind){
+    const S=dungeonState();S.friends[kind]=today();addItem("m_"+kind);
+    state.wordsRead+=1;try{Quests.hit("dfriend");}catch(e){}
+    Sound.sfx.fanfare();try{confetti();}catch(e){}save();renderHUD();
+  }
+  return{offer,has,_ask:ask};
+})();
 
 /* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
    under the finger (the first question after ⏰ Clock in, a belt on the Factory board after a level button), and
@@ -19160,7 +19223,9 @@ function renderAlbum(){
 function renderRoster(g,kind){
   const isV=kind==="vehicle";
   const mine=isV?(state.vehicles||[]):state.critters;
-  const list=isV?VEHICLES:CRITTERS.concat(packCreatures.map(c=>({id:c.id,name:c.name,img:c._img,rar:1})));
+  // WORD DUNGEONS: his monster friends are on the Animals page too (only the ones he has; no locked slots for them)
+  const list=isV?VEHICLES:CRITTERS.concat(packCreatures.map(c=>({id:c.id,name:c.name,img:c._img,rar:1})),
+    dungeonOwned().filter(id=>id.indexOf("m_")===0).map(id=>({id,name:NAMES[id]||id,rar:1})));
   const outN=mine.filter(x=>x.out!==false).length, max=outMax(kind);
   list.forEach(m=>{
     const x=mine.find(o=>o.id===m.id), got=!!x, lv=got?(x.lv||1):0;

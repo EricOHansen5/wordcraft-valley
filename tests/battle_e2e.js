@@ -6,8 +6,10 @@ const {launch,check,waitFor,seed}=require("./lib");
 (async()=>{
   const t=check("battles"),ok=t.ok,J=x=>JSON.stringify(x);
   const C=(id,i)=>({id,seed:i,c:3+i*3,r:8,lv:1,out:true,since:i});
+  // the Forest's monsters are friends already, so no friend offer comes after a win (friends_e2e.js tests those)
+  const FRIENDS={dot:"2026-10-01",cap:"2026-10-01",gob:"2026-10-01",fog:"2026-10-01"};
   const {page:p,errs,close,E}=await launch({viewport:{width:1024,height:768},
-    seed:{phase:2,settings:{goal:0},critters:[C("dog",1),C("shark",2),C("lion",3)]}});
+    seed:{phase:2,settings:{goal:0},critters:[C("dog",1),C("shark",2),C("lion",3)],dungeon:{friends:FRIENDS}}});
   const wait=ms=>p.waitForTimeout(ms);
   const tidy=()=>E(()=>document.querySelectorAll(".overlay.on").forEach(o=>Modes.shut(o)));
   const run=()=>E(()=>{const r=Dungeon._run();return{room:r.room,pos:r.pos,halves:r.halves,beaten:r.beaten};});
@@ -160,7 +162,7 @@ const {launch,check,waitFor,seed}=require("./lib");
   await E(()=>{state.settings.tierOverride=0;});await tidy();
 
   // ---- 10. no animals at all: the buddy fights ----
-  await seed(p,{phase:2,settings:{goal:0},critters:[]});await tidy();
+  await seed(p,{phase:2,settings:{goal:0},critters:[],dungeon:{friends:FRIENDS}});await tidy();
   await E(()=>{Dungeon.enter("forest");Dungeon._freeze(true);});await wait(300);
   ok(await E(()=>!document.querySelector("#ovTeam.on")&&!!document.querySelector("#ovDungeon.on")),"with no animals, no picker: straight in");
   await E(()=>Dungeon._go("f1",4,3,"w"));await wordsOnly();await p.keyboard.press("ArrowLeft");await wait(500);
