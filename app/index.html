@@ -1809,6 +1809,20 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
   /* the tool bar takes three rows there: the toast and the tour sit above it */
   #toast,#coach{bottom:calc(env(safe-area-inset-bottom) + 236px)}
 }
+/* ---------------- WORD DUNGEONS ---------------- */
+.dmaps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:10px 0}
+.dmap{border:2.5px solid var(--ink);border-radius:18px;padding:12px;background:#fffaf0;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.dmap .dic{font-size:44px;line-height:1}
+.dmap h3{margin:0;font-size:19px}
+.dmap .dlv{font-size:14px;opacity:.8}
+.dmap.locked{opacity:.55;filter:grayscale(.6)}
+.dmap .dbadge{width:46px;height:46px;border-radius:50%;border:2.5px dashed #b9ab92;display:flex;align-items:center;justify-content:center;font-size:26px}
+.dmap.cleared .dbadge{border-style:solid;border-color:#d9a400;background:#fff3c4}
+.dmap .dtro{width:54px;height:54px}
+.dmap [data-go]{min-height:48px;min-width:120px}
+.spot.dcave .dcv{display:flex;flex-direction:column;align-items:center;font-weight:900;font-size:12px}
+.spot.dcave .dcv svg{width:70%;height:auto}
+
 /* ---------------- REST ----------------
    body.rest: nobody has touched the game for 45 s, or for 3 minutes while something was waiting
    on him (REST in the script). Everything that moves holds still where it is: the HUD, the valley
@@ -1886,6 +1900,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <button class="toolbtn" id="closetBtn" title="Closet" aria-label="Closet">🎨<span class="badge" id="closetBadge"></span></button>
     <button class="toolbtn" id="albumBtn" title="Sticker book">📖</button>
     <button class="toolbtn" id="jobsBtn" title="Jobs">💼<span class="badge" id="jobsBadge"></span></button>
+    <button class="toolbtn" id="dungeonBtn" title="Dungeons" aria-label="Dungeons">🗝️<span class="badge" id="dungeonBadge"></span></button>
     <button class="toolbtn" id="storeBtn" title="Trading Post" aria-label="Trading Post">🏪<span class="purse" id="storePurse"></span></button>
     <button class="toolbtn" id="trickBtn" title="Trick-or-Read" aria-label="Trick-or-Read" style="display:none">🎃<span class="badge" id="trickBadge"></span></button>
     <button class="toolbtn" id="lightsBtn" title="Light the tree" aria-label="Light the tree" style="display:none">❄️<span class="badge" id="lightsBadge"></span></button>
@@ -4228,6 +4243,10 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   treats:{},
   // LEVELS, UPGRADES: upgrades done
   upgrades:0,
+  // WORD DUNGEONS: his battle team (critter ids), hearts, the items found, the dungeons cleared, the monsters befriended,
+  // each fighter's experience, the run in progress (resumed at its room's door), counts, the map seen, the cave doors' places
+  dungeon:{team:[],maxHearts:3,items:{boomerang:false,hookshot:false,bombs:false},cleared:{},friends:{},xp:{},run:null,
+    stats:{battles:0,wins:0,runs:0,restarts:0},seen:false,caves:{}},
   // GEM MINE: miner, shop, tunnels, museum, pets. There is no `w` (world width) on purpose:
   // the Mine stamps it on first use, and a mine saved without one is from the narrower world
   // and gets fresh tunnels. The seed is new each time def() runs; a saved mine keeps its own.
@@ -5258,12 +5277,15 @@ const Modes=(()=>{
     report:{name:"Reading report",reading:false},
     store:{name:"Trading Post",reading:false},         // TRADING POST: the two shelves
     closet:{name:"Closet",reading:false},              // LOOKS: the 🎨 Closet
+    dungeon:{name:"Dungeons",reading:false},           // WORD DUNGEONS: the map and the rooms
+    battle:{name:"Dungeon battles",reading:true},      // WORD DUNGEONS: a battle, a word door, making a friend
     other:{name:"Other",reading:false}};
   // overlays, by element id
   const OV={ovCrates:"read",ovRead:"read",ovReward:"reward",ovSign:"sign",ovCraft:"craft",ovQuests:"quests",ovPhoto:"photo",
     ovRecap:"recap",ovScene:"scene",ovBook:"book",ovAlbum:"album",ovGate:"gate",ovParent:"parent",advHud:"adventure",
     ovStory:"book",ovPic:"pic",ovReport:"report",ovDex:"dex",ovWild:"wild",ovNote:"note",ovQuest:"story",ovMaker:"maker",
-    ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine"};
+    ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine",
+    ovDungeons:"dungeon",ovDungeon:"dungeon",ovBattle:"battle"};
   const stack=[];            // {id, el}, innermost last
   const SAME_VISIT=2000,lastClose={};
   let guardFn=null,mo=null;
@@ -10684,6 +10706,59 @@ const Race=(()=>{
   Adv.hookVeh(v=>VEH(v.id)&&VEH(v.id).move!=="air"&&VEH(v.id).move!=="water"?{label:`🏁 Race the ${VEH(v.id).name.toLowerCase()}`,act:()=>start(v)}:null);
   Rest.onWake(()=>{if(!R||!R.parked)return;const go=R.parked;R.parked=null;if(!R.done)go();});
   return{start,_R:()=>R,busy:()=>!!R&&!R.done};      // busy: REST waits longer
+})();
+
+/* ================================================================
+   WORD DUNGEONS — Zelda dungeons with Pokémon-style reading battles
+   (docs/superpowers/specs/2026-10-18-word-dungeons-design.md)
+   The dungeons, their rooms, monsters and bosses are data (content/dungeons.js, DUNGEONS).
+   Dungeon: the map (which dungeons are open), the rooms, moving, the puzzles, the item, the run.
+   Battle: one reading question a turn, his team of three, types, hearts. Friends: befriending monsters.
+   The save is state.dungeon (see def()); dungeonState() fills it for any save.
+   A dungeon is open when every dungeon before it is cleared and he reads at its level.
+   ================================================================ */
+function dungeonState(){
+  const d=def().dungeon,s=state.dungeon&&typeof state.dungeon==="object"?state.dungeon:(state.dungeon={});
+  Object.keys(d).forEach(k=>{if(s[k]===undefined)s[k]=d[k];});
+  Object.keys(d.items).forEach(k=>{if(typeof s.items[k]!=="boolean")s.items[k]=false;});
+  Object.keys(d.stats).forEach(k=>{if(typeof s.stats[k]!=="number")s.stats[k]=0;});
+  return s;
+}
+const Dungeon=(()=>{
+  const IC={forest:"🌿",water:"💧",fire:"🔥"};
+  const list=()=>DUNGEONS.list;
+  const byId=id=>list().find(d=>d.id===id);
+  // open: every dungeon before it cleared, and he reads at its level
+  function isOpen(d){const S=dungeonState(),i=list().indexOf(d);
+    return list().slice(0,i).every(x=>S.cleared[x.id])&&currentTier()>=d.level;}
+  function why(d){const S=dungeonState(),i=list().indexOf(d),before=list().slice(0,i).find(x=>!S.cleared[x.id]);
+    return before?`Clear the ${before.name} first`:`Reading level ${d.level}`;}
+  function badge(){const b=document.getElementById("dungeonBadge");if(!b)return;const n=!dungeonState().seen;b.textContent=n?"NEW":"";b.classList.toggle("on",n);}
+  let mapOv=null;
+  // the dungeon map: one card per dungeon, its badge slot, its boss once beaten
+  function open(){
+    const S=dungeonState();S.seen=true;save();badge();
+    if(!mapOv){mapOv=document.createElement("div");mapOv.className="overlay";mapOv.id="ovDungeons";document.body.appendChild(mapOv);}
+    mapOv.innerHTML=`<div class="sheet"><div class="bhead"><h2>🗝️ Dungeons</h2><button class="bx" id="dmX" aria-label="Close">✕</button></div>
+      <p class="sub">Read to win battles, make monster friends, and find the treasure!</p>
+      <div class="dmaps">${list().map(d=>{const o=isOpen(d),c=!!S.cleared[d.id],b=DUNGEONS.bosses[d.boss];
+        return`<div class="dmap ${o?"open":"locked"}${c?" cleared":""}" data-d="${d.id}"><div class="dic">${IC[d.id]||"🗝️"}</div><h3>${d.name}</h3>
+          <div class="dbadge">${c?"🏅":""}</div>${c&&b?`<div class="dtro">${drawThing(b.art)}</div>`:""}
+          ${o?`<button class="btn primary big" data-go="${d.id}">Go! ▶</button>`:`<div class="dlv">🔒 ${why(d)}</div>`}</div>`;}).join("")}</div></div>`;
+    if(!mapOv.classList.contains("on")){mapOv.classList.add("on");Modes.open("dungeon",mapOv);}
+    mapOv.querySelector("#dmX").onclick=()=>{Sound.sfx.soft();Modes.shut(mapOv);};
+    mapOv.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{Sound.sfx.pop();enter(b.dataset.go);});
+  }
+  // the run: the rooms come in the next part (enter is filled in by the room engine below)
+  let enter=id=>{};
+  document.getElementById("dungeonBtn").onclick=()=>{Sound.sfx.pop();open();};
+  setTimeout(()=>{try{badge();}catch(e){}},1500);
+  // a cave door in Adventure for each open dungeon, at a place kept in the save
+  Adv.provide(()=>list().filter(isOpen).map(d=>{const S=dungeonState();
+    if(!S.caves[d.id]){const p=Adv.freePos(2.5);S.caves[d.id]={c:p.c,r:p.r};save();}
+    const p=S.caves[d.id];
+    return{c:p.c,r:p.r,size:.7,cls:"dcave",html:`<div class="dcv">${drawThing("t_door")}<b>${d.name.toUpperCase()}</b></div>`,label:"🗝️ "+d.name,act:()=>open()};}));
+  return{open,isOpen,byId,list,badge,get enter(){return enter;},set _enter(f){enter=f;}};
 })();
 
 /* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
