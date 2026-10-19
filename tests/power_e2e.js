@@ -170,7 +170,8 @@ const AUDIO_STUB=()=>{
   ok(!(await covered())&&b0.run>20&&b0.paused===0,"the valley on top: not covered, its loops run "+J(b0));
   await p.click("#albumBtn");await waitFor(p,"#ovAlbum.on");
   const b1=await anims();
-  ok(await covered()&&b1.run===0&&b1.paused>=b0.run,"the sticker book open: the valley behind it is covered and every loop in #app is paused "+J(b1));
+  // a loop or two can come or go between the two counts (a sparkle, an animal waking at night): allow two
+  ok(await covered()&&b1.run===0&&b1.paused>=b0.run-2,"the sticker book open: the valley behind it is covered and every loop in #app is paused "+J(b1));
   await E(()=>{window.__moves=0;Math.random=()=>.3;});await wait(6000);
   const hid=await E(()=>window.__moves);await E(()=>{Math.random=window.__rnd;});
   ok(hid===0&&!(await resting()),"covered: 6 s of wander ticks and nothing walks or drives, and this is not a rest ("+hid+" steps)");
