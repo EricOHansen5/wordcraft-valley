@@ -15,3 +15,6 @@ server/hear-cache/
 
 # python byte code
 __pycache__/
+
+# scratch space for the planning and brainstorming tools
+.superpowers/
