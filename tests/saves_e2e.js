@@ -198,7 +198,7 @@ const srv=require("./page").serveApp({port:PORT,before(q,r){
    ok(r.same,"new save: exactly the keys of def()");
    ok(r.v===r.SAVE_V,"new save: state.v is SAVE_V ("+r.v+")");
    // the first start seeds a fox, gives the season's free plan, sets today's quests and reading goal and marks the season as seen; nothing else
-   ok(same(r.changed,["critters","blueprints","quests","seasonSeen","home","goal"])&&same(r.fox,["fox"]),"new save: only the fox, the season's plan, quests, reading goal, season and Home's seen games differ from def() "+J(r.changed));
+   ok(same(r.changed,["critters","blueprints","quests","seasonSeen","home","tierReached","goal"])&&same(r.fox,["fox"]),"new save: only the fox, the season's plan, quests, reading goal, season, Home's seen games and the level reached differ from def() "+J(r.changed));
    ok(!errs.length,"new save: no errors "+errs.join(" | "));await ctx.close();}
 
   // existence used as a flag: the Mine is part of every save now, but it is still a first visit

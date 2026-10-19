@@ -2323,7 +2323,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-19e"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-19f"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -4383,7 +4383,7 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
     found:{},museum:{},bosses:{},items:{},eggs:[],blocks:{dirt:6,stone:0,sand:0,ladder:4,torch:3,sign:2},
     placed:{},signs:{},vaults:{},stat:{}},
   // SOUND SKILLS: evidence per sound pattern, misses per pattern, and per day the answers and quick guesses
-  skills:{},skillMiss:{},answers:{},rushes:{},
+  skills:{},skillMiss:{},answers:{},rushes:{},tierReached:0,
   // READING HUB: minutes played per day; picture and book questions right and wrong
   minutes:{},comp:{right:0,wrong:0},
   // STORYBOOKS: how far he got in each book
@@ -4495,6 +4495,27 @@ function currentTier(){
     const rate=rc.length>=need?rc.reduce((a,b)=>a+b,0)/rc.length:(attempts?firsts/attempts:0);
     if(mastered>=Math.ceil(pool.length*(quick?.25:.5))&&attempts>=need&&rate>=.85)tier=Math.min(MAX_TIER,t+1);
     else{tier=t;break;}
+  }
+  return tier;
+}
+// The highest level he has reached (state.tierReached). His words follow currentTier(), which falls back when a few easy
+// words are missed; what has opened (jobs, dungeons, storybooks, quest chapters) follows this, so a miss never takes a
+// game away. A grown-up's level setting rules while it is set and is not kept. A save from before this starts from the
+// words he has mastered: a level he has mastered half of (a quarter on Fast track) counts as passed (tierFill).
+function reachedTier(){
+  if(state.settings.tierOverride)return state.settings.tierOverride;
+  let r=+state.tierReached||0;
+  if(!r)r=tierFill();
+  r=Math.max(r,currentTier());
+  if(r!==state.tierReached){state.tierReached=r;save();}
+  return r;
+}
+function tierFill(){
+  let tier=1;
+  for(let t=1;t<MAX_TIER;t++){
+    const pool=allWords().filter(w=>w.t===t&&!w.tricky);if(!pool.length)continue;
+    const mastered=pool.filter(w=>(state.stats[w.w]||{}).mastered).length;
+    if(mastered>=Math.ceil(pool.length*(Pace.fluent(t)?.25:.5)))tier=t+1;else break;
   }
   return tier;
 }
@@ -8962,7 +8983,7 @@ const Books=(()=>{
       ${items.map(([a,x,s,lift])=>`<div class="sitem${a==="ash"?" ash":""}" style="left:${x}%;bottom:${22+(lift||0)}%;width:${(s||1)*26}%">${art(a,t)}</div>`).join("")}
       ${extra||""}</div>`;
   }
-  const unlocked=b=>b.t<=Math.max(1,currentTier());
+  const unlocked=b=>b.t<=Math.max(1,reachedTier());
   const nextNew=()=>BOOKS.find(b=>!b.mine&&unlocked(b)&&!(L()[b.id]&&L()[b.id].done));
   function build(){
     if(ov)return;ov=document.createElement("div");ov.id="ovStory";ov.className="overlay sbook";document.body.appendChild(ov);
@@ -10769,8 +10790,8 @@ const Quest2=questArc({key:"quest2",title:"The Sleepy Volcano",total:6,gems:16,
   hello:"❗ Puff the dragon is up to something! Find the ❗",find:"Find the eggs! 🥚",
   won:"You woke the volcano!",next:"The next chapter opens tomorrow. What will Puff do next? 🐉",
   soon:"More of Puff's story is on the way! 🐉",
-  ready:(q,c)=>!!(state.quest&&state.quest.done)&&(q.ch>0||state.quest.day!==today())&&currentTier()>=(c.lvl||3),
-  note:(q,c)=>!(state.quest&&state.quest.done)?"It starts after The Letter Thief, at level 3. ":c&&!q.active&&currentTier()<(c.lvl||3)?`Chapter ${q.ch+1} opens at reading level ${c.lvl}. `:"",
+  ready:(q,c)=>!!(state.quest&&state.quest.done)&&(q.ch>0||state.quest.day!==today())&&reachedTier()>=(c.lvl||3),
+  note:(q,c)=>!(state.quest&&state.quest.done)?"It starts after The Letter Thief, at level 3. ":c&&!q.active&&reachedTier()<(c.lvl||3)?`Chapter ${q.ch+1} opens at reading level ${c.lvl}. `:"",
   grant:(q,c,i)=>{
     q.got=q.got||[];const first=q.got.indexOf(i)<0;if(first)q.got.push(i);
     const g=c.gift||{};
@@ -11190,7 +11211,7 @@ const Dungeon=(()=>{
   const byId=id=>list().find(d=>d.id===id);
   // open: every dungeon before it cleared, and he reads at its level
   function isOpen(d){const S=dungeonState(),i=list().indexOf(d);
-    return list().slice(0,i).every(x=>S.cleared[x.id])&&currentTier()>=d.level;}
+    return list().slice(0,i).every(x=>S.cleared[x.id])&&reachedTier()>=d.level;}
   function why(d){const S=dungeonState(),i=list().indexOf(d),before=list().slice(0,i).find(x=>!S.cleared[x.id]);
     return before?`Clear the ${before.name} first`:`Reading level ${d.level}`;}
   function badge(){const b=document.getElementById("dungeonBadge");if(!b)return;const n=!dungeonState().seen;b.textContent=n?"NEW":"";b.classList.toggle("on",n);}
@@ -12041,7 +12062,10 @@ const Jobs=(()=>{
   const J=()=>state.jobs;
   const xpOf=id=>{const x=state.jobs&&state.jobs.xp;return x&&+x[id]||0;};
   function levelOf(id){const xp=xpOf(id);let l=1;for(let i=1;i<LEVELS.length;i++)if(xp>=LEVELS[i])l=i+1;return l;}
-  const isOpen=j=>!!j&&currentTier()>=((j.unlock&&j.unlock.tier)||1);
+  const isOpen=j=>!!j&&reachedTier()>=((j.unlock&&j.unlock.tier)||1);
+  // a job's tasks are made at his words' level, and never below the level the job opens at (the level it was written
+  // for: below it a job has no words to use, "No customers right now")
+  const jobTier=j=>Math.max(currentTier(),(j&&j.unlock&&j.unlock.tier)||1);
   const coins=()=>(state.mine&&+state.mine.coins)||0;
   function purse(n){if(!state.mine||typeof state.mine!=="object")state.mine=def().mine;state.mine.coins=(+state.mine.coins||0)+n;}
   const CUSTOMERS=["dog","cat","hen","pig","duck","frog","rabbit","penguin","monkey","bear","fox","raccoon","parrot","elephant","sloth"];
@@ -12064,7 +12088,7 @@ const Jobs=(()=>{
   // one task's steps from its generator; a step for a kit or track this version doesn't have is left out
   function gen(jobId,taskId,seed,opt){
     const j=BY[jobId],t=j&&j.tasks.find(x=>x.id===taskId);if(!t)return[];
-    opt=opt||{};const L={tier:opt.tier||currentTier(),lv:opt.lv||levelOf(jobId)};
+    opt=opt||{};const L={tier:opt.tier||jobTier(j),lv:opt.lv||levelOf(jobId)};
     let out;try{out=t.gen(seed,L);}catch(e){console.warn(`Jobs: ${jobId}/${taskId} could not make a task:`,e&&e.message);return[];}
     return[].concat(out||[]).map(q=>q&&Object.assign({kit:t.kit,track:t.track},q)).filter(q=>{
       if(!q||!KITS[q.kit]){console.warn(`Jobs: ${jobId}/${taskId}: no kit "${q&&q.kit}", step skipped`);return false;}
@@ -12332,7 +12356,7 @@ const Jobs=(()=>{
     let t=typeId&&open.find(x=>x.id===typeId);
     if(!t)t=open.length>1&&Math.random()<.4?open[open.length-1]:open[Math.floor(Math.random()*open.length)];
     let steps=[],seed=0;
-    for(let k=0;k<4&&!steps.length;k++){seed=(Math.random()*1e9)|0;steps=gen(j.id,t.id,seed,{tier:currentTier(),lv});}
+    for(let k=0;k<4&&!steps.length;k++){seed=(Math.random()*1e9)|0;steps=gen(j.id,t.id,seed,{tier:jobTier(j),lv});}
     if(!steps.length&&t!==open[0])return next(open[0].id);
     if(!steps.length){msg("No customers right now. Come back soon!");return;}
     S.task={type:t,seed,steps,i:0,miss:0};
