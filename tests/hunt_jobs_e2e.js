@@ -105,6 +105,16 @@ function kit(area,page,errs,E){
     return T.ok(!!d&&!bad.length&&w[0],`${area} · ${screen} · ${label}: ${d?d.join("+"):"NOTHING HAPPENED in "+(o.wait||800)+" ms"}${det}${err}`);
   }
   const tapSel=(screen,label,sel,o)=>act(screen,label,()=>tapSelRaw(sel),o);
+  // a game's tile on Home (the old dock button, tests/lib.js tile()): Home comes up, then the tile is tapped by touch as one
+  // element; a suite in the valley goes back to the valley (Home put away) so closing the game lands in the valley as before.
+  // Home takes one tap per 0.6 s, so a tile tapped again soon after the last one waits that out.
+  let tileAt=0;
+  async function tapTile(screen,label,sel,o){
+    const d=Date.now()-tileAt;if(d<700)await wait(700-d);
+    const was=await E(()=>{const v=Home._valley;Home.show();return v;});
+    await waitFor(p,()=>!!document.querySelector("#ovHome.on"));
+    return act(screen,label,async()=>{try{await tapSelRaw(sel);}finally{tileAt=Date.now();if(was)await E(()=>{if(Home.isOn())Home.hide();});}},o);
+  }
   const tapEl=(screen,label,fn,arg,o)=>act(screen,label,()=>tapFn(fn,arg),o);
   const key=(screen,label,k,o)=>act(screen,label,()=>p.keyboard.press(k),o);
   async function clip(screen,sel){
@@ -119,7 +129,7 @@ function kit(area,page,errs,E){
   // they are two taps, not a double tap, and the game is right to take the second; say so instead of failing
   const ghost=async(want)=>{const g=await dblGap();if(g>480)return[true,`not a double tap on this machine: the taps landed ${g} ms apart, past the half second the guard covers`];
     const r=await want();return[r[0],r[1]+` (taps ${g} ms apart)`];};
-  return{p,E,wait,said,lastSaid,toasts,tidy,hook,tapFn,tapSelRaw,centre,dbl,dblGap,ghost,drag,act,tapSel,tapEl,key,clip,summary,counts,swapped,pace};
+  return{p,E,wait,said,lastSaid,toasts,tidy,hook,tapFn,tapSelRaw,centre,dbl,dblGap,ghost,drag,act,tapSel,tapTile,tapEl,key,clip,summary,counts,swapped,pace};
 }
 
 /* =====================================================================================================================
@@ -265,7 +275,7 @@ async function jobsArea(lane){
 
   // ---- 1. the Job board at reading level 2: the Shopkeeper open, the other three locked ----
   if(lane===1){
-  await tapSel("Job board","💼 in the dock","#jobsBtn",{root:R,swap:true,want:()=>E(n=>[Modes.top()==="job"&&document.querySelectorAll("#ovJob.on .jcard").length===n,"mode "+Modes.top()],JOBS.length)});
+  await K.tapTile("Job board","💼 on Home","#jobsBtn",{root:R,swap:true,want:()=>E(n=>[Modes.top()==="job"&&document.querySelectorAll("#ovJob.on .jcard").length===n,"mode "+Modes.top()],JOBS.length)});
   await clip("Job board",R);
   const cards=await E(()=>[...document.querySelectorAll("#ovJob .jcard")].map((c,i)=>({i,job:c.dataset.job||"",locked:c.classList.contains("locked"),name:c.querySelector("b").textContent,open:(c.querySelector(".jopen")||{}).textContent||""})));
   // the open jobs first (the board sorts by opening level), then the locked ones
@@ -288,7 +298,7 @@ async function jobsArea(lane){
   for(const [ji,j] of mine.entries())try{await (async()=>{
     const scr=j.name;
     await E(id=>{state.jobs.xp[id]=4;state.jobs.streak=0;state.jobs.current=null;},j.id);
-    await tapSel(scr,"💼 in the dock","#jobsBtn",{root:R,swap:true,want:()=>E(()=>!!document.querySelector("#ovJob.on .jcards"))});
+    await K.tapTile(scr,"💼 on Home","#jobsBtn",{root:R,swap:true,want:()=>E(()=>!!document.querySelector("#ovJob.on .jcards"))});
     await tapSel(scr,"its card on the Job board",`#ovJob .jcard[data-job="${j.id}"]`,{root:R,swap:true,want:()=>E(([n,u])=>{const o=document.getElementById("ovJob"),un=o.querySelector(".juni");
       return[o.querySelector("h2").textContent.indexOf(n)>=0&&!!o.querySelector("#jIn")&&!!un&&un.dataset.from==="job"&&o.textContent.indexOf("You put on your "+u+"!")>=0,
         `the clock-in screen: “You put on your ${u}!”, the job's own uniform (${un&&un.textContent})`];},[j.name,j.uni])});
@@ -795,7 +805,7 @@ async function holidayArea(){
   const RT="#ovTrick",TR="Trick-or-Read";
   await E(()=>Trick._setToday("2026-10-20"));
   ok(await shown("trickBtn")&&await badge("trickBadge")==="10",`${A} · ${TR}: 20 October: the 🎃 button, 10 on its badge`);
-  await tapSel(TR,"🎃 in the dock","#trickBtn",{root:RT,swap:true,want:()=>waitFor(p,()=>Modes.top()==="adventure"&&document.querySelectorAll(".advland.tkdoor").length===10?["adventure","Adventure, ten doors"]:false,{timeout:5000})});
+  await K.tapTile(TR,"🎃 on Home","#trickBtn",{root:RT,swap:true,want:()=>waitFor(p,()=>Modes.top()==="adventure"&&document.querySelectorAll(".advland.tkdoor").length===10?["adventure","Adventure, ten doors"]:false,{timeout:5000})});
   const doors=await E(()=>Trick.doors());
   await quiet();
   let knocks=0;
@@ -842,7 +852,7 @@ async function holidayArea(){
     await tapSel(TR,"🍬 Yum! (a closed door on a tree)","#advAct",{root:RT,want:async()=>[(await K.toasts()).slice(-1)[0]==="You got candy here! 🍬","“You got candy here! 🍬”"]});
   else T.fail(`${A} · ${TR}: the closed ${ex.kind} door did not say 🍬 Yum!`);
   await E(()=>Adv.exit());await wait(300);
-  await tapSel(TR,"🎃 after a full night","#trickBtn",{root:RT,want:async()=>[(await K.toasts()).slice(-1)[0]==="🍬 You got all the treats tonight! Come back tomorrow 🎃"&&await E(()=>Modes.top()==="valley"),
+  await K.tapTile(TR,"🎃 after a full night","#trickBtn",{root:RT,want:async()=>[(await K.toasts()).slice(-1)[0]==="🍬 You got all the treats tonight! Come back tomorrow 🎃"&&await E(()=>Modes.top()==="valley"),
     "“You got all the treats tonight! Come back tomorrow”, he stays in the valley"]});
   ok(await E(()=>state.trick.candy===20&&state.trick.doors.length===10),`${A} · ${TR}: ten doors paid 20 🪙 in all, once each`);
 
@@ -850,7 +860,7 @@ async function holidayArea(){
   const RF="#ovFeast",FT="Feast table";
   await E(()=>Feast._setToday("2026-11-20"));
   ok(await shown("feastBtn")&&await badge("feastBadge")==="10",`${A} · ${FT}: 20 November: the 🦃 button, 10 on its badge`);
-  await tapSel(FT,"🦃 in the dock","#feastBtn",{root:RF,swap:true,want:()=>E(()=>[Modes.top()==="feast"&&document.querySelectorAll("#fsPlates .fsplate").length===10&&!!document.getElementById("fsQ").dataset.ans,"ten empty plates and a Picture it"])});
+  await K.tapTile(FT,"🦃 on Home","#feastBtn",{root:RF,swap:true,want:()=>E(()=>[Modes.top()==="feast"&&document.querySelectorAll("#fsPlates .fsplate").length===10&&!!document.getElementById("fsQ").dataset.ans,"ten empty plates and a Picture it"])});
   await clip(FT,RF);
   for(let i=0;i<10;i++)await tapEl(FT,`plate ${i+1} (empty)`,i=>document.querySelector(`#fsPlates .fsplate[data-i="${i}"]`),i,{root:RF,inert:true});
   let fc=await coins();
@@ -860,7 +870,7 @@ async function holidayArea(){
     const w=await ansOf("#fsQ");
     if(n===2){
       await tapSel(FT,"✕ before answering","#fsX",{root:RF,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="","back in the valley"])});
-      await tapSel(FT,"🦃 again","#feastBtn",{root:RF,swap:true,want:()=>E(w=>[document.getElementById("fsQ").dataset.ans===w,"the same dish to read: "+w],w)});
+      await K.tapTile(FT,"🦃 again","#feastBtn",{root:RF,swap:true,want:()=>E(w=>[document.getElementById("fsQ").dataset.ans===w,"the same dish to read: "+w],w)});
     }
     fc=await coins();
     await act(FT,`dish ${n} · the right picture (${w})`,()=>tapAnswer("#fsQ",true),{root:RF,want:()=>waitFor(p,n=>state.feast.dishes.length===n,{arg:n,timeout:3000})});
@@ -875,7 +885,7 @@ async function holidayArea(){
   await clip(FT+" · the full table",RF);
   await tapEl(FT,"plate 1 (a dish on it)",()=>document.querySelector('#fsPlates .fsplate[data-i="0"]'),null,{root:RF,inert:true});
   await tapSel(FT,"Done 🦃","#fsDone",{root:RF,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="","back in the valley"])});
-  await tapSel(FT,"🦃 the same day","#feastBtn",{root:RF,swap:true,want:async()=>[await E(()=>/Come back tomorrow for a new feast/.test(document.getElementById("fsQ").textContent))&&(await said()).slice(-1)[0]==="The table is full! Come back tomorrow.",
+  await K.tapTile(FT,"🦃 the same day","#feastBtn",{root:RF,swap:true,want:async()=>[await E(()=>/Come back tomorrow for a new feast/.test(document.getElementById("fsQ").textContent))&&(await said()).slice(-1)[0]==="The table is full! Come back tomorrow.",
     "“The table is full! Come back tomorrow.”"]});
   await tapSel(FT,"OK 🦃","#fsDone",{root:RF,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="","back in the valley"])});
 
@@ -883,7 +893,7 @@ async function holidayArea(){
   const RL="#ovLights",LT="Light the tree";
   await E(()=>Lights._setToday("2026-12-06"));
   ok(await shown("lightsBtn")&&await badge("lightsBadge")==="6",`${A} · ${LT}: 6 December: the ❄️ button, 6 doors to open on its badge`);
-  await tapSel(LT,"❄️ in the dock","#lightsBtn",{root:RL,swap:true,want:()=>E(()=>[Modes.top()==="lights"&&document.querySelectorAll("#ltDoors .ltdoor").length===25&&document.querySelectorAll("#ltDoors .ltdoor.ready").length===6,
+  await K.tapTile(LT,"❄️ on Home","#lightsBtn",{root:RL,swap:true,want:()=>E(()=>[Modes.top()==="lights"&&document.querySelectorAll("#ltDoors .ltdoor").length===25&&document.querySelectorAll("#ltDoors .ltdoor.ready").length===6,
     "the tree, 25 doors, 6 ready"])});
   await clip(LT,RL);
   for(let n=7;n<=25;n++)await tapEl(LT,`door ${n} (shut)`,n=>document.querySelector(`#ltDoors .ltdoor[data-door="${n}"]`),n,{root:RL,
@@ -944,7 +954,7 @@ async function holidayArea(){
   await waitFor(p,"#ovStory .bpage.end",{timeout:4000});
   ok(await E(()=>Lights.star===true),`${A} · ${LT}: a finished book (${bk.id}) lights the star`);
   await E(()=>Books.close());await K.tidy();
-  await tapSel(LT,"❄️ again","#lightsBtn",{root:RL,swap:true,want:()=>E(()=>[!!document.querySelector("#ltBody .ltstar.on")&&/star is lit/.test(document.getElementById("ltStarLn").textContent)&&
+  await K.tapTile(LT,"❄️ again","#lightsBtn",{root:RL,swap:true,want:()=>E(()=>[!!document.querySelector("#ltBody .ltstar.on")&&/star is lit/.test(document.getElementById("ltStarLn").textContent)&&
     /bulbs lit today/.test(document.getElementById("ltLit").textContent),"“"+document.getElementById("ltLit").textContent+"” and “"+document.getElementById("ltStarLn").textContent+"”"])});
   await tapSel(LT,"✕","#ltX",{root:RL,swap:true,want:()=>E(()=>Modes.stack().join(">")==="")});
 

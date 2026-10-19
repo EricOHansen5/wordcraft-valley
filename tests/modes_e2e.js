@@ -9,6 +9,10 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
   const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return ymd(d);};
   const E=(f,a)=>p.evaluate(f,a);
+  // a game's tile on Home (tests/lib.js tile()). Home takes one tap per 0.6 s (a second tap within it is the same tap),
+  // so a tile tapped again soon after the last one waits that out
+  let tileAt=0;
+  const game=async sel=>{const w=700-(Date.now()-tileAt);if(w>0)await p.waitForTimeout(w);await tile(p,sel);tileAt=Date.now();};
   const top=()=>E(()=>Modes.top()),stack=()=>E(()=>Modes.stack().join(">"));
   // wait until a mode is on top / the stack reads a certain way (then the ok() below checks it)
   const atTop=id=>waitFor(p,x=>Modes.top()===x,{arg:id}),atStack=st=>waitFor(p,x=>Modes.stack().join(">")===x,{arg:st});
@@ -41,7 +45,7 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
 
   // 2. each mode through its real entry point
   await E(()=>{state.modeOpens={};});
-  await click("#crateBtn");await p.waitForTimeout(150);
+  await game("#crateBtn");await p.waitForTimeout(150);
   ok(await top()==="read","crates → read");
   const crate=await E(()=>{const c=[...document.querySelectorAll("#crateRow .crate")].find(x=>!x.classList.contains("swap")&&!x.classList.contains("write")&&!x.classList.contains("pic"));if(c){c.click();return true;}return false;});
   await p.waitForTimeout(200);
@@ -50,7 +54,7 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
   await click("#ovRead [data-close]");await p.waitForTimeout(100);
   ok(await top()==="valley","closing the word → valley");
 
-  await click("#booksBtn");await atTop("book");ok(await top()==="book","Books → book");
+  await game("#booksBtn");await atTop("book");ok(await top()==="book","Books → book");
   await E(()=>{const c=document.querySelector("#ovStory .bcov:not(.locked):not(.maker)");if(c)c.click();});await p.waitForTimeout(200);
   await E(()=>{const x=document.querySelector("#ovStory #bBack");if(x)x.click();});await p.waitForTimeout(150);
   ok(await top()==="book"&&await E(()=>state.modeOpens[today()].book===1),"shelf → book → shelf is one open of book: "+await E(()=>state.modeOpens[today()].book));
@@ -63,11 +67,11 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
   await E(()=>openPicIt());await p.waitForTimeout(150);ok(await top()==="pic","Picture it → pic");
   await click("#ovPic #psLater");await p.waitForTimeout(100);ok(await top()==="valley","Picture it later → valley");
 
-  await tile(p,"#jobsBtn");await atTop("job");ok(await top()==="job","Jobs → job");
+  await game("#jobsBtn");await atTop("job");ok(await top()==="job","Jobs → job");
   await p.click("#ovJob #jX");await atTop("valley");ok(await top()==="valley","closing the Job board → valley");
 
   // 3. the Mine, and reading inside it
-  await click("#mineBtn");await p.waitForTimeout(900);
+  await game("#mineBtn");await p.waitForTimeout(900);
   ok(await top()==="mine","Mine → mine");
   await E(()=>Mine._openVault(0));await p.waitForTimeout(150);
   ok(await top()==="read"&&await stack()==="mine>read","a word vault inside the Mine → read, on top of mine: "+await stack());
@@ -92,7 +96,7 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
   ok(!pruned.old&&pruned.kept,"writing keeps 60 days: a day 90 days ago is gone, 30 days ago stays");
 
   // Adventure, and what opens inside it
-  await click("#advBtn");await p.waitForTimeout(700);
+  await game("#advBtn");await p.waitForTimeout(700);
   ok(await top()==="adventure","Adventure → adventure");
   await E(()=>Wild.start());await atStack("adventure>wild");ok(await stack()==="adventure>wild","a wild animal → wild on top of adventure");
   await click("#ovWild #wRun");await atTop("adventure");ok(await top()==="adventure","running away → adventure");
@@ -133,7 +137,7 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
   ok(await E(()=>state.modeOpens[today()].parent===1),"showing the open grown-up menu again does not count again");
   await click("#ovParent [data-close]");
   const nb=await E(()=>state.modeOpens[today()].book);await p.waitForTimeout(2200);
-  await click("#booksBtn");await p.waitForTimeout(150);await click("#ovStory #bClose");
+  await game("#booksBtn");await p.waitForTimeout(150);await click("#ovStory #bClose");
   const nb2=await E(()=>state.modeOpens[today()].book);
   ok(nb2===nb+1,`a new visit to Books after a pause counts again (${nb}→${nb2})`);
   // the seam for a later gate: a guard can refuse, nothing is gated otherwise
