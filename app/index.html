@@ -1823,6 +1823,46 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .spot.dcave .dcv{display:flex;flex-direction:column;align-items:center;font-weight:900;font-size:12px}
 .spot.dcave .dcv svg{width:70%;height:auto}
 
+/* the run: a room of 13x9 tiles of size --T (Dungeon.size), the bar on top, the buttons below */
+#ovDungeon{z-index:45;padding:0;background:#231c2e;backdrop-filter:none;-webkit-backdrop-filter:none;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  touch-action:none;user-select:none;-webkit-user-select:none}
+#ovDword,#ovBattle{z-index:50}
+.dtop{display:flex;align-items:center;gap:12px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));color:#fff}
+.dhearts{display:flex;gap:2px;font-size:24px}.dh.half{opacity:.55}.dh.empty{opacity:.7}
+.dkeys,.dbk{display:flex;align-items:center;gap:4px;font-weight:900;font-size:18px}.dkeys svg,.dbk svg{width:30px;height:30px}
+.dmini{display:grid;gap:2px;margin-left:auto}
+.dmini .mm{background:#6a5a86;border-radius:3px;font-size:9px;line-height:11px;text-align:center}.dmini .mm.cur{background:#f2c94c}
+.dtop #dExit{min-height:44px;min-width:44px}
+.dstage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.room{position:relative;width:calc(var(--T,48px)*13);height:calc(var(--T,48px)*9);border-radius:10px;overflow:hidden}
+.room.in-n{animation:dinN .25s ease-out}.room.in-s{animation:dinS .25s ease-out}.room.in-e{animation:dinE .25s ease-out}.room.in-w{animation:dinW .25s ease-out}
+@keyframes dinN{from{transform:translateY(-12%);opacity:.3}}@keyframes dinS{from{transform:translateY(12%);opacity:.3}}
+@keyframes dinE{from{transform:translateX(12%);opacity:.3}}@keyframes dinW{from{transform:translateX(-12%);opacity:.3}}
+.dt{position:absolute;width:var(--T,48px);height:var(--T,48px);display:flex;align-items:center;justify-content:center}
+.dt svg{width:86%;height:86%}
+.dt.floor{background:#cbb994;box-shadow:inset 0 0 0 1px rgba(90,70,40,.12)}
+.dt.wall{background:#4b3d5e;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.dt.pit{background:#0d0a12}.dt.water{background:#3c8fd6}.dt.lava{background:#e2572b}
+.dt.bar{background:#cbb994}.dt.bar.red::after,.dt.bar.blue::after{content:"";position:absolute;inset:8%;border-radius:6px;background:repeating-linear-gradient(90deg,#d22f27 0 18%,transparent 18% 30%)}
+.dt.bar.blue::after{background:repeating-linear-gradient(90deg,#1e6fd9 0 18%,transparent 18% 30%)}
+.dt.door{background:#8a6f4c}.dt.door.shut{background:#4b3d5e}.dt.door.shut::after{content:"";position:absolute;inset:14%;background:#6b5a3e;border-radius:4px}
+.dt .dword{position:absolute;font-size:calc(var(--T,48px)*.28);background:#fff8e1;border:2px solid #2e2620;border-radius:6px;padding:0 3px;color:#2e2620}
+.dt.opened svg{opacity:.45;filter:grayscale(.8)}
+.dash,.dmon{position:absolute;left:0;top:0;width:var(--T,48px);height:var(--T,48px);transition:transform .16s linear;display:flex;align-items:center;justify-content:center;z-index:2}
+.dash img,.dash svg{width:92%;height:92%;object-fit:contain}.dash.face-w img,.dash.face-w svg{transform:scaleX(-1)}
+.dmon svg{width:90%;height:90%}.dmon.dboss{width:calc(var(--T,48px)*1.6);height:calc(var(--T,48px)*1.6);margin:calc(var(--T,48px)*-.3)}
+.dmon.stunned{filter:grayscale(.8) brightness(1.2)}
+.dsay{position:absolute;left:50%;top:6px;transform:translateX(-50%);background:#fffaf0;border:2.5px solid #2e2620;border-radius:14px;padding:6px 14px;font-weight:800;font-size:20px;
+  max-width:90%;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;z-index:5}.dsay.on{opacity:1}
+.dboom{position:absolute;left:0;top:0;width:var(--T,48px);height:var(--T,48px);display:none;z-index:4;transition:transform .2s linear}.dboom.on{display:block}
+.dboom svg{width:70%;height:70%;animation:dspin .25s linear infinite}@keyframes dspin{to{transform:rotate(360deg)}}
+.dctl{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;padding-bottom:max(8px,env(safe-area-inset-bottom));min-height:124px}
+.dpad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,56px);gap:6px}
+.dpad button,.dbtns button{border:2.5px solid #2e2620;border-radius:14px;background:#fffaf0;font-size:24px;font-weight:900;touch-action:none}
+.dpad #dUp{grid-column:2;grid-row:1}.dpad #dLeft{grid-column:1;grid-row:2}.dpad #dDown{grid-column:2;grid-row:2}.dpad #dRight{grid-column:3;grid-row:2}
+.dbtns{display:flex;gap:12px;align-items:center}.dbtns #dAct{width:76px;height:76px;border-radius:50%;font-size:34px}
+.dbtns #dItem{width:62px;height:62px;border-radius:50%;padding:6px}.dbtns #dItem svg{width:100%;height:100%}
+
 /* ---------------- REST ----------------
    body.rest: nobody has touched the game for 45 s, or for 3 minutes while something was waiting
    on him (REST in the script). Everything that moves holds still where it is: the HUD, the valley
@@ -10749,8 +10789,264 @@ const Dungeon=(()=>{
     mapOv.querySelector("#dmX").onclick=()=>{Sound.sfx.soft();Modes.shut(mapOv);};
     mapOv.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{Sound.sfx.pop();enter(b.dataset.go);});
   }
-  // the run: the rooms come in the next part (enter is filled in by the room engine below)
-  let enter=id=>{};
+
+  /* ---------- the run ----------
+     run (state.dungeon.run): {d, room, pos:[c,r], entry (the door he came in by), face, halves, keys, bossKey, map,
+     opened:[], taken:[], beaten:[], visited:[], fairy, blocks:{room:[[c,r]]}}. Keys in opened/taken are "<room>:<what>":
+     a door by its edge ("f1:n"), "f2:plate", "f5:switch"; a chest "f2:c10,2", a pot or bush "f1:p2,1".
+     The run is saved on every room change and pickup, so a reload goes on at the door he came in by. */
+  const DIRS={n:[0,-1],s:[0,1],w:[-1,0],e:[1,0]},MID={n:[6,0],s:[6,8],w:[0,4],e:[12,4]},OPP={n:"s",s:"n",w:"e",e:"w"};
+  const FLOOR=new Set([".","@","F","_"]);
+  const ART_OF={P:"t_pot",G:"t_bush",O:"t_block",_:"t_plate",C:"t_chest",T:"t_sign",S:"t_crystal",F:"t_fairy",L:"t_lock",B:"t_bosskey"};
+  let ov=null,D=null,ROOM=null,V=null,moving=false,queue=[],walk=null,sayT=null,T=48;
+  const run=()=>dungeonState().run;
+  const roomById=id=>D.rooms.find(r=>r.id===id);
+  const roomAt=(x,y)=>D.rooms.find(r=>r.at[0]===x&&r.at[1]===y);
+  const has=(k,what)=>run()[k].indexOf(ROOM.id+":"+what)>=0;
+  const edgeAt=(c,r)=>Object.keys(MID).find(k=>MID[k][0]===c&&MID[k][1]===r)||null;
+  const inside=k=>[MID[k][0]-DIRS[k][0],MID[k][1]-DIRS[k][1]];
+  function newRun(d){
+    const st=roomById(d.start);let pos=[6,6];st.grid.forEach((s,r)=>{const c=s.indexOf("@");if(c>=0)pos=[c,r];});
+    return{d:d.id,room:d.start,pos,entry:null,face:"n",halves:dungeonState().maxHearts*2,keys:0,bossKey:false,map:false,
+      opened:[],taken:[],beaten:[],visited:[d.start],fairy:false,blocks:{}};
+  }
+  // what the room looks like now: the grid with what he has done to it
+  function build(){
+    const R=run(),rm=ROOM,cells=rm.grid.map(s=>s.split("")),blocks=[];
+    cells.forEach((row,r)=>row.forEach((ch,c)=>{
+      if((ch==="P"||ch==="G")&&has("taken","p"+c+","+r))row[c]=".";
+      if(ch==="M")row[c]=".";
+      if((ch==="R"||ch==="U")&&has("opened","switch"))row[c]=".";
+      if(ch==="O"){row[c]=".";blocks.push([c,r]);}
+      const k=edgeAt(c,r);if(k&&"LBW".includes(ch)&&has("opened",k))row[c]="D";}));
+    const solved=has("opened","plate"),bs=solved&&R.blocks[rm.id]?R.blocks[rm.id]:blocks;
+    bs.forEach(b=>{cells[b[1]][b[0]]="O";});
+    const shut=new Set();if(rm.shutUntil==="plate"&&!solved)Object.keys(MID).forEach(k=>{if(k!==R.entry&&cells[MID[k][1]][MID[k][0]]==="D")shut.add(k);});
+    const mons=[];let i=0;rm.grid.forEach((s,r)=>[...s].forEach((ch,c)=>{if(ch!=="M")return;const m=(rm.monsters||[])[i],uid=rm.id+":"+i;i++;
+      if(m&&R.beaten.indexOf(uid)<0)mons.push({uid,kind:m.kind,path:m.path,c,r,hp:(DUNGEONS.monsters[m.kind]||{}).hp||3,stunned:false});}));
+    V={cells,shut,mons,boss:rm.boss&&!(dungeonState().cleared[D.id]&&R.bossBeaten)?{c:6,r:3}:null};
+  }
+  const cell=(c,r)=>V.cells[r]&&V.cells[r][c];
+  const monAt=(c,r)=>V.mons.find(m=>m.c===c&&m.r===r);
+  const bossAt=(c,r)=>V.boss&&V.boss.c===c&&V.boss.r===r;
+  function walkable(c,r){
+    if(monAt(c,r)||bossAt(c,r))return false;
+    const ch=cell(c,r),k=edgeAt(c,r);
+    if(k)return ch==="D"&&!V.shut.has(k);
+    return c>0&&r>0&&c<12&&r<8&&FLOOR.has(ch);
+  }
+
+  // ---------- drawing ----------
+  function tileHtml(c,r){
+    const ch=cell(c,r),k=edgeAt(c,r);let cls="dt",inner="",open="";
+    if(ch==="#")cls+=" wall";else if(ch==="^")cls+=" pit";else if(ch==="~")cls+=" water";else if(ch==="%")cls+=" lava";
+    else if(ch==="R"||ch==="U")cls+=" bar "+(ch==="R"?"red":"blue");
+    else cls+=" floor";
+    if(k&&"DLBW".includes(ch)){cls+=" door";if(ch==="W")inner=`<b class="dword">abc</b>`;if(V.shut.has(k))cls+=" shut";}
+    if(ch==="C"&&has("taken","c"+c+","+r)){open=' data-open="1"';cls+=" opened";}
+    if(ART_OF[ch])inner+=drawThing(ART_OF[ch]);
+    return`<div class="${cls}" data-c="${c}" data-r="${r}" data-t="${ch}"${k&&V.shut.has(k)?' data-shut="1"':""}${open} style="left:calc(var(--T)*${c});top:calc(var(--T)*${r})">${inner}</div>`;
+  }
+  function paint(c,r){const el=ov.querySelector(`.dt[data-c="${c}"][data-r="${r}"]`);if(!el)return;const tmp=document.createElement("div");tmp.innerHTML=tileHtml(c,r);el.replaceWith(tmp.firstChild);}
+  function paintDoors(){Object.keys(MID).forEach(k=>paint(MID[k][0],MID[k][1]));}
+  function avatar(){let src=null;try{src=Mine.avatar();}catch(e){}return src?`<img src="${src}" alt="">`:drawThing("fox",1);}
+  function place(el,c,r){el.dataset.c=c;el.dataset.r=r;el.style.transform=`translate(calc(var(--T)*${c}),calc(var(--T)*${r}))`;}
+  function hud(){
+    const R=run(),S=dungeonState();if(!ov||!R)return;
+    const h=ov.querySelector("#dHearts");h.dataset.halves=R.halves;
+    let s="";for(let i=0;i<S.maxHearts;i++){const v=R.halves-2*i;s+=`<span class="dh ${v>=2?"full":v===1?"half":"empty"}">${v>=1?"❤️":"🤍"}</span>`;}h.innerHTML=s;
+    const k=ov.querySelector("#dKeys");k.dataset.n=R.keys;k.innerHTML=`${drawThing("t_key")}<b>${R.keys}</b>`;
+    ov.querySelector("#dBossKey").innerHTML=R.bossKey?drawThing("t_bosskey"):"";
+    ov.querySelector("#dItem").style.display=S.items[D.item]?"":"none";
+    ov.querySelector("#dItem").innerHTML=D.item==="boomerang"?drawThing("i_boomerang"):"";
+    mini();
+  }
+  function mini(){
+    const R=run(),xs=D.rooms.map(r=>r.at[0]),ys=D.rooms.map(r=>r.at[1]),x0=Math.min.apply(null,xs),y0=Math.min.apply(null,ys);
+    const w=Math.max.apply(null,xs)-x0+1,h=Math.max.apply(null,ys)-y0+1;
+    ov.querySelector("#dMini").style.cssText=`grid-template-columns:repeat(${w},14px);grid-template-rows:repeat(${h},11px)`;
+    ov.querySelector("#dMini").innerHTML=D.rooms.filter(r=>R.map||R.visited.indexOf(r.id)>=0).map(r=>
+      `<span class="mm${r.id===R.room?" cur":""}${r.id===D.bossRoom&&R.map?" mskull":""}" style="grid-column:${r.at[0]-x0+1};grid-row:${r.at[1]-y0+1}">${r.id===D.bossRoom&&R.map?"💀":""}</span>`).join("");
+  }
+  function draw(dir){
+    build();const R=run();
+    const room=ov.querySelector(".room");let h="";
+    for(let r=0;r<9;r++)for(let c=0;c<13;c++)h+=tileHtml(c,r);
+    h+=`<div id="dAsh" class="dash face-${R.face}">${avatar()}</div>`;
+    h+=V.mons.map(m=>`<div class="dmon" data-uid="${m.uid}" data-kind="${m.kind}">${drawThing(DUNGEONS.monsters[m.kind].art)}</div>`).join("");
+    if(V.boss)h+=`<div class="dmon dboss" data-boss="${D.boss}">${drawThing(DUNGEONS.bosses[D.boss].art)}</div>`;
+    h+=`<div id="dSay" class="dsay"></div><div id="dBoom" class="dboom">${drawThing("i_boomerang")}</div>`;
+    room.innerHTML=h;
+    place(ov.querySelector("#dAsh"),R.pos[0],R.pos[1]);ov.querySelector("#dAsh").dataset.face=R.face;
+    V.mons.forEach(m=>place(room.querySelector(`.dmon[data-uid="${m.uid}"]`),m.c,m.r));
+    if(V.boss)place(room.querySelector(".dboss"),V.boss.c,V.boss.r);
+    room.classList.remove("in-n","in-s","in-e","in-w");if(dir){void room.offsetWidth;room.classList.add("in-"+dir);}
+    hud();
+  }
+  function size(){
+    if(!ov)return;const top=ov.querySelector(".dtop"),pad=ov.querySelector(".dctl");
+    const W=innerWidth-16,H=innerHeight-(top?top.offsetHeight:56)-(pad?pad.offsetHeight:124)-12;
+    T=Math.max(24,Math.floor(Math.min(W/13,H/9)));ov.querySelector(".room").style.setProperty("--T",T+"px");
+  }
+  function say(t,speak){const el=ov&&ov.querySelector("#dSay");if(!el)return;el.textContent=t;el.classList.add("on");clearTimeout(sayT);
+    sayT=setTimeout(()=>el.classList.remove("on"),3200);if(speak!==false)Sound.speak(t,.92);}
+  const L=k=>DUNGEONS.lines[k];
+
+  // ---------- moving ----------
+  function face(dir){const R=run();R.face=dir;const a=ov.querySelector("#dAsh");a.dataset.face=dir;a.className="dash face-"+dir;}
+  function dirOf(dx,dy){return Object.keys(DIRS).find(k=>DIRS[k][0]===dx&&DIRS[k][1]===dy);}
+  const active=()=>!!(ov&&ov.classList.contains("on")&&run()&&ROOM&&!document.querySelector("#ovDword.on,#ovBattle.on"));
+  // one step; while Ash glides, up to two more wait their turn
+  function step(dx,dy){
+    if(!active())return false;
+    if(moving){if(queue.length<2)queue.push([dx,dy]);return true;}
+    return doStep(dx,dy);
+  }
+  function doStep(dx,dy){
+    const R=run(),dir=dirOf(dx,dy);if(!dir)return false;face(dir);
+    const c=R.pos[0]+dx,r=R.pos[1]+dy,ch=cell(c,r),k=edgeAt(c,r);
+    const m=monAt(c,r);if(m){fight(m);return true;}
+    if(bossAt(c,r)){fightBoss();return true;}
+    if(k&&"LBW".includes(ch))return door(k);
+    if(k&&ch==="D"){if(V.shut.has(k)){Sound.sfx.soft();return false;}
+      R.pos=[c,r];place(ov.querySelector("#dAsh"),c,r);moving=true;queue=[];setTimeout(()=>{moving=false;through(k);},170);return true;}
+    if(ch==="O"){const bc=c+dx,br=r+dy;if(!walkable(bc,br)||edgeAt(bc,br)||cell(bc,br)==="F")return false;
+      V.cells[r][c]=".";V.cells[br][bc]="O";paint(c,r);paint(bc,br);Sound.sfx.soft();move(c,r);plate();return true;}
+    if(!walkable(c,r))return false;
+    move(c,r);
+    if(cell(c,r)==="F"&&!R.fairy){R.fairy=true;R.halves=dungeonState().maxHearts*2;hud();say(L("fairy"));Sound.sfx.chime();save();}
+    return true;
+  }
+  function move(c,r){
+    const R=run();R.pos=[c,r];place(ov.querySelector("#dAsh"),c,r);moving=true;
+    setTimeout(()=>{moving=false;const q=queue.shift();if(q&&active())doStep(q[0],q[1]);},170);
+  }
+  // into the next room, at the door he came in by
+  function through(k){
+    const R=run(),nb=roomAt(ROOM.at[0]+DIRS[k][0],ROOM.at[1]+DIRS[k][1]);if(!nb)return;
+    queue=[];stopWalk();R.room=nb.id;R.entry=OPP[k];R.pos=inside(OPP[k]);if(R.visited.indexOf(nb.id)<0)R.visited.push(nb.id);
+    ROOM=nb;save();draw(k);
+  }
+  // a door that needs something: a key, the boss key, or a word read
+  function door(k){
+    const R=run(),[c,r]=MID[k],ch=cell(c,r);
+    if(ch==="L"){if(R.keys>0){R.keys--;R.opened.push(ROOM.id+":"+k);V.cells[r][c]="D";paint(c,r);hud();Sound.sfx.chime();save();return true;}
+      say("It is locked. Find a key!",false);Sound.sfx.soft();return false;}
+    if(ch==="B"){if(R.bossKey){R.opened.push(ROOM.id+":"+k);V.cells[r][c]="D";paint(c,r);Sound.sfx.rumble&&Sound.sfx.rumble();save();return true;}
+      say("You need the boss key.",false);Sound.sfx.soft();return false;}
+    if(ch==="W"){wordDoor(k);return true;}
+    return false;
+  }
+  function plate(){
+    if(ROOM.shutUntil!=="plate"||has("opened","plate"))return;
+    const blocks=[];V.cells.forEach((row,r)=>row.forEach((ch,c)=>{if(ch==="O")blocks.push([c,r]);}));
+    if(!blocks.some(b=>ROOM.grid[b[1]][b[0]]==="_"))return;
+    const R=run();R.opened.push(ROOM.id+":plate");R.blocks[ROOM.id]=blocks;V.shut.clear();paintDoors();Sound.sfx.chime();save();
+  }
+  // tap a tile: walk there by the shortest way (round monsters, blocks and walls)
+  function walkTo(tc,tr){
+    const R=run(),start=R.pos.join(","),prev={},q=[R.pos];prev[start]=null;
+    while(q.length){const p=q.shift();if(p[0]===tc&&p[1]===tr)break;
+      for(const k in DIRS){const n=[p[0]+DIRS[k][0],p[1]+DIRS[k][1]],key=n.join(",");if(key in prev)continue;
+        if(!walkable(n[0],n[1])||edgeAt(n[0],n[1]))continue;
+        prev[key]=p.join(",");q.push(n);}}
+    if(!((tc+","+tr) in prev))return false;
+    const path=[];let k=tc+","+tr;while(k&&k!==start){path.unshift(k.split(",").map(Number));k=prev[k];}
+    stopWalk();let at=R.pos.slice();
+    const next=()=>{if(!active()||!path.length){walk=null;return;}const n=path.shift(),dx=n[0]-at[0],dy=n[1]-at[1];
+      if(!doStep(dx,dy)){walk=null;return;}at=n;if(run().room!==ROOM.id)return;walk=setTimeout(next,190);};
+    next();return true;
+  }
+  function stopWalk(){if(walk){clearTimeout(walk);walk=null;}}
+
+  // ---------- the action button ----------
+  function act(){
+    if(!active())return false;
+    const R=run(),[dx,dy]=DIRS[R.face],c=R.pos[0]+dx,r=R.pos[1]+dy,ch=cell(c,r),k=edgeAt(c,r);
+    if(k&&"LBW".includes(ch))return door(k);
+    const m=monAt(c,r);if(m){fight(m);return true;}
+    if(bossAt(c,r)){fightBoss();return true;}
+    if(ch==="P"||ch==="G"){
+      R.taken.push(ROOM.id+":p"+c+","+r);V.cells[r][c]=".";paint(c,r);Sound.sfx.pop();
+      const what=ch==="P"?(ROOM.pots||{})[c+","+r]:"";
+      if(what==="key"){R.keys++;say(L("key"));}
+      else if(what==="heart")heal();
+      else{const x=Math.random();if(x<1/6)heal();else if(x<1/3){state.gems+=1;renderHUD();say("+1 💎",false);}}
+      hud();save();return true;}
+    if(ch==="C"){if(has("taken","c"+c+","+r))return false;
+      R.taken.push(ROOM.id+":c"+c+","+r);const what=((ROOM.chests||{})[c+","+r]||{}).item;Sound.sfx.chime();
+      if(what==="key"){R.keys++;say(L("key"));}
+      else if(what==="bosskey"){R.bossKey=true;say(L("bossKey"));}
+      else if(what==="map"){R.map=true;say(L("map"));}
+      else if(what&&what in dungeonState().items){dungeonState().items[what]=true;say(L(what)||"",true);}
+      else{const g=3+Math.floor(Math.random()*3);state.gems+=g;renderHUD();say(`+${g} 💎`,false);}
+      paint(c,r);hud();save();return true;}
+    if(ch==="T"){say((ROOM.signs||{})[c+","+r]||"");return true;}
+    if(ch==="S"){hitSwitch();return true;}
+    Sound.sfx.soft();return false;
+  }
+  function heal(){const R=run();R.halves=Math.min(dungeonState().maxHearts*2,R.halves+2);say(L("heart"));}
+  function hitSwitch(){
+    const R=run(),k=ROOM.id+":switch",i=R.opened.indexOf(k);if(i>=0)R.opened.splice(i,1);else R.opened.push(k);
+    Sound.sfx.chime();save();draw();
+  }
+  // the dungeon's item; the boomerang comes in its own part below
+  function useItem(){return false;}
+
+  // ---------- a word door: read the word to open it (no hearts at stake outside a battle) ----------
+  let wov=null;
+  function wordDoor(k){
+    if(!wov){wov=document.createElement("div");wov.className="overlay";wov.id="ovDword";document.body.appendChild(wov);}
+    wov.innerHTML=`<div class="sheet"><div class="bhead"><h2>📖 A word door</h2><button class="bx" id="dwX" aria-label="Not now">✕</button></div><div class="dq"></div></div>`;
+    wov.classList.add("on");Modes.open("battle",wov);
+    wov.querySelector("#dwX").onclick=()=>Modes.shut(wov);
+    Read.pic(wov.querySelector(".dq"),Read.once(()=>{const R=run(),[c,r]=MID[k];
+      R.opened.push(ROOM.id+":"+k);V.cells[r][c]="D";Modes.shut(wov);paint(c,r);Sound.sfx.chime();save();}));
+  }
+
+  // ---------- battles (the Battle part below fills these in) ----------
+  let fight=m=>{},fightBoss=()=>{};
+
+  // ---------- in and out ----------
+  function mount(){
+    if(!ov){ov=document.createElement("div");ov.className="overlay dgn";ov.id="ovDungeon";document.body.appendChild(ov);
+      ov.innerHTML=`<div class="dtop"><div id="dHearts" class="dhearts"></div><div id="dKeys" class="dkeys"></div><div id="dBossKey" class="dbk"></div>
+          <div id="dMini" class="dmini"></div><button class="btn soft" id="dExit" aria-label="Leave the dungeon">🚪 Leave</button></div>
+        <div class="dstage"><div class="room"></div></div>
+        <div class="dctl"><div class="dpad"><button id="dUp" aria-label="Up">▲</button><button id="dLeft" aria-label="Left">◀</button>
+          <button id="dDown" aria-label="Down">▼</button><button id="dRight" aria-label="Right">▶</button></div>
+          <div class="dbtns"><button id="dItem" aria-label="Use the item"></button><button id="dAct" aria-label="Action">⚔️</button></div></div>`;
+      const hold=(id,dx,dy)=>{const b=ov.querySelector("#"+id);let t=null;const stop=()=>{clearInterval(t);t=null;};
+        b.addEventListener("pointerdown",e=>{e.preventDefault();stopWalk();step(dx,dy);stop();t=setInterval(()=>step(dx,dy),200);});
+        ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop));};
+      hold("dUp",0,-1);hold("dDown",0,1);hold("dLeft",-1,0);hold("dRight",1,0);
+      ov.querySelector("#dAct").onclick=()=>act();
+      ov.querySelector("#dItem").onclick=()=>useItem();
+      ov.querySelector("#dExit").onclick=()=>exit();
+      ov.querySelector(".room").addEventListener("click",e=>{const t=e.target.closest(".dt");if(!t)return;walkTo(+t.dataset.c,+t.dataset.r);});
+      addEventListener("resize",()=>{if(ov.classList.contains("on"))size();});
+    }
+    if(!ov.classList.contains("on")){ov.classList.add("on");Modes.open("dungeon",ov);}
+    size();
+  }
+  function enter(id){
+    const d=byId(id);if(!d||!isOpen(d))return false;
+    const S=dungeonState();D=d;queue=[];stopWalk();
+    if(!S.run||S.run.d!==id){S.run=newRun(d);S.stats.runs++;}
+    ROOM=roomById(S.run.room)||roomById(d.start);
+    mount();draw();save();
+    return true;
+  }
+  function exit(){stopWalk();queue=[];if(ov)Modes.shut(ov);save();Sound.sfx.soft();}
+  // the keyboard: arrows or WASD to walk, space for the action, X for the item
+  document.addEventListener("keydown",e=>{
+    if(!active()||Modes.top()!=="dungeon")return;
+    const k=e.key,mv={ArrowUp:[0,-1],w:[0,-1],W:[0,-1],ArrowDown:[0,1],s:[0,1],S:[0,1],ArrowLeft:[-1,0],a:[-1,0],A:[-1,0],ArrowRight:[1,0],d:[1,0],D:[1,0]}[k];
+    if(mv){e.preventDefault();stopWalk();step(mv[0],mv[1]);}
+    else if(k===" "){e.preventDefault();act();}
+    else if(k==="x"||k==="X"){e.preventDefault();useItem();}
+  });
+
   document.getElementById("dungeonBtn").onclick=()=>{Sound.sfx.pop();open();};
   setTimeout(()=>{try{badge();}catch(e){}},1500);
   // a cave door in Adventure for each open dungeon, at a place kept in the save
@@ -10758,7 +11054,13 @@ const Dungeon=(()=>{
     if(!S.caves[d.id]){const p=Adv.freePos(2.5);S.caves[d.id]={c:p.c,r:p.r};save();}
     const p=S.caves[d.id];
     return{c:p.c,r:p.r,size:.7,cls:"dcave",html:`<div class="dcv">${drawThing("t_door")}<b>${d.name.toUpperCase()}</b></div>`,label:"🗝️ "+d.name,act:()=>open()};}));
-  return{open,isOpen,byId,list,badge,get enter(){return enter;},set _enter(f){enter=f;}};
+  return{open,isOpen,byId,list,badge,enter,exit,step,act,useItem:()=>useItem(),
+    _run:run,_room:()=>ROOM,_tile:(c,r)=>cell(c,r),_V:()=>V,
+    _go(id,c,r,f){const R=run();stopWalk();queue=[];moving=false;R.room=id;R.pos=[c,r];R.face=f||R.face;R.entry=null;
+      if(R.visited.indexOf(id)<0)R.visited.push(id);ROOM=roomById(id);draw();},
+    // for the parts below
+    _hooks(h){if(h.fight)fight=h.fight;if(h.fightBoss)fightBoss=h.fightBoss;if(h.useItem)useItem=h.useItem;},
+    _say:say,_draw:()=>draw(),_hud:()=>hud(),_D:()=>D,_place:place,_ov:()=>ov,_walkable:(c,r)=>walkable(c,r),_cell:cell,_edge:edgeAt,_DIRS:DIRS};
 })();
 
 /* ---- the ghost tap: a double tap on a button that changes the screen lands its second tap on whatever came up
