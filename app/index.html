@@ -4384,6 +4384,7 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
     placed:{},signs:{},vaults:{},stat:{}},
   // SOUND SKILLS: evidence per sound pattern, misses per pattern, and per day the answers and quick guesses
   skills:{},skillMiss:{},answers:{},rushes:{},tierReached:0,
+  guess:{on:false,last:[],clean:0,days:{}},   // GUESS: the last five words (true = guessed), clean reads in a row, guessed words a day
   // READING HUB: minutes played per day; picture and book questions right and wrong
   minutes:{},comp:{right:0,wrong:0},
   // STORYBOOKS: how far he got in each book
@@ -8882,7 +8883,7 @@ const Skills=(()=>{
   // letters he confused one for another, for the report: "reads b as d"
   function confusions(){const c=[];Object.entries(S()).forEach(([id,s])=>Object.entries(s.e||{}).forEach(([k,n])=>c.push({id,k,n})));
     return c.sort((a,b)=>b.n-a.n);}
-  const recent=[];let slow=false;
+  const recent=[];
   /* result of one answer
      o.ok         right?          o.help  heard it or needed hints first
      o.confused   the word he picked instead
@@ -8911,7 +8912,6 @@ const Skills=(()=>{
     if(rushed){state.rushes[today()]=(state.rushes[today()]||0)+1;}
     const d=state.answers[today()]||(state.answers[today()]={n:0,ok:0,ms:0});
     d.n++;if(o.ok)d.ok++;if(o.ms)d.ms+=Math.min(o.ms,15000);
-    if(recent.filter(Boolean).length>=2){slow=true;recent.length=0;}
     save();
   }
   function status(id){const s=S()[id];if(!s||s.n<1.5)return"new";if(s.n>=5&&s.p>=.85)return"strong";if(s.p<.62)return"shaky";return"learning";}
@@ -8928,8 +8928,39 @@ const Skills=(()=>{
     return null;
   }
   return{ofWord,result,status,target,confusions,
-    get slow(){return slow;},set slow(v){slow=!!v;},
+    // "sound it out first": guess mode (Guess) decides it now
+    get slow(){return Guess.on();},set slow(v){Guess.set(!!v);},
     all:()=>SKILL_DEF.map(d=>({...d,s:S()[d.id]||null,status:status(d.id)}))};
+})();
+
+/* GUESS: did he sound this word out, or guess? Each word gets a tracker (Guess.track()) that the reading
+   activities tell what happens: heard() when he taps a sound or Blend it, wrongPick(), wrongTile(), shown()
+   when the choices appear or unlock, finish(clean) once at the end. A word is a guess when he picked wrong
+   before hearing any sound, picked wrong within 2 s of the choices, or put two wrong tiles in a build.
+   Two guesses in his last five words turn guess mode on ("sound it out first": the Sound Shield before
+   the choices); five clean first tries in a row turn it off. Saved in state.guess. */
+const Guess=(()=>{
+  const G=()=>{const g=state.guess&&typeof state.guess==="object"?state.guess:(state.guess={});
+    if(typeof g.on!=="boolean")g.on=false;if(!Array.isArray(g.last))g.last=[];if(typeof g.clean!=="number")g.clean=0;
+    if(!g.days||typeof g.days!=="object")g.days={};return g;};
+  function track(){
+    let t0=performance.now(),heard=false,guess=false,tiles=0,done=null;
+    return{
+      shown(){t0=performance.now();},
+      heard(){heard=true;},
+      wrongPick(){if(!heard||performance.now()-t0<2000)guess=true;},
+      wrongTile(){if(++tiles>=2)guess=true;},
+      finish(clean){
+        if(done!==null)return done;done=guess&&!clean;
+        const g=G();g.last.push(done);if(g.last.length>5)g.last.splice(0,g.last.length-5);
+        if(done)g.days[today()]=(g.days[today()]||0)+1;
+        g.clean=clean?g.clean+1:0;
+        if(g.clean>=5){g.on=false;g.last=[];}
+        else if(g.last.filter(Boolean).length>=2)g.on=true;
+        save();return done;}
+    };
+  }
+  return{track,on:()=>G().on,set:v=>{G().on=!!v;if(!v)G().last=[];save();}};
 })();
 
 /* Sound Shield: answers stay locked until each sound in the word is tapped.
@@ -9712,7 +9743,7 @@ function openReport(){
   const ans=state.answers||{},wk=days.map(d=>ans[d]||{n:0,ok:0,ms:0});
   const n=wk.reduce((a,x)=>a+x.n,0),ok=wk.reduce((a,x)=>a+x.ok,0),ms=wk.reduce((a,x)=>a+x.ms,0);
   const gDays=state.goalDays||{},gN=days.filter(d=>gDays[d]).length,gT=Goal.target();
-  const mins=days.reduce((a,d)=>a+((state.minutes||{})[d]||0),0),rush=days.reduce((a,d)=>a+((state.rushes||{})[d]||0),0);
+  const mins=days.reduce((a,d)=>a+((state.minutes||{})[d]||0),0),rush=days.reduce((a,d)=>a+(((state.guess||{}).days||{})[d]||0),0);
   const comp=state.comp||{right:0,wrong:0},compPct=comp.right+comp.wrong?Math.round(comp.right/(comp.right+comp.wrong)*100):null;
   const lib=state.library||{},done=BOOKS.filter(b=>!b.mine&&(lib[b.id]||{}).done);
   const tgWeek=(Array.isArray(state.togetherDays)?state.togetherDays:[]).filter(d=>days.indexOf(d)>=0).length;
@@ -9724,7 +9755,7 @@ function openReport(){
   const tips=[];
   shaky.slice(0,2).forEach(s=>tips.push(`<b>${s.n}</b> is shaky. Say the sound together and hunt for it in books — try “${s.ex}”. The game is already giving him extra ${s.n} words.`));
   if(conf.length)tips.push(`He mixes up <b>${conf[0].k.split("→")[0]}</b> and <b>${conf[0].k.split("→")[1]}</b>. Point to the letter and say both sounds; ask which one he hears.`);
-  if(rush>=5)tips.push(`He guessed quickly ${rush} times this week. Ask him to point under each sound as he says it — the Sound Shield does this in the game too.`);
+  if(rush>=5)tips.push(`${rush} words looked like guesses this week. Ask him to point under each sound as he says it — the game's Sound Shield does this too.`);
   if(compPct!=null&&compPct<75)tips.push(`He decodes well but sometimes misses the meaning (${compPct}% of picture and book questions). After each page ask: “What happened?”`);
   if(!Object.values(lib).some(b=>b.rec))tips.push(`Try <b>🎤 Read it to your pet</b> in a book. Hearing himself read is powerful — and you get recordings to keep.`);
   const tierWords=words.filter(w=>w.t===tier&&!w.tricky),tm=tierWords.filter(w=>(state.stats[w.w]||{}).mastered).length;
@@ -9745,7 +9776,8 @@ function openReport(){
       return`<div class="rsk"><span class="rn">${s.n} <i>${s.ex}</i></span><span class="rbar"><i style="width:${s.s?p:0}%;background:${st[1]}"></i></span><span class="rst" style="color:${st[1]}">${st[0]}</span></div>`;}).join("")}</div>
     <h3>Mix-ups</h3>${conf.length?`<div class="rconf">${conf.map(c=>{const [a,b]=c.k.split("→");return`<span>chose <b>${a}</b> for <b>${b}</b> <i>×${c.n}</i></span>`;}).join("")}</div>`:`<p class="rnote">No repeated mix-ups yet.</p>`}
     <div class="rgrid"><div><h3>Minutes a day</h3>${bars(days,d=>(state.minutes||{})[d]||0)}</div>
-      <div><h3>Quick guesses a day</h3>${bars(days,d=>(state.rushes||{})[d]||0)}</div></div>
+      <div><h3>Guessing a day</h3>${bars(days,d=>((state.guess||{}).days||{})[d]||0)}</div></div>
+    <p class="rnote">Sound it out first is <b>${Guess.on()?"on":"off"}</b> (it comes on when two of his last five words look like guesses, and goes off after five clean reads in a row).</p>
     ${gT||gN?`<p class="rnote rgoal">Reading goal reached <b>${gN} of 7</b> days this week${gT?` (${gT} words a day, or a whole book)`:" (the goal is off now)"}.</p>`:""}
     <p class="rnote">${n?`Average time to answer: <b>${(ms/n/1000).toFixed(1)} s</b>. `:""}${compPct!=null?`Understanding (picture sentences and book questions): <b>${compPct}%</b> right.`:""}</p>
     ${whereTime(days,mins)}

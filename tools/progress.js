@@ -64,6 +64,8 @@ function report(snap){
   p("Words: ",seen," tracked, ",mastered," mastered; shakiest: ",shaky.map(([w,x])=>w+" ("+x.miss+"/"+x.seen+")").join(", ")||"none");
   const cons=s.skills&&s.skills.cons&&s.skills.cons.e;
   if(cons){const top=Object.entries(cons).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>k+" ×"+v).join(", ");p("Sound mix-ups (tapped→meant): ",top);}
+  {const g=s.guess||{},gd=g.days||{},ks=Object.keys(gd).sort().slice(-14);
+    p("Guessing (words that looked like guesses, by day): ",ks.length?ks.map(d=>d.slice(5)+" "+gd[d]).join(", "):"none yet","; sound it out first: ",g.on?"on":"off");}
   const ret=s.retain||[];const crate=s.crateCount||0;
   p("Heart words being checked again: ",ret.length,ret.length?" (next due in "+Math.max(0,Math.min.apply(null,ret.map(r=>r.dueAt))-crate)+" crates)":"");
   p("Review queue: ",(s.review||[]).length," words");
