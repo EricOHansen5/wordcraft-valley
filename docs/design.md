@@ -773,6 +773,13 @@ Zelda-style dungeons with Pokémon-style reading battles, to pull him back in (h
 - The names are readable at level 1 (short a and o), which is why the boss is Mad Log and not King Stump. Closing the iPad mid-dungeon is fine: the run goes on at the door of the room he was in.
 - Under the hood: rooms and monsters are data (`app/content/dungeons.js`, with a checker, `tests/dungeon_data.js`, that proves every dungeon can be finished, and only with its item); pictures are OpenMoji (`OMD`); saves gain `state.dungeon`; `tools/progress.js` prints a Dungeons line.
 
+
+### v10.11.1 — dungeon polish
+- Tapping a pot, chest, sign or monster walks Ash up to it and turns him to face it, so ⚔️ works on it next; a monster stepping into his path stops the walk instead of starting a battle.
+- A locked door says "It is locked. Find a key!" out loud, the boss door "You need the boss key.", and Mad Log says his taunt as the fight starts. Tapping a monster friend in the Word-Dex says its name and where it lives ("Dot! It lives in the Forest Temple.").
+- Battle stars (⚔️ ⭐) show on an animal's sticker book card. An animal from a creature pack fights under its own name and picture.
+- The battle sheet fits the iPad in landscape, sentence rounds too (smaller fighters, Back off beside the team).
+- Fixes: holding a key no longer carries Ash two tiles too far; no battle starts while he goes through a door; a run saved with no hearts left starts over at the entrance; walking keeps the game from resting; Enter can no longer press the map's hidden Go button.
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 
 ### Still on the list (v4 roadmap, in build order)

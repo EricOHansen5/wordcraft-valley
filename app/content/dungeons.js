@@ -138,6 +138,8 @@ lines:{
   bossKey:"You got the boss key!",
   map:"You found the map!",
   heart:"A heart!",
-  fairy:"The fairy fills your hearts!"
+  fairy:"The fairy fills your hearts!",
+  locked:"It is locked. Find a key!",
+  needBossKey:"You need the boss key."
 }
 };
