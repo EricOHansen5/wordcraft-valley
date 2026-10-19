@@ -115,7 +115,8 @@ const {launch,check,waitFor,seed}=require("./lib");
   // ---- 9. monsters hold still while the game rests ----
   await E(()=>Dungeon._freeze(false));await wait(2500);
   const moved=await E(()=>document.querySelector('#ovDungeon .dmon[data-kind="cap"]').dataset.c+","+document.querySelector('#ovDungeon .dmon[data-kind="cap"]').dataset.r);
-  await E(()=>{Dungeon._go("f1",1,7,"n");Rest._idleMs=200;});await wait(400);await E(()=>Rest.check());
+  // frozen while the rest comes (a monster bumping Ash would start a battle, which rightly holds the rest off), then let go
+  await E(()=>{Dungeon._freeze(true);Dungeon._go("f1",1,7,"n");Rest._idleMs=200;});await wait(400);await E(()=>{Rest.check();Dungeon._freeze(false);});
   ok(await E(()=>document.body.classList.contains("rest")),"the game rests in the dungeon after the idle time");
   const at0=await E(()=>[...document.querySelectorAll("#ovDungeon .dmon")].map(m=>m.dataset.c+","+m.dataset.r).join(";"));await wait(3200);
   const at1=await E(()=>[...document.querySelectorAll("#ovDungeon .dmon")].map(m=>m.dataset.c+","+m.dataset.r).join(";"));
@@ -123,6 +124,40 @@ const {launch,check,waitFor,seed}=require("./lib");
   await E(()=>{Rest._idleMs=45000;Rest.poke();Dungeon._freeze(true);});
   ok(typeof moved==="string","(monsters stepped while awake: "+moved+")");
   await tidy();
+
+  // ---- boss: Mad Log, the heart container and the badge ----
+  await E(()=>{state.settings.tierOverride=3;Battle._only(null);Dungeon.enter("forest");Dungeon._freeze(true);
+    const r=Dungeon._run();r.bossKey=true;r.halves=8;Dungeon._go("f3",6,1,"n");});await wait(300);
+  await p.keyboard.press("ArrowUp");await wait(300);
+  ok(await E(()=>document.querySelector('#ovDungeon .dt[data-c="6"][data-r="0"]').dataset.t==="D"),"the boss key opens the boss door");
+  await p.keyboard.press("ArrowUp");await wait(400);
+  ok(await E(()=>Dungeon._run().room==="fB"&&!!document.querySelector("#ovDungeon .dboss")),"...into the boss room, and Mad Log is there");
+  await E(()=>Dungeon._go("fB",6,4,"n"));await p.keyboard.press("ArrowUp");await wait(600);
+  ok((await hp())===8,"Mad Log takes 8 hits");
+  await p.click('#ovBattle .bmon[data-id="dog"]');await wait(200);
+  await right();await right();
+  ok(await E(()=>!!document.querySelector("#ovBattle .bq .psopt")),"the third round is a sentence riddle");
+  ok(await E(()=>!!document.getElementById("bItem")),"with the boomerang, the boss sheet offers it");
+  const hi=await hp();await p.click("#bItem");await wait(500);
+  ok((await hp())===hi-1&&await E(()=>!document.getElementById("bItem")),"the boomerang lands one free hit, once");
+  const gB=await E(()=>state.gems);
+  await p.click('#ovBattle .bmon[data-id="lion"]');await wait(200);
+  for(let i=0;i<8&&await E(()=>!!document.querySelector("#ovBattle.on"));i++)await right();
+  ok(await closed(),"the lion (fire) beats Mad Log (leaf)");await wait(600);
+  const cl=await E(()=>({max:state.dungeon.maxHearts,cleared:!!state.dungeon.cleared.forest,run:state.dungeon.run,gems:state.gems}));
+  ok(cl.max===4&&cl.cleared&&cl.run===null&&cl.gems>=gB+10,"beating the boss: a heart container (3 → 4), the dungeon cleared, the run over, 10 gems "+J(cl));
+  await E(()=>checkBadges());
+  ok(await E(()=>(state.badges||[]).indexOf("d_forest")>=0),"...and the Forest Temple badge");
+  await until(()=>!!document.querySelector('#ovDungeons.on .dmap[data-d="forest"].cleared'));
+  ok(await E(()=>!!document.querySelector('#ovDungeons.on .dmap[data-d="forest"].cleared .dtro svg')),"the map shows the Forest Temple cleared, with its trophy");
+  // a replay: battle gems and the boss's 10, but no second heart container
+  await E(()=>{Dungeon.enter("forest");Dungeon._freeze(true);Dungeon._run().bossKey=true;Dungeon._go("fB",6,4,"n");});await wait(300);
+  ok(await E(()=>!!document.querySelector("#ovDungeon .dboss")),"on a replay Mad Log is back");
+  await p.keyboard.press("ArrowUp");await wait(600);await p.click('#ovBattle .bmon[data-id="lion"]');await wait(200);
+  for(let i=0;i<8&&await E(()=>!!document.querySelector("#ovBattle.on"));i++)await right();
+  await closed();await wait(600);
+  ok(await E(()=>state.dungeon.maxHearts===4),"a replay win gives no second heart container");
+  await E(()=>{state.settings.tierOverride=0;});await tidy();
 
   // ---- 10. no animals at all: the buddy fights ----
   await seed(p,{phase:2,settings:{goal:0},critters:[]});await tidy();
