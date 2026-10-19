@@ -3,7 +3,7 @@
 // once, a miss takes nothing and the second miss glows, ten dishes fill the table (his animals come to eat, the buddy says
 // thanks, one look piece from the real Look system), one table a day, a new date, the food words and their levels,
 // the feast mode, the save, and an old save.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -59,7 +59,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "in the window: the 🦃 button shows, with 10 on its badge");
   ok(J(await fe())===J(DEF),"...and showing it writes nothing");
   await listen();
-  await p.click("#feastBtn");
+  await tile(p,"#feastBtn");
   ok(await waitFor(p,()=>Modes.top()==="feast"),"🦃 opens the Feast table (mode feast)");
   const t0=await E(()=>({plates:document.querySelectorAll("#fsPlates .fsplate").length,full:document.querySelectorAll("#fsPlates .fsplate.on").length,
     guests:document.querySelectorAll("#fsGuests .fsguest").length,buddy:!!document.querySelector("#fsBuddy svg"),stat:document.getElementById("fsStat").textContent}));
@@ -137,7 +137,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click("#fsDone");
   ok(await waitFor(p,()=>Modes.top()==="valley"),"Done closes the table");
   const c4=(await purse()).c;await listen();
-  await p.click("#feastBtn");
+  await tile(p,"#feastBtn");
   ok(await waitFor(p,()=>Modes.top()==="feast"),"🦃 again the same day opens the table");
   await wait(200);
   ok(await E(()=>document.querySelectorAll("#fsPlates .fsplate.on").length===10&&document.querySelectorAll("#fsGuests .fsguest").length===4
@@ -152,7 +152,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await E(()=>Feast._setToday("2026-11-21"));
   ok(await E(()=>Feast.left===10&&!Feast.full&&document.getElementById("feastBadge").textContent==="10"),"a new date: an empty table again");
   f=await fe();ok(f.day==="2026-11-20"&&f.dishes.length===10,"...and the save changes only when a dish goes on");
-  await p.click("#feastBtn");
+  await tile(p,"#feastBtn");
   const a3=await question();await answer(p,"#fsQ");
   ok(await waitFor(p,()=>state.feast.day==="2026-11-21"&&state.feast.dishes.length===1),"a dish on the new day's table");
   f=await fe();ok(f.tables===1&&J(f.dishes)===J([a3]),"a new table in the save "+J(f));

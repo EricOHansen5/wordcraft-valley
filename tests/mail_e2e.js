@@ -3,7 +3,7 @@
 // with dataset.ans, a right answer pays 2 🪙 once, a miss takes nothing and the second miss glows, eight letters fill the
 // bag (a new friend comes to the valley, one look piece from the real Look system), one bag a day, a new date, 10 💎 when
 // he has every animal of his lands, the letters at every level, the mail mode, the save, and an old save.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -56,7 +56,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "in the window: the 💌 button shows, with 8 on its badge");
   ok(J(await ml())===J(DEF),"...and showing it writes nothing");
   await listen();
-  await p.click("#mailBtn");
+  await tile(p,"#mailBtn");
   ok(await waitFor(p,()=>Modes.top()==="mail"),"💌 opens Word mail (mode mail)");
   let q=await letter();
   const t0=await E(()=>({slots:document.querySelectorAll("#vmBag .vmslot").length,on:document.querySelectorAll("#vmBag .vmslot.on").length,bag:!!document.querySelector("#vmBag .vmbagart svg"),
@@ -144,7 +144,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await p.click("#vmDone");
   ok(await waitFor(p,()=>Modes.top()==="valley"),"Done closes the mailbag");
   const c4=await purse(),crits4=await E(()=>state.critters.length);await listen();
-  await p.click("#mailBtn");
+  await tile(p,"#mailBtn");
   ok(await waitFor(p,()=>Modes.top()==="mail"),"💌 again the same day opens the mailbag");
   await wait(200);
   ok(await E(()=>document.querySelectorAll("#vmBag .vmslot.on").length===8&&!document.getElementById("vmQ")&&/Come back tomorrow/.test(document.getElementById("vmWork").textContent)),
@@ -162,7 +162,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   // he has every animal of his lands now (kept in, so the valley stays quiet)
   await E(()=>{const have=state.critters.map(c=>c.id);CRITTERS.filter(c=>c.b<=state.biome&&have.indexOf(c.id)<0).forEach((c,i)=>state.critters.push({id:c.id,seed:i,c:3+i%10,r:8,lv:1,out:false,since:9}));});
   const all=await E(()=>state.critters.length);
-  await p.click("#mailBtn");
+  await tile(p,"#mailBtn");
   q=await letter();await answer(p,"#vmQ");
   ok(await waitFor(p,()=>state.mail.day==="2027-02-04"&&state.mail.read.length===1),"a letter in the new day's bag");
   m=await ml();ok(m.bags===1&&m.read.length===1,"a new bag in the save "+J(m));

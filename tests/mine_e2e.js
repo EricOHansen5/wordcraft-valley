@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const srv=require("./page").serveApp({port:8780},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));
@@ -12,7 +13,7 @@ const srv=require("./page").serveApp({port:8780},async()=>{
     r.onsuccess=()=>{const tx=r.result.transaction("kv","readwrite");tx.objectStore("kv").put(s,"state");tx.oncomplete=()=>{r.result.close();res();};};}),st);
   await p.reload();await p.waitForTimeout(2200);
   await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));
-  await p.click("#mineBtn");await p.waitForTimeout(900);
+  await tile(p,"#mineBtn");await p.waitForTimeout(900);
   console.log("mine open:",await p.evaluate(()=>Mine._running()),"| first-run panel:",await p.evaluate(()=>document.querySelector("#mCard h2")?.textContent));
   // design the miner with taps
   await p.click('.msw[data-k="skin"][data-v="2"]');await p.click('.mtag[data-k="hairStyle"][data-v="1"]');await p.click('.msw[data-k="shirt"][data-v="2"]');
@@ -115,7 +116,7 @@ const srv=require("./page").serveApp({port:8780},async()=>{
   await p.click("#mBack");await p.waitForTimeout(1500);
   console.log("back in valley:",await p.evaluate(()=>!Mine._running()));
   await p.reload();await p.waitForTimeout(2500);await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));
-  await p.click("#mineBtn");await p.waitForTimeout(800);
+  await tile(p,"#mineBtn");await p.waitForTimeout(800);
   const aft=await p.evaluate(()=>({bag:JSON.stringify(state.mine.bag),coins:state.mine.coins,dug:state.mine.dugCount,look:JSON.stringify(state.mine.look),shaft:Mine._tile(20,Mine.SKY+10),panel:document.getElementById("mPanel").classList.contains("on")}));
   console.log("persisted:",JSON.stringify(before)===JSON.stringify({bag:aft.bag,coins:aft.coins,dug:aft.dug,look:aft.look}),"| shaft still dug:",aft.shaft===0,"| no first-run panel:",!aft.panel);
   console.log("quests:",await p.evaluate(()=>JSON.stringify(state.quests.list.map(q=>q.k+":"+q.p))));

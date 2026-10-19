@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const srv=require("./page").serveApp({port:8791},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true});
@@ -86,7 +87,7 @@ const srv=require("./page").serveApp({port:8791},async()=>{
   await p.waitForTimeout(1500);
 
   // 6 storybook: shelf, read every page to the pet, answer questions
-  await p.click("#booksBtn");await p.waitForTimeout(500);
+  await tile(p,"#booksBtn");await p.waitForTimeout(500);
   const shelf=await p.evaluate(()=>[...document.querySelectorAll(".bcov")].map(c=>c.querySelector("b").textContent+(c.disabled?" 🔒":"")));
   console.log("   shelf:",shelf.join(" | "));
   await p.screenshot({path:"r_shelf.png"});
@@ -132,7 +133,7 @@ const srv=require("./page").serveApp({port:8791},async()=>{
   await p.click("#rClose");await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));
 
   // 8 mine: books pill and a boss riddle
-  await p.click("#mineBtn");await p.waitForTimeout(1000);
+  await tile(p,"#mineBtn");await p.waitForTimeout(1000);
   await p.evaluate(()=>document.querySelectorAll("#mClose").forEach(b=>b.click()));
   ok(await p.evaluate(()=>!!document.getElementById("mBooks")),"books pill in the mine");
   await p.evaluate(()=>{Skills.slow=false;Mine._startBoss(0);});await p.waitForTimeout(300);await p.click("#mFight");await p.waitForTimeout(400);

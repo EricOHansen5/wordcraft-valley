@@ -2,7 +2,7 @@
 // a kind "Almost!" when he is short, the old wardrobes (only what he owns, and a line to the Trading Post),
 // hats and helmets owned in an old save, job gear that opens at a job level, the Swap tab (1 💎 = 5 🪙),
 // the stall in Adventure, and the "store" mode.
-const {launch,seed,waitFor,check}=require("./lib");
+const {launch,seed,waitFor,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -96,7 +96,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   await E(()=>{state.mine.coins=60;});await E(()=>Store.open("gear"));await p.click(btn("viking","gear"));await wait(150);
   ok(await E(()=>state.owned.viking===1&&state.mine.coins===0&&state.mine.look.helmet==="viking"),"Viking helmet bought with 60 🪙, kept in owned");
   await E(()=>Store.close());
-  await p.click("#mineBtn");await wait(900);
+  await tile(p,"#mineBtn");await wait(900);
   await E(()=>Mine._openWardrobe(false));await wait(200);
   const mw=await E(()=>({hats:[...document.querySelectorAll("#mCard [data-h]")].map(b=>b.dataset.h).join(),coin:[...document.querySelectorAll("#mCard [data-h]")].some(b=>/🪙/.test(b.textContent)),
     more:(document.querySelector("#mCard .mmore")||{}).textContent||""}));

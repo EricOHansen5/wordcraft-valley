@@ -5583,7 +5583,9 @@ const Home=(()=>{
   function stackEmpty(){if(!ready||inValley)return;clearTimeout(backT);
     backT=setTimeout(()=>{if(!inValley&&!isOn()&&!Modes.stack().length)show();},350);}
   Games.add({id:"valley",name:"Valley",icon:"🏡",order:20,open:()=>valley()});
-  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,start(){ready=true;show();},get _valley(){return inValley;},_ov:()=>ov};
+  return{show,hide,isOn,render,suggestion,valley,home,stackEmpty,// the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
+  // test server sets), with Home built all the same so the page is laid out as it is for him
+  start(){ready=true;if(window.WCV_START==="valley"&&!inValley){inValley=true;if(!ov)build();render();return;}if(!inValley)show();},get _valley(){return inValley;},_ov:()=>ov};
 })();
 
 /* ================================================================

@@ -32,8 +32,13 @@ function scripts(page){
   while((m=TAG.exec(s)))if(under(m[1]))out.push(m[1]);
   return out;
 }
+// The game opens on Home. Pages served for the tests start in the valley instead (most suites work there): Home
+// still builds and takes the game buttons, as it does for him. A suite that wants Home sets window.WCV_START="home"
+// first (tests/lib.js launch({home:true}) does).
+const START_IN_VALLEY='<script>window.WCV_START=window.WCV_START||"valley";</script>';
+const withStart=s=>s.replace(/<head>/i,m=>m+START_IN_VALLEY);
 function html({leaveOut=[]}={}){
-  return fs.readFileSync(PAGE,"utf8").replace(TAG,(tag,src)=>{
+  return withStart(fs.readFileSync(PAGE,"utf8")).replace(TAG,(tag,src)=>{
     const f=under(src);if(!f)return tag;
     if(leaveOut.indexOf(src)>=0)return "";
     const js=fs.readFileSync(f,"utf8");
@@ -51,7 +56,7 @@ function handler({static:real=false,before}={}){
     const own=file&&(OWN.some(d=>rel.startsWith(d))||scripts().indexOf(rel)>=0);
     if(file&&(real||own)){r.writeHead(200,{"content-type":TYPES[path.extname(f)]||"application/octet-stream"});return r.end(fs.readFileSync(f));}
     if(real){r.writeHead(404);return r.end();}
-    r.writeHead(200,{"content-type":"text/html"});r.end(fs.readFileSync(PAGE));
+    r.writeHead(200,{"content-type":"text/html"});r.end(withStart(fs.readFileSync(PAGE,"utf8")));
   };
 }
 function serveApp(opts={},listening){

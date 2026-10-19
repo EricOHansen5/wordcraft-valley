@@ -5,7 +5,7 @@
 // the Look system for a piece (the real Looks.grant, wrapped to count), door 25 says Merry Christmas, reads anywhere
 // light bulbs (a crate-loop read) and a finished book lights the star, a new date starts a dark tree and keeps the doors,
 // the lights mode, the save, an old save and the Winter look's pieces in the valley.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -78,7 +78,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "6 December: the ❄️ button shows, with 6 doors to open on its badge");
   ok(J(await lt())===J(DEF),"...and showing it writes nothing");
   await listen();
-  await p.tap("#lightsBtn");
+  await tile(p,"#lightsBtn");
   ok(await waitFor(p,()=>Modes.top()==="lights"),"a tap on ❄️ opens the tree (mode lights)");
   ok(await states()==="rrrrrr"+"s".repeat(19),"doors 1–6 can open, 7–25 are shut: "+await states());
   let v=await E(()=>({bulbs:document.querySelectorAll("#ltBody .ltbulb").length,on:document.querySelectorAll("#ltBody .ltbulb.on").length,star:!!document.querySelector("#ltBody .ltstar.on"),

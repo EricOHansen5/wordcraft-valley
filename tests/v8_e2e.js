@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const srv=require("./page").serveApp({port:8798},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true});
@@ -30,7 +31,7 @@ const srv=require("./page").serveApp({port:8798},async()=>{
   await p.click("#noteRec");await p.waitForTimeout(300);await p.click("#noteRec");await p.waitForTimeout(300);
   await p.fill("#noteText","Look in the red box.");await p.click("#noteSend");await p.waitForTimeout(400);
   ok(await p.evaluate(()=>state.notes.length===1&&state.notes[0].voice&&document.getElementById("advBadge").textContent==="💌"),"note sent with voice; Adventure shows 💌");
-  await clr();await p.click("#advBtn");await p.waitForTimeout(800);
+  await clr();await tile(p,"#advBtn");await p.waitForTimeout(800);
   const env=await p.evaluate(()=>{const n=state.notes[0];return{c:n.c,r:n.r};});
   await near(env.c,env.r);await p.waitForTimeout(250);
   ok(/Note from/.test(await p.evaluate(()=>document.getElementById("advAct").textContent)),"envelope in the valley");
@@ -73,7 +74,7 @@ const srv=require("./page").serveApp({port:8798},async()=>{
   ok(await p.evaluate(()=>state.quest.done&&state.quest.ch===6),"Gloom befriended, story done: "+kinds.join(","));
   await clr();await p.click("#advDone");
   // ---- 3 my own book ----
-  await p.evaluate(()=>{state.settings.tierOverride=3;});await p.click("#booksBtn");await p.waitForTimeout(300);await p.click("#bMake");await p.waitForTimeout(300);
+  await p.evaluate(()=>{state.settings.tierOverride=3;});await tile(p,"#booksBtn");await p.waitForTimeout(300);await p.click("#bMake");await p.waitForTimeout(300);
   const pick=async(tab,w)=>{await p.click(`.mktab[data-t="${tab}"]`);await p.click(`.mkb[data-w="${w}"]`);await p.waitForTimeout(80);};
   await pick("little","The");await pick("who","dog");await pick("doing","hid");await pick("little","in");await pick("little","the");await pick("who","box");
   await p.click('[data-p="."]');await p.screenshot({path:"v8_maker.png"});
@@ -95,7 +96,7 @@ const srv=require("./page").serveApp({port:8798},async()=>{
   ok(await p.evaluate(()=>state.write.c&&state.write.c.ok===1&&state.writes===1),"traced c-a-t: "+JSON.stringify(await p.evaluate(()=>state.write)));
   await clr();
   // ---- 5 care ----
-  await p.click("#advBtn");await p.waitForTimeout(700);
+  await tile(p,"#advBtn");await p.waitForTimeout(700);
   const dog=await p.evaluate(()=>{const d=state.critters.find(x=>x.id==="dog");d.c=6;d.r=7;d._busy=true;return{c:d.c,r:d.r};});
   await near(dog.c,dog.r);await p.waitForTimeout(300);
   const lbl=await p.evaluate(()=>document.getElementById("advAct").textContent);ok(/Feed/.test(lbl),"hungry dog: "+lbl);

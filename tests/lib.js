@@ -71,7 +71,7 @@ async function booted(page){
 // Writes a save into IndexedDB (the same store the game reads) and reloads, so it goes through the real boot path:
 // defaults, migrations, fixups. partial is merged onto BASE_SAVE; pass {base:null} in opts to write partial as is.
 // settle waits out the boot timers (a land keeper wakes at 1.5 s) the way the older suites' 2.2 s sleep did.
-async function seed(page,partial,{base=BASE_SAVE,settle=2200}={}){
+async function seed(page,partial,{base=BASE_SAVE,settle=2200,home:onHome=false}={}){
   const st=base?merge(base,partial):partial;
   await page.evaluate(s=>new Promise((res,rej)=>{
     // the page being left saves its own state when it is put away (pagehide): keep that from landing on the seed
@@ -80,11 +80,29 @@ async function seed(page,partial,{base=BASE_SAVE,settle=2200}={}){
     r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("kv"))d.createObjectStore("kv");if(!d.objectStoreNames.contains("blobs"))d.createObjectStore("blobs");};
     r.onerror=()=>rej(r.error);
     r.onsuccess=()=>{const tx=r.result.transaction("kv","readwrite");tx.objectStore("kv").put(s,"state");tx.oncomplete=()=>{r.result.close();res();};};}),st);
-  await reload(page,{settle});
+  await reload(page,{settle,home:onHome});
   return st;
 }
 // a reload that waits for boot, then the boot timers
-async function reload(page,{settle=2200}={}){await page.reload();await booted(page);if(settle)await page.waitForTimeout(settle);}
+async function reload(page,{settle=2200,home:onHome=false}={}){await page.reload();await booted(page);if(!onHome)await valley(page);if(settle)await page.waitForTimeout(settle);}
+// The game opens on Home. Most suites work in the valley, so launch(), seed() and reload() go to the valley after boot
+// unless given {home:true}. home(page) brings Home up (closing any other sheet) for a suite that opens a game from its
+// tile (#crateBtn, #mineBtn, #advBtn... are Home tiles now); valley(page) goes back to the valley.
+async function home(page){
+  await page.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);});Home.home();});
+  await waitFor(page,()=>!!document.querySelector("#ovHome.on"));
+}
+// tap a game's tile (#crateBtn, #mineBtn, ...): Home comes up, the tile is tapped for real, and a suite that was in the
+// valley goes back to the valley when the game closes, as the old tool bar did. opts go to page.click.
+async function tile(page,sel,opts){
+  const was=await page.evaluate(()=>{const v=Home._valley;Home.show();return v;});
+  await page.click(sel,opts);
+  if(was)await page.evaluate(()=>{if(Home.isOn())Home.hide();});
+}
+async function valley(page){
+  await page.evaluate(()=>{try{Home.valley();}catch(e){}});
+  await waitFor(page,()=>!document.querySelector("#ovHome.on"),{timeout:3000});
+}
 
 // ---------- answering ----------
 // window.__answer(sel): answers whatever reading challenge is in the host (a word pick, a sentence pick or a Build it).
@@ -98,7 +116,7 @@ function installAnswer(){
 const answer=(page,sel)=>page.evaluate(s=>window.__answer(s),sel);
 
 // ---------- the browser ----------
-async function launch({port,seed:st,static:real=false,block_sw,viewport={width:1180,height:820},context={},init,console:con=true,settle}={}){
+async function launch({port,seed:st,static:real=false,block_sw,viewport={width:1180,height:820},context={},init,console:con=true,settle,home:onHome=false}={}){
   const srv=await serve({port,static:real});
   const browser=await chromium.launch(process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{});
   const sw=block_sw==null?!real:block_sw;
@@ -107,9 +125,10 @@ async function launch({port,seed:st,static:real=false,block_sw,viewport={width:1
   page.on("pageerror",e=>errs.push(e.message));
   if(con)page.on("console",m=>{if(m.type()==="error")errs.push("console: "+m.text());});
   await page.addInitScript(installAnswer);
+  if(onHome)await page.addInitScript(()=>{window.WCV_START="home";});
   if(init)await page.addInitScript(init);
   await page.goto(srv.url);
-  if(st)await seed(page,st,{settle});else await booted(page);
+  if(st)await seed(page,st,{settle,home:onHome});else{await booted(page);if(!onHome)await valley(page);}
   const close=async()=>{try{await browser.close();}catch(e){}try{srv.closeAllConnections&&srv.closeAllConnections();}catch(e){}
     await new Promise(r=>srv.close(()=>r()));};
   return{browser,ctx,page,errs,srv,url:srv.url,E:(f,a)=>page.evaluate(f,a),close};
@@ -128,7 +147,7 @@ function check(name){
   return t;
 }
 
-module.exports={serve,launch,seed,reload,booted,waitFor,answer,check,freePort,merge,BASE_SAVE,installAnswer};
+module.exports={serve,launch,seed,reload,booted,waitFor,answer,check,freePort,merge,BASE_SAVE,installAnswer,home,valley,tile};
 
 // run-all.js runs every file here, this one too: check the parts that need no browser
 if(require.main===module)(async()=>{const t=check("lib.js");

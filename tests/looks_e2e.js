@@ -2,7 +2,7 @@
 // pieces granted one at a time (the first puts the look on and says the greeting once), the valley showing exactly the
 // pieces earned (props, bat particles, the witch hat), the look's tint, class and crate skin, redraws without doubles,
 // wearing and taking off on any day (a fixed date in March), the season's tint coming back, and old saves.
-const {launch,seed,reload,waitFor,check}=require("./lib");
+const {launch,seed,reload,waitFor,check,tile}=require("./lib");
 (async()=>{
   const T=check("looks"),ok=T.ok,J=JSON.stringify;
   // the keepers of the three open lands are awake, so no cut-scene opens on top; he wears the flower hat
@@ -107,7 +107,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     delete state.grid["8,7"];renderWorld();return{s,n};});
   ok(Math.abs(moved.s.c-8)>=1.4&&moved.s.r===7&&moved.n===1,"a building on the pumpkins' spot: they step along the row, the building stays "+J(moved));
   // the crate faces
-  await p.click("#crateBtn");await waitFor(p,()=>Modes.top()==="read");await wait(200);
+  await tile(p,"#crateBtn");await waitFor(p,()=>Modes.top()==="read");await wait(200);
   const crate=await E(()=>{const k=[...document.querySelectorAll("#crateRow .crate")].find(x=>!x.classList.contains("keep"));
     return k?{edge:getComputedStyle(k).borderTopColor,badge:getComputedStyle(k,"::after").content}:null;});
   ok(crate&&crate.edge==="rgb(91, 63, 140)"&&/🎃/.test(crate.badge),"the crates wear the look: purple edge and a 🎃 "+J(crate));

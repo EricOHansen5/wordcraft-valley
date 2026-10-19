@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const srv=require("./page").serveApp({port:8805},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true});
@@ -16,7 +17,7 @@ const srv=require("./page").serveApp({port:8805},async()=>{
   await p.reload();await p.waitForTimeout(2200);
   await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.settings.tierOverride=3;});
   const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
-  await p.click("#mineBtn");await p.waitForTimeout(1200);
+  await tile(p,"#mineBtn");await p.waitForTimeout(1200);
   const close=()=>p.evaluate(()=>{const b=document.querySelector("#mPanel.on #mClose");if(b)b.click();});
   await close();await p.waitForTimeout(200);
   const S=await p.evaluate(()=>Mine.SKY);
@@ -99,7 +100,7 @@ const srv=require("./page").serveApp({port:8805},async()=>{
   await close();
   // 11 everything survives leaving and coming back
   await p.evaluate(()=>{document.getElementById("mBack").click();});await p.waitForTimeout(500);
-  await p.click("#mineBtn");await p.waitForTimeout(1200);await close();
+  await tile(p,"#mineBtn");await p.waitForTimeout(1200);await close();
   const kept=await p.evaluate(([S,V])=>({ladder:Mine._tile(40,S+8),torch:Mine._tile(26,S+30),sand:Mine._tile(30,S+24),vault:Mine._tile(V.door[0],V.door[1]),sign:Mine._tile(30,S+10)}),[S,V]);
   ok(kept.ladder===11&&kept.torch===12&&kept.sand===14&&kept.vault===0&&kept.sign===13,"built things are still there next time: "+JSON.stringify(kept));
   // hotbar picture

@@ -4,7 +4,7 @@
 // level (every page passes the decode check at the seeded level, and at every level), read to the end with the storybook page
 // controls and paying once a day, the look's piece from the real Looks.grant (wrapped to count) once a day of the week, a second day,
 // the next birthday, the party mode, the save, an old save and the Birthday look's pieces in the valley.
-const {launch,seed,reload,waitFor,check}=require("./lib");
+const {launch,seed,reload,waitFor,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -94,7 +94,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
 
   // ---- 5. the party: every animal he has, at a table with a cake; the buddy says happy birthday ----
   await listen();
-  await p.tap("#partyBtn");
+  await tile(p,"#partyBtn");
   ok(await waitFor(p,()=>Modes.top()==="party"),"a tap on 🎂 opens the party (mode party)");
   let v=await E(()=>({guests:[...document.querySelectorAll("#ptGuests .ptguest")].map(g=>g.dataset.crit),art:[...document.querySelectorAll("#ptGuests .ptguest")].every(g=>!!g.querySelector("svg")),
     cake:!!document.querySelector("#ovParty .pttable .ptcake svg"),hat:/M36 32 L50 2 L64 32Z/.test(document.querySelector("#ovParty .ptbuddy").innerHTML),bubble:document.getElementById("ptBubble").textContent,
@@ -163,7 +163,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   // ---- 9. a second day in the week: it pays again, and the next piece comes ----
   await E(()=>Party._setToday("2027-03-14"));
   ok(await badge()==="1","14 March: the book waits again on the badge");
-  await E(()=>Party.close());await p.click("#partyBtn");await waitFor(p,"#ptRead");
+  await E(()=>Party.close());await tile(p,"#partyBtn");await waitFor(p,"#ptRead");
   g1=await E(()=>state.gems);
   ok(await readBook(),"he reads it on the second day");
   ok(await E(g=>state.gems===g+12,g1)&&(await bd()).read==="2027-03-14","a new day: the book pays again");
@@ -173,7 +173,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
 
   // ---- 10. the next birthday: the next piece ----
   await E(()=>Party._setToday("2028-03-10"));
-  await p.click("#partyBtn");await waitFor(p,"#ptRead");
+  await tile(p,"#partyBtn");await waitFor(p,"#ptRead");
   ok(await readBook(),"a year later, the week of the next birthday");
   ok(await waitFor(p,()=>window.__g.length===3)&&await E(()=>JSON.stringify(Looks.pieces("birthday").earned)==='["balloons","banner","confetti"]'),"the next piece: the confetti");
   ok(J(await bd())===J({year:2028,read:"2028-03-10",pieces:3}),"state.birthday "+J(await bd()));

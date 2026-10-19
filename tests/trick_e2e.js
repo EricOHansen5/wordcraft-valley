@@ -3,7 +3,7 @@
 // level, a right read pays 2 🪙 once and closes the door, a miss takes nothing and the second miss glows, a sentence
 // every third door from level 3, the tenth door finishes the night (and asks the Look system for a piece), the doors
 // open again the next day, the trick mode, the save, and an old save.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -59,7 +59,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "in the window: the 🎃 button shows, with 10 on its badge");
   ok(J(await tk())===J(DEF),"...and showing it writes nothing");
   await listen();
-  await p.click("#trickBtn");
+  await tile(p,"#trickBtn");
   ok(await waitFor(p,()=>Modes.top()==="adventure"),"🎃 opens Adventure");
   ok(await waitFor(p,()=>document.querySelectorAll(".advland.tkdoor").length===10),"Adventure has 10 doors: "+await E(()=>document.querySelectorAll(".advland.tkdoor").length));
   const doors=await E(()=>Trick.doors());
@@ -182,7 +182,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(await E(()=>Trick.finished&&Trick.left===0&&!document.getElementById("trickBadge").classList.contains("on")),"no doors left, and no badge");
   ok(await E(()=>Trick.knock("x:1"))===false,"a finished night takes no more knocks");
   await E(()=>Adv.exit());await wait(150);await listen();
-  await p.click("#trickBtn");await wait(200);
+  await tile(p,"#trickBtn");await wait(200);
   ok((await said()).indexOf("You got all the treats tonight! Come back tomorrow.")>=0&&await E(()=>!Adv.on),"🎃 after a finished night: come back tomorrow (one night a day)");
   ok((await tk()).nights===1&&await E(()=>window.__g.length===1),"...nothing more is paid or granted");
   await E(()=>{if(window.__real)Looks.grant=window.__og;else delete window.Looks;state.settings.tierOverride=0;});

@@ -1,7 +1,7 @@
 // Word Dungeons: the map, rooms, moving, the room puzzles, the boomerang, and a run saved across a reload.
 // A 1024x768 touch iPad; the keyboard too. Battles have their own suite (battle_e2e.js), friends too (friends_e2e.js).
 "use strict";
-const {launch,check,waitFor}=require("./lib");
+const {launch,check,waitFor,tile}=require("./lib");
 (async()=>{
   const t=check("dungeons"),ok=t.ok,J=x=>JSON.stringify(x);
   const {page:p,errs,close,E}=await launch({viewport:{width:1024,height:768},seed:{phase:2,settings:{goal:0}}});
@@ -13,7 +13,7 @@ const {launch,check,waitFor}=require("./lib");
   ok(st0&&st0.maxHearts===3&&Array.isArray(st0.team)&&!st0.team.length&&st0.run===null&&st0.items&&st0.items.boomerang===false,
     "a save from before the dungeons boots with their defaults "+J(st0));
   ok(await E(()=>/NEW/.test(document.getElementById("dungeonBadge").textContent)),"the key button shows NEW");
-  await tidy();await p.click("#dungeonBtn");
+  await tidy();await tile(p,"#dungeonBtn");
   ok(await waitFor(p,()=>!!document.querySelector("#ovDungeons.on")),"the key button opens the dungeon map");
   ok(await E(()=>Modes.top()==="dungeon"&&document.body.classList.contains("covered")),"the map is the dungeon mode, and the valley sleeps behind it");
   ok(await E(()=>!/NEW/.test(document.getElementById("dungeonBadge").textContent)&&!!state.dungeon.seen),"...and NEW is gone");
@@ -23,7 +23,7 @@ const {launch,check,waitFor}=require("./lib");
   ok(lock.locked&&/Reading level 99/.test(lock.text)&&!lock.go,"above his level it is locked and says which level opens it "+J(lock));
   await E(()=>{DUNGEONS.list[0].level=window.__lv;});
   await tidy();
-  await p.click("#advBtn");await wait(800);
+  await tile(p,"#advBtn");await wait(800);
   ok(await E(()=>!!document.querySelector("#tiles .spot.dcave")),"Adventure has a cave door for the Forest Temple");
   await E(()=>{const b=document.getElementById("advDone");if(b)b.click();});await wait(300);
 

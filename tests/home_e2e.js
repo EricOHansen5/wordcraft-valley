@@ -4,7 +4,7 @@
 const {launch,check,waitFor,seed}=require("./lib");
 (async()=>{
   const t=check("home"),ok=t.ok,J=x=>JSON.stringify(x);
-  const {page:p,errs,close,E}=await launch({viewport:{width:1024,height:768},
+  const {page:p,errs,close,E}=await launch({viewport:{width:1024,height:768},home:true,
     seed:{phase:2,settings:{goal:0},crateCount:40,mine:{made:true},library:{"0":{}},jobs:{xp:{shop:3}},dungeon:{seen:true},adv:{seenIntro:1},factory:{lvl:2}}});
   const wait=ms=>p.waitForTimeout(ms);
 
@@ -28,12 +28,12 @@ const {launch,check,waitFor,seed}=require("./lib");
   const want=["adventure","books","crates","dungeons","factory","jobs","mine","quests","valley"];
   ok(want.every(k=>seen.indexOf(k)>=0),"an old save starts with what it has played already seen "+J(seen));
   // a brand-new save: only the valley and the quests are seen
-  await seed(p,{},{base:null});
+  await seed(p,{},{base:null,home:true});
   const fresh=await E(()=>Object.keys(state.home.seen).filter(k=>k.indexOf("t")!==0||k==="t").sort());
   ok(J(fresh)===J(["quests","valley"]),"a new save has only the valley and the quests seen "+J(fresh));
 
   // ---- screen ----
-  await seed(p,{phase:2,settings:{goal:20},gems:120,mine:{made:true,coins:40}});
+  await seed(p,{phase:2,settings:{goal:20},gems:120,mine:{made:true,coins:40}},{home:true});
   const ix=()=>E(()=>document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);}));
   await ix();
   await E(()=>{Goal.ensure().words=12;
@@ -101,7 +101,7 @@ const {launch,check,waitFor,seed}=require("./lib");
   await p.setViewportSize({width:1024,height:768});
 
   // ---- games and navigation ----
-  await seed(p,{phase:2,settings:{goal:0}});await wait(2600);
+  await seed(p,{phase:2,settings:{goal:0}},{home:true});await wait(2600);
   await ix();   // pop-ups that came at boot (a keeper waking): they sit over Home, as they should
   const onHome=()=>E(()=>!!document.querySelector("#ovHome.on"));
   const until=async(f,a,ms)=>{const t0=Date.now();while(Date.now()-t0<(ms||6000)){if(await E(f,a))return true;await wait(100);}return false;};
@@ -145,7 +145,7 @@ const {launch,check,waitFor,seed}=require("./lib");
   const rc=await E(()=>{const o=[...document.querySelectorAll(".overlay.on")].find(x=>x.id!=="ovHome");if(o)Modes.shut(o);return!!o;});
   ok(rc&&await until(()=>!!document.querySelector("#ovHome.on")),"a pop-up that opens over Home closes back to Home");
   // a brand-new save's tour: the crate on Home, then the valley, then the plans in the valley
-  await seed(p,{},{base:null});await wait(1500);
+  await seed(p,{},{base:null,home:true});await wait(1500);
   ok(await E(()=>!!document.querySelector("#ovHome.on #crateBtn.coach-target")),"a new save's tour starts by pointing at the crate tile on Home");
   await E(()=>{document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);});state.tour=2;Coach.show();});await wait(400);
   ok(await E(()=>!!document.querySelector('#ovHome.on [data-game="valley"].coach-target')),"after the first word the tour points at the Valley tile");

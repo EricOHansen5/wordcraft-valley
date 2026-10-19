@@ -3,7 +3,7 @@
 // through tiers A and B with a real clip (the game voice's own, as a WAV, standing in for the microphone), eyes-free,
 // the keyboard, an open question going to Dad's inbox (and the inbox in the Grown-up menu), old saves, and no page errors. The microphone and the recogniser are stood in for through
 // Talk._record() and Talk._hear(blob|null, expect) (the step after the microphone), which return canned answers.
-const {launch,check,waitFor,answer,seed}=require("./lib");
+const {launch,check,waitFor,answer,seed,tile}=require("./lib");
 (async()=>{
   const T=check("talk"),ok=T.ok,J=x=>JSON.stringify(x);
   // no device voice and no clips for the prompts: the questions are asked at once (the clips still load for tier B)
@@ -28,7 +28,7 @@ const {launch,check,waitFor,answer,seed}=require("./lib");
   // ---- 1. an old save, and off by default ----
   const st=await E(()=>({talk:state.talk,t:state.settings.talk,e:state.settings.eyesFree}));
   ok(J(st.talk)===J({log:[],tpl:0,inbox:[]})&&st.t===false&&st.e===false,"an old save gets talk {log:[],tpl:0,inbox:[]}, and Talk to me and Eyes-free are off "+J(st));
-  await p.click("#crateBtn");await p.waitForTimeout(250);
+  await tile(p,"#crateBtn");await p.waitForTimeout(250);
   ok(!(await p.isVisible("#talkBtn"))&&(await E(()=>Talk.open()))===false,"off: no Talk to me in the crates, and it doesn't open");
   await E(()=>Modes.shut(document.getElementById("ovCrates")));
 
@@ -45,7 +45,7 @@ const {launch,check,waitFor,answer,seed}=require("./lib");
   await E(()=>{window.__heard=[];window.__canned=null;window.__realHear=Talk._hear;window.__realRec=Talk._record;
     Talk._record=async()=>({blob:new Blob([new Uint8Array(900)],{type:"audio/mp4"}),heard:true,ms:600});
     Talk._hear=async(b,ex,c)=>{window.__heard.push({blob:!!b,ex:ex.slice(),tier:c&&c.tier});return window.__canned?window.__canned(ex):null;};});
-  await p.click("#crateBtn");await p.waitForTimeout(250);
+  await tile(p,"#crateBtn");await p.waitForTimeout(250);
   ok(await p.isVisible("#talkBtn"),"on: a big 🎤 Talk to me in the crates panel");
   await p.click("#talkBtn");
   ok(await waitFor(p,()=>Modes.top()==="talk"&&document.getElementById("ovTalk").classList.contains("on")&&!document.getElementById("ovCrates").classList.contains("on")),

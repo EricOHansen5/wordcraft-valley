@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const srv=require("./page").serveApp({port:8795},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true});
@@ -14,7 +15,7 @@ const srv=require("./page").serveApp({port:8795},async()=>{
   await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));state.settings.tierOverride=3;renderHUD();});
   const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
   await p.screenshot({path:"a_dock.png"});
-  await p.click("#advBtn");await p.waitForTimeout(900);
+  await tile(p,"#advBtn");await p.waitForTimeout(900);
   ok(await p.evaluate(()=>Adv.on&&!!document.querySelector(".advash img")&&document.querySelectorAll(".advgrass").length>=20),"adventure mode: Ash, pet and tall grass drawn");
   await p.screenshot({path:"a_enter.png"});
   // walk right with the joystick (touch)

@@ -4,7 +4,7 @@
 // text a generator can make decodes at the job's level (the words on order cards, mailboxes and street signs too). It walks
 // Jobs.list(), so a new job is tested with no new code. Also the order kit from the keyboard, and its cards' size, and the sort kit
 // (taps, a drag, lifting a thing back out, a miss and the glow, the keyboard, its size).
-const {launch,seed,reload,waitFor,check}=require("./lib");
+const {launch,seed,reload,waitFor,check,tile}=require("./lib");
 (async()=>{
   const T=check("jobs"),ok=T.ok;
   const {page:p,errs,close}=await launch({seed:{settings:{goal:0}}});
@@ -82,7 +82,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     return kits;
   }
   const clockIn=async(id)=>{
-    await p.click("#jobsBtn");await waitFor(p,`#ovJob.on .jcard[data-job="${id}"]`);
+    await tile(p,"#jobsBtn");await waitFor(p,`#ovJob.on .jcard[data-job="${id}"]`);
     await p.click(`#ovJob .jcard[data-job="${id}"]`);await waitFor(p,"#ovJob #jIn");
     await p.click("#ovJob #jIn");return ready();
   };
@@ -249,7 +249,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
 
   // 2. a locked job says when it opens
   await E(()=>{state.settings.tierOverride=2;});
-  await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
+  await tile(p,"#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
   const cards=await E(()=>[...document.querySelectorAll("#ovJob .jcard")].map(c=>({job:c.dataset.job||null,locked:c.classList.contains("locked"),t:c.textContent.replace(/\s+/g," ").trim()})));
   ok(cards.some(c=>c.job==="shop"&&!c.locked)&&cards.some(c=>c.locked&&/Lawn mower/.test(c.t)&&/Opens at level 4/.test(c.t)&&!c.job),
     "at level 2 the Shopkeeper is open and the Lawn mower says “Opens at level 4”: "+cards.map(c=>c.t).join(" | "));
@@ -257,14 +257,14 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
     "…the Mail carrier says “Opens at level 3” and the Baker “Opens at level 4”");
   await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
   await E(()=>{state.settings.tierOverride=3;});
-  await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
+  await tile(p,"#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
   ok(await E(()=>!!document.querySelector('#ovJob .jcard[data-job="mail"]')&&!!document.querySelector("#ovJob .jcard.locked")&&
     [...document.querySelectorAll("#ovJob .jcard.locked")].every(c=>+(/Opens at level (\d+)/.exec(c.textContent)||[])[1]>3)),"at level 3 the Mail carrier opens; the jobs still locked open at 4 or later");
   ok(await E(()=>Modes.top()==="job"),"the Job board is the job mode");
   await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");
 
   // 2b. each job opens at its own level, and says so below it
-  const boardAt=async tier=>{await E(t=>{state.settings.tierOverride=t;},tier);await p.click("#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
+  const boardAt=async tier=>{await E(t=>{state.settings.tierOverride=t;},tier);await tile(p,"#jobsBtn");await waitFor(p,"#ovJob.on .jcard");
     const c=await E(()=>[...document.querySelectorAll("#ovJob .jcard")].map(c=>({job:c.dataset.job||null,locked:c.classList.contains("locked"),t:c.textContent.replace(/\s+/g," ").trim()})));
     await waitFor(p,"#jX");await E(()=>document.getElementById("jX").click());await waitFor(p,()=>Modes.top()==="valley");return c;};
   const opens=(cards,name,id,lv)=>lv?cards.some(c=>c.locked&&!c.job&&c.t.indexOf(name)>=0&&c.t.indexOf("Opens at level "+lv)>=0):cards.some(c=>c.job===id&&!c.locked);
@@ -277,7 +277,7 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   ok(opens(at2,"Librarian","library",3)&&opens(at3,"Librarian","library"),"the Librarian: “Opens at level 3” at level 2, open at level 3");
   // the patient on the chart is the customer at the counter
   await E(()=>{state.jobs.xp.vet=0;state.jobs.current=null;});
-  await p.click("#jobsBtn");await waitFor(p,'#ovJob.on .jcard[data-job="vet"]');await p.click('#ovJob .jcard[data-job="vet"]');await waitFor(p,"#ovJob #jIn");await p.click("#ovJob #jIn");
+  await tile(p,"#jobsBtn");await waitFor(p,'#ovJob.on .jcard[data-job="vet"]');await p.click('#ovJob .jcard[data-job="vet"]');await waitFor(p,"#ovJob #jIn");await p.click("#ovJob #jIn");
   const face=await waitFor(p,()=>{const s=Jobs._S(),f=document.querySelector("#jCust .jface");if(!s||!s.task||!f)return false;
     const q=Jobs.gen("vet",s.task.type,s.task.seed,{tier:currentTier(),lv:Jobs.level("vet")})[0];return{who:f.dataset.who||"",want:q.who,text:q.text};},{timeout:8000});
   ok(face&&face.who&&face.who===face.want,"the Vet: the pet on the chart is at the counter — “"+(face&&face.text)+"”, "+(face&&face.who));
@@ -461,12 +461,12 @@ const {launch,seed,reload,waitFor,check}=require("./lib");
   await reload(p);await tidy();
   ok(await E(()=>state.jobs.current==="mow"&&document.getElementById("jobsBadge").classList.contains("on")),"after a reload he is still clocked in (⏰ on the dock button)");
   await helpers();
-  await p.click("#jobsBtn");
+  await tile(p,"#jobsBtn");
   ok(await ready()==="task"&&await E(()=>Jobs._S().job==="mow"),"the 💼 button goes straight back to the shift");
   await clockOut();
 
   // 7. the Job board in Adventure
-  await p.click("#advBtn");await waitFor(p,()=>Modes.top()==="adventure");
+  await tile(p,"#advBtn");await waitFor(p,()=>Modes.top()==="adventure");
   await waitFor(p,".tile.spot.jboard",{timeout:10000});   // the signpost is drawn a moment after Adventure opens
   await E(()=>{const b=Jobs.boardAt();Adv._P.c=b.c;Adv._P.r=b.r;});
   const lab=await waitFor(p,()=>/Job board/.test(document.getElementById("advAct").textContent)&&document.getElementById("advAct").textContent,{timeout:10000});

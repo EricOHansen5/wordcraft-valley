@@ -2,7 +2,7 @@
 // the valley holds still while a sheet, the Mine or the Factory covers it), Save battery, and the Battery check.
 // Rest._idleMs and Rest._deepMs are set short and Rest.check() asked, instead of waiting 45 s or 3 minutes.
 // The audio contexts are a stub that records suspend() and resume().
-const {launch,waitFor,check}=require("./lib");
+const {launch,waitFor,check,tile}=require("./lib");
 
 // a Web Audio stand-in: every node takes any call, the context logs suspend / resume
 const AUDIO_STUB=()=>{
@@ -97,7 +97,7 @@ const AUDIO_STUB=()=>{
   ok(moved>0,"awake again: the animals and vehicles wander ("+moved+" steps in 5.6 s)");
 
   // ---- 4. while a crate question waits on him: not after 45 s, but after 3 minutes; the voice holds it off ----
-  await p.click("#crateBtn");await waitFor(p,"#ovCrates.on #crateRow .crate");
+  await tile(p,"#crateBtn");await waitFor(p,"#ovCrates.on #crateRow .crate");
   await p.click("#crateRow .crate:not(.write):not(.pic):not(.swap)");
   ok(await waitFor(p,"#ovRead.on"),"a crate word is open");
   await goIdle();await wait(400);await E(()=>Rest.check());
@@ -142,7 +142,7 @@ const AUDIO_STUB=()=>{
   await tap();await awake();await tidy();
 
   // ---- 6. Adventure: walking counts as input; the parked loop starts again on a touch ----
-  await p.click("#advBtn");await wait(700);
+  await tile(p,"#advBtn");await wait(700);
   ok(await E(()=>Modes.top()==="adventure"),"Adventure is open");
   await E(()=>{Wild.start=()=>{};});      // no wild animal out of the tall grass (a reading mode: it would rightly hold rest off)
   await E(()=>{Adv._in.jx=1;});      // a held joystick sends no events: only the walking says he is there
@@ -194,7 +194,7 @@ const AUDIO_STUB=()=>{
   await E(()=>Mine.exit());await wait(400);
   ok(!(await covered())&&(await anims()).run>=b0.run,"out of the Mine: the valley is back");
   // Adventure plays in the valley, so it is not a cover; a sheet over it is
-  await awake();await p.click("#advBtn");await wait(700);
+  await awake();await tile(p,"#advBtn");await wait(700);
   const g0=await rafs(600);
   ok(await E(()=>Modes.top()==="adventure")&&!(await covered())&&(await anims()).run>20&&g0>=4,"Adventure: the valley is not covered and its loop runs ("+g0+" frames in 0.6 s)");
   await E(()=>{renderAlbum();show("ovAlbum");});await wait(300);

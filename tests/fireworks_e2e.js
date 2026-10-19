@@ -4,7 +4,7 @@
 // grand finale that asks the real Looks.grant (wrapped to count) once, one finale a day, a finale reached while he reads elsewhere
 // waiting for the valley, the sparkler race on the Race engine (it starts, pays the usual race gems once, once a day), a second day
 // starting a new sky, the fireworks mode, the save, an old save, and the look's pieces in the valley.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -62,7 +62,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(await shown("fireworksBtn")&&await badge()==="10","2 July: the 🎆 button shows, with the 10 fireworks to go for the finale on its badge");
   ok(J(await jl())===J(DEF),"...and showing it writes nothing");
   await listen();
-  await p.tap("#fireworksBtn");
+  await tile(p,"#fireworksBtn");
   ok(await waitFor(p,()=>Modes.top()==="fireworks"),"a tap on 🎆 opens the sky (mode fireworks)");
   let v=await E(()=>({canvas:!!document.querySelector("#ovFireworks .fwsky canvas"),line:document.getElementById("fwLine").textContent,race:document.getElementById("fwRace").textContent,
     meter:document.querySelectorAll("#fwMeter i").length,lit:document.querySelectorAll("#fwMeter i.on").length,buddy:!!document.querySelector("#fwBuddy svg")}));
@@ -80,7 +80,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(t.day==="2026-07-02"&&t.shots===1&&t.finale===false&&b.launched===1&&b.burst===0,
     "a crate-loop read (\""+cw+"\") launches a firework; the sky is shut, so it waits "+J([t,b]));
   ok(await badge()==="9","the 🎆 badge counts down: 9");
-  await p.click("#fireworksBtn");
+  await tile(p,"#fireworksBtn");
   ok(await waitFor(p,()=>Fireworks._bursts().burst>=1,{timeout:4000}),"opening the sky: it goes up and bursts "+J(await bursts()));
   ok(await waitFor(p,()=>Fireworks._bursts().air===0&&Fireworks._bursts().queued===0,{timeout:6000}),"...then the sky goes quiet and the drawing stops "+J(await bursts()));
   ok(await E(()=>document.querySelectorAll("#fwMeter i.on").length===1&&/1 firework today/.test(document.getElementById("fwLine").textContent)),
@@ -104,7 +104,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   t=await jl();b=await bursts();
   ok(t.shots===2+bk.n&&b.launched===3+bk.n+1,"a finished book: a firework for each page and a big one "+J([t,b]));
   await E(()=>Books.close());await tidy();
-  await p.click("#fireworksBtn");
+  await tile(p,"#fireworksBtn");
   ok(await waitFor(p,n=>Fireworks._bursts().burst>=n&&Fireworks._bursts().big>=2,{arg:1+Math.min(12,1+bk.n),timeout:9000}),
     "they go up when he opens the sky, the big ones too "+J(await bursts()));
 
@@ -174,7 +174,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   ok(await E(()=>JSON.stringify(Looks.pieces("july").earned)==='["flags","bunting"]'&&state.july.finale===true&&state.july.day==="2026-07-03"),"the second piece, the bunting");
   ok((await said()).indexOf("You got the bunting! Look in your closet.")>=0,"the Look system says \"You got the bunting!\"");
   const bb=(await bursts()).big;
-  await p.click("#fireworksBtn");
+  await tile(p,"#fireworksBtn");
   ok(await waitFor(p,()=>document.getElementById("fwBig").classList.contains("on"))&&await waitFor(p,n=>Fireworks._bursts().big>=n,{arg:bb+12,timeout:9000}),
     "the sky plays the finale he missed "+J(await bursts()));
   ok(await E(()=>window.__g.length===2),"...and gives nothing more");

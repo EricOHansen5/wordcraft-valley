@@ -2,7 +2,7 @@
 // (quest2.ch 3, 4, 5 with The Letter Thief done), its lock kind played like its chapter 1-3 counterpart
 // (letters, temple, spell), each gift paid once, gems never going down, the END after chapter 6 with
 // quest2.done, a full prize row, and every line of chapters 1-6 and the END decodable at its level.
-const {launch,seed,answer,check}=require("./lib");
+const {launch,seed,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 (async()=>{const t=check("quest2b");const ok=t.ok;
   const LT={ch:6,day:"2000-01-01",active:null,done:true,letters:["R","E","A","D","🔑","👑"]};
@@ -38,7 +38,7 @@ const fs=require("fs"),path=require("path");
   ok(/Chapter 4 opens at reading level 5/.test(await E(()=>Quest2.note())),"the report says chapter 4 opens at level 5");
   await E(()=>{state.settings.tierOverride=5;});
   ok(await E(()=>Quest2.available()&&document.getElementById("advBadge")&&(advBadge(),document.getElementById("advBadge").textContent==="❗")),"level 5: chapter 4 offered, Adventure shows ❗");
-  await p.click("#advBtn");await p.waitForTimeout(900);
+  await tile(p,"#advBtn");await p.waitForTimeout(900);
   const giver=await E(()=>state.quest2.giver);ok(!!giver&&await E(()=>!!document.querySelector(".advland.qgiver .qg:not(.friend)")),"Puff's giver is drawn");
   const a4=await walkTo(giver.c,giver.r,/Chapter 4/);ok(/Chapter 4/.test(a4),"walk up: ❗ Chapter 4 ("+a4+")");
   const c0=await E(()=>({hawk:state.critters.filter(c=>c.id==="hawk").length,crit:state.critters.length}));await gems("start");
@@ -78,7 +78,7 @@ const fs=require("fs"),path=require("path");
   sec++;   // a new save: gems start again from the seed
   await seed(p,save(4,6));await clear();
   ok(await E(()=>state.quest2.ch===4&&currentTier()===6&&Quest2.available()),"seeded chapter 5 at level 6: offered");
-  await p.click("#advBtn");await p.waitForTimeout(900);await gems("start");
+  await tile(p,"#advBtn");await p.waitForTimeout(900);await gems("start");
   await E(()=>Quest2.start());await p.waitForTimeout(300);
   ok(/Chapter 5: The Egg of Puff/.test(await head()),"chapter 5 story opens: "+await head());
   await nexts(4);
@@ -115,7 +115,7 @@ const fs=require("fs"),path=require("path");
   sec++;   // a new save: gems start again from the seed
   await seed(p,save(5,6));await clear();
   ok(await E(()=>state.quest2.ch===5&&currentTier()===6&&Quest2.available()),"seeded chapter 6 at level 6: offered");
-  await p.click("#advBtn");await p.waitForTimeout(900);await gems("start");
+  await tile(p,"#advBtn");await p.waitForTimeout(900);await gems("start");
   const d0=await E(()=>state.critters.filter(c=>c.id==="dragon").length);
   await E(()=>Quest2.start());await p.waitForTimeout(300);
   ok(/Chapter 6: The Big Burst/.test(await head()),"chapter 6 story opens: "+await head());

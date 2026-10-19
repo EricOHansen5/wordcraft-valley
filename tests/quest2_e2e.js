@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 // VALLEY QUEST arc 2, "The Sleepy Volcano": unlock after The Letter Thief at level 3, chapters 1-3
 // (letters, temple, spell), each prize paid once, every line decodable at its chapter level, old saves.
 // Chapters 4-6 and the ending are walked in quest2b_e2e.js.
@@ -49,7 +50,7 @@ const srv=require("./page").serveApp({port:8817},async()=>{
   await E(()=>{state.settings.tierOverride=5;});
   ok(await E(()=>!Quest2.available()&&Quest.available()),"arc 2 is not offered while The Letter Thief is unfinished (even at level 5)");
   ok(/starts after The Letter Thief/.test(await E(()=>Quest2.note())),"the report says it starts after The Letter Thief");
-  await p.click("#advBtn");await p.waitForTimeout(900);
+  await tile(p,"#advBtn");await p.waitForTimeout(900);
   ok(await E(()=>state.quest2.giver==null&&!!state.quest.giver),"only Gloom's ❗ is in the valley");
   await E(()=>{state.quest.ch=6;state.quest.done=true;state.quest.day=today();Adv.redraw();});
   ok(await E(()=>!Quest2.available()),"not on the day The Letter Thief ends");
@@ -62,7 +63,7 @@ const srv=require("./page").serveApp({port:8817},async()=>{
   // ---- 2 a save with arc 1 done, at level 3 ----
   await seed(Object.assign({},base,{settings:{tierOverride:3},quest:{ch:6,day:"2000-01-01",active:null,done:true,letters:["R","E","A","D","🔑","👑"]}}));
   ok(await E(()=>currentTier()===3&&Quest2.available()&&document.getElementById("advBadge").textContent==="❗"),"Adventure button shows ❗ for Puff");
-  await p.click("#advBtn");await p.waitForTimeout(900);
+  await tile(p,"#advBtn");await p.waitForTimeout(900);
   const giver=await E(()=>state.quest2.giver);ok(!!giver,"Puff's ❗ giver is placed");
   ok(await E(()=>!!document.querySelector(".advland.qgiver .qg:not(.friend)")),"the giver is drawn");
   const a1=await walkTo(giver.c,giver.r,/Chapter 1/);

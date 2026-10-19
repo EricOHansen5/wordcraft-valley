@@ -1,3 +1,4 @@
+const {tile}=require("./lib");   // a game's button is a tile on Home now
 const {chromium}=require("playwright");const http=require("http"),fs=require("fs");
 const srv=require("./page").serveApp({port:8790},async()=>{
   const b=await chromium.launch((process.env.CHROMIUM?{executablePath:process.env.CHROMIUM}:{}));const ctx=await b.newContext({viewport:{width:1180,height:820},hasTouch:true});
@@ -13,7 +14,7 @@ const srv=require("./page").serveApp({port:8790},async()=>{
     r.onsuccess=()=>{const tx=r.result.transaction("kv","readwrite");tx.objectStore("kv").put(s,"state");tx.oncomplete=()=>{r.result.close();res();};};}),st);
   await p.reload();await p.waitForTimeout(2200);await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));
   const crit0=await p.evaluate(()=>state.critters.length);
-  await p.click("#mineBtn");await p.waitForTimeout(1000);
+  await tile(p,"#mineBtn");await p.waitForTimeout(1000);
   const mig=await p.evaluate(()=>({w:state.mine.w,bag:JSON.stringify(state.mine.bag),coins:state.mine.coins,x:Mine._p.x.toFixed(1),panel:document.querySelector("#mCard h2")?.textContent}));
   console.log("1 old save:",JSON.stringify(mig),"| egg hatched -> animals",crit0,"->",await p.evaluate(()=>state.critters.length),"| eggs left",await p.evaluate(()=>state.mine.eggs.length));
   await p.screenshot({path:"n_hatch.png"});

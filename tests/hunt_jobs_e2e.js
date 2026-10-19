@@ -5,7 +5,7 @@
 // checked against docs/design.md: what a task pays, what a swap gives, what a level pays, that a replay pays nothing. And a
 // double tap on a button that changes the screen must not land on what comes up under the finger (the ghost tap).
 // Four areas, two at a time, each in its own browser. `node tests/hunt_jobs_e2e.js jobs` runs one: jobs, store, factory, holidays.
-const {launch,waitFor,answer,check}=require("./lib");
+const {launch,waitFor,answer,check,tile}=require("./lib");
 const T=check("hunt_jobs"),ok=T.ok;
 const VP={width:1024,height:768};
 const J=x=>JSON.stringify(x);
@@ -341,7 +341,7 @@ async function jobsArea(lane){
   // ---- 3. the Trading Post's uniform and tool at the job: shown, said once, and the tip a task sooner ----
   if(lane===2){
   await E(()=>{state.owned=Object.assign(state.owned||{},{apron:1,scanner:1});state.jobs.xp.shop=50;state.jobs.streak=0;});
-  await p.tap("#jobsBtn",{timeout:5000});await waitFor(p,'#ovJob.on .jcard[data-job="shop"]');
+  await tile(p,"#jobsBtn",{timeout:5000});await waitFor(p,'#ovJob.on .jcard[data-job="shop"]');
   await tapSel("Shopkeeper with his gear","its card",`#ovJob .jcard[data-job="shop"]`,{root:R,want:()=>E(()=>{const u=document.querySelector("#ovJob .juni");
     return[!!u&&u.dataset.from==="store"&&u.dataset.uni==="apron"&&!!u.querySelector("svg")&&/You put on your apron!/.test(document.getElementById("ovJob").textContent)&&
       /4 right in a row: a tip of 5 🪙/.test(document.getElementById("ovJob").textContent),"the Trading Post's apron, and “4 right in a row”"];})});
@@ -373,7 +373,7 @@ async function jobsArea(lane){
   for(const id of ["shop","mail"]){
     const j=JOBS.find(x=>x.id===id);let q;
     await E(i=>{state.jobs.xp[i]=4;state.jobs.streak=0;},id);
-    await p.tap("#jobsBtn",{timeout:5000});await waitFor(p,`#ovJob.on .jcard[data-job="${id}"]`);await p.tap(`#ovJob .jcard[data-job="${id}"]`,{timeout:5000});await waitFor(p,"#jIn");await wait(300);
+    await tile(p,"#jobsBtn",{timeout:5000});await waitFor(p,`#ovJob.on .jcard[data-job="${id}"]`);await p.tap(`#ovJob .jcard[data-job="${id}"]`,{timeout:5000});await waitFor(p,"#jIn");await wait(300);
     const at=await K.centre(()=>document.getElementById("jIn"));
     await act(`${j.name} · ghost tap`,"a double tap on ⏰ Clock in",()=>K.dbl(at[0],at[1]),{root:R,swap:true,want:()=>K.ghost(async()=>{await wait(250);
       const r=await E(()=>({s:Jobs._S(),hit:document.querySelectorAll("#jQ .right,#jQ .wrong").length,m:document.getElementById("jMsg").textContent}));
@@ -393,7 +393,7 @@ async function jobsArea(lane){
 
   // ---- 5. the Job board signpost in Adventure: it opens on top of Adventure and closes back to it ----
   if(lane===2){
-  await p.tap("#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");
+  await tile(p,"#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");
   await waitFor(p,".tile.spot.jboard",{timeout:10000});
   await E(()=>{state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});const b=Jobs.boardAt();Adv._P.c=b.c;Adv._P.r=b.r;});
   await waitFor(p,()=>/Job board/.test(document.getElementById("advAct").textContent),{timeout:8000});
@@ -531,14 +531,14 @@ async function storeArea(){
   await tapSel("Wardrobe","an outfit's Wear it / Take off",'#albumGrid .hatcard button',{root:"#ovAlbum",want:()=>E(w=>[state.hat!==w,"state.hat "+w+" → "+state.hat],worn)});
   await tapSel("Wardrobe","🏪 Go to the Trading Post","#albumGrid .storemore button",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="store"&&Store.shelf==="outfit","the Trading Post, on the 💎 shelf ("+Modes.stack().join(">")+")"])});
   await tapSel("Wardrobe","Done in the Trading Post","#stClose",{root:R,swap:true,want:()=>E(()=>[Modes.stack().join(">")==="","closes to the "+Modes.top()+" (the sticker book was put away when the Trading Post opened)"])});
-  await p.tap("#mineBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="mine",{timeout:8000});await wait(900);
+  await tile(p,"#mineBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="mine",{timeout:8000});await wait(900);
   await E(()=>Mine._openWardrobe(false));await wait(200);
   ok(await E(()=>/Get more at the Trading Post 🏪/.test((document.querySelector("#mCard .mmore")||{}).textContent||"")),`${A} · the clothes tent says “Get more at the Trading Post 🏪”`);
   await tapEl("Clothes tent","“Get more at the Trading Post 🏪”",()=>document.querySelector("#mCard .mmore"),null,{root:"#mineMode",inert:true,want:()=>E(()=>[Modes.top()==="mine","a line, not a button: it stays in the Mine"])});
   await E(()=>{const b=document.querySelector("#mCard #mClose");if(b)b.click();Mine.exit();});await wait(400);
 
   // ---- 5. the stall in Adventure: it opens over Adventure and Done goes back to it ----
-  await p.tap("#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");await wait(500);
+  await tile(p,"#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");await wait(500);
   const sp=await E(()=>Store._spot());
   await E(s=>{state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});Adv._P.c=s.c;Adv._P.r=s.r;},sp);
   await waitFor(p,()=>document.getElementById("advAct").textContent==="🏪 Trading Post",{timeout:8000});
@@ -753,7 +753,7 @@ async function factoryArea(){
   // ---- 7. the 🏭 spot in Adventure: it opens over Adventure, ✕ goes back to it ----
   // (out of every holiday window: in October a Trick-or-Read door sits on the Factory building too)
   await E(()=>{try{Trick._setToday("2026-06-01");}catch(e){}try{Feast._setToday("2026-06-01");}catch(e){}try{Lights._setToday("2026-06-01");}catch(e){}});
-  await p.tap("#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");await wait(600);
+  await tile(p,"#advBtn",{timeout:5000});await waitFor(p,()=>Modes.top()==="adventure");await wait(600);
   // the keepers stand at fixed spots and their books come before a building's spot; one stands by 12,7
   await E(()=>{window.__g0=state.guardians;state.guardians=[];state.critters.forEach(c=>{c.out=false;});(state.vehicles||[]).forEach(v=>{v.out=false;});Adv._P.c=12.2;Adv._P.r=7;});
   await waitFor(p,()=>document.getElementById("advAct").textContent==="🏭 Factory",{timeout:8000});

@@ -1,5 +1,5 @@
 // Modes: one stack of what is open, minutes and opens by mode, and "Where the time goes" in the Grown-up report.
-const {launch,reload,waitFor,check}=require("./lib");
+const {launch,reload,waitFor,check,tile}=require("./lib");
 (async()=>{
   const T=check("modes"),ok=T.ok;
   // an old save: no modeMin / modeOpens yet
@@ -63,7 +63,7 @@ const {launch,reload,waitFor,check}=require("./lib");
   await E(()=>openPicIt());await p.waitForTimeout(150);ok(await top()==="pic","Picture it → pic");
   await click("#ovPic #psLater");await p.waitForTimeout(100);ok(await top()==="valley","Picture it later → valley");
 
-  await p.click("#jobsBtn");await atTop("job");ok(await top()==="job","Jobs → job");
+  await tile(p,"#jobsBtn");await atTop("job");ok(await top()==="job","Jobs → job");
   await p.click("#ovJob #jX");await atTop("valley");ok(await top()==="valley","closing the Job board → valley");
 
   // 3. the Mine, and reading inside it

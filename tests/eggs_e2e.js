@@ -5,7 +5,7 @@
 // takes nothing and the second miss glows, the third egg ends the hunt (one look piece from the real Look system), one hunt
 // a day, a treasure hunt put aside comes back, a hunt from another day is put away, the words and notes at every level, the
 // eggs mode, the save, and an old save.
-const {launch,seed,reload,waitFor,answer,check}=require("./lib");
+const {launch,seed,reload,waitFor,answer,check,tile}=require("./lib");
 const fs=require("fs"),path=require("path");
 const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8"));
 (async()=>{
@@ -79,7 +79,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
     "in the window: the 🥚 button shows, with 3 on its badge");
   ok(J(await eg())===J(DEF)&&await E(()=>state.adv.hunt===null),"...and showing it writes nothing");
   await listen();
-  await p.click("#eggsBtn");
+  await tile(p,"#eggsBtn");
   ok(await waitFor(p,()=>Modes.top()==="adventure"&&!!state.adv.hunt),"🥚 opens Adventure with a hunt");
   let h=await hunt();
   ok(h.kind==="eggs"&&h.day==="2027-03-20"&&h.marks.length===4&&h.order.length===3&&h.step===0&&h.miss===0&&!h.park,"the egg hunt runs on the treasure hunt's engine: four landmarks, three clues "+J({kind:h.kind,day:h.day,marks:h.marks.map(m=>m.w),order:h.order}));
@@ -198,7 +198,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   // ---- 8. one hunt a day ----
   await E(()=>Adv.exit());await wait(150);await listen();
   const c4=await purse();
-  await p.click("#eggsBtn");await wait(300);
+  await tile(p,"#eggsBtn");await wait(300);
   ok((await said()).indexOf("You found all the eggs! Come back tomorrow.")>=0&&await toasted(/You found all the eggs! Come back tomorrow/),"🥚 after a finished hunt: \"You found all the eggs! Come back tomorrow.\"");
   ok(await E(()=>!Adv.on&&state.adv.hunt===null)&&J(await purse())===J(c4)&&(await eg()).hunts===1&&await E(()=>window.__g.length===1),"...no Adventure, no hunt, nothing more paid or granted");
   cc=await closet();
@@ -212,7 +212,7 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const tre=await hunt();
   ok(tre&&!tre.kind&&tre.marks.length===4,"a treasure hunt is going ("+tre.marks.map(m=>m.w).join(", ")+")");
   await E(()=>Adv.exit());await wait(150);await listen();
-  await p.click("#eggsBtn");
+  await tile(p,"#eggsBtn");
   ok(await waitFor(p,()=>Adv.on&&!!state.adv.hunt&&state.adv.hunt.kind==="eggs"),"🥚 starts the egg hunt");
   h=await hunt();
   ok(h.park&&J(h.park.marks)===J(tre.marks)&&!h.park.kind,"...and puts the treasure hunt aside, as it was");
@@ -239,14 +239,14 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
 
   // ---- 10. a hunt left from another day is put away ----
   await E(()=>Eggs._setToday("2027-03-22"));
-  await p.click("#eggsBtn");await waitFor(p,()=>Adv.on&&!!state.adv.hunt&&state.adv.hunt.day==="2027-03-22");await wait(600);
+  await tile(p,"#eggsBtn");await waitFor(p,()=>Adv.on&&!!state.adv.hunt&&state.adv.hunt.day==="2027-03-22");await wait(600);
   await oneEgg(1);await p.click("#ehNext");await waitFor(p,()=>Modes.top()==="adventure");
   await E(()=>Adv.exit());await wait(100);
   ok((await hunt()).kind==="eggs"&&(await hunt()).step===1&&await E(()=>Eggs.left===2),"one egg found on 22 March, and the hunt left there");
   await E(()=>Eggs._setToday("2027-03-23"));
   ok(await E(()=>state.adv.hunt===null&&Eggs.left===3),"the next day the hunt is put away, and three eggs are to find again");
   e=await eg();ok(e.day==="2027-03-22"&&e.found.length===1,"...the save keeps the day before's egg until one is found "+J(e));
-  await p.click("#eggsBtn");
+  await tile(p,"#eggsBtn");
   ok(await waitFor(p,()=>Adv.on&&!!state.adv.hunt&&state.adv.hunt.day==="2027-03-23"&&state.adv.hunt.step===0&&!state.adv.hunt.marks.some(m=>m.dug)),"🥚 starts a new hunt from the first egg");
   await E(()=>{Adv.exit();state.adv.hunt=null;});await wait(100);
   // a hunt part-way through keeps its 🥚 button even when the window says no
