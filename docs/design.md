@@ -792,6 +792,11 @@ The design is `docs/superpowers/specs/2026-10-19-home-screen-design.md`.
 - Under the hood: a `Games` registry; a new game is one `Games.add` where its code lives, with no change to Home or the valley. The saves gain `state.home` (the games he has opened). The old tool bar buttons are the Home tiles, with the same ids.
 See `docs/roadmap-v10.md` for the plan to 4th grade, other subjects and Jobs.
 
+### v10.13 — Faster, and Home's rough edges
+- **The valley works less** (his save, CPU slowed 4x as a stand-in for the iPad): idle main thread 55 % → 33 % busy, forced layouts 27 → 4 a second, start-up 0.92 → 0.43 s. The valley's size is remembered instead of measured on every step; animations out of view pause; exhaust puffs are reused, skipped out of view, and the trail is dropped with Save battery on.
+- **The Gem Mine opens faster** (0.54 → 0.31 s at 4x): it is made quietly in the background after start-up, its textures are written in one go, and the rock layout for his mine is kept.
+- **Home:** one voice at a time at start-up (the tour or Home's suggestion, then a season greeting); each game has its own line ("Let's read a book!"); one pop per tap; NEW shows once; the keeper and the first car wait until he goes to the valley; the fireworks finale and party hat work on Home; buttons that used to say "Back to the valley" say "🏠 Home" when that is where they go (the Mine's button and gate sign too); a save in the middle of the old tour keeps its place.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

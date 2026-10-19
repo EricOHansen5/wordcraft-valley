@@ -7667,7 +7667,7 @@ const Mine=(()=>{
   function buildDom(){
     builds++;root=document.createElement("div");root.id="mineMode";
     root.innerHTML=`<canvas id="mineCv"></canvas>
-      <div class="mhud"><button class="mpill" id="mBack">🏡 Valley</button><div class="mpill" id="mCoins">🪙 0</div>
+      <div class="mhud"><button class="mpill" id="mBack" data-back="🏡 Valley">🏡 Valley</button><div class="mpill" id="mCoins">🪙 0</div>
         <div class="mpill" id="mBag">🎒 0/10</div><div class="mpill" id="mDepth">⛏️ Surface</div>
         <button class="mpill" id="mPet">🐾 Pet</button><button class="mpill" id="mBooks">📚 Books</button><button class="mpill" id="mJobs">📋 0/3</button><div class="mpill" id="mLost" style="display:none"></div><button class="mpill" id="mTnt" style="display:none">🧨 0</button>
         <div class="mpill" id="mEgg" style="display:none">🥚</div><div class="mgap"></div><div class="mpill" id="mGems">💎 0</div></div>
@@ -7770,7 +7770,7 @@ const Mine=(()=>{
   function warm(){
     if(running||typeof CanvasRenderingContext2D==="undefined")return;      // no canvas (the jsdom tests): nothing to make
     if(!root)buildDom();if(!texOk)buildTextures();
-    const W=BUILDINGS_M.map(b=>b.label.split(" ")[0]).join("")+Object.keys(PERKS).map(k=>PERKS[k].ic).join("")+"🐾🔐🐹📖👀⬇⬆➡⬅🧨🥚",
+    const W=BUILDINGS_M.map(b=>b.label.split(" ")[0]).join("")+Object.keys(PERKS).map(k=>PERKS[k].ic).join("")+"🐾🔐🐹📖👀⬇⬆➡⬅🧨🥚🏡🏠",
       els=["#mToast","#mAct","#mLost","#mPet"].map(q=>root.querySelector(q)),was=els.map(e=>[e.textContent,e.getAttribute("style")]);
     const s=root.style;s.visibility="hidden";s.display="block";els.forEach(e=>{e.textContent=W;e.style.display="flex";});
     const ts=tsFor(root.clientHeight);
@@ -7908,7 +7908,8 @@ const Mine=(()=>{
 
   /* ---------- drawing ---------- */
   const BUILDINGS_M=[
-    {id:"gate",x0:.6,x1:3.4,label:"🏡 Go home to the valley",go:()=>exit()},
+    // the gate says where it goes: the valley, or Home when he came from Home
+     {id:"gate",x0:.6,x1:3.4,get label(){let v=true;try{v=Home.backText("v")==="v";}catch(e){}return v?"🏡 Go home to the valley":"🏠 Go back home";},go:()=>exit()},
     {id:"shop",x0:3.8,x1:7.8,label:"🏪 Open my shop",go:()=>openShop()},
     {id:"smith",x0:8.2,x1:11.2,label:"⛏️ Pick shop",go:()=>openSmith()},
     {id:"ward",x0:11.5,x1:14.3,label:"👕 Change clothes",go:()=>openWardrobe(false)},
@@ -8784,7 +8785,7 @@ const Mine=(()=>{
     // test hooks
     _p:P,_in:input,_tile:(x,y)=>tileAt(x,y),_ore:(x,y)=>ore[idx(x,y)],_setOre:(x,y,o)=>{ore[idx(x,y)]=o;},_setTile:(x,y,t)=>{tiles[idx(x,y)]=t;},_openShop:()=>openShop(),
     _openSmith:()=>openSmith(),_build:v=>setBuild(v),_sel:k=>{sel=k;hotbar();},_ents:ENT,_vaults:()=>VAULTS,_jobs:()=>jobs(),_openJobs:()=>openJobs(),_lost:()=>lostAnimal(),
-    _openVault:k=>openVault(VAULTS[k]),_near:()=>nearAct(),_gameSigns:()=>gameSigns,_spawn:()=>spawn(),_openWardrobe:f=>openWardrobe(f),_running:()=>running,_paused:()=>paused,_gen:()=>gen(),_builds:()=>builds,_bases:()=>bases,_texSig:()=>texSig(),_worldSig:()=>worldSig(),SKY,TOWN};
+    _openVault:k=>openVault(VAULTS[k]),_near:()=>nearAct(),_gameSigns:()=>gameSigns,_spawn:()=>spawn(),_openWardrobe:f=>openWardrobe(f),_running:()=>running,_paused:()=>paused,_gen:()=>gen(),_builds:()=>builds,_bases:()=>bases,_texSig:()=>texSig(),_worldSig:()=>worldSig(),_town:()=>BUILDINGS_M,SKY,TOWN};
 })();
 document.getElementById("mineBtn").onclick=()=>{Sound.sfx.pop();Mine.enter();};
 Games.fromButton("mine","mineBtn",{name:"Gem Mine",icon:"⛏️",order:40});

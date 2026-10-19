@@ -69,7 +69,14 @@ function fakeVoice(){
   ok(/Home/.test(await back("#ovRecap [data-close]"))&&/Home/.test(await back("#ovParent .sheetfoot [data-close]")),"...the recap's and the Grown-up menu's");
   await E(()=>Home.valley());await wait(200);
   ok(/valley/i.test(await back("#ovQuests [data-close]"))&&/valley/i.test(await back("#ovParent .sheetfoot [data-close]")),"in the valley they go back to the valley "+J(await back("#ovQuests [data-close]")));
+  // the Gem Mine's back button and its town gate sign too
+  await E(()=>{if(Mine.warm)Mine.warm();});await wait(300);
+  const mineBack=()=>E(()=>{Home.syncBack&&Home.syncBack();const b=document.getElementById("mBack"),g=Mine._town&&Mine._town().filter(x=>x.id==="gate")[0];return{btn:b?b.textContent.trim():null,gate:g?g.label:null};});
+  const mv=await mineBack();
+  ok(/valley/i.test(mv.btn)&&/valley/i.test(mv.gate),"in the valley the Mine's way back says valley "+J(mv));
   await E(()=>Home.home());await wait(300);
+  const mh=await mineBack();
+  ok(/Home/.test(mh.btn)&&mh.gate&&!/valley/i.test(mh.gate),"from Home the Mine's button and gate sign say home "+J(mh));
 
   // ---- 5. NEW shows once on a tile ----
   await E(()=>{delete state.home.seen.dungeons;state.dungeon.seen=false;Home.render();const b=document.getElementById("dungeonBadge");if(b){b.textContent="NEW";b.classList.add("on");}});await wait(100);
