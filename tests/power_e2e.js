@@ -34,6 +34,9 @@ const AUDIO_STUB=()=>{
         {id:"wolf",seed:4,c:15,r:6,lv:1,out:true,since:4}],
       vehicles:[{u:"v1",id:"v_car",c:9,r:8,lv:1,out:true,since:1},{u:"v2",id:"v_train",c:2,r:7,lv:1,out:true,since:2}]}});
   const wait=ms=>p.waitForTimeout(ms);
+  // the loops on things out of view hold still on their own (OffView, tested in perf_e2e): off here, so these counts are
+  // the whole valley's, as things walk in and out of view
+  await E(()=>OffView.stop());
   const tidy=()=>E(()=>document.querySelectorAll(".overlay.on").forEach(o=>Modes.shut(o)));
   const resting=()=>E(()=>document.body.classList.contains("rest"));
   // the infinite animations in #app (the HUD, the valley, the tool bar): how many run and how many are paused

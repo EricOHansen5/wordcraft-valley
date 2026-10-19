@@ -1124,6 +1124,12 @@ body.exploring .slot-empty{display:none}
   animation:puff2 var(--d,.9s) ease-out forwards}
 @keyframes puff2{0%{opacity:.9;transform:translate(-50%,-50%) scale(.4)}
   100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,-30px))) scale(1.7)}}
+/* PERF: a pooled trail puff takes turns between puff2 and this twin, so each use starts its animation over */
+@keyframes puff2b{0%{opacity:.9;transform:translate(-50%,-50%) scale(.4)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,-30px))) scale(1.7)}}
+/* PERF: a thing in the valley out of view (OffView in the script) holds its loops still until it is nearly back in view */
+#tiles>.offview,#tiles>.offview *,#tiles>.offview::before,#tiles>.offview::after,
+#tiles>.offview *::before,#tiles>.offview *::after{animation-play-state:paused!important}
 .vshout{position:absolute;transform:translate(-50%,-100%);z-index:320;pointer-events:none;white-space:nowrap;
   font-weight:900;font-size:clamp(15px,2.4vw,22px);color:#fff;letter-spacing:.05em;
   text-shadow:0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),2px -2px 0 var(--ink),-2px -2px 0 var(--ink),0 0 10px rgba(0,0,0,.45);animation:vshout 1.2s ease-out forwards}
@@ -4494,7 +4500,14 @@ const lockedBuildings=()=>availableBuildings().filter(b=>!state.blueprints.inclu
    ================================================================ */
 const stage=document.getElementById("stage"), tilesEl=document.getElementById("tiles");
 const HORIZON=.30;
-const viewW=()=>stage.clientWidth||800;
+// PERF: the stage's size is kept, not read from layout on every call: viewW() runs between drawing steps, and each
+// read made the browser lay the whole valley out again. It is read afresh after a resize, a turn of the iPad, or the
+// stage changing size on its own (the ResizeObserver at BOOT); a stage with no size yet (0) is not kept.
+let stageW=0,stageH=0;
+const viewW=()=>stageW||(stageW=stage.clientWidth)||800;
+const viewH=()=>stageH||(stageH=stage.clientHeight);
+const stageResized=()=>{stageW=stageH=0;};
+addEventListener("resize",stageResized);addEventListener("orientationchange",stageResized);
 const worldW=()=>viewW()*PAGES;
 let cam=0;                                   // left edge of the view, in world px
 const camMax=()=>Math.max(0,worldW()-viewW());
@@ -4540,6 +4553,31 @@ function bringIntoView(worldX){
   if(worldX<cam+pad)panTo(worldX-pad);
   else if(worldX>cam+viewW()-pad)panTo(worldX-viewW()+pad);
 }
+/* ---- PERF: what is out of view holds still ----
+   The valley is 2.6 screens wide, and about half its loops (an animal's hop, a tree's sway, the shine on an
+   upgraded thing) are on things out of view. An IntersectionObserver on the stage gives each thing in #tiles the
+   class .offview while it is more than 200 px out of view, and CSS pauses its loops, so it is moving again before
+   it shows. Things are watched as they come into #tiles (a MutationObserver) and let go as they leave. The steps
+   (glideTo, a Web Animation) carry on, so everything is where it should be. The short-lived bits (puffs, shouts,
+   sparkles) and the empty spots are not watched. Without IntersectionObserver (an older Safari) everything runs.
+   OffView.on: it is working. OffView.stop(): for the tests of other things, everything runs again, as before. */
+const OffView=(()=>{
+  const O={on:false,stop(){}};
+  if(typeof IntersectionObserver==="undefined"||typeof MutationObserver==="undefined")return O;
+  const skip=/\b(puff|slot-empty|vshout|fx|ring|beam)\b/;
+  const watched=n=>n.nodeType===1&&(n.id||typeof n.className==="string"&&n.className&&!skip.test(n.className));
+  let io;
+  try{io=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle("offview",!e.isIntersecting)),{root:stage,rootMargin:"0px 200px"});}
+  catch(e){return O;}
+  const mo=new MutationObserver(ms=>ms.forEach(m=>{
+    m.removedNodes.forEach(n=>{if(n.nodeType===1){io.unobserve(n);n.classList.remove("offview");}});
+    m.addedNodes.forEach(n=>{if(watched(n)&&n.parentNode===tilesEl)io.observe(n);});}));
+  mo.observe(tilesEl,{childList:true});
+  [].forEach.call(tilesEl.children,n=>{if(watched(n))io.observe(n);});
+  O.on=true;
+  O.stop=()=>{O.on=false;mo.disconnect();io.disconnect();[].forEach.call(tilesEl.querySelectorAll(".offview"),n=>n.classList.remove("offview"));};
+  return O;
+})();
 // Aerial perspective: distance washes colour out and softens edges, which is
 // what actually sells depth — scale alone reads as "big thing / small thing".
 function atmos(g){
@@ -4549,12 +4587,12 @@ function atmos(g){
 }
 const OBJ_SCALE=.8;   // everything in the valley draws at 80% so neighbours don't overlap
 function baseSize(){
-  const h=stage.clientHeight||400;
+  const h=viewH()||400;
   // sized against one screenful, not the whole world, so props stay chunky
   return Math.min(viewW()/9*1.5,h/ROWS_MAX*2.4)*OBJ_SCALE;
 }
 function paintBackdrop(){
-  const b=biome(), h=stage.clientHeight||400, w=worldW(), hz=h*HORIZON;
+  const b=biome(), h=viewH()||400, w=worldW(), hz=h*HORIZON;
   ["far","mid","ground"].forEach(id=>document.getElementById(id).style.width=w+"px");
   document.getElementById("sky").style.background=
     `linear-gradient(180deg,${b.sky[0]} 0%,${b.sky[1]} ${Math.round(HORIZON*100)}%)`;
@@ -4738,7 +4776,7 @@ function settleMovers(){
    animation. A new step while one is under way starts from where it is drawn now. */
 function glideTo(el,x,topPct,size,secs,ease){
   if(!el)return;
-  const H=tilesEl.clientHeight||stage.clientHeight||1;
+  const H=viewH()||1;      // #tiles fills the stage (inset:0), so its height is the stage's
   const w0=parseFloat(el.style.width),L0=parseFloat(el.style.left),T0=parseFloat(el.style.top)/100*H;
   let ax=L0,ay=T0,k=w0/size;
   if(el._glide){      // under way: start from where it is drawn now (its transform is translate(dx,dy) translate(-50%,-100%) scale(k))
@@ -4876,17 +4914,28 @@ function pickVehicle(minRar){
   const bag=from.flatMap(v=>Array(v.rar===3?1:v.rar===2?3:6).fill(v));
   return bag.length?bag[Math.floor(Math.random()*bag.length)]:null;
 }
+/* PERF: the trail puffs behind a moving vehicle (o.pool) come from a small pool: a finished one is hidden and
+   used again, instead of a new element made and removed for each (about 15 a second with traffic about). Each use
+   swaps its animation between puff2 and its twin puff2b, so it always plays from the start. */
+const PUFF_POOL=40, puffPool=[];
 function puffAt(x,yPct,color,n,o){
-  o=o||{};
+  o=o||{};const life=((o.d||.9)+.4+(o.stagger||0)*n)*1000;
   for(let i=0;i<n;i++){
-    const p=document.createElement("div");p.className="puff";
+    let p=null;
+    if(o.pool){for(let j=0;j<puffPool.length;j++)if(puffPool[j]._free){p=puffPool[j];break;}
+      if(!p&&puffPool.length<PUFF_POOL){p=document.createElement("div");p.className="puff";puffPool.push(p);}}
+    const pooled=!!p;if(!p){p=document.createElement("div");p.className="puff";}
     const sz=(o.size||12)*(.7+Math.random()*.7);
     p.style.cssText=`left:${x+(Math.random()-.5)*(o.spread||14)}px;top:${yPct}%;width:${sz}px;height:${sz}px;background:${color};
       --dx:${(o.dx||0)+(Math.random()-.5)*(o.jit||20)}px;--dy:${(o.dy==null?-30:o.dy)+(Math.random()-.5)*(o.jit||20)}px;
-      --d:${(o.d||.9)+Math.random()*.3}s;animation-delay:${(o.stagger||0)*i}s`;
-    tilesEl.appendChild(p);setTimeout(()=>p.remove(),((o.d||.9)+.4+(o.stagger||0)*n)*1000);
+      --d:${(o.d||.9)+Math.random()*.3}s;animation-delay:${(o.stagger||0)*i}s`+(pooled?`;animation-name:${(p._b=!p._b)?"puff2b":"puff2"}`:"");
+    if(p.parentNode!==tilesEl)tilesEl.appendChild(p);      // a new one, or one the valley's redraw took out
+    if(pooled){p._free=false;setTimeout(()=>{p.style.display="none";p._free=true;},life);}
+    else setTimeout(()=>p.remove(),life);
   }
 }
+// PERF: is a spot in the valley (world px) in view, or within pad of it
+const inView=(x,pad)=>x>cam-(pad||0)&&x<cam+viewW()+(pad||0);
 function vehAnchor(v){ // rear and front of the vehicle, in world px / stage %
   const el=v._el,g=geom(v.c,v.r),w=parseFloat(el?el.style.width:0)||40,top=parseFloat(el?el.style.top:g.y*100);
   const dir=v.face==="r"?1:-1;
@@ -4913,13 +4962,15 @@ function driveVehicle(v,dc,dr,perCell){
   v.c=nc;v.r=nr;
   const secs=Math.min(3.2,cells*(perCell||.34)/(1+.3*((v.lv||1)-1)));   // upgraded ones are quicker
   placeVehicle(v,secs);
-  if((v.lv||1)>=3)for(let i=0;i<3;i++)setTimeout(()=>{if(!v._el)return;const a=vehAnchor(v);
-    puffAt(a.rear,a.top-3,"rgba(255,214,90,.95)",fewer(2),{dy:-8,size:7,d:.6});},i*secs*300);
+  // PERF: the trail puffs are pooled, and left out for a vehicle out of view
+  if((v.lv||1)>=3)for(let i=0;i<3;i++)setTimeout(()=>{if(!v._el)return;const a=vehAnchor(v);if(!inView(a.rear,80))return;
+    puffAt(a.rear,a.top-3,"rgba(255,214,90,.95)",fewer(2),{dy:-8,size:7,d:.6,pool:1});},i*secs*300);
   if(v._el){v._el.classList.add("driving");setTimeout(()=>v._el&&v._el.classList.remove("driving"),secs*1000);}
-  // exhaust, smoke, spray or snow behind it
-  const trail={road:["rgba(150,150,150,.55)",3],rail:["rgba(90,90,95,.6)",5],water:["rgba(210,240,255,.9)",4],snow:["rgba(255,255,255,.95)",4]}[m.move];
+  // exhaust, smoke, spray or snow behind it (not with Save battery on)
+  const trail=saverOn()?null:{road:["rgba(150,150,150,.55)",3],rail:["rgba(90,90,95,.6)",5],water:["rgba(210,240,255,.9)",4],snow:["rgba(255,255,255,.95)",4]}[m.move];
   if(trail){const steps=Math.min(4,cells);for(let i=0;i<steps;i++)setTimeout(()=>{if(!v._el)return;
-    const a=vehAnchor(v);puffAt(a.rear,a.top-(m.move==="rail"?10:1),trail[0],fewer(trail[1]),{dy:m.move==="rail"?-60:-14,dx:-a.dir*16,size:m.move==="rail"?20:10});},i*secs*250);}
+    const a=vehAnchor(v);if(!inView(a.rear,80))return;
+    puffAt(a.rear,a.top-(m.move==="rail"?10:1),trail[0],fewer(trail[1]),{dy:m.move==="rail"?-60:-14,dx:-a.dir*16,size:m.move==="rail"?20:10,pool:1});},i*secs*250);}
   return secs;
 }
 function say_(text,word){setTimeout(()=>Sound.say("word:"+word,text,.95),650);}
@@ -5238,8 +5289,8 @@ const FLAT_TINT=.7;      // #seasonTint's strength when it is plain alpha
    The valley as it is, made lighter to draw, even while he plays: half the particles (fewer()),
    the wind bed off (the chirps and crickets stay), the light layers as plain alpha and no blur
    behind the glass (body.flat, as in REST), the drop-shadow glows on the animals, vehicles and
-   lanterns as a gradient behind them (CSS body.saver), and only the front row of trees and grass
-   sways. Off: the full look. */
+   lanterns as a gradient behind them (CSS body.saver), only the front row of trees and grass
+   sways, and no trail of exhaust, smoke or spray behind the vehicles (driveVehicle). Off: the full look. */
 const saverOn=()=>!!(state.settings&&state.settings.saver!==false);
 const fewer=n=>saverOn()?Math.ceil(n/2):n;
 function applySaver(){
@@ -19839,7 +19890,7 @@ window.addEventListener("resize",relayout);
 // the stage also changes size without the window resizing: the tool bar wraps to another row
 // (portrait, or many things waiting to be placed). Lay the valley out again for the new size then too.
 try{if(typeof ResizeObserver!=="undefined"){let sw=0,sh=0;
-  new ResizeObserver(()=>{const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;
+  new ResizeObserver(()=>{stageResized();const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;      // PERF: viewW() reads it again
     if(sw&&(w!==sw||h!==sh))relayout();sw=w;sh=h;}).observe(stage);}}catch(e){}
 
 
