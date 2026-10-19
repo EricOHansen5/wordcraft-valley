@@ -250,6 +250,9 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
 .wslot.filled{border-style:solid;background:var(--paper-deep);box-shadow:0 4px 0 var(--ink)}
 .wslot.good{background:linear-gradient(160deg,#79C96F,#5FB35B);color:#fff;border-color:var(--ink)}
 .wslot.bad{animation:wobble .5s;background:#F6D6CF}
+.wslot.next{border-color:#E8A93A;box-shadow:0 0 0 4px rgba(255,211,77,.55)}
+.lt.bank.bad,.wbank .lt.bad{animation:wobble .5s;background:#F6D6CF}
+.lt.bank.glow,.wbank .lt.glow{box-shadow:0 0 0 5px rgba(127,176,105,.75);border-color:var(--meadow-deep)}
 #letterBank{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .lt.used{opacity:.25;pointer-events:none;transform:scale(.9);box-shadow:none}
 .lt.bank{background:linear-gradient(160deg,#FFF6DA,var(--paper-deep))}
@@ -6163,6 +6166,7 @@ function chooseRung(w){
 }
 function openWord(w,opt){
   cur=w;usedEar=false;misses=0;cur._t0=performance.now();cur._lock=false;cur._paid=false;cur._listen=false;
+  cur._g=Guess.track();cur._slotMiss={};      // GUESS: this word's tracker; misses per box in Build it
   document.getElementById("shieldHost").innerHTML="";document.getElementById("picks").classList.remove("locked-by-shield");
   const rung=(opt&&opt.rung!=null)?opt.rung:(w.rung!=null?w.rung:rungOf(w.w)), R=RUNGS[rung];
   cur.shownRung=rung;
@@ -6187,24 +6191,33 @@ function openWord(w,opt){
     L.style.display="none";slots.style.display="flex";bank.style.display="flex";
     slots.innerHTML="";bank.innerHTML="";
     w.p.forEach((_,i)=>{const d=document.createElement("div");d.className="wslot"+((w.syl||[]).includes(i)?" syl":"");d.dataset.i=i;
-      d.onclick=()=>{ // tap a filled slot to send its tile back
-        if(!d.dataset.ph||cur._lock)return;
-        const t=bank.querySelector(`.lt[data-ph="${d.dataset.ph}"].used`);
-        if(t)t.classList.remove("used");
-        d.textContent="";delete d.dataset.ph;d.classList.remove("filled");Sound.sfx.soft();};
       slots.appendChild(d);});
+    // left to right: the next empty box glows; only the right sound for it goes in
+    const markNext=()=>{const k=[...slots.children];k.forEach(x=>x.classList.remove("next"));const n=k.find(x=>!x.dataset.ph);if(n)n.classList.add("next");};
+    markNext();
     // scramble; add one distractor sound so it is a real choice
     const pool=distractors(w.p);
     const extra=pool[Math.floor(Math.random()*pool.length)];
     [...w.p,extra].filter(Boolean).sort(()=>Math.random()-.5).forEach(ph=>{
       const t=mkTile(ph,"lt bank");
       t.onclick=async()=>{
-        const open=[...slots.children].find(x=>!x.dataset.ph);if(!open||cur._lock)return;
+        if(cur._lock||t.classList.contains("used"))return;
+        const kids=[...slots.children],i=kids.findIndex(x=>!x.dataset.ph);if(i<0)return;
+        try{cur._g.heard();}catch(e){}
+        if(!sameTile(ph,w.p[i])){
+          // a wrong tile bounces straight back: its own sound, then the word stretched up to this box
+          misses++;try{cur._g.wrongTile();}catch(e){}Sound.sfx.nope();
+          Skills.result(cur,{ok:false,wrongIdx:[i],placed:[ph],ms:performance.now()-(cur._t0||0)});cur._t0=performance.now();
+          t.classList.remove("bad");void t.offsetWidth;t.classList.add("bad");setTimeout(()=>t.classList.remove("bad"),500);
+          if((cur._slotMiss[i]=(cur._slotMiss[i]||0)+1)>=2){const r=[...bank.children].find(b=>!b.classList.contains("used")&&sameTile(b.dataset.ph,w.p[i]));if(r)r.classList.add("glow");}
+          const word=cur;(async()=>{await Sound.say("sound:"+ph,ph);if(cur!==word||word._lock)return;await pause(150);if(cur===word&&!word._lock)stretchTo(word,i);})();
+          return;}
         Sound.sfx.soft();Sound.say("sound:"+ph,ph);
-        open.textContent=tileText(ph);open.dataset.ph=ph;open.classList.add("filled");
-        if(w.tricky&&ph.includes(":"))open.classList.add("heart");
-        t.classList.add("used");
-        if([...slots.children].every(x=>x.dataset.ph))checkBuild();
+        kids[i].textContent=tileText(ph);kids[i].dataset.ph=ph;kids[i].classList.add("filled");
+        if(w.tricky&&ph.includes(":"))kids[i].classList.add("heart");
+        t.classList.add("used");bank.querySelectorAll(".glow").forEach(b=>b.classList.remove("glow"));
+        markNext();
+        if(kids.every(x=>x.dataset.ph))checkBuild();
       };
       bank.appendChild(t);
     });
@@ -6226,10 +6239,21 @@ function openWord(w,opt){
     soundShield(document.getElementById("shieldHost"),w,()=>{P.classList.remove("locked-by-shield");cur._t0=performance.now();});}
   show("ovRead");
 }
+// the same sound tile (a word may spell it with a different tile name)
+const sameTile=(a,b)=>a===b||(soundOf(a)===soundOf(b)&&tileText(a)===tileText(b));
+// the word's first i+1 sounds as one stretched stream ("frrr..."), no word at the end
+async function stretchTo(w,i){
+  const ph=w.p.slice(0,i+1);let S=null;
+  try{S=Sound.stream(ph);await S.ready;}catch(e){S=null;}
+  for(let k=0;k<ph.length;k++){const joined=!!(S&&!S.broken);
+    await Sound.say("sound:"+ph[k],ph[k],undefined,joined?{stream:S}:undefined);if(!joined)await pause(90);}
+  if(S&&!S.broken)await S.done();
+}
+// Build it: the boxes fill left to right and only the right sound goes in, so when they are all full it is built
 function checkBuild(){
   const slots=[...document.getElementById("slotsRow").children];
   const built=slots.map(x=>x.dataset.ph);
-  if(built.join("|")===cur.p.join("|")){
+  if(built.every((b,i)=>sameTile(b,cur.p[i]))){
     cur._lock=true;slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
     setTimeout(()=>{Sound.say("word:"+cur.w,cur.w,.82);setTimeout(succeed,500);},250);
   }else{
@@ -6501,6 +6525,7 @@ function succeed(){
   state.daily[today()]=(state.daily[today()]||0)+1;
   state.wordsRead++;state.crateCount++;
   const clean=misses===0&&!usedEar;
+  try{if(cur._g)cur._g.finish(clean);}catch(e){}
   setStreak(clean?streak+1:0);
   if(streak>(state.best||0))state.best=streak;
   // a clean streak is worth more, which is what makes "one more crate" pull
@@ -10598,17 +10623,22 @@ const Read=(()=>{
     host.querySelector(".qhear").onclick=()=>Sound.say("word:"+w.w,w.w,.82);
     setTimeout(()=>Sound.say("word:"+w.w,w.w,.82),300);
     const sl=[...host.querySelectorAll(".wslot")];let lock=false;
-    host.querySelectorAll(".wbank .lt").forEach(t=>t.onclick=()=>{
+    // left to right, as in the crates: the next box glows, a wrong tile bounces back with its sound and the stretch so far
+    const g=Guess.track(),sm={},tiles=()=>[...host.querySelectorAll(".wbank .lt")];
+    const next=()=>{sl.forEach(x=>x.classList.remove("next"));const k=slots.indexOf(null);if(k>=0)sl[k].classList.add("next");};next();
+    tiles().forEach(t=>t.onclick=()=>{
       if(lock||t.classList.contains("used"))return;const i=slots.indexOf(null);if(i<0)return;
-      const ph=bank[+t.dataset.i];slots[i]={ph,t};t.classList.add("used");sl[i].textContent=tileText(ph);sl[i].classList.add("filled");Sound.say("sound:"+ph,ph);
+      const ph=bank[+t.dataset.i];g.heard();
+      if(!sameTile(ph,w.p[i])){miss++;g.wrongTile();rec(w,false,{wrongIdx:[i],placed:[ph]});Sound.sfx.nope();
+        t.classList.remove("bad");void t.offsetWidth;t.classList.add("bad");setTimeout(()=>t.classList.remove("bad"),500);
+        if((sm[i]=(sm[i]||0)+1)>=2){const f=tiles().find(b=>!b.classList.contains("used")&&sameTile(bank[+b.dataset.i],w.p[i]));if(f)f.classList.add("glow");}
+        (async()=>{await Sound.say("sound:"+ph,ph);if(lock||!host.isConnected)return;await new Promise(r=>setTimeout(r,150));if(!lock&&host.isConnected)stretchTo(w,i);})();
+        return;}
+      slots[i]={ph,t};t.classList.add("used");sl[i].textContent=tileText(ph);sl[i].classList.add("filled");Sound.say("sound:"+ph,ph);
+      tiles().forEach(b=>b.classList.remove("glow"));next();
       if(!slots.every(Boolean))return;
-      if(slots.every((s,k)=>soundOf(s.ph)===soundOf(w.p[k])&&tileText(s.ph)===tileText(w.p[k]))){lock=true;sl.forEach(x=>x.classList.add("good"));rec(w,!miss,{help:miss>0});
-        Sound.sfx.chime();setTimeout(()=>Sound.say("word:"+w.w,w.w,.82),250);setTimeout(()=>done(!miss),1100);}
-      else{miss++;const wi=[],pl=[];slots.forEach((s,k)=>{if(s.ph!==w.p[k]){wi.push(k);pl.push(s.ph);}});rec(w,false,{wrongIdx:wi,placed:pl});Sound.sfx.nope();
-        wi.forEach(k=>sl[k].classList.add("bad"));
-        setTimeout(()=>{wi.forEach(k=>{slots[k].t.classList.remove("used");slots[k]=null;sl[k].textContent="";sl[k].classList.remove("bad","filled");});
-          if(miss>=2&&!slots[0]){const f=[...host.querySelectorAll(".wbank .lt")].find(b=>!b.classList.contains("used")&&bank[+b.dataset.i]===w.p[0]);if(f)f.click();}
-          Sound.say("word:"+w.w,w.w,.82);},800);}});
+      lock=true;sl.forEach(x=>x.classList.add("good"));rec(w,!miss,{help:miss>0});g.finish(!miss);
+      Sound.sfx.chime();setTimeout(()=>Sound.say("word:"+w.w,w.w,.82),250);setTimeout(()=>done(!miss),1100);});
     return w;
   }
   return{word,others,pic,wordPick,sentence,build,shuffle,once,near};
@@ -14725,13 +14755,14 @@ const Lights=(()=>{
     q.kind=kind;
     host.addEventListener("click",e=>missed(e,q,host));
   }
-  // the builders mark a wrong build .bad and a wrong picture .wrong; this runs after them
+  // the builders mark a wrong tile .bad and a wrong picture .wrong; this runs after them
   function missed(e,q,host){
     if(q.paid||cur!==q)return;
     if(host.querySelector(".wslots")){
-      const bad=!!host.querySelector(".wslot.bad");
-      if(bad&&!q.bad){q.bad=true;miss(q,host);}
-      else if(!bad){q.bad=false;if(q.miss>=2)glow(q,host);}
+      // Build it goes left to right: a wrong tile bounces back marked .bad, one miss each
+      const t=e.target&&e.target.closest?e.target.closest(".wbank .lt"):null;
+      if(t&&t.classList.contains("bad"))miss(q,host);
+      else if(q.miss>=2)glow(q,host);
       return;
     }
     const b=e.target&&e.target.closest?e.target.closest(".psopt"):null;

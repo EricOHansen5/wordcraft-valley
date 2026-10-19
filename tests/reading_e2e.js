@@ -29,8 +29,11 @@ const srv=require("./page").serveApp({port:8791},async()=>{
     return [...document.querySelectorAll("#picks .pick")].map(b=>b.dataset.w);});
   let opts=await pickWord();
   if(!opts.length){console.log("   (listen mode rendered, retry)");opts=await pickWord();}
-  await p.evaluate(()=>{const bad=[...document.querySelectorAll("#picks .pick")].filter(b=>b.dataset.w!=="cat");bad[0].click();bad[1]&&bad[1].click();});
-  await p.waitForTimeout(300);
+  // two words guessed (a wrong pick straight away, then the right one): guess mode (Guess) turns the Shield on
+  for(let k=0;k<2;k++){
+    if(k){opts=await pickWord();if(!opts.length)opts=await pickWord();}
+    await p.evaluate(()=>{const bad=[...document.querySelectorAll("#picks .pick")].filter(b=>b.dataset.w!=="cat");bad[0].click();document.querySelector('#picks .pick[data-w="cat"]').click();});
+    await p.waitForTimeout(700);await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);}));await p.waitForTimeout(300);}
   ok(await p.evaluate(()=>Skills.slow),"rushing turns the Sound Shield on");
   await p.evaluate(()=>{document.querySelector("#picks .pick[data-w='cat']").click();});await p.waitForTimeout(800);
   await p.evaluate(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));

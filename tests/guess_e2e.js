@@ -38,6 +38,74 @@ const {launch,check,seed,reload}=require("./lib");
   const rep=await E(()=>{state.guess.days[today()]=3;openReport();const t=document.getElementById("ovReport").innerText;Modes.shut(document.getElementById("ovReport"));return t;});
   ok(/Guessing/.test(rep)&&!/Quick guesses/.test(rep),"the grown-up report shows Guessing");
   ok(/Sound it out first/.test(rep),"...and whether sound it out first is on");
+  await E(()=>{Guess.set(false);state.guess.days={};state.tour=99;state.settings.goal=0;});
+  const ix=()=>E(()=>document.querySelectorAll(".overlay.on").forEach(o=>{if(o.id!=="ovHome")Modes.shut(o);}));
+
+  // ---- 2. Build it, left to right ----
+  const three=await E(()=>allWords().filter(x=>!x.tricky&&x.p.length===3&&x.p.every((ph,i)=>x.p.indexOf(ph)===i)).slice(0,2).map(x=>x.w));
+  const b1=await E(async w=>{const W=allWords().find(x=>x.w===w);openWord(W,{rung:1});await new Promise(r=>setTimeout(r,300));
+    const slots=()=>[...document.querySelectorAll("#slotsRow .wslot")],bank=()=>[...document.querySelectorAll("#letterBank .lt")];
+    const r={next0:slots()[0].classList.contains("next"),read:state.wordsRead,miss:(state.stats[w]||{}).miss||0};
+    const wrong=bank().find(b=>b.dataset.ph!==W.p[0]);wrong.click();await new Promise(r=>setTimeout(r,200));
+    r.emptyAfterWrong=!slots()[0].dataset.ph&&slots()[0].classList.contains("next");r.misses=misses;
+    bank().find(b=>b.dataset.ph!==W.p[0]&&!b.classList.contains("used")).click();await new Promise(r=>setTimeout(r,200));
+    const right=bank().find(b=>b.dataset.ph===W.p[0]);r.hint=right.classList.contains("glow");r.stillEmpty=!slots()[0].dataset.ph;
+    right.click();await new Promise(r=>setTimeout(r,200));
+    r.filled=slots()[0].dataset.ph===W.p[0];r.next1=slots()[1].classList.contains("next");
+    for(let i=1;i<W.p.length;i++){bank().find(b=>b.dataset.ph===W.p[i]&&!b.classList.contains("used")).click();await new Promise(r=>setTimeout(r,150));}
+    await new Promise(r=>setTimeout(r,1200));
+    r.readAfter=state.wordsRead;r.missAfter=(state.stats[w]||{}).miss||0;return r;},three[0]);
+  ok(b1.next0,"Build it: the first box glows "+J(b1));
+  ok(b1.emptyAfterWrong&&b1.misses===1,"a wrong tile does not go in; the first box still glows "+J(b1));
+  ok(b1.hint&&b1.stillEmpty,"after two misses the right tile glows, and nothing is placed for him "+J(b1));
+  ok(b1.filled&&b1.next1,"the right tile goes in and the next box glows "+J(b1));
+  ok(b1.readAfter===b1.read+1&&b1.missAfter===b1.miss+1,"the finished word is read, not clean "+J(b1));
+  await ix();await p.waitForTimeout(400);
+  const b2=await E(async w=>{const W=allWords().find(x=>x.w===w);const f=(state.stats[w]||{}).first||0;openWord(W,{rung:1});await new Promise(r=>setTimeout(r,300));
+    for(let i=0;i<W.p.length;i++){[...document.querySelectorAll("#letterBank .lt")].find(b=>b.dataset.ph===W.p[i]&&!b.classList.contains("used")).click();await new Promise(r=>setTimeout(r,150));}
+    await new Promise(r=>setTimeout(r,1200));return{before:f,after:(state.stats[w]||{}).first||0};},three[1]);
+  ok(b2.after===b2.before+1,"a build with no wrong tile is clean "+J(b2));
+  await ix();await p.waitForTimeout(400);
+  const rb=await E(async w=>{const W=allWords().find(x=>x.w===w);const host=document.createElement("div");host.id="rbHost";document.body.appendChild(host);
+    Read.build(host,ok=>{window.__rb=ok;},W);await new Promise(r=>setTimeout(r,300));
+    const sl=()=>[...host.querySelectorAll(".wslot")],tiles=()=>[...host.querySelectorAll(".wbank .lt")];
+    tiles().find(b=>b.textContent!==tileText(W.p[0])).click();await new Promise(r=>setTimeout(r,200));
+    const r={empty:!sl()[0].classList.contains("filled")};
+    tiles().find(b=>b.textContent===tileText(W.p[0])&&!b.classList.contains("used")).click();await new Promise(r=>setTimeout(r,200));
+    r.filled=sl()[0].classList.contains("filled");host.remove();return r;},three[0]);
+  ok(rb.empty&&rb.filled,"Read.build goes left to right too "+J(rb));
+  await ix();await p.waitForTimeout(400);
+
+  // ---- 3. the word is not given away ----
+  await E(()=>{window.__said=[];const o=Sound.say;Sound.say=function(k){window.__said.push(String(k));return o.apply(this,arguments);};});
+  const blendDone=()=>p.waitForFunction(()=>window._lastBlend&&window._lastBlend.done,null,{timeout:8000}).catch(()=>null);
+  const picW=await E(()=>allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&!state.stats[x.w]&&x.p.length>=3).slice(0,3).map(x=>x.w));
+  await E(w=>{const W=allWords().find(x=>x.w===w);openWord(W,{rung:0});if(document.querySelector("#picks .pick.text"))renderPicks(W,0);window._lastBlend=null;window.__said=[];
+    document.getElementById("blendBtn").click();},picW[0]);
+  await blendDone();
+  const n3a=await E(w=>({word:window._lastBlend&&window._lastBlend.word,said:window.__said.filter(k=>k==="word:"+w).length,sounds:window.__said.filter(k=>k.indexOf("sound:")===0).length}),picW[0]);
+  ok(n3a.word===null&&n3a.said===0&&n3a.sounds>0,"Blend it sounds the word out but does not say it "+J(n3a));
+  await E(w=>{window.__said=[];[...document.querySelectorAll("#picks .pick")].find(b=>b.dataset.w!==w).click();},picW[0]);await wait(3500);
+  const n3b=await E(w=>({said:window.__said.filter(k=>k==="word:"+w).length,sounds:window.__said.filter(k=>k.indexOf("sound:")===0).length}),picW[0]);
+  ok(n3b.said===0&&n3b.sounds>0,"after a wrong pick the help plays the sounds, not the word "+J(n3b));
+  await E(w=>{window.__said=[];document.querySelector(`#picks .pick[data-w="${w}"]`).click();},picW[0]);await wait(300);
+  ok(await E(w=>window.__said.indexOf("word:"+w)>=0,picW[0]),"the right pick says the word");
+  await ix();await wait(400);
+  const n3c=await E(async w=>{const W=allWords().find(x=>x.w===w);openWord(W,{rung:0});renderListen(W);await new Promise(r=>setTimeout(r,500));
+    const L=document.getElementById("letters"),cs=getComputedStyle(L);window._lastBlend=null;window.__said=[];
+    document.getElementById("blendBtn").click();return{cls:L.classList.contains("nospell"),vis:cs.visibility,disp:cs.display};},picW[1]);
+  await blendDone();
+  const n3d=await E(w=>{const W=allWords().find(x=>x.w===w);return{first:window.__said.indexOf("sound:"+W.p[0])>=0};},picW[1]);
+  ok(n3c.cls&&n3c.vis==="hidden"&&n3c.disp!=="none","Hear it hides the spelling (hidden, still laid out) "+J(n3c));
+  ok(n3d.first,"...and Blend it still sounds out the word's own tiles "+J(n3d));
+  await E(w=>{document.querySelector(`#picks .pick[data-w="${w}"]`).click();},picW[1]);await wait(300);
+  ok(await E(()=>!document.getElementById("letters").classList.contains("nospell")),"the spelling shows again once he picks it");
+  await ix();await wait(400);
+  const sw=await E(async()=>{const pr=swapPairs()[0];openSwap(pr);show("ovRead");window._lastBlend=null;document.getElementById("blendBtn").click();
+    return pr.from.w;});
+  await blendDone();
+  ok(await E(()=>window._lastBlend&&window._lastBlend.word)===sw,"a sound swap's Blend it still says the starting word "+J(sw));
+  await ix();await wait(400);
 
   ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();t.done();

@@ -101,8 +101,8 @@ const srv=require("./page").serveApp({port:8814},async()=>{
   const g1=await E(()=>state.gems);
   await E(()=>{let k;for(let i=0;i<30&&!k;i++)k=pickCrates().find(o=>o.keep);openWord(k);});await wait(1100);
   ok(await E(()=>cur.shownRung===1&&!document.querySelector("#picks .btn")),"the stage-2 check opens at Build it too");
-  // both sounds in the wrong order
-  await E(()=>{const bank=[...document.querySelectorAll("#letterBank .lt")];bank.find(t=>t.dataset.ph==="e:uh").click();bank.find(t=>t.dataset.ph==="th:dh").click();});
+  // the second sound first: it bounces back (Build it goes left to right), a miss
+  await E(()=>{const bank=[...document.querySelectorAll("#letterBank .lt")];bank.find(t=>t.dataset.ph==="e:uh").click();});
   await wait(1200);
   await E(()=>{const bank=[...document.querySelectorAll("#letterBank .lt:not(.used)")];bank.find(t=>t.dataset.ph==="th:dh").click();
     [...document.querySelectorAll("#letterBank .lt:not(.used)")].find(t=>t.dataset.ph==="e:uh").click();});

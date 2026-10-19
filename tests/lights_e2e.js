@@ -34,13 +34,12 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
   const buildRight=()=>E(()=>{const h=document.getElementById("ltQ"),tiles=JSON.parse(h.dataset.tiles),sl=[...h.querySelectorAll(".wslot")];
     tiles.forEach((ph,i)=>{if(sl[i].classList.contains("filled"))return;
       const t=[...h.querySelectorAll(".wbank .lt")].find(b=>!b.classList.contains("used")&&b.textContent===tileText(ph));if(t)t.click();});});
-  // ...and wrong: a wrong sound in the first empty slot, then the others filled with whatever is left
+  // ...and wrong: a wrong sound for the first empty box (Build it goes left to right, so it bounces back marked .bad)
   const buildWrong=()=>E(()=>{const h=document.getElementById("ltQ"),tiles=JSON.parse(h.dataset.tiles),sl=[...h.querySelectorAll(".wslot")];
-    const empty=sl.filter(s=>!s.classList.contains("filled")).length,i0=sl.findIndex(s=>!s.classList.contains("filled"));
+    const i0=sl.findIndex(s=>!s.classList.contains("filled"));
     const bank=()=>[...h.querySelectorAll(".wbank .lt")].filter(b=>!b.classList.contains("used"));
-    bank().find(b=>b.textContent!==tileText(tiles[i0])).click();
-    for(let k=1;k<empty;k++)bank()[0].click();
-    return !!h.querySelector(".wslot.bad");});
+    const t=bank().find(b=>b.textContent!==tileText(tiles[i0]));t.click();
+    return t.classList.contains("bad")&&!sl[i0].classList.contains("filled");});
   // a wrong picture for a sentence
   const pickWrong=()=>E(()=>{const h=document.getElementById("ltQ"),a=h.dataset.ans;[...h.querySelectorAll(".psopt")].find(x=>x.dataset.i!==a.slice(1)).click();});
   // open a door and read it right, whatever kind it is
