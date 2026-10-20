@@ -2281,7 +2281,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
     <div class="row" id="micRow"><div class="grow"><div class="lbl">Microphone check</div>
       <div class="meta" id="micMeta"></div>
       <div class="micbar" id="micBar" style="display:none"><i id="micLvl"></i></div></div>
-      <button class="btn soft" id="micBtn" style="min-height:44px;padding:8px 14px">Test</button></div>
+      <button class="btn soft" id="micTestBtn" style="min-height:44px;padding:8px 14px">Test</button></div>
     <div class="row"><div class="grow"><div class="lbl">Spelling crates</div>
       <div class="meta">How often a crate asks him to build the word from its sounds.</div></div>
       <select id="optSpell"><option value="0.35">Some</option><option value="0.6">Lots</option><option value="0.9">Almost all</option></select></div>
@@ -2328,7 +2328,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-20b"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-20c"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -9404,7 +9404,7 @@ const MicCheck=(()=>{
   function when(r){try{return new Date(r.at).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}catch(e){return "";}}
   function text(r){
     if(!r)return "Tests the microphone the way the game uses it, and says what is stopping it if it doesn't work.";
-    const at=when(r)+": ",e=r.err||"";
+    const at=r.at?when(r)+": ":"",e=r.err||"";
     if(r.ok)return at+(r.peak<.01?"the microphone opened but heard almost nothing. Talk close to the top edge of the iPad and test again."
       :"the microphone works. Talk to me and the book recordings can hear him.");
     if(e==="not https")return at+"this copy of the game is open at "+r.origin+", and iPadOS only lets https:// pages use the microphone. Open the game at your https:// address (the ts.net one), add that to the Home Screen, and restore his save there from the backup.";
@@ -9418,7 +9418,7 @@ const MicCheck=(()=>{
   let busy=false;
   async function run(){
     if(busy)return null;busy=true;
-    const b=el("micBtn"),bar=el("micBar"),lvl=el("micLvl"),m=el("micMeta");
+    const b=el("micTestBtn"),bar=el("micBar"),lvl=el("micLvl"),m=el("micMeta");
     const r=Object.assign({at:new Date().toISOString(),perm:"",err:"",peak:0,ok:false},support());
     try{if(navigator.permissions&&navigator.permissions.query){const q=await navigator.permissions.query({name:"microphone"});r.perm=String(q.state||"");}}catch(e){}
     r.err=why(r);let s=null;
@@ -9444,8 +9444,10 @@ const MicCheck=(()=>{
     state.micCheck=r;save();render();busy=false;
     return r;
   }
-  {const b=el("micBtn");if(b)b.onclick=()=>{Sound.sfx.soft();run();};}
-  return{run,render,note,text};
+  {const b=el("micTestBtn");if(b)b.onclick=()=>{Sound.sfx.soft();run();};}
+  // what stopped a recording, in the words the Test button uses (for the Voice Studio's message)
+  function explain(e){const s=support();return text({at:"",err:why(s)||name(e),origin:s.origin,ok:false});}
+  return{run,render,note,text,explain};
 })();
 
 /* ---- Read it again: how smoothly he reads a page he has just read (no microphone) ----
@@ -19987,7 +19989,9 @@ async function toggleRecord(key,btn){
       Sound.invalidate(recKey);btn.textContent="⏺";btn.classList.remove("rec");recorder=null;renderStudio();
     };
     recorder.start();
-  }catch(e){try{MicCheck.note("studio",e);}catch(x){}alert("Microphone unavailable. On iPad this needs Safari over HTTPS or localhost.");}
+  }catch(e){try{MicCheck.note("studio",e);}catch(x){}
+    let why="";try{why=MicCheck.explain(e);}catch(x){}
+    alert("The microphone didn't start. "+(why||"On iPad this needs Safari over HTTPS."));}
 }
 async function renderPackPane(){
   const st=document.getElementById("packStatus"),gr=document.getElementById("packGrid");gr.innerHTML="";

@@ -10,20 +10,28 @@ const T=check("mic"),ok=T.ok;
   await E(()=>document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on")));
 
   // ---- 1. the row, before any test ----
-  const row=await E(()=>{renderSettings();return{btn:!!document.getElementById("micBtn"),meta:document.getElementById("micMeta").textContent,
-    def:JSON.stringify([def().micCheck,def().micErr]),st:JSON.stringify([state.micCheck,state.micErr])};});
+  // (the row's own button: another element once shared its id, so the page's first "micBtn" was not this one)
+  const testBtn='#micRow button';
+  const row=await E(s=>{renderSettings();return{btn:!!document.querySelector(s),meta:document.getElementById("micMeta").textContent,
+    def:JSON.stringify([def().micCheck,def().micErr]),st:JSON.stringify([state.micCheck,state.micErr])};},testBtn);
+  const dup=await E(()=>{const n={};document.querySelectorAll("[id]").forEach(e=>{n[e.id]=(n[e.id]||0)+1;});return Object.keys(n).filter(k=>n[k]>1);});
+  ok(!dup.length,"no two elements in the page share an id "+JSON.stringify(dup));
   ok(row.btn&&/Tests the microphone/.test(row.meta),"Settings has a Microphone check row with a Test button: "+row.meta);
   ok(row.def==="[null,null]"&&row.st==="[null,null]","micCheck and micErr default to null, and a save without them gets null "+row.st);
 
   // ---- 2. iPadOS says no ----
   await E(()=>{window.__gum=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException("denied","NotAllowedError");};});
-  await E(()=>document.getElementById("micBtn").click());
+  await E(s=>document.querySelector(s).click(),testBtn);
   let r=await waitFor(p,()=>state.micCheck&&state.micCheck.err?state.micCheck:false,{timeout:5000});
   let meta=await E(()=>document.getElementById("micMeta").textContent);
   ok(r&&r.err==="NotAllowedError"&&!r.ok&&r.origin===await E(()=>location.origin)&&r.secure===true,"the Test button records iPadOS saying no, with the address: "+JSON.stringify(r));
   ok(/iPadOS said no/.test(meta)&&/Screen Time/.test(meta)&&/Safari/.test(meta),"...and says where to look: "+meta);
-  ok(await E(()=>!document.getElementById("micBtn").disabled&&document.getElementById("micBar").style.display==="none"),"the button is ready again and the level bar is hidden");
+  ok(await E(s=>!document.querySelector(s).disabled&&document.getElementById("micBar").style.display==="none",testBtn),"the button is ready again and the level bar is hidden");
+
+  const studio=await E(async()=>{let said="";const a=window.alert;window.alert=m=>{said=String(m);};
+    const b=document.createElement("button");await toggleRecord("sound:a",b);window.alert=a;return said;});
+  ok(/iPadOS said no/.test(studio)&&!/needs Safari over HTTPS/.test(studio),"the Voice Studio says the real reason too: "+studio);
 
   // ---- 3. another app holds it ----
   await E(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException("busy","NotReadableError");};});
