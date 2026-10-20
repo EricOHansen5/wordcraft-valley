@@ -47,7 +47,8 @@ function said(e){const x=e.x==null?"":String(e.x);
     :e.k==="book"?"finished the book "+x:e.k==="guess"?"sound it out first "+(x==="on"?"came on":"went off")
     :e.k==="guessset"?"a grown-up turned sound it out first "+(x==="on"?"on":"off"):e.k+" "+x;}
 // ---- Say it: a try's log entry (state.talk.log, from "sayit"; see SayIt and Talk.heardOf in app/index.html) as one line:
-// when, the word, what the NAS heard, each listener's best and score, who decided ("both agree": A and B leaned the same way)
+// when, the word, what the NAS heard, each listener's best and score, who decided ("both agree": A and B leaned the same way),
+// and the clip's level before the gain and the gain it was sent to the NAS with ("level .008 ×30")
 const sc=v=>(+v||0).toFixed(2).replace(/^0/,"");
 function sayIt(e){
   const when=e.at?day(new Date(e.at)).slice(5)+" "+pad(clock(e.at),8,1):String(e.d||"").slice(5)+" "+pad("",8);
@@ -56,7 +57,8 @@ function sayIt(e){
   if(!e.A&&!e.B&&e.score!=null)parts.push(view(e.tier,e));
   if(e.tier==="AB")parts.push("both agree");
   const what=e.text?'heard "'+e.text+'" ':e.A||e.tier==="A"?"heard nothing ":e.tier==="none"?"nothing could listen ":"";
-  return when+"  "+(e.w||"(word not noted)")+" → "+what+(parts.length?"("+parts.join("; ")+") ":"")+(e.ok?"✓":"·");
+  const lvl=e.lvl!=null?"  level "+(+e.lvl||0).toFixed(3).replace(/^0/,"")+" ×"+(+e.gain||1):"";
+  return when+"  "+(e.w||"(word not noted)")+" → "+what+(parts.length?"("+parts.join("; ")+") ":"")+(e.ok?"✓":"·")+lvl;
 }
 function play(s,p){
   const days=lastDays(7).reverse(),ss=Array.isArray(s.sessions)?s.sessions:[],H=s.helps||{},P=s.prizes||{},A=s.answers||{},D=s.daily||{};

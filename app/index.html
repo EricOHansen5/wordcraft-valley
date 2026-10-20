@@ -6400,7 +6400,7 @@ const Speech=(()=>{
    pays +2 💎 and counts as sounded out (the guess check). Not sure, nothing heard or a different word gets a
    kind line and another go, never a miss: a misheard child is not a wrong answer. When the NAS isn't sure, the
    matcher on the iPad has a say on the same clip (Talk.once). Each try goes in Talk to me's log for the report and
-   tools/progress.js: {d, tier, ok, from:"sayit", w, at, text, best, score, sure, A, B} (Talk.heardOf). */
+   tools/progress.js: {d, tier, ok, from:"sayit", w, at, text, best, score, sure, A, B, lvl, gain} (Talk.heardOf). */
 // a web app on the Home Screen, where the browser's recogniser never hears anything (Say it and Talk to me both ask)
 function homeApp(){try{return navigator.standalone===true||!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches);}catch(e){return false;}}
 const SayIt=(()=>{
@@ -16848,13 +16848,13 @@ const Factory=(()=>{
    (data-w, in #tkQ with dataset.ans). A sure wrong answer gets what a wrong tap gets: a wobble,
    the word said back, and after a second miss the right one glows. Nothing is ever taken away.
    Every sure answer and every tap is logged with its tier (state.talk.log, the last 200,
-   {d, tier: A B C or tap, ok}) for the report's line. While it thinks, the buddy says "hmm"
+   {d, tier: A B C or tap, ok}, and lvl and gain when the clip went to the NAS) for the report's line. While it thinks, the buddy says "hmm"
    (3 s at most). Eyes-free: every prompt is spoken, listening starts by itself, one big button
    (it asks again), and the next question comes by itself (after two misses too).
    Save: state.talk {log, tpl, inbox}; state.settings.talk and eyesFree.
    Listening comes in three tiers, chosen at run time:
-     A  the NAS: POST /api/hear on the home server (server/hear/, Whisper) with the clip and
-        its possible answers, when GET /api/hear said {ok:true} in the last 10 minutes.
+     A  the NAS: POST /api/hear on the home server (server/hear/, Whisper) with the clip (as a WAV, made
+        loud enough: loudClip) and its possible answers, when GET /api/hear said {ok:true} in the last 10 minutes.
         A 404, a 503, a failure or no answer in 3.5 s means "no tier A", and it is not asked
         again for 10 minutes (the public copy has no server, so there it just stays off).
      B  the matcher on the iPad (TalkMatch), when every answer has at least one reference:
@@ -17038,7 +17038,28 @@ const TalkMatch=(()=>{
   // how sure a set of scores is: the best one close enough, and ahead of the next
   function sureOf(scores,min,lead){const ks=Object.keys(scores).sort((a,b)=>scores[b]-scores[a]);
     const b=ks[0],s1=b?scores[b]:0,s2=ks[1]?scores[ks[1]]:0;return{best:s1>0?b:null,score:s1,sure:s1>=min&&s1-s2>=lead};}
-  return{SR,DIM,TEMP,MARGIN,resample,cepstra,voiced,features,segments,dtw,match,pack,unpack,scoreText,sureOf,fold,words};
+  // tier A's clip made loud enough (16 kHz samples in): the speech (voiced(), or the whole clip when it finds none) brought
+  // to a peak of .9, 30 times at most, and nothing done to a clip whose speech is all but silent (RMS under .0015).
+  // lvl is the loudest 25 ms window's RMS before the gain (what the microphone test measures).
+  const LOUD=.9,GAIN_MAX=30,HUSH=.0015;
+  function loud(x){
+    const n=x.length,db=[];let lvl=0;
+    for(let s=0;s+WIN<=n;s+=HOP){let e=0;for(let i=s;i<s+WIN;i++)e+=x[i]*x[i];e/=WIN;if(e>lvl)lvl=e;db.push(10*Math.log(e+1e-10)/Math.LN10);}
+    const v=voiced(db),a=v.heard?v.a*HOP:0,b=v.heard?Math.min(n,v.b*HOP+WIN):n;
+    let pk=0,e=0;for(let i=a;i<b;i++){const y=Math.abs(x[i]);if(y>pk)pk=y;e+=y*y;}
+    const rms=b>a?Math.sqrt(e/(b-a)):0,gain=rms<HUSH||!pk?1:Math.min(LOUD/pk,GAIN_MAX),out=new Float32Array(n);
+    for(let i=0;i<n;i++)out[i]=Math.max(-1,Math.min(1,x[i]*gain));
+    return{pcm:out,lvl:Math.sqrt(lvl),gain,peak:pk,rms};
+  }
+  // samples (-1..1) as a 16-bit PCM mono WAV file
+  function wav(x,rate){
+    const n=x.length,buf=new ArrayBuffer(44+n*2),v=new DataView(buf),s=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i));};
+    s(0,"RIFF");v.setUint32(4,36+n*2,true);s(8,"WAVE");s(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+    v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);s(36,"data");v.setUint32(40,n*2,true);
+    for(let i=0;i<n;i++){const y=Math.max(-1,Math.min(1,x[i]));v.setInt16(44+i*2,Math.round(y<0?y*32768:y*32767),true);}
+    return buf;
+  }
+  return{SR,DIM,TEMP,MARGIN,resample,cepstra,voiced,features,segments,dtw,match,pack,unpack,scoreText,sureOf,fold,words,loud,wav};
 })();
 
 const Talk=(()=>{
@@ -17079,16 +17100,26 @@ const Talk=(()=>{
       .then(v=>{A.probe=null;return v;});
     return A.probe;
   }
+  /* The iPad's microphone can be very quiet (its test once peaked at .008), and the NAS's speech detector drops a quiet
+     clip as silence. So the clip goes as a WAV, mono at 16 kHz, its speech brought up to a peak of .9 (TalkMatch.loud:
+     30 times at most, and a clip that is all but silent stays as it is), with its level before (lvl) and the gain for
+     the log. A clip that can't be decoded goes as it was recorded. */
+  async function loudClip(blob){
+    try{const b=await decode(await readBlob(blob)),x=TalkMatch.resample(mono(b),b.sampleRate);if(x.length<TalkMatch.SR/10)throw new Error("short");
+      const L=TalkMatch.loud(x);return{body:new Blob([TalkMatch.wav(L.pcm,TalkMatch.SR)],{type:"audio/wav"}),type:"audio/wav",lvl:L.lvl,gain:L.gain};}
+    catch(e){return{body:blob,type:blob.type||"application/octet-stream"};}
+  }
   // tier A: the clip to the NAS with its possible answers; null means no tier A (and not again for 10 minutes)
   async function hear(blob,expect){
     if(!blob||aDown()||typeof fetch!=="function")return null;
     const ex=[].concat(expect||[]).map(String).slice(0,6);if(!ex.length)return null;
+    const c=await loudClip(blob),lv=c.lvl==null?{}:{lvl:c.lvl,gain:c.gain};
     let r;
-    try{r=await timed(base()+"/api/hear",{method:"POST",body:blob,cache:"no-store",
-      headers:{"Content-Type":blob.type||"application/octet-stream","X-Token":tok(),"X-Expect":encodeURIComponent(JSON.stringify(ex))}},A_MS);}
+    try{r=await timed(base()+"/api/hear",{method:"POST",body:c.body,cache:"no-store",
+      headers:{"Content-Type":c.type,"X-Token":tok(),"X-Expect":encodeURIComponent(JSON.stringify(ex))}},A_MS);}
     catch(e){down();return null;}
     // a clip it couldn't use is this clip's problem, not the NAS's
-    if(r.status===400||r.status===413||r.status===422){A.ok=Date.now();return{tier:"A",best:null,score:0,text:"",scores:{},sure:false,heard:true};}
+    if(r.status===400||r.status===413||r.status===422){A.ok=Date.now();return Object.assign({tier:"A",best:null,score:0,text:"",scores:{},sure:false,heard:true},lv);}
     if(!r.ok){down();return null;}
     let j=null;try{j=await r.json();}catch(e){}
     if(!j||!j.scores||typeof j.scores!=="object"){down();return null;}
@@ -17096,14 +17127,14 @@ const Talk=(()=>{
     const scores={};ex.forEach(k=>{scores[k]=+j.scores[k]||0;});
     const order=ex.slice().sort((a,b)=>scores[b]-scores[a]),s1=scores[order[0]]||0,s2=order[1]?scores[order[1]]:0;
     const text=String(j.text||"").trim();
-    return{tier:"A",best:s1>0?order[0]:null,score:s1,text,scores,sure:!!text&&s1>=SURE_A[0]&&s1-s2>=SURE_A[1],heard:!!text};
+    return Object.assign({tier:"A",best:s1>0?order[0]:null,score:s1,text,scores,sure:!!text&&s1>=SURE_A[0]&&s1-s2>=SURE_A[1],heard:!!text},lv);
   }
 
   // an open answer written down by the NAS: no answers to score, the question as the prompt, 12 s, and a no
   // here doesn't turn tier A off (it is only ever asked in the background)
   async function transcribe(blob,prompt){
     if(!blob||aDown()||typeof fetch!=="function")return"";
-    try{const r=await timed(base()+"/api/hear",{method:"POST",body:blob,cache:"no-store",headers:{"Content-Type":blob.type||"application/octet-stream",
+    try{const c=await loudClip(blob),r=await timed(base()+"/api/hear",{method:"POST",body:c.body,cache:"no-store",headers:{"Content-Type":c.type,
         "X-Token":tok(),"X-Expect":encodeURIComponent("[]"),"X-Prompt":encodeURIComponent(String(prompt||"").slice(0,200))}},12000);
       if(!r.ok)return"";const j=await r.json();return String(j&&j.text||"").trim().slice(0,400);}
     catch(e){return"";}
@@ -17294,15 +17325,19 @@ const Talk=(()=>{
     if(b.sure)o=Object.assign({},b,{text:a.text});
     else if(a.best!=null&&a.best===b.best&&a.score>=AGREE[0]&&b.score>=AGREE[1])o=Object.assign({},a,{tier:"AB",sure:true,score:(a.score+b.score)/2,feat:b.feat});
     else o=Object.assign({},a,{feat:b.feat});
+    if(a.lvl!=null){o.lvl=a.lvl;o.gain=a.gain;}
     o.A=view(a);o.B=view(b);return o;
   }
-  // a Say it try's log fields: the word asked, when, what the NAS heard (40 characters), the answer, and each one's view
+  // a Say it try's log fields: the word asked, when, what the NAS heard (40 characters), the answer, each one's view,
+  // and the clip's level before the gain and the gain (when it went to the NAS)
+  const levelOf=r=>r&&r.lvl!=null?{lvl:Math.round(r.lvl*1000)/1000,gain:Math.round(r.gain*10)/10}:null;
   function heardOf(w,r){
     const n=v=>Math.round((+v||0)*100)/100,v=x=>({best:x.best==null?null:x.best,score:n(x.score),sure:!!x.sure}),o={w,at:Date.now()};
     if(!r)return o;
     if(r.text)o.text=String(r.text).slice(0,40);
     o.best=r.best==null?null:r.best;o.score=n(r.score);o.sure=!!r.sure;
     if(r.A)o.A=v(r.A);if(r.B)o.B=v(r.B);
+    Object.assign(o,levelOf(r));
     return o;
   }
   // stop listening now (a second tap on the button)
@@ -17507,7 +17542,7 @@ const Talk=(()=>{
     try{r=await api._hear(cap&&cap.blob&&cap.heard!==false?cap.blob:null,Q.expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
     clearTimeout(hmm);
     if(!ok())return;
-    Q.busy=false;Q.clip=cap&&cap.blob||null;Q.feat=r&&r.feat||null;
+    Q.busy=false;Q.clip=cap&&cap.blob||null;Q.feat=r&&r.feat||null;Q.lvl=levelOf(r);
     mic("idle");face("","");
     result(Q,r);
   }
@@ -17572,7 +17607,7 @@ const Talk=(()=>{
     b.style.display=n||on()?"":"none";b.textContent="🎤 "+inboxName()+"'s inbox"+(n?" ("+n+")":"");}
   function result(Q,r){
     if(!r||!r.sure||r.best==null||Q.expect.indexOf(r.best)<0)return unsure(Q,r);
-    logIt(r.tier,r.best===Q.ans);
+    logIt(r.tier,r.best===Q.ans,null,Q.lvl);
     if(r.best===Q.ans)right(Q,r.tier,r);else wrong(Q,r.best,r.tier);
   }
   function right(Q,tier){
@@ -17620,7 +17655,8 @@ const Talk=(()=>{
     if(!live(Q)||Q.done)return;
     if(Q.busy){Q.gen++;Q.busy=false;try{if(capStop)capStop();}catch(e){}try{Speech.stop();}catch(e){}mic("idle");face("","");}
     const w=b.dataset.w,ok=w===Q.ans;
-    logIt("tap",ok);
+    // (with the level of the clip it didn't catch, when there was one)
+    logIt("tap",ok,null,Q.lvl);
     if(ok)right(Q,"tap");else wrong(Q,w,"tap");
   }
 
