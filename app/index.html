@@ -2270,7 +2270,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
       <div class="meta">Soft wind, birds by day, crickets at night.</div></div>
       <label class="switch"><input type="checkbox" id="optNature" checked></label></div>
     <div class="row"><div class="grow"><div class="lbl">Read aloud with the microphone</div>
-      <div class="meta">Adds a "Say it" button on Read-it words. Needs HTTPS and internet on iPad.</div></div>
+      <div class="meta">Adds a "Say it" button on Read-it words. It listens through the home server's listener or matches his voice on the iPad (in Safari, its own recogniser too), and shows only when one of them can.</div></div>
       <label class="switch"><input type="checkbox" id="optSpeech"></label></div>
     <div class="row"><div class="grow"><div class="lbl">Talk to me</div>
       <div class="meta">A 🎤 Talk to me button in the crates: he answers out loud and the buddy listens. At home the NAS listens (server/README.md, "The listener"); anywhere else the iPad matches his voice to the answers; the browser's recogniser is the last resort. A misheard answer costs nothing: he taps instead. After some stories it asks what he thinks, never judged; his answers wait for you in Progress → 🎤 inbox.</div></div>
@@ -6354,18 +6354,64 @@ const Speech=(()=>{
     stop(){try{rec&&rec.stop();}catch(e){}}
   };
 })();
-document.getElementById("micBtn").onclick=()=>{
-  const b=document.getElementById("micBtn");
-  if(b.classList.contains("listening")){Speech.stop();return;}
-  b.classList.add("listening");b.textContent="🎤 Listening...";
-  const word=cur;
-  Speech.listen(alts=>{
-    if(cur!==word||word._paid||!ov("ovRead").classList.contains("on"))return;
-    const hit=alts.some(a=>a===cur.w||a.split(/\s+/).includes(cur.w)||a.replace(/\s+/g,"")===cur.w);
-    if(hit){toast("You said it! +2 💎");state.gems+=2;floater("+2 💎","#FFE9A8");Sound.sfx.chime();succeed();}
-    else{toast(`I heard "${alts[0]||"..."}" — try once more, or tap I read it`);Sound.sfx.soft();}
-  },()=>{b.classList.remove("listening");b.textContent="🎤 Say it";});
-};
+/* "🎤 Say it" on a Read-it word (Grown-up setting): he reads the word out loud. It listens the way Talk to me
+   does (Talk.once: the NAS, the matcher on the iPad, or the browser's recogniser). Apple keeps the browser's
+   recogniser from a web app on the Home Screen (WebKit bug 225298), which is how the game is played, so there
+   the button shows only when the NAS or the matcher can listen; anywhere, it shows only when something can.
+   The answers are the word and its printed look-alikes, so a sure match tells right from wrong. Sure and right
+   pays +2 💎 and counts as sounded out (the guess check). Not sure, nothing heard or a different word gets a
+   kind line and another go, never a miss: a misheard child is not a wrong answer. Each try goes in Talk to
+   me's log ({d, tier, ok, from:"sayit"}) for the report. */
+const SayIt=(()=>{
+  const btn=()=>document.getElementById("micBtn");
+  // a web app on the Home Screen, where the browser's recogniser never hears anything
+  const homeApp=()=>{try{return navigator.standalone===true||!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches);}catch(e){return false;}};
+  // the word and two printed look-alikes, chosen once a word
+  function expect(w){
+    if(w._say)return w._say;let alts=[];try{alts=lookalikes(w).map(x=>x&&x.w);}catch(e){}
+    return w._say=[w.w].concat(alts.filter((x,i,a)=>typeof x==="string"&&x&&x!==w.w&&a.indexOf(x)===i).slice(0,2));
+  }
+  // the tier that would listen now, or null (the browser's recogniser only in a browser tab)
+  async function tier(w){let t=null;try{t=await Talk.tier(expect(w));}catch(e){}
+    return t==="A"||t==="B"||(t==="C"&&!homeApp())?t:null;}
+  // at Read it: shown once a tier says it can listen
+  async function offer(w){
+    const b=btn();b.style.display="none";
+    if(!state.settings.speech)return;
+    const t=await tier(w);
+    if(t&&state.settings.speech&&cur===w&&!w._paid)b.style.display="";
+  }
+  let busy=false;
+  async function tap(){
+    const b=btn();
+    if(b.classList.contains("listening")){try{Talk.stop();}catch(e){}return;}
+    const w=cur;if(!w||w._paid||busy)return;
+    busy=true;b.classList.add("listening");b.textContent="🎤 Listening...";
+    try{VoicePack.stop();}catch(e){}
+    const ex=expect(w),t=await tier(w);
+    let r=null;
+    if(t){try{r=await Talk.once(ex,{tier:t,browser:!homeApp()});}catch(e){r=null;}}
+    busy=false;b.classList.remove("listening");b.textContent="🎤 Say it";
+    if(cur!==w||w._paid||!ov("ovRead").classList.contains("on"))return;
+    const sure=!!(r&&r.sure&&r.best!=null&&ex.indexOf(r.best)>=0),right=sure&&r.best===w.w;
+    try{Talk.log((r&&r.tier)||t||"none",right,"sayit");}catch(e){}
+    if(right){
+      // his own voice for the matcher, when the NAS was sure
+      if(r.tier==="A"&&r.clip){try{Talk.keepClip(w.w,r.clip,r.feat,"A");}catch(e){}}
+      toast("You said it! +2 💎");state.gems+=2;floater("+2 💎","#FFE9A8");Sound.sfx.chime();
+      try{if(cur._g)cur._g.heard();}catch(e){}
+      succeed();
+    }else if(sure){
+      toast(`That sounded like '${r.best}'. Try once more!`);Sound.sfx.soft();
+      Promise.resolve(Sound.speak("That sounded like",.95)).then(()=>Sound.say("word:"+r.best,r.best,.85)).then(()=>Sound.speak("Try once more!",.95)).catch(()=>{});
+    }else{
+      toast("I didn't quite catch that. Try once more, or tap I read it.");Sound.sfx.soft();
+      Promise.resolve(Sound.speak("I didn't quite catch that. Try once more, or tap I read it.",.95)).catch(()=>{});
+    }
+  }
+  btn().onclick=tap;
+  return{offer,tap,homeApp,_expect:expect};
+})();
 function starPop(){
   const el=document.createElement("div");el.className="star-pop";el.textContent="⭐";
   document.body.appendChild(el);setTimeout(()=>el.remove(),1500);
@@ -6386,7 +6432,7 @@ function renderPicks(w,rung=0){
     const pics=!w.tricky&&WORD_ART[w.w];b.disabled=true;setTimeout(()=>{b.disabled=false;},900);
     b.onclick=()=>{Sound.sfx.pop();P.innerHTML=`<div class="prove">Great! Which one did you read?</div>`;if(pics)choices(w,P);else printedChoices(w,P);};
     P.appendChild(b);
-    if(state.settings.speech&&Speech.available())document.getElementById("micBtn").style.display="";
+    SayIt.offer(w);
     return;
   }
   choices(w,P);
@@ -16617,12 +16663,14 @@ const Factory=(()=>{
         again for 10 minutes (the public copy has no server, so there it just stays off).
      B  the matcher on the iPad (TalkMatch), when every answer has at least one reference:
         the game voice's clip of it, or his own banked templates.
-     C  the browser's own recogniser (Speech, the one "Say it" uses).
+     C  the browser's own recogniser (Speech).
      otherwise the screen: he taps.
    Talk.hear(blob, expect) is tier A alone: {tier:"A", best, score, text, scores, sure} or null;
    Talk.match(blob, expect) is tier B alone: {tier:"B", best, score, scores, sure, heard, ms} or
    null; Talk.tier(expect) says which one would listen now. The address and the token are the
    backup's (state.sync), so a NAS that takes backups listens with no setup.
+   "Say it" on a Read-it word listens through these tiers too (Talk.once), logged with from:"sayit"
+   and given its own line in the report.
    His own voice: a clip the NAS was sure was the right answer, one he tapped the right answer
    for after "not sure", and each Read-to-your-pet page that splits into as many spoken
    stretches as it has words are banked as MFCC frames (not audio) in the blobs store under
@@ -17012,6 +17060,24 @@ const Talk=(()=>{
     if(ctx.heard===false)return{tier:ctx.tier||"B",best:null,score:0,scores:{},sure:false,heard:false};
     return browser(expect);
   }
+  /* One answer for another screen ("Say it" on a Read-it word): the tier (opt.tier when it was asked already),
+     the recording, the tier that decides. opt.browser false: never the browser's recogniser (a home-screen app),
+     so a recording that can't start is "nothing heard". null: nothing could listen. r.clip is the recording. */
+  async function once(expect,opt){
+    opt=opt||{};let tr=opt.tier;
+    if(!tr){tr="screen";try{tr=await api.tier(expect);}catch(e){}}
+    if(tr==="C"&&opt.browser===false)tr="screen";
+    if(tr==="screen")return null;
+    let cap=null;
+    if(tr==="A"||tr==="B"){try{cap=await api._record();}catch(e){cap=null;}
+      if(!cap&&opt.browser===false)return{tier:tr,best:null,score:0,scores:{},sure:false,heard:false,clip:null};}
+    let r=null;
+    try{r=await api._hear(cap&&cap.blob&&cap.heard!==false?cap.blob:null,expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
+    if(r)r.clip=cap&&cap.blob||null;
+    return r;
+  }
+  // stop listening now (a second tap on the button)
+  function stop(){try{if(capStop)capStop();}catch(e){}try{Speech.stop();}catch(e){}}
 
   /* ---------- the questions ---------- */
   const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;};
@@ -17089,12 +17155,15 @@ const Talk=(()=>{
   }
 
   /* ---------- the log and the report ---------- */
-  function logIt(tier,ok){const t=T();t.log.push({d:today(),tier,ok:!!ok});if(t.log.length>LOG_MAX)t.log=t.log.slice(-LOG_MAX);save();}
+  // from: another screen's tries share the log, marked ("sayit": every Say it try, sure or not)
+  function logIt(tier,ok,from){const t=T(),e={d:today(),tier,ok:!!ok};if(from)e.from=from;t.log.push(e);if(t.log.length>LOG_MAX)t.log=t.log.slice(-LOG_MAX);save();}
   function report(days){
-    const all=state.talk&&Array.isArray(state.talk.log)?state.talk.log:[],from=(days&&days[0])||today(),wk=all.filter(x=>x&&x.d>=from);
-    if(!wk.length&&!on())return"";
+    const all=state.talk&&Array.isArray(state.talk.log)?state.talk.log:[],from=(days&&days[0])||today(),wk=all.filter(x=>x&&x.d>=from&&!x.from);
+    const sy=all.filter(x=>x&&x.d>=from&&x.from==="sayit"),m=k=>sy.filter(x=>x.tier===k).length,good=sy.filter(x=>x.ok).length;
+    const says=sy.length?`<p class="rnote" id="rSayIt">🎤 Say it: <b>${sy.length}</b> ${sy.length===1?"try":"tries"} this week, ${good} read right (${m("A")} heard by the NAS, ${m("B")} matched on the iPad, ${m("C")} by the browser).</p>`:"";
+    if(!wk.length&&!on())return says;
     const n=k=>wk.filter(x=>x.tier===k).length;
-    return`<p class="rnote" id="rTalk">🎤 Talk to me: <b>${wk.length}</b> answer${wk.length===1?"":"s"} this week, ${n("A")} heard by the NAS, ${n("B")} matched on the iPad, ${n("C")} by the browser${n("tap")?`, ${n("tap")} tapped`:""}.</p>`;
+    return`<p class="rnote" id="rTalk">🎤 Talk to me: <b>${wk.length}</b> answer${wk.length===1?"":"s"} this week, ${n("A")} heard by the NAS, ${n("B")} matched on the iPad, ${n("C")} by the browser${n("tap")?`, ${n("tap")} tapped`:""}.</p>`+says;
   }
 
   /* ---------- the mode ---------- */
@@ -17292,7 +17361,9 @@ const Talk=(()=>{
       if(Q.kind==="number")await Sound.speak(Q.ans,.95);else if(Q.kind!=="yesno")await sayWord(Q.ans);
       await wait(eyes()?700:500);if(S&&S.run===my&&S.Q===Q)next();})();
   }
-  function keep(Q,src){const w=Q.ans,feat=Q.feat,clip=Q.clip;
+  function keep(Q,src){keepClip(Q.ans,Q.clip,Q.feat,src);}
+  // a sure answer's clip as one of his templates for the word (its frames worked out again when they weren't kept)
+  function keepClip(w,clip,feat,src){
     (async()=>{let f=feat;if(!f||!f.heard)f=await featuresOf(clip);if(f&&f.heard&&f.ms>=150&&f.ms<=2500)await bank(w,f.frames,src);})().catch(()=>{});}
   // a sure wrong answer is a wrong tap: a wobble, the word said back, the right one glows after the second
   function wrong(Q,said,tier){
@@ -17347,6 +17418,8 @@ const Talk=(()=>{
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&capStop)capStop();});
 
   Object.assign(api,{hear,probe,match,tier,bank,bankPage,featuresOf,open,close,report,renderSettings,sync,voiceLines,on,transcribe,inboxOpen,
+    // for Say it: one answer, stop, its log entry, his voice from a sure answer
+    once,stop,log:logIt,keepClip,
     // the step after the microphone, and the microphone (the tests stand in for both)
     _hear:hearAny,_record:record,
     // for the tests
