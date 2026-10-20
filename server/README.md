@@ -33,9 +33,9 @@ Put the game on every iPad, phone or laptop from the same HTTPS address. Each on
 - To lock the server, set `TOKEN=` in `docker-compose.yml`, then type the same word in the game's token box.
 
 ## Updating the game
-`cd /volume1/docker_1/wordcraft && git pull`. `app/` is mounted live, so no restart is needed (restart the project only if `server/` changed; the split into `art/` and `content/` on 30 Sept 2026 was one such change). The iPad picks up the new version on its next launch, because `npm run release` gives sw.js a new version string each release.
+`cd /volume2/docker/wordcraft && git pull`. `app/` is mounted live, so no restart is needed (restart the project only if `server/` changed; the split into `art/` and `content/` on 30 Sept 2026 was one such change). The iPad picks up the new version on its next launch, because `npm run release` gives sw.js a new version string each release.
 
-To pull automatically, add a DSM Task Scheduler job (user: root, e.g. every 15 min): `cd /volume1/docker_1/wordcraft && git pull -q`.
+To pull automatically, add a DSM Task Scheduler job (user: root, e.g. every 15 min): `cd /volume2/docker/wordcraft && git pull -q`.
 
 ## The listener
 "Talk to me" (Grown-up menu → Settings) lets him answer out loud. At home the NAS does the listening: a second, optional container in `server/hear/` runs Whisper (faster-whisper, the `base.en` model, on the CPU). The game sends it a clip of 1 to 4 seconds with the two to four answers the question allows ("cat, cot, cap"), and gets back which one it heard and how sure it is. For an open question ("What do you think happens next?") it just writes down what he said, for Dad's inbox in the Grown-up menu. The listener stores nothing: the clip is transcribed in memory and let go (the game keeps the open answers on the iPad, and they go into its backups like his other recordings). Without the listener the game matches his voice on the iPad instead, so it is fine to leave it out.
@@ -48,7 +48,7 @@ To pull automatically, add a DSM Task Scheduler job (user: root, e.g. every 15 m
 The project was made by pasting a compose file, so the new service is pasted too:
 
 1. Over SSH, fetch the new files and make the model folder:
-   `cd /volume1/docker_1/wordcraft && git pull && mkdir -p server/hear-cache`
+   `cd /volume2/docker/wordcraft && git pull && mkdir -p server/hear-cache`
 2. Container Manager → **Project** → select the Wordcraft project → **Action** → **Stop**.
 3. Open the project's **YAML** (its settings; **Edit**), and replace it with the file below. Keep your own `TOKEN=` word if you set one.
 4. **Save**, then **Build** (or **Action** → **Build**). The listener's image takes a few minutes to build the first time (about 570 MB).
@@ -57,7 +57,7 @@ The project was made by pasting a compose file, so the new service is pasted too
 ```yaml
 services:
   wordcraft:
-    build: /volume1/docker_1/wordcraft/server
+    build: /volume2/docker/wordcraft/server
     container_name: wordcraft
     restart: unless-stopped
     ports:
@@ -67,14 +67,14 @@ services:
       - KEEP=60
       - HEAR_URL=http://hear:9000/hear
     volumes:
-      - /volume1/docker_1/wordcraft/app:/app:ro
-      - /volume1/docker_1/wordcraft/server/data:/data
+      - /volume2/docker/wordcraft/app:/app:ro
+      - /volume2/docker/wordcraft/server/data:/data
   hear:
-    build: /volume1/docker_1/wordcraft/server/hear
+    build: /volume2/docker/wordcraft/server/hear
     container_name: wordcraft-hear
     restart: unless-stopped
     volumes:
-      - /volume1/docker_1/wordcraft/server/hear-cache:/root/.cache
+      - /volume2/docker/wordcraft/server/hear-cache:/root/.cache
 ```
 
 The listener has no port of its own on the network: only the backup server talks to it, by the name `hear`. To take it out again, delete the `hear:` block (and set `HEAR_URL=off`), then Build. After a `git pull` that changes `server/hear/`, Build again.
