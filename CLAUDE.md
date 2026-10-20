@@ -84,9 +84,9 @@ A phonics game for Asher (6). He loves Pokémon, Minecraft, Zelda and Donkey Kon
 `npm install`, then `npm run serve`, then open http://localhost:8088.
 
 ## Deploy (Synology)
-The NAS has a clone of this repo at `/volume1/docker/wordcraft`. Container Manager runs `server/docker-compose.yml`, which mounts `../app` read-only and `./data` for backups.
+The NAS has a clone of this repo at `/volume1/docker_1/wordcraft` (the share was renamed from `docker` to `docker_1` by DSM on 20 Oct 2026, a name clash with Container Manager's `docker` share on volume 2; check the path before quoting one). Container Manager runs `server/docker-compose.yml`, which mounts `../app` read-only and `./data` for backups.
 
-To update: a DSM Task Scheduler job pulls `main` every 15 minutes (`/usr/local/git/bin/git -C /volume1/docker/wordcraft pull -q`). A container restart isn't needed for `app/` changes. When `server/` changes, say so in the release notes: the project needs Action → Build in Container Manager (the project's compose was pasted with absolute paths; the current one is in `server/README.md`, "The listener").
+To update: a DSM Task Scheduler job ("wordcraft pull", id 10) pulls `main` every 15 minutes all day (repeat until 23:45) with `/var/packages/Git/target/bin/git -C /volume1/docker_1/wordcraft pull -q`. After a push, check `curl -s http://192.168.1.91:8088/sw.js | grep VERSION`. SSH: `ssh synologynas` (port 55, user eohansen, no sudo for the agent; the clone is root-only). A container restart isn't needed for `app/` changes. When `server/` changes, say so in the release notes: the project needs Action → Build in Container Manager (the project's compose was pasted with absolute paths; the current one is in `server/README.md`, "The listener").
 
 HTTPS (needed for the home-screen app, offline play and the microphone) comes from `tailscale serve --bg 8088` on the NAS; the iPad runs the game from the `https://<nas>.<tailnet>.ts.net` address and backs up to it. Progress data is readable from this PC with `node tools/progress.js`.
 
