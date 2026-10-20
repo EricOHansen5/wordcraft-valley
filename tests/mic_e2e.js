@@ -47,6 +47,14 @@ const T=check("mic"),ok=T.ok;
   ok(r.ok&&!r.err&&Date.now()-t0>=2900,"a microphone that opens: ok after about three seconds of level ("+(Date.now()-t0)+" ms, level "+r.peak+")");
   ok(/the microphone works|heard almost nothing/.test(meta),"...and the row says so: "+meta);
   ok(await E(()=>state.micCheck&&state.micCheck.ok===true),"state.micCheck keeps the last test");
+  // a very quiet microphone (a tone at RMS .003, below one step of the 8-bit level): its level is measured, not stuck at the 8-bit floor
+  await E(()=>{window.__oscGum=navigator.mediaDevices.getUserMedia;navigator.mediaDevices.getUserMedia=async()=>{const c=new AudioContext();try{await c.resume();}catch(e){}
+    const o=c.createOscillator(),g=c.createGain(),d=c.createMediaStreamDestination();g.gain.value=.003*Math.SQRT2;o.connect(g);g.connect(d);o.start();window.__osc=c;return d.stream;};});
+  r=await E(()=>MicCheck.run());
+  meta=await E(()=>document.getElementById("micMeta").textContent);
+  ok(r.ok&&r.peak>=.0025&&r.peak<=.0036,"a quiet microphone's level is measured (RMS .003 reads "+r.peak+")");
+  ok(/heard almost nothing/.test(meta),"...and the row says it heard almost nothing: "+meta);
+  await E(()=>{try{window.__osc.close();}catch(e){}navigator.mediaDevices.getUserMedia=window.__oscGum;});
 
   // ---- 4b. the iPad's audio session: the game plays as "playback", and iPadOS gives such a page no
   // microphone (InvalidStateError) unless the session is "play-and-record" while it records ----

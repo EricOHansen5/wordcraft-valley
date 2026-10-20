@@ -9492,6 +9492,18 @@ function micOpen(){
   let p;try{p=navigator.mediaDevices.getUserMedia({audio:true});}catch(e){p=Promise.reject(e);}
   return p.then(st=>st,e=>{micOpenN=Math.max(0,micOpenN-1);micBack();throw e;});
 }
+/* The microphone's level (RMS, 0-1) from an AnalyserNode: its float samples where the browser has them, else its 8-bit
+   ones, whose smallest step (1/128, about .008) hides a quiet child (his test once read .008 that way). MIC_START is the
+   level quiet speech reaches: Talk's recorder starts on speech this far over the room's quiet (.006 on 8-bit data, just
+   under one step), and the microphone test says it "heard almost nothing" under it. */
+const MIC_START=.004;
+function micMeter(an){
+  const fine=typeof an.getFloatTimeDomainData==="function",b=fine?new Float32Array(an.fftSize):new Uint8Array(an.fftSize);
+  return{fine,start:fine?MIC_START:.006,read(){let s=0;
+    if(fine){an.getFloatTimeDomainData(b);for(let i=0;i<b.length;i++)s+=b[i]*b[i];}
+    else{an.getByteTimeDomainData(b);for(let i=0;i<b.length;i++){const v=(b[i]-128)/128;s+=v*v;}}
+    return Math.sqrt(s/b.length);}};
+}
 function micClose(st){
   if(!st||st.__micClosed)return;st.__micClosed=true;
   try{st.getTracks().forEach(t=>t.stop());}catch(e){}
@@ -9513,7 +9525,7 @@ const MicCheck=(()=>{
   function text(r){
     if(!r)return "Tests the microphone the way the game uses it, and says what is stopping it if it doesn't work.";
     const at=r.at?when(r)+": ":"",e=r.err||"";
-    if(r.ok)return at+(r.peak<.01?"the microphone opened but heard almost nothing. Talk close to the top edge of the iPad and test again."
+    if(r.ok)return at+(r.peak<MIC_START?"the microphone opened but heard almost nothing. Talk close to the top edge of the iPad and test again."
       :"the microphone works. Talk to me and the book recordings can hear him.");
     if(e==="not https")return at+"this copy of the game is open at "+r.origin+", and iPadOS only lets https:// pages use the microphone. Open the game at your https:// address (the ts.net one), add that to the Home Screen, and restore his save there from the backup.";
     if(/NotAllowed|Security|Permission/i.test(e))return at+"iPadOS said no ("+e+"). Check Settings → Apps → Safari → Microphone (Ask or Allow), and Settings → Screen Time → Content & Privacy Restrictions → Microphone (Allow). If both allow it, iPadOS is remembering an earlier “Don’t Allow” for this Home Screen icon: open "+r.origin+" in Safari and test there.";
@@ -9540,9 +9552,8 @@ const MicCheck=(()=>{
       try{const c=Sound.ctx();if(c.state==="suspended"&&c.resume)c.resume();
         const src=c.createMediaStreamSource(s),an=c.createAnalyser(),mute=c.createGain();an.fftSize=1024;mute.gain.value=0;
         src.connect(an);an.connect(mute);mute.connect(c.destination);
-        const buf=new Uint8Array(an.fftSize),t0=Date.now();if(bar)bar.style.display="";
-        await new Promise(res=>{const iv=setInterval(()=>{an.getByteTimeDomainData(buf);let q=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;q+=v*v;}
-          const rms=Math.sqrt(q/buf.length);if(rms>r.peak)r.peak=rms;if(lvl)lvl.style.width=Math.min(100,Math.round(rms*500))+"%";
+        const m=micMeter(an),t0=Date.now();if(bar)bar.style.display="";
+        await new Promise(res=>{const iv=setInterval(()=>{const rms=m.read();if(rms>r.peak)r.peak=rms;if(lvl)lvl.style.width=Math.min(100,Math.round(rms*500))+"%";
           if(Date.now()-t0>=3000){clearInterval(iv);res();}},60);});
         try{src.disconnect();mute.disconnect();}catch(e){}
       }catch(e){level=false;}     // no Web Audio: the microphone opened, and its level is unknown
@@ -17059,7 +17070,7 @@ const TalkMatch=(()=>{
     for(let i=0;i<n;i++){const y=Math.max(-1,Math.min(1,x[i]));v.setInt16(44+i*2,Math.round(y<0?y*32768:y*32767),true);}
     return buf;
   }
-  return{SR,DIM,TEMP,MARGIN,resample,cepstra,voiced,features,segments,dtw,match,pack,unpack,scoreText,sureOf,fold,words,loud,wav};
+  return{SR,DIM,TEMP,MARGIN,resample,cepstra,voiced,features,segments,dtw,match,pack,unpack,scoreText,sureOf,fold,words,loud,wav,HUSH};
 })();
 
 const Talk=(()=>{
@@ -17106,14 +17117,16 @@ const Talk=(()=>{
      the log. A clip that can't be decoded goes as it was recorded. */
   async function loudClip(blob){
     try{const b=await decode(await readBlob(blob)),x=TalkMatch.resample(mono(b),b.sampleRate);if(x.length<TalkMatch.SR/10)throw new Error("short");
-      const L=TalkMatch.loud(x);return{body:new Blob([TalkMatch.wav(L.pcm,TalkMatch.SR)],{type:"audio/wav"}),type:"audio/wav",lvl:L.lvl,gain:L.gain};}
+      const L=TalkMatch.loud(x);return{body:new Blob([TalkMatch.wav(L.pcm,TalkMatch.SR)],{type:"audio/wav"}),type:"audio/wav",lvl:L.lvl,gain:L.gain,rms:L.rms};}
     catch(e){return{body:blob,type:blob.type||"application/octet-stream"};}
   }
-  // tier A: the clip to the NAS with its possible answers; null means no tier A (and not again for 10 minutes)
-  async function hear(blob,expect){
+  // tier A: the clip to the NAS with its possible answers; null means no tier A (and not again for 10 minutes).
+  // hush: the recorder heard nothing in it, so a clip that is truly silent (or can't be decoded) isn't sent: nothing heard
+  async function hear(blob,expect,hush){
     if(!blob||aDown()||typeof fetch!=="function")return null;
     const ex=[].concat(expect||[]).map(String).slice(0,6);if(!ex.length)return null;
     const c=await loudClip(blob),lv=c.lvl==null?{}:{lvl:c.lvl,gain:c.gain};
+    if(hush&&!(c.rms>=TalkMatch.HUSH))return Object.assign({tier:"A",best:null,score:0,text:"",scores:{},sure:false,heard:false},lv);
     let r;
     try{r=await timed(base()+"/api/hear",{method:"POST",body:c.body,cache:"no-store",
       headers:{"Content-Type":c.type,"X-Token":tok(),"X-Expect":encodeURIComponent(JSON.stringify(ex))}},A_MS);}
@@ -17249,7 +17262,9 @@ const Talk=(()=>{
   /* ---------- the microphone ----------
      One answer, the way Rec records a book page (getUserMedia, MediaRecorder: audio/mp4 on the iPad,
      audio/webm in Chrome), with the microphone let go straight after so the game's voice plays as
-     loud as ever. It stops 0.7 s after he stops talking, after 4 s of talk, or after 5 s of nothing. */
+     loud as ever. It stops 0.7 s after he stops talking, after 4 s of talk, or after 5 s of nothing. He has started when
+     the level (micMeter) is, twice in a row, MIC_START over the room's quiet (the quietest of the first 0.3 s) and at
+     least twice it: a quiet child counts, the room's own noise doesn't. */
   let capStop=null;
   async function record(opt){
     opt=opt||{};if(!micOk()){try{MicCheck.note("talk");}catch(x){}return null;}
@@ -17259,9 +17274,9 @@ const Talk=(()=>{
     const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
     // the level as he talks, for "has he started" and "has he finished"
     // (the analyser feeds a silent gain to the speakers: an older Safari only runs nodes that lead somewhere)
-    let an=null,src=null,buf=null,mute=null;
+    let an=null,src=null,meter=null,mute=null;
     try{const c=Sound.ctx();if(c.state==="suspended"&&c.resume)c.resume();
-      src=c.createMediaStreamSource(stream);an=c.createAnalyser();an.fftSize=1024;src.connect(an);buf=new Uint8Array(an.fftSize);
+      src=c.createMediaStreamSource(stream);an=c.createAnalyser();an.fftSize=1024;src.connect(an);meter=micMeter(an);
       mute=c.createGain();mute.gain.value=0;an.connect(mute);mute.connect(c.destination);}catch(e){an=null;}
     return new Promise(res=>{
       const t0=Date.now();let started=0,loud=0,quiet=null,runs=0,live=false,fin=false,iv=null;
@@ -17274,10 +17289,11 @@ const Talk=(()=>{
       capStop=end;
       try{mr.start();}catch(e){return end();}
       iv=setInterval(()=>{const now=Date.now();
-        if(an){an.getByteTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;s+=v*v;}const rms=Math.sqrt(s/buf.length);
+        if(an){const rms=meter.read();
           if(rms>0)live=true;
-          if(quiet==null||(now-t0<300&&rms<quiet))quiet=rms;
-          if(rms>Math.max(.015,quiet*3)){runs++;if(runs>=2){if(!started)started=now-50;loud=now;}}else runs=0;}
+          if(rms>0&&(quiet==null||(now-t0<300&&rms<quiet)))quiet=rms;
+          const q=quiet||0;
+          if(rms>Math.max(q+meter.start,q*2)){runs++;if(runs>=2){if(!started)started=now-50;loud=now;}}else runs=0;}
         if(started&&now-loud>700)return end();
         if(started&&now-started>(opt.max||4000))return end();
         if(!started&&now-t0>(an&&live?(opt.wait||5000):3000))return end();},50);
@@ -17287,11 +17303,14 @@ const Talk=(()=>{
   /* ---------- one listen: the recording, then the tier that decides ----------
      _hear(blob|null, expect, {tier, heard}) is the step after the microphone (the tests stand in for it):
      a clip goes to the NAS when tier A is up, then to the matcher; no clip goes to the browser's
-     recogniser; null means nothing could listen (the screen). */
+     recogniser; null means nothing could listen (the screen). A clip the recorder heard nothing in (heard false, sent
+     only to tier A: clipFor) goes to the NAS unless it is truly silent, and is "nothing heard" unless the NAS hears it. */
+  const clipFor=(cap,tr)=>cap&&cap.blob&&(cap.heard!==false||tr==="A")?cap.blob:null;
   async function hearAny(blob,expect,ctx){
     ctx=ctx||{};
     if(blob){
-      if(ctx.tier==="A"||(!ctx.tier&&aLive())){const a=await hear(blob,expect);if(a)return a;}
+      if(ctx.tier==="A"||(!ctx.tier&&aLive())){const a=await hear(blob,expect,ctx.heard===false);if(a)return a;}
+      if(ctx.heard===false)return{tier:ctx.tier||"B",best:null,score:0,scores:{},sure:false,heard:false};
       const b=await match(blob,expect);if(b)return b;
       return{tier:"B",best:null,score:0,scores:{},sure:false,heard:true};
     }
@@ -17311,9 +17330,10 @@ const Talk=(()=>{
     if(tr==="A"||tr==="B"){try{cap=await api._record();}catch(e){cap=null;}
       if(!cap&&opt.browser===false)return{tier:tr,best:null,score:0,scores:{},sure:false,heard:false,clip:null};}
     let r=null;
-    try{r=await api._hear(cap&&cap.blob&&cap.heard!==false?cap.blob:null,expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
+    try{r=await api._hear(clipFor(cap,tr),expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
     if(r)r.clip=cap&&cap.blob||null;
-    if(r&&r.tier==="A"&&!r.sure&&r.clip){let b=null;try{b=await api.match(r.clip,expect);}catch(e){b=null;}
+    // (the matcher only on a clip the recorder heard something in, as before)
+    if(r&&r.tier==="A"&&!r.sure&&r.clip&&cap.heard!==false){let b=null;try{b=await api.match(r.clip,expect);}catch(e){b=null;}
       const clip=r.clip;r=both(r,b);r.clip=clip;}
     return r;
   }
@@ -17539,7 +17559,7 @@ const Talk=(()=>{
     mic("think");face("hmm","Hmm…");
     const hmm=setTimeout(()=>{if(ok())face("","");},HMM);
     let r=null;
-    try{r=await api._hear(cap&&cap.blob&&cap.heard!==false?cap.blob:null,Q.expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
+    try{r=await api._hear(clipFor(cap,tr),Q.expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
     clearTimeout(hmm);
     if(!ok())return;
     Q.busy=false;Q.clip=cap&&cap.blob||null;Q.feat=r&&r.feat||null;Q.lvl=levelOf(r);

@@ -4,6 +4,10 @@
 // silent is not made louder, a clip at a good level stays as it is, and a clip that can't be decoded goes as recorded.
 // Each Say it try and each Talk to me answer logs the clip's level before the gain (lvl) and the gain, and
 // tools/progress.js prints them. The game voice's clips, scaled down, stand in for his voice.
+// The recorder (Talk._record, for real, on a stand-in microphone stream: room noise and the game voice at about his level)
+// starts on quiet speech (peak RMS ~.008) but not on room noise or near-silence; and with the NAS listening, a recording
+// it judged "heard nothing" still goes to the NAS unless it is truly silent (and is "heard nothing" only if the NAS finds
+// nothing too); the matcher on the iPad keeps today's rule.
 const {launch,check,waitFor}=require("./lib");
 const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require("child_process");
 (async()=>{
@@ -16,6 +20,8 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
   await p.route("**/api/hear",r=>{const q=r.request();
     if(q.method()==="GET")return r.fulfill({status:200,contentType:"application/json",body:J({ok:true,model:"base.en"})});
     const h=q.headers();api.posts.push({type:h["content-type"],body:q.postDataBuffer()||Buffer.alloc(0)});
+    if(api.empty){const z={};JSON.parse(decodeURIComponent(h["x-expect"]||"[]")).forEach(e=>{z[e]=0;});
+      return r.fulfill({status:200,contentType:"application/json",body:J({text:"",best:null,scores:z,ms:300})});}
     const ex=JSON.parse(decodeURIComponent(h["x-expect"]||"[]")),best=api.post||ex[0],scores={};ex.forEach(e=>{scores[e]=e===best?1:.3;});
     return r.fulfill({status:200,contentType:"application/json",body:J({text:ex.length?best+".":"hello there",best:ex.length?best:null,scores,ms:640})});});
   // a WAV POST read back: its format and its loudest sample
@@ -61,6 +67,47 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
       const x=await Talk.hear(b,["pig","big"]);return x&&{tier:x.tier,lvl:x.lvl,gain:x.gain,log:Talk.heardOf("pig",x)};});
     ok(last().type==="audio/mp4"&&last().body.length===900,"a clip it can't decode is sent as it was recorded "+J({type:last().type,len:last().body.length}));
     ok(r&&r.tier==="A"&&r.lvl==null&&!("lvl" in r.log)&&!("gain" in r.log),"with no level noted "+J(r));}
+
+  // ---- 4b. the recorder on a stand-in microphone: white noise at a room's level (RMS) and the game voice saying "pig" times speech, from 0.8 s ----
+  await E(async()=>{window.__realRec=Talk._record;try{await Sound.ctx().resume();}catch(e){}
+    window.__spec={noise:.0005,speech:0};
+    navigator.mediaDevices.getUserMedia=async()=>{const o=window.__spec,c=new AudioContext();try{await c.resume();}catch(e){}
+      const d=c.createMediaStreamDestination();
+      if(o.noise){const n=c.sampleRate*2,b=c.createBuffer(1,n,c.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=(Math.random()*2-1)*o.noise*Math.sqrt(3);
+        const s=c.createBufferSource();s.buffer=b;s.loop=true;s.connect(d);s.start();}
+      if(o.speech){const idx=await VoicePack.load(),ab=await (await fetch("voice/"+idx[VoicePack.norm("pig")])).arrayBuffer(),b=await c.decodeAudioData(ab);
+        const g=c.createGain();g.gain.value=o.speech;const s=c.createBufferSource();s.buffer=b;s.connect(g);g.connect(d);s.start(c.currentTime+.8);}
+      window.__sc=c;return d.stream;};
+    // one real recording with this stream: what the recorder judged
+    window.__rec=async spec=>{window.__spec=spec;const t0=Date.now(),cap=await window.__realRec();if(window.__sc){window.__sc.close().catch(()=>{});window.__sc=null;}
+      return{heard:cap?cap.heard:null,ms:cap?cap.ms:null,size:cap&&cap.blob?cap.blob.size:0,took:Date.now()-t0};};
+    // one real Say it listen (Talk.once) with this stream: what it posted and what it decided
+    window.__once=async(spec,tier)=>{window.__spec=spec;Talk._reset();if(tier==="A")await Talk.probe();
+      const r=await Talk.once(["pig","big","pin"],{tier,browser:false});if(window.__sc){window.__sc.close().catch(()=>{});window.__sc=null;}
+      return r&&{tier:r.tier,best:r.best,sure:r.sure,heard:r.heard,lvl:r.lvl,gain:r.gain,B:!!r.B};};});
+  api.post=null;api.empty=false;
+  {const c=await E(()=>window.__rec({noise:.0005,speech:.045}));
+    ok(c.heard===true&&c.ms>0&&c.took<4000,"quiet speech (the game voice at about his level, peak RMS ~.008) over a quiet room starts the recorder "+J(c));}
+  {const c=await E(()=>window.__rec({noise:.0003,speech:0}));
+    ok(c.heard===false,"a near-silent stream doesn't "+J(c));}
+  {const c=await E(()=>window.__rec({noise:.005,speech:0}));
+    ok(c.heard===false,"room noise alone (RMS .005, louder than the start level) doesn't either "+J(c));}
+  {const n0=api.posts.length,r=await E(()=>window.__once({noise:.0005,speech:.045},"A")),w=wav((api.posts[n0]||{}).body);
+    ok(api.posts.length===n0+1&&w&&w.peak>=.5&&r&&r.sure&&r.best==="pig"&&r.tier==="A","Say it with quiet speech: recorded as heard, sent to the NAS made louder, and heard "+J({r,peak:w&&+w.peak.toFixed(3)}));}
+
+  // ---- 4c. a recording the recorder judged "heard nothing" ----
+  {const n0=api.posts.length,r=await E(()=>window.__once({noise:.0003,speech:0},"A"));
+    ok(api.posts.length===n0&&r&&r.heard===false&&!r.sure,"truly silent: not sent to the NAS, \"heard nothing\" "+J(r));}
+  await E(()=>{window.__rr=Talk._record;Talk._record=async()=>({blob:await window.__clip("pig",.04),heard:false,ms:0});});
+  {const n0=api.posts.length,r=await E(()=>window.__once(window.__spec,"A")),w=wav((api.posts[n0]||{}).body);
+    ok(api.posts.length===n0+1&&w&&w.peak>=.5&&r&&r.sure&&r.best==="pig","not silent: it still goes to the NAS (made louder), and the NAS's sure answer counts "+J({r,peak:w&&+w.peak.toFixed(3)}));}
+  api.empty=true;
+  {const n0=api.posts.length,r=await E(()=>window.__once(window.__spec,"A"));
+    ok(api.posts.length===n0+1&&r&&r.heard===false&&!r.sure&&r.lvl>0&&!r.B,"the NAS finds nothing too: \"heard nothing\" (with its level; the matcher isn't asked) "+J(r));}
+  api.empty=false;
+  {const n0=api.posts.length,r=await E(()=>window.__once(window.__spec,"B"));
+    ok(api.posts.length===n0&&r&&r.tier==="B"&&r.heard===false&&!r.sure,"the matcher on the iPad keeps today's rule: \"heard nothing\" "+J(r));}
+  await E(()=>{Talk._record=window.__rr;});
 
   // ---- 5. Say it: a quiet try is heard, and its log entry has the level ----
   await E(()=>{Guess.set(false);Object.defineProperty(navigator,"standalone",{value:true,configurable:true});
