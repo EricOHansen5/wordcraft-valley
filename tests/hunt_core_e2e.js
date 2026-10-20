@@ -34,7 +34,7 @@ function INIT(){
       HTMLAnchorElement.prototype.click=function(){if(this.download){H.dl++;H.lastDl=this.download;H.lastHref=this.href;return;}return ac.call(this);};
     },
     // the save without what moves by itself (positions, the camera, minutes and visits)
-    key(){try{return JSON.stringify(state,(k,v)=>(k&&k[0]==="_")||k==="modeOpens"||k==="modeMin"||k==="minutes"||k==="cam"||k==="buddy"||
+    key(){try{return JSON.stringify(state,(k,v)=>(k&&k[0]==="_")||k==="modeOpens"||k==="modeMin"||k==="minutes"||k==="sessions"||k==="cam"||k==="buddy"||
         k==="c"||k==="r"||k==="face"||k==="alt"||k==="since"||k==="treats"?undefined:v);}catch(e){return"";}},
     // focus only counts for a form field (a tapped button takes focus too, dead or not)
     snap(){const a=document.activeElement;return{focus:a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)?H.name(a):"",said:H.said.length,sfx:H.sfx.length,toasts:H.toasts.length,

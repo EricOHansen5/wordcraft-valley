@@ -812,6 +812,12 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - **🎤 Say it listens through the NAS.** Safari's speech recognition is not available to home-screen web apps (WebKit bug 225298), so Say it now listens the way Talk to me does: the NAS (Whisper), then his banked voice on the iPad, then Safari's recogniser only in a Safari tab. The button shows only when something can listen. A sure right answer pays +2 and counts as sounded out; not sure, or a different word, gets a kind "try once more" and never counts as a miss.
 - **Grown-up report: How he plays.** When he plays (sessions with start time, minutes and where he stopped), words read and right-first-time a day, the help he leaned on (Blend it vs Say the word, sound tiles, answers shown after two misses), prizes opened vs waiting, and a recent-activity list for today and yesterday. `tools/progress.js` prints the same. New save fields: `sessions`, `events` (last 80), `helps`, `prizes` (60 days).
 
+### v10.16 — Teach the game his voice
+- **Grown-up → Settings → Teach the game his voice.** He reads 15–18 of his own words (the ones Say it asks, and their look-alikes) one at a time; a grown-up taps ✓ He said it, ↺ Again or Skip. Each ✓ keeps that clip as his voice for the word (on the iPad, at most 5 a word, ranked above clips the game kept by itself). The row says how many words know his voice (`state.talk.voice`).
+- **Say it listens with both.** When the NAS (Whisper) isn't sure, the same clip is matched against his kept clips and the game voice on the iPad: the matcher's sure answer stands, and when both lean to the same word that counts as sure too. Still one recording, and a misheard word is never a miss.
+- **What it heard is written down.** Each Say it try logs the word, what the NAS heard and how sure each listener was; `tools/progress.js` prints the last 20 ("cat → heard 'cap' (A .62 not sure; B cat .71 sure) ✓").
+- **Talk to me** in the home-screen app no longer waits on Safari's recogniser (which hears nothing there): when the NAS can't listen it goes straight to the tap choices.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
