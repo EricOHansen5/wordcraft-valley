@@ -820,6 +820,11 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 
 - **Fix: the opening voice no longer overlaps.** The iPad keeps the sound locked until his first touch. A line asked for at launch (Home's "Want to read 15 more words today?", three clips) had all its clips started while locked, so they waited at the same frozen moment and all played at once on the first touch. Each clip now waits for the sound to run, plays after the one before it, and a newer line (his first tap's) replaces a waiting one.
 
+### v10.17 — Hearing a quiet voice
+- **The recorder hears him.** It only counted speech as started above .015 (on the 8-bit level meter), and his microphone test read about .008, so it waited 5 s, said "heard nothing" and never sent the NAS the clip. It now reads the level in floating point and starts on a small rise above the room's own quiet (.004 over it, at least twice it), so quiet speech counts and steady room noise alone does not.
+- **Quiet clips are turned up before the NAS hears them.** The clip is decoded, made mono 16 kHz and raised to a normal level (at most ×30; near-silence stays silent), then sent as a WAV. A recording the iPad judged "nothing" is still sent to the NAS when it isn't silent. If decoding fails, the original clip goes as before.
+- **Each try logs how loud he was** (`lvl`, `gain`); `tools/progress.js` prints it with each Say it line, and the microphone test now reads real levels (its "heard almost nothing" line is .004).
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
