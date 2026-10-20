@@ -12,7 +12,7 @@ const READING={read:1,book:1,pic:1,sign:1,note:1,story:1,wild:1,care:1,write:1,m
 const NAMES={valley:"the valley",read:"reading words",book:"books",pic:"picture it",sign:"signs",note:"notes from home",story:"story quests",wild:"word wilds",
   care:"animal care",write:"writing",maker:"my own book",mine:"gem mine",adventure:"adventure",race:"races",dex:"word-dex",craft:"building plans",album:"sticker book",
   quests:"daily quests",reward:"rewards",evo:"buddy evolving",scene:"keeper wakes up",recap:"session recap",photo:"postcard",gate:"grown-up gate",parent:"grown-up menu",
-  report:"reading report",job:"jobs",store:"trading post",closet:"closet",trick:"trick-or-read",feast:"feast table",lights:"light the tree",factory:"factory",talk:"talk to me",other:"other"};
+  report:"reading report",job:"jobs",store:"trading post",closet:"closet",trick:"trick-or-read",home:"home",dungeon:"dungeons",battle:"dungeon battles",fireworks:"fireworks",party:"birthday party",mail:"word mail",eggs:"egg hunt",feast:"feast table",lights:"light the tree",factory:"factory",talk:"talk to me",other:"other"};
 
 function fetchLatest(){
   return new Promise((res,rej)=>{
@@ -28,17 +28,52 @@ function strip(snap){
   for(const k of Object.keys(s)){if(k==="sync"||k==="deviceId")continue;out[k]=s[k];}
   return{savedAt:snap.savedAt||null,state:out};
 }
-const day=d=>d.toISOString().slice(0,10);
+// the game keys its days by the iPad's local date ("YYYY-MM-DD"), so these are local dates too
+const day=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const lastDays=n=>{const out=[];const t=new Date();for(let i=n-1;i>=0;i--){const d=new Date(t);d.setDate(t.getDate()-i);out.push(day(d));}return out;};
 const sum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
 const pad=(v,n,right)=>{v=String(v);return right?v.padStart(n):v.padEnd(n);};
 const median=a=>{if(!a.length)return null;const b=a.slice().sort((x,y)=>x-y);const m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;};
+
+// ---- how he plays: sessions, words and accuracy a day, help he leaned on, prizes, the recent activity (state.sessions,
+// daily, answers, helps, prizes, events; see HOW HE PLAYS in app/index.html) ----
+const clock=t=>{const d=new Date(t),h=d.getHours();return(h%12||12)+":"+String(d.getMinutes()).padStart(2,"0")+" "+(h<12?"am":"pm");};
+const wkday=d=>["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(d+"T12:00").getDay()];
+const STARTS={launch:"opened the app",wake:"came back (woke the game from rest)",back:"came back to the app"};
+const STOPS={rest:"stopped (rest)",hidden:"stopped (app put away)",closed:"stopped (app closed)"};
+function said(e){const x=e.x==null?"":String(e.x);
+  return e.k==="start"?STARTS[x]||"started":e.k==="end"?STOPS[x]||"stopped":e.k==="open"?"opened "+(NAMES[x]||x)
+    :e.k==="read"?"read '"+x+"' first try":e.k==="help"?"read '"+x+"' with help":e.k==="wait"?"read '"+x+"' with help, prize waits"
+    :e.k==="book"?"finished the book "+x:e.k==="guess"?"sound it out first "+(x==="on"?"came on":"went off")
+    :e.k==="guessset"?"a grown-up turned sound it out first "+(x==="on"?"on":"off"):e.k+" "+x;}
+function play(s,p){
+  const days=lastDays(7).reverse(),ss=Array.isArray(s.sessions)?s.sessions:[],H=s.helps||{},P=s.prizes||{},A=s.answers||{},D=s.daily||{};
+  p("How he plays (last 7 days)");
+  p("  day             sessions (start · minutes touching the game), where the last one stopped");
+  const first=ss.length?day(new Date(ss[0].s)):days[0];      // days before the first session noted say so
+  for(const d of days){const l=ss.filter(x=>day(new Date(x.s))===d),z=l[l.length-1];
+    p("  ",pad(d+" "+wkday(d),16),l.length?l.map(x=>clock(x.s)+" · "+(x.m||0)+" min").join(", ")+"   stopped in "+(NAMES[z.last]||z.last):d<first||!ss.length?"not noted yet":"-");}
+  p("  day             words read, right first time");
+  for(const d of days){const a=A[d]||{};p("  ",pad(d+" "+wkday(d),16),pad(D[d]||0,4,1)," words, ",a.n?Math.round(a.ok/a.n*100)+"% ("+a.ok+"/"+a.n+")":"-");}
+  const wk=k=>days.reduce((a,d)=>a+(+((H[d]||{})[k])||0),0),B=wk("blend"),E=wk("ear");
+  p("  help he leaned on (blend it / say the word / sound tiles / answer shown after two misses):");
+  const hd=days.filter(d=>H[d]);
+  hd.forEach(d=>{const h=H[d];p("  ",pad(d+" "+wkday(d),16),(h.blend||0)+" / "+(h.ear||0)+" / "+(h.tiles||0)+" / "+(h.hint||0));});
+  p("    ",!B&&!E?"no Blend it or Say the word taps this week":"Blend it "+B+", Say the word "+E+": "+(B>=2*E?"he is sounding out more than asking":E>=2*B?"he is asking for the word more than sounding it out":"about as often sounding out as asking"));
+  const pd=days.filter(d=>P[d]);
+  p("  prizes: ",pd.length?pd.map(d=>d.slice(5)+" opened "+(P[d].open||0)+", waited "+(P[d].wait||0)).join("; "):"none this week");
+  const y=lastDays(2)[0],t=lastDays(1)[0],ev=(Array.isArray(s.events)?s.events:[]).filter(e=>{const d=day(new Date(e.t));return d===t||d===y;}).sort((a,b)=>b.t-a.t);
+  p("  recent activity (today and yesterday, newest first):",ev.length?"":" none");
+  ev.forEach(e=>p("    ",day(new Date(e.t))===t?"today     ":"yesterday ",pad(clock(e.t),9),said(e)));
+}
 
 function report(snap){
   const s=snap.state,L=[];const p=(...x)=>L.push(x.join(""));
   const mastered=Object.values(s.stats||{}).filter(x=>x&&x.mastered).length,seen=Object.keys(s.stats||{}).length;
   p("Wordcraft Valley — progress (backup ",snap.savedAt||"?",")");
   p("hero ",s.hero||"Asher","  words read ",s.wordsRead||0,"  words tracked ",seen,"  mastered ",mastered,"  gems ",s.gems||0,"  coins ",(s.mine&&s.mine.coins)||0,"  best streak ",s.best||0);
+  p("");
+  play(s,p);
   p("");
   // ---- days ----
   p("Last 14 days (minutes on screen; reading = crates, books, writing, signs, notes, story, wilds, care; goal = the daily reading goal)");

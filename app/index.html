@@ -763,6 +763,13 @@ button.mpill{cursor:pointer;min-height:48px}
 .rbook{display:flex;flex-direction:column;gap:4px;padding:10px;border:2px solid var(--ink);border-radius:14px;background:var(--paper-deep)}
 .rbook .btn{min-height:40px;padding:6px 12px;font-size:15px;align-self:flex-start}
 .rbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+/* HOW HE PLAYS: a row a day (day, what happened, where it stopped) and the recent activity */
+#rPlay h4{margin:12px 0 4px;font-size:16px}
+.rprow{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:baseline;padding:4px 0;border-bottom:1px dashed rgba(0,0,0,.15);font-size:15px}
+.rprow i{font-style:normal;font-size:13px;font-weight:700;color:var(--ink-soft);text-align:right}
+.ract{list-style:none;margin:0 0 6px;padding:0;font-size:15px}.ract li{padding:2px 0}
+.ract time{display:inline-block;min-width:76px;font-weight:800;color:var(--ink-soft)}
+@media (max-width:700px){.rprow{grid-template-columns:80px 1fr}.rprow i{grid-column:2;text-align:left}}
 @media (max-width:700px){.rgrid{grid-template-columns:1fr}.rsk{grid-template-columns:110px 1fr 90px}.btext{font-size:30px}}
 @media print{
   body.printing>*:not(#ovReport){display:none!important}
@@ -4460,6 +4467,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // game's own clues per day (60 days): minutes on screen and resting, running animations, frame times
   power:{checks:[],days:{},cur:null},
   // HOME-SERVER BACKUP: server address, token and last backup; the device that made it
+  // HOW HE PLAYS (the Grown-up report): sessions [{s,e,m,last}] (30 days), the recent activity [{t,k,x}] (the last 80),
+  // and per day the help he leaned on {blend,ear,tiles,hint} and the crate prizes {open,wait} (60 days)
+  sessions:[],events:[],helps:{},prizes:{},
   sync:{url:"",token:"",last:0,auto:true},deviceId:null});
 const sess={words:0,mastered:0,built:0,start:Date.now()};
 let state=def(), sessionStart=Date.now(), packCreatures=[];
@@ -5513,6 +5523,7 @@ const Modes=(()=>{
     const visit=!stack.some(e=>e.id===id)&&Date.now()-(lastClose[id]||0)>SAME_VISIT;
     stack.push({id,el:el||null});
     if(visit)bump("modeOpens",id);
+    if(visit)try{Play.opened(id);}catch(e){}      // HOW HE PLAYS: the recent activity
     try{Games.played(id);}catch(e){}      // HOME: a game opened any way (a cave door, a signpost, its building) is not NEW any more
     changed();
     return true;
@@ -5812,6 +5823,7 @@ const Rest=(()=>{
     if(hidden()){arm(5000);return;}
     if(waiting()&&idle<R._deepMs){arm(R._deepMs-idle);return;}      // waiting on him: 3 minutes, not 45 s
     on=true;clearTimeout(timer);timer=null;
+    try{Play.end("rest");}catch(e){}      // HOW HE PLAYS: a rest ends the session
     document.body.classList.add("rest");
     try{applyGrade();}catch(e){}
     try{Nature.hold("rest",true);}catch(e){}
@@ -6181,7 +6193,7 @@ function openWord(w,opt){
     const b=document.createElement("button");b.className=cls;b.textContent=tileText(ph);
     tileMarks(b,ph,w,idx);
     b.dataset.ph=ph;
-    b.onclick=async()=>{b.classList.add("lit");Sound.sfx.soft();try{cur._g.heard();}catch(e){}
+    b.onclick=async()=>{b.classList.add("lit");Sound.sfx.soft();try{cur._g.heard();}catch(e){}try{Play.help("tiles");}catch(e){}
       await Sound.say("sound:"+ph,ph);b.classList.remove("lit");};
     return b;};
   if(rung===1){
@@ -6211,7 +6223,7 @@ function openWord(w,opt){
           misses++;try{cur._g.wrongTile();}catch(e){}Sound.sfx.nope();
           Skills.result(cur,{ok:false,wrongIdx:[i],placed:[ph],ms:performance.now()-(cur._t0||0)});cur._t0=performance.now();
           t.classList.remove("bad");void t.offsetWidth;t.classList.add("bad");setTimeout(()=>t.classList.remove("bad"),500);
-          if((cur._slotMiss[i]=(cur._slotMiss[i]||0)+1)>=2){const r=[...bank.children].find(b=>!b.classList.contains("used")&&sameTile(b.dataset.ph,w.p[i]));if(r)r.classList.add("glow");}
+          if((cur._slotMiss[i]=(cur._slotMiss[i]||0)+1)>=2){const r=[...bank.children].find(b=>!b.classList.contains("used")&&sameTile(b.dataset.ph,w.p[i]));if(r)r.classList.add("glow");try{Play.hint(cur);}catch(e){}}
           const word=cur;(async()=>{await Sound.say("sound:"+ph,ph);if(cur!==word||word._lock)return;await pause(150);if(cur===word&&!word._lock)stretchTo(word,i);})();
           return;}
         Sound.sfx.soft();Sound.say("sound:"+ph,ph);
@@ -6291,6 +6303,7 @@ let blendRun=0,blendStream=null;
 async function blend(){
   if(!cur)return;
   if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  try{Play.help("blend");}catch(e){}      // HOW HE PLAYS: he sounded it out
   try{if(cur._g)cur._g.heard();}catch(e){}
   const run=++blendRun;
   if(blendStream){blendStream.stop();blendStream=null;}
@@ -6421,6 +6434,7 @@ document.getElementById("earBtn").onclick=async()=>{
   if(!cur)return;
   if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
   if(!cur._listen)usedEar=true;   // in "Hear it" the word is the question, so hearing it again is not a hint
+  if(!cur._listen)try{Play.help("ear");}catch(e){}      // HOW HE PLAYS: he asked for the word
   await Sound.say("word:"+cur.w,cur.w,.82);};
 
 function renderPicks(w,rung=0){
@@ -6553,6 +6567,7 @@ function miss(btn){
   btn.classList.add("wrong");setTimeout(()=>btn.classList.remove("wrong"),520);
   document.querySelectorAll("#letters .lt").forEach(t=>{t.classList.add("wobble");
     setTimeout(()=>t.classList.remove("wobble"),520);});
+  if(misses>=2)try{Play.hint(cur);}catch(e){}      // HOW HE PLAYS: the answer is shown (once a word)
   if(misses>=2)document.querySelectorAll("#picks .pick").forEach(p=>{
     if(p.dataset.w===cur.w)p.classList.add("hint");});
   const w=cur,tok=w._fb=(w._fb||0)+1;     // a newer miss cuts off the help still being spoken
@@ -6619,6 +6634,7 @@ function succeed(){
   const before=stageIdx();
   hide("ovRead");
   // the prize waits for a clean read (an upgrade, paid in gems, always finishes; the first-run tour always pays)
+  try{Play.read(cur.w,clean,!(pendingUpgrade&&cur.upgrade)&&(state.tour||0)>=TOUR.length);}catch(e){}      // HOW HE PLAYS: the word, its prize
   if(pendingUpgrade&&cur.upgrade)finishUpgrade();
   else if(clean||(state.tour||0)<TOUR.length)giveReward();
   else waitPrize();
@@ -9074,15 +9090,16 @@ const Guess=(()=>{
       wrongTile(){if(++tiles>=2)guess=true;},
       finish(clean){
         if(done!==null)return done;done=guess&&!clean;
-        const g=G();g.last.push(done);if(g.last.length>5)g.last.splice(0,g.last.length-5);
+        const g=G(),was=g.on;g.last.push(done);if(g.last.length>5)g.last.splice(0,g.last.length-5);
         if(done)g.days[today()]=(g.days[today()]||0)+1;
         g.clean=clean?g.clean+1:0;
         if(g.clean>=5){g.on=false;g.last=[];}
         else if(g.last.filter(Boolean).length>=2)g.on=true;
+        if(g.on!==was)try{Play.log("guess",g.on?"on":"off");}catch(e){}      // HOW HE PLAYS
         save();return done;}
     };
   }
-  return{track,on:()=>G().on,set:v=>{G().on=!!v;if(!v)G().last=[];save();}};
+  return{track,on:()=>G().on,set:v=>{if(G().on!==!!v)try{Play.log("guessset",v?"on":"off");}catch(e){}G().on=!!v;if(!v)G().last=[];save();}};
 })();
 
 /* Sound Shield: answers stay locked until each sound in the word is tapped, left to right.
@@ -9362,6 +9379,7 @@ const Books=(()=>{
     const p=L()[book.id]||(L()[book.id]={}),first=!p.done,n=tgKidPages();
     const stars=1+(quizFirst===book.quiz.length?1:0)+((Rec.ok()?recs>=n:helps<=1)?1:0);
     p.done=true;p.stars=Math.max(p.stars||0,stars);p.reads=(p.reads||0)+1;p.last=Date.now();if(recs)p.rec=true;
+    try{Play.log("book",book.id);}catch(e){}      // HOW HE PLAYS
     const gems=first?6+stars*2:2,coins=first?15*book.t:0;
     state.gems+=gems;if(coins&&state.mine)state.mine.coins+=coins;state.wordsRead+=n;
     try{Quests.hit("read",n);Quests.hit("book");}catch(e){}
@@ -9851,9 +9869,141 @@ function minuteTick(){
   try{Power.tick();}catch(e){}      // BATTERY CHECK: on screen, resting, animations, frames (on screen even untouched)
   if(document.visibilityState!=="visible"||Date.now()-lastTouch>90000)return;
   state.minutes[today()]=(state.minutes[today()]||0)+1;
+  try{Play.minute();}catch(e){}      // HOW HE PLAYS: the minute goes to the session under way
   Modes.credit();save();
 }
 setInterval(minuteTick,60000);
+
+/* ================================================================
+   HOW HE PLAYS — what he does when nobody is watching, for the Grown-up report
+   Sessions, state.sessions [{s, e, m, last}]: start and end (ms), the minutes the
+   minutes tick counted in it, and the mode he was in at the end (a grown-up's gate,
+   menu or report doesn't count as where he was). A session starts at launch, when he
+   wakes the game from a rest (Rest.onWake) and when he comes back to the app; it ends
+   when the game rests (Rest), is hidden, or the page is closed. One that starts within
+   3 minutes of the last one's end carries that one on (a rest he wakes straight from is
+   one sitting). The session under way is in the save as it goes (its end and where he
+   is move on each minute), so a page the iPad kills without a pagehide still has it.
+   30 days kept, at most 300.
+   Per day (60 days kept, trimmed as they are written):
+     state.helps   {blend, ear, tiles, hint}: 🔊 Blend it taps, 👂 Say the word taps (not
+                   in Hear it, where the word is the question), sound tile taps, and words
+                   whose answer was shown after two misses (once a word)
+     state.prizes  {open, wait}: a crate word's prize opened (a clean first try) or waiting
+                   (upgrades and the tour, which always pay, are left out)
+   The recent activity, state.events (the last 80): {t, k, x}, k being
+     start (x: launch, wake, back), end (rest, hidden, closed), open (a mode he opened;
+     the same one again in a row, and the grown-up's and prize sheets, are not noted),
+     read / help / wait (a crate word read first try; with help; with help and its prize
+     waiting), book (its id, finished), guess (sound it out first came on or went off),
+     guessset (a grown-up turned it on or off).
+   ================================================================ */
+const Play=(()=>{
+  const GAP=180000,KEEP=60,SKEEP=30,EVENTS=80;
+  const GROWN={gate:1,parent:1,report:1},QUIET={reward:1,evo:1,scene:1,recap:1,photo:1,home:1,other:1};
+  let open=0,ready=false,lastOpen="";      // open: the start (s) of the session under way, 0 when none
+  const plain=x=>!!x&&typeof x==="object"&&!Array.isArray(x);
+  const arr=k=>Array.isArray(state[k])?state[k]:(state[k]=[]);
+  const obj=k=>plain(state[k])?state[k]:(state[k]={});
+  const ago=n=>{const d=new Date();d.setDate(d.getDate()-(n-1));return ymd(d);};
+  const top=()=>{try{return Modes.top();}catch(e){return"valley";}};
+  // where he is: what is on top, unless a grown-up is looking (then where he was)
+  const where=c=>{const t=top();return GROWN[t]&&c&&c.last?c.last:t;};
+  function cur(){if(!open)return null;const ss=arr("sessions");for(let i=ss.length-1;i>=0;i--)if(ss[i].s===open)return ss[i];return null;}
+  function log(k,x){
+    try{const ev=arr("events"),e={t:Date.now(),k};if(x!=null)e.x=String(x).slice(0,40);
+      ev.push(e);if(ev.length>EVENTS)ev.splice(0,ev.length-EVENTS);save();}catch(e){}
+  }
+  // one more of f today in state[key]; days older than 60 go as it writes
+  function count(key,f){
+    try{const o=obj(key),old=ago(KEEP);Object.keys(o).forEach(d=>{if(d<old)delete o[d];});
+      const d=today(),r=plain(o[d])?o[d]:(o[d]={});r[f]=(r[f]||0)+1;save();}catch(e){}
+  }
+  function begin(why){
+    if(why==="launch")ready=true;
+    if(!ready||(open&&cur())||document.visibilityState==="hidden")return;
+    try{if(Rest.on())return;}catch(e){}
+    const ss=arr("sessions"),now=Date.now(),l=ss[ss.length-1];
+    if(l&&now-(l.e||l.s)<GAP&&now>=l.s){open=l.s;l.e=now;}
+    else{const old=now-SKEEP*864e5;while(ss.length&&(ss[0].s<old||ss.length>=300))ss.shift();
+      ss.push({s:now,e:now,m:0,last:where(null)});open=now;}
+    lastOpen="";log("start",why);
+  }
+  function end(why){const c=cur();open=0;if(!c)return;c.e=Date.now();c.last=where(c);log("end",why);}
+  // a minute counted by the minutes tick: the session under way, or the one that ended in the last 2 minutes
+  function minute(){
+    const ss=arr("sessions"),c=cur(),l=ss[ss.length-1],x=c||(l&&Date.now()-l.e<120000?l:null);if(!x)return;
+    x.m=(x.m||0)+1;if(c){c.e=Date.now();c.last=where(c);}
+  }
+  function opened(id){if(GROWN[id]||QUIET[id]||id===lastOpen)return;lastOpen=id;log("open",id);}
+  const help=f=>count("helps",f);
+  // the answer shown after two misses: once for each time a word is opened (its guess tracker is new each time)
+  function hint(w){const g=w&&w._g;if(!g||g.hinted)return;g.hinted=1;help("hint");}
+  const prize=ok=>count("prizes",ok?"open":"wait");
+  // a crate word read: counts says whether its prize could wait (not an upgrade, not the tour)
+  function read(w,clean,counts){log(clean?"read":counts?"wait":"help",w);if(counts)prize(clean);}
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){end("hidden");saveNow();}else begin("back");});
+  window.addEventListener("pagehide",()=>{end("closed");saveNow();});
+  window.addEventListener("pageshow",()=>begin("back"));
+  Rest.onWake(()=>begin("wake"));
+
+  /* ---- the report's "How he plays" ---- */
+  const clock=t=>{const d=new Date(t),h=d.getHours();return(h%12||12)+":"+String(d.getMinutes()).padStart(2,"0")+" "+(h<12?"am":"pm");};
+  function dayName(d){
+    if(d===today())return"Today";if(d===ymd(new Date(Date.now()-864e5)))return"Yesterday";
+    const x=new Date(d+"T12:00");return["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][x.getDay()]+" "+x.getDate();
+  }
+  const name=id=>{let L={};try{L=Modes.list();}catch(e){}return Object.prototype.hasOwnProperty.call(L,id)?L[id].name.replace(/^The /,"the "):esc(id);};
+  const WHY={launch:"opened the app",wake:"came back (woke the game from rest)",back:"came back to the app"};
+  const STOP={rest:"stopped (rest)",hidden:"stopped (app put away)",closed:"stopped (app closed)"};
+  function says(e){
+    const x=e.x==null?"":String(e.x);
+    if(e.k==="start")return WHY[x]||"started";
+    if(e.k==="end")return STOP[x]||"stopped";
+    if(e.k==="open")return"opened "+name(x);
+    if(e.k==="read")return`read '${esc(x)}' first try`;
+    if(e.k==="help")return`read '${esc(x)}' with help`;
+    if(e.k==="wait")return`read '${esc(x)}' with help, prize waits`;
+    if(e.k==="book"){const b=BOOKS.find(b=>b.id===x);return"finished the book "+(b?`'${esc(Books.fill(b.title,b.t))}'`:esc(x));}
+    if(e.k==="guess")return"sound it out first "+(x==="on"?"came on":"went off");
+    if(e.k==="guessset")return"a grown-up turned sound it out first "+(x==="on"?"on":"off");
+    return esc(e.k+" "+x);
+  }
+  function report(days){
+    try{
+      const ss=arr("sessions"),H=obj("helps"),P=obj("prizes"),ans=state.answers||{},daily=state.daily||{},back=days.slice().reverse();
+      const by={};ss.forEach(x=>{const d=ymd(new Date(x.s));(by[d]=by[d]||[]).push(x);});
+      // days before the first session noted (this update, or a save's first day) say so, not "no play"
+      const first=ss.length?ymd(new Date(ss[0].s)):today();
+      const when=back.map(d=>{const l=by[d]||[],z=l[l.length-1];
+        return`<div class="rprow"><b>${dayName(d)}</b><span>${l.length?l.map(x=>`${clock(x.s)} · ${x.m||0} min${x.s===open?" (now)":""}`).join(", "):d<first?"not noted yet":"no play"}</span>`+
+          `<i>${z?(z.s===open?"playing now":"stopped in "+name(z.last)):""}</i></div>`;}).join("");
+      const pct=d=>{const a=ans[d];return a&&a.n?Math.round(a.ok/a.n*100):0;};
+      const wk=f=>days.reduce((a,d)=>a+(+((H[d]||{})[f])||0),0),B=wk("blend"),E=wk("ear"),T=wk("tiles"),N=wk("hint");
+      const helpRows=back.filter(d=>H[d]).map(d=>{const h=H[d];
+        return`<div class="rprow"><b>${dayName(d)}</b><span>🔊 Blend it ${h.blend||0} · 👂 Say the word ${h.ear||0} · sound tiles ${h.tiles||0} · answer shown ${h.hint||0}</span><i></i></div>`;}).join("");
+      const both=`Blend it ${B}, Say the word ${E}`;
+      const reading=!B&&!E?"No 🔊 Blend it or 👂 Say the word taps this week."
+        :B>=2*E?`${both}: he is sounding out more than asking.`
+        :E>=2*B?`${both}: he is asking for the word more than sounding it out. Nudge him to try 🔊 Blend it first.`
+        :`${both}: about as often sounding out as asking.`;
+      const pRows=back.filter(d=>P[d]).map(d=>`<div class="rprow"><b>${dayName(d)}</b><span>opened ${P[d].open||0}, waited ${P[d].wait||0}</span><i></i></div>`).join("");
+      const pO=days.reduce((a,d)=>a+((P[d]||{}).open||0),0),pW=days.reduce((a,d)=>a+((P[d]||{}).wait||0),0);
+      const y=ymd(new Date(Date.now()-864e5)),ev=arr("events").filter(e=>{const d=ymd(new Date(e.t));return d===today()||d===y;}).slice().sort((a,b)=>b.t-a.t);
+      const list=d=>{const l=ev.filter(e=>ymd(new Date(e.t))===d);return l.length?`<h4>${dayName(d)}</h4><ul class="ract">${l.map(e=>`<li data-t="${e.t}"><time>${clock(e.t)}</time> ${says(e)}</li>`).join("")}</ul>`:"";};
+      return`<div id="rPlay"><h3>How he plays</h3>
+        <h4>When he plays</h4><div class="rprows">${when}</div>
+        <p class="rnote">Minutes are the ones he was touching the game. A session ends when the game rests (no touch for 45 seconds, 3 minutes while a word waits on him), is put away or closed.</p>
+        <div class="rgrid"><div><h4>Words read a day</h4>${bars(days,d=>daily[d]||0)}</div><div><h4>Right first time</h4>${bars(days,pct,v=>v+"%")}</div></div>
+        <h4>Help he leaned on</h4>${helpRows?`<div class="rprows">${helpRows}</div>`:""}
+        <p class="rnote">${reading}${N?` The answer was shown after two misses on ${N} word${N===1?"":"s"}.`:""}${T?` He tapped single sound tiles ${T} times.`:""}</p>
+        <h4>Prizes opened and waiting</h4>${pRows?`<div class="rprows">${pRows}</div>`:""}
+        <p class="rnote">${pO+pW?`This week: opened ${pO}, waited ${pW}. `:"No crate prizes this week. "}A crate's prize opens when the word is read right the first time with no 👂; otherwise it waits for the next one.</p>
+        <h4>Recent activity</h4>${ev.length?list(today())+list(y):`<p class="rnote">Nothing yet today or yesterday.</p>`}</div>`;
+    }catch(e){return"";}
+  }
+  return{begin,end,minute,opened,help,hint,prize,read,log,report,_open:()=>open};
+})();
 
 /* ---- the grown-up reading report ---- */
 let repOv=null;
@@ -9918,6 +10068,7 @@ function openReport(){
       <div><b>${n?Math.round(ok/n*100)+"%":"—"}</b><span>right this week</span></div><div><b>${done.length}/${BOOKS.filter(b=>!b.mine).length}</b><span>books read</span></div>
     </div>
     ${hearts.length?`<p class="rnote" id="rKept">♥ Tricky words kept: <b>${hearts.length-slipped.length} of ${hearts.length}</b>. Each mastered heart word is checked again after 30 and then 90 more crates.${slipped.length?` Checking again soon: <b>${slipped.join(", ")}</b>.`:""}</p>`:""}
+    ${Play.report(days)}
     <h3>Next steps</h3><ul class="rtips">${tips.map(t=>`<li>${t}</li>`).join("")}</ul>
     <h3>Sound skills</h3><p class="rnote">Every answer in the game is traced to the sound patterns in the word. Bars show how reliably he reads each one.</p>
     <div class="rskills">${sk.map(s=>{const st=ST[s.status],p=s.s?Math.round(s.s.p*100):0;
@@ -20276,6 +20427,7 @@ NULL_IS_MISSING.push("eggs");      // EGG HUNT
 NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTORY
 NULL_IS_MISSING.push("talk");      // TALK
 NULL_IS_MISSING.push("power","power.checks","power.days");      // BATTERY CHECK (power.cur null is "no check under way")
+NULL_IS_MISSING.push("sessions","events","helps","prizes");      // HOW HE PLAYS
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];
@@ -20385,6 +20537,7 @@ function loadSave(saved){
   try{ saved=await DB.get("kv","state"); }catch(e){ console.warn("no saved valley:",e&&e.message); }
   // a converted save is written straight away, so the next start does not convert it again
   if(loadSave(saved))save();
+  try{Play.begin("launch");}catch(e){}      // HOW HE PLAYS: a session from the launch
   try{ await loadPack(); }catch(e){ packCreatures=[]; }
   try{ settleMovers(); }catch(e){}
   paintBackdrop();

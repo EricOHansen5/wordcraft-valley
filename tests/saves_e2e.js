@@ -52,9 +52,10 @@ const srv=require("./page").serveApp({port:PORT,before(q,r){
       if(isPlain(d[k])&&isPlain(s[k]))walk(d[k],s[k],at+k+".");});
     walk(def(),state,"");return out;});
   // Ignored when comparing two loads of the same save: where things stand in the valley
-  // (the camera, and animals, vehicles and the buddy wander and are nudged apart at load).
-  const IGNORED="cam; c, r, face, alt and dir of animals and vehicles; the buddy's c and r";
-  const norm=s=>{s=JSON.parse(J(s));delete s.cam;
+  // (the camera, and animals, vehicles and the buddy wander and are nudged apart at load),
+  // and how he plays (HOW HE PLAYS): each start is a session and a line in the recent activity.
+  const IGNORED="cam; c, r, face, alt and dir of animals and vehicles; the buddy's c and r; sessions and events";
+  const norm=s=>{s=JSON.parse(J(s));delete s.cam;delete s.sessions;delete s.events;
     (s.critters||[]).concat(s.vehicles||[]).forEach(x=>{delete x.c;delete x.r;delete x.face;delete x.alt;delete x.dir;});
     if(s.buddy){delete s.buddy.c;delete s.buddy.r;}return s;};
   const diff=(a,b,at="",out=[])=>{
@@ -197,8 +198,9 @@ const srv=require("./page").serveApp({port:PORT,before(q,r){
        changed:Object.keys(d).filter(k=>JSON.stringify(d[k])!==JSON.stringify(state[k])),fox:state.critters.map(c=>c.id)};});
    ok(r.same,"new save: exactly the keys of def()");
    ok(r.v===r.SAVE_V,"new save: state.v is SAVE_V ("+r.v+")");
-   // the first start seeds a fox, gives the season's free plan, sets today's quests and reading goal and marks the season as seen; nothing else
-   ok(same(r.changed,["critters","blueprints","quests","seasonSeen","home","tierReached","goal"])&&same(r.fox,["fox"]),"new save: only the fox, the season's plan, quests, reading goal, season, Home's seen games and the level reached differ from def() "+J(r.changed));
+   // the first start seeds a fox, gives the season's free plan, sets today's quests and reading goal and marks the season as seen,
+   // and starts a session (HOW HE PLAYS: one in sessions, "start" in events); nothing else
+   ok(same(r.changed,["critters","blueprints","quests","seasonSeen","home","tierReached","goal","sessions","events"])&&same(r.fox,["fox"]),"new save: only the fox, the season's plan, quests, reading goal, season, Home's seen games, the level reached and the first session differ from def() "+J(r.changed));
    ok(!errs.length,"new save: no errors "+errs.join(" | "));await ctx.close();}
 
   // existence used as a flag: the Mine is part of every save now, but it is still a first visit
