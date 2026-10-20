@@ -805,6 +805,7 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - **The prize comes with a clean first try.** After misses the word still counts (words read, the goal, quests), 1 gem, and the crate stays shut: "Good reading! Read it first try to open the prize!" The first-run tour and upgrades always pay.
 - **Sound it out first, only while he is guessing.** A word looks like a guess when he picks wrong before hearing any sound, picks wrong within 2 s, or puts two wrong tiles in a build. Two of his last five words → every word starts with the Sound Shield (tap each sound in order; it no longer says the word); five clean reads in a row turn it off. Saved in `state.guess`.
 - **Grown-up report:** "Guessing a day" replaces "Quick guesses a day", with whether sound it out first is on; `tools/progress.js` prints it too.
+- **Fix: hunt marks never sit on a building.** With Trick-or-Read's extra doors (15-31 Oct) in a valley with few buildings, the treasure hunt's search for room could run out and drop a mark at a fixed spot beside the campfire, drawn over it. The search now walks the valley again in finer steps, letting go of the grass first and then the extra room around doors and the stall, but never the buildings.
 
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
