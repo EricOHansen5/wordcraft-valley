@@ -124,6 +124,42 @@ const {launch,check,seed,reload}=require("./lib");
   ok(h5.after===h5.before+1,"a wrong pick first is a miss, not a clean read "+J(h5));
   await ix();await wait(400);
 
+  // ---- 5. the prize waits for a clean read ----
+  const prizes=()=>E(()=>state.critters.length+state.vehicles.length+state.creatures.length+state.blueprints.length);
+  const pw=await E(()=>allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&!state.stats[x.w]&&x.p.length>=3&&seasonWords().indexOf(x.w)<0).slice(0,4).map(x=>x.w));
+  const openPic=w=>E(w=>{const W=allWords().find(x=>x.w===w);openWord(W,{rung:0});if(document.querySelector("#picks .pick.text"))renderPicks(W,0);},w);
+  const pickRight=w=>E(w=>document.querySelector(`#picks .pick[data-w="${w}"]`).click(),w);
+  const pickWrong=w=>E(w=>[...document.querySelectorAll("#picks .pick")].find(b=>b.dataset.w!==w).click(),w);
+  const closeCard=async()=>{await E(()=>{const b=document.querySelector("#ovReward.on [data-close]");if(b)b.click();});await wait(800);};
+  let pz=await prizes();await openPic(pw[0]);await pickRight(pw[0]);await wait(1000);
+  const c5={name:await E(()=>document.getElementById("rewardName").textContent),gain:(await prizes())-pz};
+  ok(c5.gain===1&&c5.name!=="Good reading!","a clean first try opens the prize "+J(c5));
+  await closeCard();
+  const topClean=await E(()=>({top:Modes.top(),home:Home.isOn()}));
+  pz=await prizes();const g0=await E(()=>state.gems),r0=await E(()=>state.wordsRead);
+  await openPic(pw[1]);await pickWrong(pw[1]);await wait(300);await pickRight(pw[1]);await wait(1000);
+  const m5=await E(()=>({name:document.getElementById("rewardName").textContent,sub:document.getElementById("rewardWord").textContent,
+    btn:document.querySelector("#ovReward [data-close]").textContent,on:document.getElementById("ovReward").classList.contains("on"),gems:state.gems,read:state.wordsRead}));
+  ok(m5.on&&m5.name==="Good reading!"&&/first try/.test(m5.sub)&&m5.btn==="Next word","after a miss: Good reading!, and the prize waits "+J(m5));
+  ok(m5.gems===g0+1&&(await prizes())===pz&&m5.read===r0+1,"...1 gem, no prize, and the word still counts "+J({g0,m5}));
+  await closeCard();
+  const topMiss=await E(()=>({top:Modes.top(),home:Home.isOn()}));
+  ok(J(topMiss)===J(topClean),"closing it leaves him where a prize card would "+J({topClean,topMiss}));
+  // the first-run tour: a miss still gets the prize, and the tour moves on
+  pz=await prizes();const t5=await E(()=>{state.tour=TOUR.findIndex(s=>s.until==="read");return state.tour;});
+  await openPic(pw[2]);await pickWrong(pw[2]);await wait(300);await pickRight(pw[2]);await wait(1000);
+  const tr5={gain:(await prizes())-pz,tour:await E(()=>state.tour)};
+  ok(t5>=0&&tr5.gain===1&&tr5.tour>t5,"during the tour a word with a miss still gets the prize and the tour moves on "+J({t5,tr5}));
+  await E(()=>{Coach.skip();});await closeCard();
+  // an upgrade (gems already paid for it) still finishes after a miss
+  const up5=await E(async()=>{state.gems=500;const veh=!state.critters.length,c=veh?state.vehicles[0]:state.critters[0];c.lv=1;startUpgrade({kind:veh?"vehicle":"critter",id:c.id});await new Promise(r=>setTimeout(r,500));
+    const W=cur,bank=()=>[...document.querySelectorAll("#letterBank .lt")];
+    bank().find(b=>b.dataset.ph!==W.p[0]).click();await new Promise(r=>setTimeout(r,200));
+    for(let i=0;i<W.p.length;i++){bank().find(b=>b.dataset.ph===W.p[i]&&!b.classList.contains("used")).click();await new Promise(r=>setTimeout(r,150));}
+    await new Promise(r=>setTimeout(r,1500));return{lv:c.lv,misses};});
+  ok(up5.lv===2,"an upgrade word with a miss still finishes the upgrade "+J(up5));
+  await ix();await wait(400);
+
   ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();t.done();
 })().catch(e=>{console.log("FAIL crashed: "+(e&&e.stack||e));process.exit(1);});

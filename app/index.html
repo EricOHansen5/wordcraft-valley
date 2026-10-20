@@ -6555,7 +6555,8 @@ function succeed(){
   if(streak>(state.best||0))state.best=streak;
   // a clean streak is worth more, which is what makes "one more crate" pull
   const bonus=clean&&streak>=3?Math.min(5,streak-2):0;
-  let won=(clean?3:usedEar?1:2)+(cur.lost?2:0)+bonus+(clean&&cur.shownRung===1?1:0);
+  // a clean first try earns the gems (and the prize, below); after misses or 👂 the word still counts, 1 gem
+  let won=clean?3+(cur.lost?2:0)+bonus+(cur.shownRung===1?1:0):1;
   if(seasonWords().includes(cur.w))won*=2;
   state.gems+=won;
   floater("+"+won+" 💎",clean?"#FFE9A8":"#FFF");
@@ -6566,7 +6567,10 @@ function succeed(){
   else if(cur.tricky)Retain.after(cur.w,st,{fresh:!wasMastered,check:rtDue,relearn:wasReview,clean});
   const before=stageIdx();
   hide("ovRead");
-  if(pendingUpgrade&&cur.upgrade)finishUpgrade();else giveReward();
+  // the prize waits for a clean read (an upgrade, paid in gems, always finishes; the first-run tour always pays)
+  if(pendingUpgrade&&cur.upgrade)finishUpgrade();
+  else if(clean||(state.tour||0)<TOUR.length)giveReward();
+  else waitPrize();
   if(stageIdx()!==before){
     const from=before,to=stageIdx();
     setTimeout(()=>whenClear(()=>evolveScene(from,to)),900);
@@ -6576,7 +6580,19 @@ function succeed(){
 }
 /* Rewards are now only three things: a creature from the parent's pack,
    an animal for the valley, or the blueprint for a new building. */
+// after a word with misses: the crate stays shut, kindly; the next crate is a fresh chance
+function waitPrize(){
+  sess.words++;
+  const artEl=document.getElementById("rewardArt");artEl.style.animation="";artEl.innerHTML=ART.crate();
+  document.getElementById("rewardName").textContent="Good reading!";
+  document.getElementById("rewardWord").textContent="Read it first try to open the prize!";
+  document.querySelector("#ovReward [data-close]").textContent="Next word";
+  show("ovReward");
+  buddySay("Good reading! Read it first try to open the prize!");Sound.speak("Good reading! Read it first try to open the prize!",.95);
+  Coach.reach("read");
+}
 function giveReward(){
+  document.querySelector("#ovReward [data-close]").textContent="Put it in my valley";
   const match=packCreatures.find(c=>c.unlockWord&&c.unlockWord.toLowerCase()===cur.w&&!state.creatures.includes(c.id));
   let art,name,sub=`You read “${cur.w}”`;
   const locked=lockedBuildings();
@@ -18027,7 +18043,7 @@ function openSwap(pair){
       if(ph===pair.to.p[pair.i]){
         cur._lock=true;tgt.textContent=tileText(ph);tgt.dataset.ph=ph;tgt.classList.remove("target");tgt.classList.add("blend");
         state.swaps=(state.swaps||0)+1;
-        setTimeout(()=>{Sound.say("word:"+pair.to.w,pair.to.w,.82);setTimeout(()=>{state.gems+=2;floater("+2 💎","#FFE9A8");succeed();},600);},200);
+        setTimeout(()=>{Sound.say("word:"+pair.to.w,pair.to.w,.82);setTimeout(()=>{if(!misses){state.gems+=2;floater("+2 💎","#FFE9A8");}succeed();},600);},200);
       }else{misses++;Sound.sfx.nope();t.classList.add("wobble");setTimeout(()=>t.classList.remove("wobble"),520);}
     };
     bank.appendChild(t);
