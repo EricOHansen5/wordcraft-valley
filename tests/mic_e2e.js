@@ -48,6 +48,23 @@ const T=check("mic"),ok=T.ok;
   ok(/the microphone works|heard almost nothing/.test(meta),"...and the row says so: "+meta);
   ok(await E(()=>state.micCheck&&state.micCheck.ok===true),"state.micCheck keeps the last test");
 
+  // ---- 4b. the iPad's audio session: the game plays as "playback", and iPadOS gives such a page no
+  // microphone (InvalidStateError) unless the session is "play-and-record" while it records ----
+  await E(()=>{const work=navigator.mediaDevices.getUserMedia;window.__work=work;
+    Object.defineProperty(navigator,"audioSession",{value:{type:"playback"},configurable:true});
+    window.__types=[];navigator.mediaDevices.getUserMedia=function(c){window.__types.push(navigator.audioSession.type);
+      if(navigator.audioSession.type!=="play-and-record")return Promise.reject(new DOMException("not now","InvalidStateError"));return work.call(this,c);};});
+  r=await E(()=>MicCheck.run());
+  const ses=await E(()=>({types:window.__types,after:navigator.audioSession.type}));
+  ok(r.ok&&!r.err,"the Test button opens the microphone with the iPad's playback session ("+(r.err||"ok")+")");
+  ok(ses.types[0]==="play-and-record"&&ses.after==="playback","...asking as play-and-record, and back to playback after "+JSON.stringify(ses));
+  const st2=await E(async()=>{window.__types=[];const b=document.createElement("button");let said="";const a=window.alert;window.alert=m=>{said=String(m);};
+    await toggleRecord("sound:a",b);const during=navigator.audioSession.type;await new Promise(r=>setTimeout(r,300));
+    await toggleRecord("sound:a",b);await new Promise(r=>setTimeout(r,500));window.alert=a;
+    return{said,during,after:navigator.audioSession.type,types:window.__types};});
+  ok(!st2.said&&st2.during==="play-and-record"&&st2.after==="playback","the Voice Studio records too, and hands the session back "+JSON.stringify(st2));
+  await E(()=>{delete navigator.audioSession;navigator.mediaDevices.getUserMedia=window.__work;});
+
   // ---- 5. no microphone API (an iPadOS too old), and an http:// address ----
   await E(()=>{navigator.mediaDevices.getUserMedia=undefined;});
   r=await E(()=>MicCheck.run());

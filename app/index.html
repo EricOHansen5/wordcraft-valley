@@ -2328,7 +2328,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-20c"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-20d"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -9369,13 +9369,13 @@ const Rec=(()=>{
   async function start(){
     if(mr){try{await stop();}catch(e){}}
     let s=null;
-    try{s=await navigator.mediaDevices.getUserMedia({audio:true});stream=s;try{Rest.mic(s);}catch(e){}mr=new MediaRecorder(s);chunks=[];
+    try{s=await micOpen();stream=s;try{Rest.mic(s);}catch(e){}mr=new MediaRecorder(s);chunks=[];
       mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};mr.start();return true;}
-    catch(e){try{MicCheck.note("recording",e);}catch(x){}try{if(s)s.getTracks().forEach(t=>t.stop());}catch(x){}mr=null;return false;}
+    catch(e){try{MicCheck.note("recording",e);}catch(x){}try{if(s)micClose(s);}catch(x){}mr=null;return false;}
   }
   function stop(){return new Promise(res=>{const m=mr,s=stream,c=chunks;if(!m){res(null);return;}mr=null;
-    m.onstop=()=>{try{s.getTracks().forEach(t=>t.stop());}catch(e){}res(new Blob(c,{type:m.mimeType||"audio/mp4"}));};
-    try{m.stop();}catch(e){try{s.getTracks().forEach(t=>t.stop());}catch(x){}res(null);}});}
+    m.onstop=()=>{try{micClose(s);}catch(e){}res(new Blob(c,{type:m.mimeType||"audio/mp4"}));};
+    try{m.stop();}catch(e){try{micClose(s);}catch(x){}res(null);}});}
   return{ok,start,stop};
 })();
 
@@ -9389,6 +9389,24 @@ const Rec=(()=>{
    Saves: state.micCheck, the last test {at, origin, secure, md, mr, perm, err, peak, ok}, and
    state.micErr, the last time a real recording could not start {at, where, err, origin}, so a
    backup (and tools/progress.js) carries both. Nothing here is ever shown to him. */
+/* The microphone, opened and closed in one place. At BOOT the game sets the iPad's audio session to
+   "playback" (so its voice plays with the silent switch on), and iPadOS gives a "playback" page no working
+   microphone (InvalidStateError). So the session is "play-and-record" from the moment the microphone is
+   asked for until the last open stream is closed (micClose), then "playback" again. Call micOpen() first
+   thing in a tap, with no await before it, so iPadOS takes it as part of the tap. */
+let micOpenN=0;
+function micBack(){if(micOpenN>0)return;try{if(navigator.audioSession)navigator.audioSession.type="playback";}catch(e){}}
+function micOpen(){
+  try{if(navigator.audioSession)navigator.audioSession.type="play-and-record";}catch(e){}
+  micOpenN++;
+  let p;try{p=navigator.mediaDevices.getUserMedia({audio:true});}catch(e){p=Promise.reject(e);}
+  return p.then(st=>st,e=>{micOpenN=Math.max(0,micOpenN-1);micBack();throw e;});
+}
+function micClose(st){
+  if(!st||st.__micClosed)return;st.__micClosed=true;
+  try{st.getTracks().forEach(t=>t.stop());}catch(e){}
+  micOpenN=Math.max(0,micOpenN-1);micBack();
+}
 const MicCheck=(()=>{
   const el=id=>document.getElementById(id);
   const name=e=>String((e&&(e.name||e.message))||e||"unknown").slice(0,60);
@@ -9420,12 +9438,13 @@ const MicCheck=(()=>{
     if(busy)return null;busy=true;
     const b=el("micTestBtn"),bar=el("micBar"),lvl=el("micLvl"),m=el("micMeta");
     const r=Object.assign({at:new Date().toISOString(),perm:"",err:"",peak:0,ok:false},support());
-    try{if(navigator.permissions&&navigator.permissions.query){const q=await navigator.permissions.query({name:"microphone"});r.perm=String(q.state||"");}}catch(e){}
     r.err=why(r);let s=null;
     if(!r.err){
       if(b)b.disabled=true;if(m)m.textContent="Say something for three seconds…";
-      try{s=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){r.err=name(e);}
+      try{s=await micOpen();}catch(e){r.err=name(e);}
     }
+    // (after the request: an await before it would take the request out of the tap on the iPad)
+    try{if(navigator.permissions&&navigator.permissions.query){const q=await navigator.permissions.query({name:"microphone"});r.perm=String(q.state||"");}}catch(e){}
     if(s){
       let level=true;
       try{const c=Sound.ctx();if(c.state==="suspended"&&c.resume)c.resume();
@@ -9437,7 +9456,7 @@ const MicCheck=(()=>{
           if(Date.now()-t0>=3000){clearInterval(iv);res();}},60);});
         try{src.disconnect();mute.disconnect();}catch(e){}
       }catch(e){level=false;}     // no Web Audio: the microphone opened, and its level is unknown
-      try{s.getTracks().forEach(t=>t.stop());}catch(e){}
+      try{micClose(s);}catch(e){}
       r.ok=true;r.peak=level?+r.peak.toFixed(3):1;
     }
     if(bar)bar.style.display="none";if(lvl)lvl.style.width="0";if(b)b.disabled=false;
@@ -16967,9 +16986,9 @@ const Talk=(()=>{
   let capStop=null;
   async function record(opt){
     opt=opt||{};if(!micOk()){try{MicCheck.note("talk");}catch(x){}return null;}
-    let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){try{MicCheck.note("talk",e);}catch(x){}return null;}
+    let stream;try{stream=await micOpen();}catch(e){try{MicCheck.note("talk",e);}catch(x){}return null;}
     try{Rest.mic(stream);}catch(e){}
-    let mr;try{mr=new MediaRecorder(stream);}catch(e){try{stream.getTracks().forEach(t=>t.stop());}catch(_){}return null;}
+    let mr;try{mr=new MediaRecorder(stream);}catch(e){try{micClose(stream);}catch(_){}return null;}
     const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
     // the level as he talks, for "has he started" and "has he finished"
     // (the analyser feeds a silent gain to the speakers: an older Safari only runs nodes that lead somewhere)
@@ -16980,7 +16999,7 @@ const Talk=(()=>{
     return new Promise(res=>{
       const t0=Date.now();let started=0,loud=0,quiet=null,runs=0,live=false,fin=false,iv=null;
       const end=()=>{if(fin)return;fin=true;clearInterval(iv);if(capStop===end)capStop=null;
-        const out=blob=>{try{stream.getTracks().forEach(t=>t.stop());}catch(e){}try{if(src)src.disconnect();if(mute)mute.disconnect();}catch(e){}
+        const out=blob=>{try{micClose(stream);}catch(e){}try{if(src)src.disconnect();if(mute)mute.disconnect();}catch(e){}
           // with no level to go by (no Web Audio, or it isn't running) the clip itself decides
           res({blob,heard:an&&live?!!started:true,ms:started?Math.max(0,loud-started):0});};
         mr.onstop=()=>out(chunks.length?new Blob(chunks,{type:mr.mimeType||"audio/mp4"}):null);
@@ -19979,12 +19998,12 @@ async function renderStudio(){
 async function toggleRecord(key,btn){
   if(recorder&&recorder.state==="recording"){recorder.stop();return;}
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});try{Rest.mic(stream);}catch(e){}
+    const stream=await micOpen();try{Rest.mic(stream);}catch(e){}
     const chunks=[];recorder=new MediaRecorder(stream);recKey=key;
     btn.classList.add("rec");btn.textContent="⏹";
     recorder.ondataavailable=e=>chunks.push(e.data);
     recorder.onstop=async()=>{
-      stream.getTracks().forEach(t=>t.stop());
+      micClose(stream);
       await DB.set("blobs","aud:"+recKey,new Blob(chunks,{type:recorder.mimeType||"audio/webm"}));
       Sound.invalidate(recKey);btn.textContent="⏺";btn.classList.remove("rec");recorder=null;renderStudio();
     };
