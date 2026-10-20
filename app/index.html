@@ -6379,9 +6379,9 @@ function renderPicks(w,rung=0){
   if(rung===2){
     const b=document.createElement("button");b.className="btn primary";b.textContent="I read it!";
     // read, then prove it: the picture choices appear only after he says he read it
-    if(!w.tricky&&WORD_ART[w.w]){b.disabled=true;setTimeout(()=>{b.disabled=false;},900);
-      b.onclick=()=>{Sound.sfx.pop();P.innerHTML=`<div class="prove">Great! Which one did you read?</div>`;choices(w,P);};}
-    else b.onclick=succeed;
+    // a heart word, or a word with no picture: the proof is the word itself among printed look-alikes
+    const pics=!w.tricky&&WORD_ART[w.w];b.disabled=true;setTimeout(()=>{b.disabled=false;},900);
+    b.onclick=()=>{Sound.sfx.pop();P.innerHTML=`<div class="prove">Great! Which one did you read?</div>`;if(pics)choices(w,P);else printedChoices(w,P);};
     P.appendChild(b);
     if(state.settings.speech&&Speech.available())document.getElementById("micBtn").style.display="";
     return;
@@ -6397,6 +6397,13 @@ function choices(w,P){
     b.dataset.w=o.w;b.onclick=()=>o.w===w.w?rightPick(w):miss(b);
     P.appendChild(b);
   });
+  try{cur._g.shown();}catch(e){}
+}
+// the word among two printed look-alikes (Read it's proof for a heart word); the word is not said first
+function printedChoices(w,P){
+  [w,...lookalikes(w)].sort(()=>Math.random()-.5).forEach(o=>{
+    const b=document.createElement("button");b.className="pick text";b.textContent=o.w;b.dataset.w=o.w;
+    b.onclick=()=>o.w===w.w?rightPick(w):miss(b);P.appendChild(b);});
   try{cur._g.shown();}catch(e){}
 }
 // a right pick: now the word is said (he has read it), then it counts

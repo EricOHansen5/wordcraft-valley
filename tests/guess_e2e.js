@@ -107,6 +107,23 @@ const {launch,check,seed,reload}=require("./lib");
   ok(await E(()=>window._lastBlend&&window._lastBlend.word)===sw,"a sound swap's Blend it still says the starting word "+J(sw));
   await ix();await wait(400);
 
+  // ---- 4. heart words: no honor tap ----
+  const hw=await E(()=>allWords().filter(x=>x.tricky).slice(0,2).map(x=>x.w));
+  const h4=await E(async w=>{const W=allWords().find(x=>x.w===w);const r={read:state.wordsRead};openWord(W,{rung:2});await new Promise(r=>setTimeout(r,1000));
+    const b=document.querySelector("#picks .btn");b.click();await new Promise(r=>setTimeout(r,200));
+    r.after=state.wordsRead;r.opts=[...document.querySelectorAll("#picks .pick.text")].map(x=>x.dataset.w);r.prove=!!document.querySelector("#picks .prove");
+    const right=document.querySelector(`#picks .pick.text[data-w="${w}"]`);if(right)right.click();await new Promise(r=>setTimeout(r,300));r.done=state.wordsRead;return r;},hw[0]);
+  ok(h4.after===h4.read&&h4.prove&&h4.opts.length===3&&h4.opts.indexOf(hw[0])>=0,"a heart word's 'I read it!' asks which one he read "+J(h4));
+  ok(h4.done===h4.read+1,"...and picking it counts the word "+J(h4));
+  await ix();await wait(400);
+  const h5=await E(async w=>{const W=allWords().find(x=>x.w===w);const m=(state.stats[w]||{}).miss||0;openWord(W,{rung:2});await new Promise(r=>setTimeout(r,1000));
+    document.querySelector("#picks .btn").click();await new Promise(r=>setTimeout(r,200));
+    [...document.querySelectorAll("#picks .pick.text")].find(x=>x.dataset.w!==w).click();await new Promise(r=>setTimeout(r,200));
+    document.querySelector(`#picks .pick.text[data-w="${w}"]`).click();await new Promise(r=>setTimeout(r,300));
+    return{before:m,after:(state.stats[w]||{}).miss||0};},hw[1]);
+  ok(h5.after===h5.before+1,"a wrong pick first is a miss, not a clean read "+J(h5));
+  await ix();await wait(400);
+
   ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();t.done();
 })().catch(e=>{console.log("FAIL crashed: "+(e&&e.stack||e));process.exit(1);});
