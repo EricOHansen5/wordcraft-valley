@@ -10176,6 +10176,13 @@ const Adv=(()=>{
     for(let rr=ROWS_MAX-2;spots.length<4&&rr>=firstRow();rr--)for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=1.5){const cc=+c.toFixed(2);
       if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2&&Math.abs(s.r-rr)<1)||bySpot(cc,rr)||patches().some(p=>Math.abs(p.c-cc)<p.w/2+.8&&Math.abs(p.r-rr)<1))continue;
       spots.push({c:cc,r:rr});}
+    // a valley full of doors, grass and spots (a Trick-or-Read night): the same walk in finer steps, letting go first of the
+    // grass, then of the room the stall and the doors keep beyond the "use" button's reach, then of the spots; never of a building
+    const room=[(c,r)=>!bySpot(c,r),(c,r)=>!spotList.some(s=>Math.abs(s.c-c)<1.6&&Math.abs(s.r-r)<1),()=>true];
+    room.forEach(free=>{for(let rr=ROWS_MAX-1;spots.length<4&&rr>=firstRow();rr-=.5)for(let c=1.5;spots.length<4&&c<=COLS-2.5;c+=.75){const cc=+c.toFixed(2);
+      if(byBuilding(cc,rr)||spots.some(s=>Math.abs(s.c-cc)<1.2&&Math.abs(s.r-rr)<1)||!free(cc,rr))continue;
+      spots.push({c:cc,r:rr});}});
+    // (only a valley with a building everywhere gets here)
     const marks=pick.map((w,i)=>({w:w.w,...(spots[i]||{c:2+i*5,r:ROWS_MAX-1}),dug:false}));
     const order=[0,1,2].sort(()=>Math.random()-.5);
     const h={marks,order,step:0,miss:0,t0:Date.now(),tier};

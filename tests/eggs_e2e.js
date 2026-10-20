@@ -286,6 +286,29 @@ const FX=n=>JSON.parse(fs.readFileSync(path.join(__dirname,"fixtures",n),"utf8")
         ||state.notes.some(x=>!x.found&&Math.abs(x.c-m.c)<1.6&&Math.abs(x.r-m.r)<1)||(Math.abs(st.c-m.c)<2.2&&Math.abs(st.r-m.r)<1.5))bad++;});}
     state.adv.hunt=null;Adv.exit();state.grid=g0;renderWorld();return bad+" of "+n*4;});
   ok(/^0 of/.test(crowd),"eleven buildings, a note and the stall: no egg mark on any of them in 40 hunts ("+crowd+")");
+  // ...and in a valley with no room by the rules at all (tall grass from end to end): the last resort is still clear of every building
+  const full=await E(()=>{const a=state.adv,g0=a.grass,p=[];for(let r=ROWS_MAX-state.rows;r<ROWS_MAX;r++)for(let c=1;c<COLS;c+=4)p.push({c,r,w:2.6});
+    a.grass={d:today(),rows:state.rows,p};Adv.enter();let bad=0,n=0;const ex=[];
+    for(let k=0;k<10;k++)["eggs",""].forEach(kind=>{state.adv.hunt=null;if(kind)Adv.newHunt({kind,day:"2027-03-20"});else Adv.newHunt();
+      state.adv.hunt.marks.forEach(m=>{n++;Object.keys(state.grid).forEach(key=>{const q=key.split(",").map(Number);
+        if(Math.abs(q[0]-m.c)<2.2&&Math.abs(q[1]-m.r)<1.5){bad++;if(ex.length<4)ex.push((kind||"treasure")+" "+m.c+","+m.r+" on building "+key);}});});});
+    state.adv.hunt=null;Adv.exit();a.grass=g0;return{bad,n,ex};});
+  ok(full.bad===0,"a valley with no room by the rules (grass everywhere): no mark on a building in 20 hunts "+J(full));
+  // ...and on a Trick-or-Read night (15 to 31 October), with three buildings and seven doors among the trees: the valley is full of
+  // doors, grass, the note and the stall, and a mark that finds no room by the rules still never goes on a building (it once fell
+  // back to fixed places by the front row: 17,8, on the campfire) nor where a door would take its dig button; an egg hunt and a
+  // treasure hunt alike (the treasure hunt can meet the doors in October)
+  const night=await E(()=>{Trick._setToday("2026-10-20");Adv.enter();let bad=0,n=0;const ex=[],st=Store._spot(),doors=Trick.doors();
+    for(let k=0;k<60;k++)["eggs",""].forEach(kind=>{state.adv.hunt=null;if(kind)Adv.newHunt({kind,day:"2027-03-20"});else Adv.newHunt();
+      state.adv.hunt.marks.forEach(m=>{n++;const why=[];
+        Object.keys(state.grid).forEach(key=>{const q=key.split(",").map(Number);if(Math.abs(q[0]-m.c)<2.2&&Math.abs(q[1]-m.r)<1.5)why.push("building "+key);});
+        doors.forEach(d=>{if(Math.abs(d.c-m.c)<1.6&&Math.abs(d.r-m.r)<1)why.push("door "+d.id);});
+        state.notes.forEach(x=>{if(!x.found&&Math.abs(x.c-m.c)<1.6&&Math.abs(x.r-m.r)<1)why.push("the note");});
+        if(Math.abs(st.c-m.c)<2.2&&Math.abs(st.r-m.r)<1.5)why.push("the stall");
+        if(why.length){bad++;if(ex.length<4)ex.push((kind||"treasure")+" "+m.c+","+m.r+" on "+why.join("+"));}});});
+    state.adv.hunt=null;Adv.exit();Trick._setToday(null);
+    return{extra:doors.filter(d=>d.kind!=="build").length,bad,n,ex};});
+  ok(night.extra===7&&night.bad===0,"a Trick-or-Read night, seven doors among the trees: no mark on a building, a door, the note or the stall in 120 hunts "+J(night));
 
   // ---- 14. the mode, the save, an old save ----
   ok(await E(()=>{const m=Modes.list().eggs;return !!m&&m.name==="Egg hunt"&&m.reading===true&&state.modeOpens[today()].eggs>=1;}),
