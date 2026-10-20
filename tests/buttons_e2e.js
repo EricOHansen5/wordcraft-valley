@@ -26,7 +26,7 @@ const srv=require("./page").serveApp({port:8793},async()=>{
     // Build it: fill the slots correctly first, so Blend has the whole word to sound out
     if(rung===1)await E(`(()=>{for(const ph of cur.p){const t=[...document.querySelectorAll("#letterBank .lt")].find(b=>b.dataset.ph===ph&&!b.classList.contains("used"));const o=t.onclick;cur._lock=true;const open=[...document.querySelectorAll("#slotsRow .wslot")].find(x=>!x.dataset.ph);open.textContent=tileText(ph);open.dataset.ph=ph;open.classList.add("filled");t.classList.add("used");}})()`);
     const ear=await press("earBtn"),blend=await press("blendBtn");
-    const wantBlend=[...p0.map(x=>"sound:"+x),"word:"+w];
+    const wantBlend=p0.map(x=>"sound:"+x);   // Blend it sounds the word out and stops: he says the word
     if(JSON.stringify(ear)!==JSON.stringify(["word:"+w]))bad.push(`${scene} · ${w} rung ${rung} · Say the word said ${JSON.stringify(ear)}`);
     if(JSON.stringify(blend)!==JSON.stringify(wantBlend))bad.push(`${scene} · ${w} rung ${rung} · Blend said ${JSON.stringify(blend)}`);
   }

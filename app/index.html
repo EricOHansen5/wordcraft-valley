@@ -250,6 +250,7 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
 .wslot.filled{border-style:solid;background:var(--paper-deep);box-shadow:0 4px 0 var(--ink)}
 .wslot.good{background:linear-gradient(160deg,#79C96F,#5FB35B);color:#fff;border-color:var(--ink)}
 .wslot.bad{animation:wobble .5s;background:#F6D6CF}
+#letters.nospell{visibility:hidden}
 .wslot.next{border-color:#E8A93A;box-shadow:0 0 0 4px rgba(255,211,77,.55)}
 .lt.bank.bad,.wbank .lt.bad{animation:wobble .5s;background:#F6D6CF}
 .lt.bank.glow,.wbank .lt.glow{box-shadow:0 0 0 5px rgba(127,176,105,.75);border-color:var(--meadow-deep)}
@@ -6171,7 +6172,7 @@ function openWord(w,opt){
   const rung=(opt&&opt.rung!=null)?opt.rung:(w.rung!=null?w.rung:rungOf(w.w)), R=RUNGS[rung];
   cur.shownRung=rung;
   document.getElementById("rung").innerHTML=`${R.icon} ${R.n}`;
-  const L=document.getElementById("letters");L.innerHTML="";
+  const L=document.getElementById("letters");L.innerHTML="";L.classList.remove("nospell");
   const bank=document.getElementById("letterBank"), slots=document.getElementById("slotsRow");
   bank.style.display="none";bank.innerHTML="";slots.style.display="none";L.style.display="flex";
   document.getElementById("micBtn").style.display="none";
@@ -6179,7 +6180,7 @@ function openWord(w,opt){
     const b=document.createElement("button");b.className=cls;b.textContent=tileText(ph);
     tileMarks(b,ph,w,idx);
     b.dataset.ph=ph;
-    b.onclick=async()=>{b.classList.add("lit");Sound.sfx.soft();
+    b.onclick=async()=>{b.classList.add("lit");Sound.sfx.soft();try{cur._g.heard();}catch(e){}
       await Sound.say("sound:"+ph,ph);b.classList.remove("lit");};
     return b;};
   if(rung===1){
@@ -6287,6 +6288,7 @@ let blendRun=0,blendStream=null;
 async function blend(){
   if(!cur)return;
   if(cur.scramble)return Sound.say("sent:"+cur.w,cur.w,.9);
+  try{if(cur._g)cur._g.heard();}catch(e){}
   const run=++blendRun;
   if(blendStream){blendStream.stop();blendStream=null;}
   const L=document.getElementById("letters"),building=L.style.display==="none";
@@ -6310,13 +6312,24 @@ async function blend(){
   await new Promise(r=>setTimeout(r,180));
   if(run!==blendRun)return;
   tiles.forEach(t=>t.classList.remove("blend"));
+  // it stops before the word: he says it himself (the sounds run together are the help). Only a sound swap's
+  // starting word, which is given, is said
   const spells=a=>a&&a.length===ph.length&&a.every((x,i)=>x===ph[i]);
-  const word=spells(cur.p)?cur.w:cur.from&&spells(cur.from.p)?cur.from.w:null;
+  const word=cur.from&&spells(cur.from.p)?cur.from.w:null;
   log.word=word;
   if(word)await Sound.say("word:"+word,word,.82);
   log.done=true;
 }
 document.getElementById("blendBtn").onclick=blend;
+// the end of the help after a miss: in Hear it the word is the question, so it is said again; otherwise the
+// word's sounds one by one, each tile lighting, and no word (he blends it)
+const afterMiss=w=>w._listen?Sound.say("word:"+w.w,w.w,.85):sayOut(w);
+async function sayOut(w){
+  const tiles=[...document.querySelectorAll("#letters .lt")];
+  for(let i=0;i<w.p.length;i++){
+    if(cur!==w||w._paid)return;const t=tiles[i];if(t)t.classList.add("lit");
+    await Sound.say("sound:"+w.p[i],w.p[i]);if(t)t.classList.remove("lit");await pause(120);}
+}
 
 /* Read aloud. Uses the device recogniser when the parent turns it on; a
    miss never costs anything because recognisers are unreliable with
@@ -6381,10 +6394,13 @@ function choices(w,P){
     const a=artOf(x);if(used.has(a))continue;used.add(a);others.push(x);if(others.length===2)break;}
   [w,...others].sort(()=>Math.random()-.5).forEach(o=>{
     const b=document.createElement("button");b.className="pick";b.innerHTML=drawWord(o.w,"pick");
-    b.dataset.w=o.w;b.onclick=()=>o.w===w.w?succeed():miss(b);
+    b.dataset.w=o.w;b.onclick=()=>o.w===w.w?rightPick(w):miss(b);
     P.appendChild(b);
   });
+  try{cur._g.shown();}catch(e){}
 }
+// a right pick: now the word is said (he has read it), then it counts
+function rightPick(w){if(!cur||cur._paid)return;Sound.say("word:"+w.w,w.w,.82);succeed();}
 /* ---- after a miss: say what to try next ----
    Kind, and it never costs anything. Only on the FIRST miss (the second lights the right
    answer, as before):
@@ -6451,7 +6467,7 @@ async function namedSound(w,d,tok){
   await Sound.say("sound:"+d.mine,soundOf(d.mine));
   if(tile)tile.classList.remove("lit");
   if(!helpLive(w,tok))return;
-  await pause(350);if(helpLive(w,tok))blend();
+  await pause(350);if(helpLive(w,tok))afterMiss(w);
 }
 async function tryOtherSound(w,o,tok){
   const text=`That didn't sound like a word. Try the other sound for '${tileText(w.p[o.i])}'.`;
@@ -6463,7 +6479,7 @@ async function tryOtherSound(w,o,tok){
   await Sound.say("sound:"+w.p[o.i],o.snd);
   if(tile)setTimeout(()=>tile.classList.remove("flip"),300);
   if(!helpLive(w,tok))return;
-  await pause(450);if(helpLive(w,tok))blend();
+  await pause(450);if(helpLive(w,tok))afterMiss(w);
 }
 // the first-miss help for this word and pick, or null for the plain feedback
 function missHelp(w,picked){
@@ -6474,6 +6490,7 @@ function missHelp(w,picked){
   return null;
 }
 function miss(btn){
+  try{if(cur._g)cur._g.wrongPick();}catch(e){}
   Skills.result(cur,{ok:false,confused:btn.dataset.w,ms:performance.now()-(cur._t0||0)});cur._t0=performance.now();
   misses++;Sound.sfx.nope();
   btn.classList.add("wrong");setTimeout(()=>btn.classList.remove("wrong"),520);
@@ -6486,13 +6503,14 @@ function miss(btn){
   let help=null;
   if(misses===1){try{help=missHelp(w,btn.dataset.w);}catch(e){help=null;}}
   setTimeout(()=>{
-    if(!help)return blend();
+    if(!help)return afterMiss(w);
     w._helping=true;
-    help(tok).catch(()=>{if(helpLive(w,tok))blend();}).then(()=>{if(w._fb===tok)w._helping=false;});
+    help(tok).catch(()=>{if(helpLive(w,tok))afterMiss(w);}).then(()=>{if(w._fb===tok)w._helping=false;});
   },560);
 }
 function succeed(){
   if(!cur||cur._paid)return;cur._paid=true;cur._lock=true;
+  document.getElementById("letters").classList.remove("nospell");
   const ms=performance.now()-(cur._t0||0);
   if(cur&&cur.p)Skills.result(cur,{ok:true,help:usedEar||misses>0,ms});
   const quick=!cur.swap&&Pace.quick(cur,cur.shownRung,ms,misses===0&&!usedEar);
@@ -19394,9 +19412,12 @@ function renderListen(w){
   const P=document.getElementById("picks");P.innerHTML="";P.style.display="flex";
   [w,...lookalikes(w)].sort(()=>Math.random()-.5).forEach(o=>{
     const b=document.createElement("button");b.className="pick text";b.textContent=o.w;b.dataset.w=o.w;
-    b.onclick=()=>o.w===w.w?succeed():miss(b);
+    b.onclick=()=>o.w===w.w?rightPick(w):miss(b);
     P.appendChild(b);
   });
+  // the word's spelling is above the choices: hidden while he picks (visibility, so Blend it still finds the tiles)
+  document.getElementById("letters").classList.add("nospell");
+  try{cur._g.shown();}catch(e){}
   usedEar=false; // the prompt is audio by design; hearing it is not a hint
   setTimeout(()=>Sound.say("word:"+w.w,w.w,.85),350);
   cur._listen=true;

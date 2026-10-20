@@ -40,7 +40,7 @@ const srv=require("./page").serveApp({port:8820},async()=>{
   ok(s1[0]&&s1[0].src==="clip"&&s1[0].dur>.45&&s1[0].dur<.6,"map: the parent's recording of m is used, trimmed of its silence ("+(s1[0]&&s1[0].dur)+" s)");
   const aDur=await E(()=>Phonics.duration("a"));
   ok(s1[1]&&s1[1].src==="synth"&&s1[1].dur>aDur*1.2,`map: the synth's a is drawn out for the blend (${s1[1]&&s1[1].dur} s, ${aDur} s alone)`);
-  ok(B1.word==="map"&&B1.done,"map: the blend still ends with the word");
+  ok(B1.word===null&&B1.done,"map: the blend stops before the word (he says it himself)");
   ok(lit.length===3&&lit[0]<lit[1]&&lit[1]<lit[2]&&lit[2]-lit[0]<1500,"map: tiles light one by one as their sounds begin "+JSON.stringify(lit.map(x=>Math.round(x))));
   await open("cat",null,2);await p.waitForTimeout(300);
   await E(()=>blend());
@@ -52,7 +52,7 @@ const srv=require("./page").serveApp({port:8820},async()=>{
   await E(()=>blend());
   const B3=await E(()=>window._lastBlend);
   await E(()=>{Phonics.render=window._render;});
-  ok(B3.mode==="sequential"&&B3.word==="map"&&B3.done,"forced failure: the blend falls back to one at a time and still says the word "+B3.mode);
+  ok(B3.mode==="sequential"&&B3.word===null&&B3.done,"forced failure: the blend falls back to one at a time, still without the word "+B3.mode);
   // tapping one tile still plays only that sound, as before
   const tap=await E(async()=>{const said=[],o=Sound.say;Sound.say=(k,f,r,opt)=>{said.push(k+(opt?"+stream":""));return Promise.resolve();};
     document.querySelectorAll("#letters .lt")[1].click();await new Promise(r=>setTimeout(r,50));Sound.say=o;return said;});
@@ -78,7 +78,7 @@ const srv=require("./page").serveApp({port:8820},async()=>{
   ok(r1.spk.filter(t=>OTHER.test(t)).length===1&&r1.spk.includes("That didn't sound like a word. Try the other sound for E A."),"leaf (level 6), first miss: the buddy says try the other sound for E A "+JSON.stringify(r1.spk));
   ok(/other sound for 'ea'/.test(r1.tip||"")&&/other sound for 'ea'/.test(r1.bub||""),"leaf: the line shows in the reading screen and the buddy bubble: "+r1.tip);
   ok(r1.flip===1&&r1.said.indexOf("sound:ea")>=0,"leaf: the ea tile flips and plays its sound "+JSON.stringify(r1.said));
-  ok(r1.said.slice(-1)[0]==="word:leaf","leaf: then blends and says the word");
+  ok(r1.said.indexOf("word:leaf")<0&&/^sound:/.test(r1.said.slice(-1)[0]),"leaf: then its sounds one by one, not the word "+JSON.stringify(r1.said));
   ok(await hasPicks(),"leaf: the answer is still on the screen");
   await reset();await missAs("rocket");await p.waitForTimeout(1200);
   const r2=await E(()=>({spk:window._spk,flip:window._flip,hint:!!document.querySelector(`#picks .pick.hint[data-w="${cur.w}"]`)}));
@@ -90,8 +90,9 @@ const srv=require("./page").serveApp({port:8820},async()=>{
   for(const [w,extra,why] of [["hen",null,"a level-2 word"],["snow",null,"a level-4 word with ow"],["could",null,"a tricky word (ou)"]]){
     await open(w,extra,0);await p.waitForTimeout(400);await reset();
     await missAs("rocket");await p.waitForTimeout(1500);
-    const r=await E(()=>({spk:window._spk,said:window._said,flip:window._flip}));
-    ok(!r.spk.some(t=>OTHER.test(t))&&r.flip===0&&r.said.slice(-1)[0]==="word:"+w,`${w} (${why}): no other-sound hint, the plain blend instead `+JSON.stringify(r.said));
+    const r=await E(()=>({spk:window._spk,said:window._said,flip:window._flip,lis:!!cur._listen}));
+    // (a word with no picture opens as Hear it, where the word is the question and a miss says it again)
+    ok(!r.spk.some(t=>OTHER.test(t))&&r.flip===0&&(r.lis?JSON.stringify(r.said)===JSON.stringify(["word:"+w]):r.said.indexOf("word:"+w)<0&&/^sound:/.test(r.said.slice(-1)[0])),`${w} (${why}): no other-sound hint, its sounds instead (not the word) `+JSON.stringify(r.said));
     ok(await hasPicks(),w+": the answer is still on the screen");
   }
   await gemsNow();
@@ -103,12 +104,12 @@ const srv=require("./page").serveApp({port:8820},async()=>{
   ok(JSON.stringify(n1.spk)==='["That one has the sound","This word has the sound"]',"cat, picked hat: two fixed lines "+JSON.stringify(n1.spk));
   ok(n1.said[0]==="sound:h"&&n1.said[1]==="sound:c","cat, picked hat: the sounds named are h, then c "+JSON.stringify(n1.said));
   ok(n1.tip==="That one has the sound 'h'. This word has the sound 'c'.","cat: shown as "+n1.tip);
-  ok(n1.said.slice(-1)[0]==="word:cat","cat: then blends and says the word");
+  ok(n1.said.indexOf("word:cat")<0&&/^sound:/.test(n1.said.slice(-1)[0]),"cat: then its sounds one by one, not the word "+JSON.stringify(n1.said));
   await gemsNow();
   await open("cat",null,0);await p.waitForTimeout(400);await reset();
   await missAs("pot");await p.waitForTimeout(1500);
   const n2=await E(()=>({spk:window._spk,said:window._said,tip:!!document.querySelector("#shieldHost .readtip")}));
-  ok(!n2.spk.length&&!n2.tip&&JSON.stringify(n2.said)==='["sound:c","sound:a","sound:t","word:cat"]',"cat, picked pot (two sounds differ): the plain feedback "+JSON.stringify(n2.said));
+  ok(!n2.spk.length&&!n2.tip&&JSON.stringify(n2.said)==='["sound:c","sound:a","sound:t"]',"cat, picked pot (two sounds differ): the plain feedback, its sounds (not the word) "+JSON.stringify(n2.said));
   await reset();await missAs("hat");await p.waitForTimeout(1500);
   const n3=await E(()=>({spk:window._spk,hint:!!document.querySelector(`#picks .pick.hint[data-w="${cur.w}"]`)}));
   ok(!n3.spk.length&&n3.hint,"cat, second miss on hat: no named sounds, the right picture glows");
