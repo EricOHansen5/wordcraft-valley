@@ -6203,7 +6203,7 @@ function openWord(w,opt){
     [...w.p,extra].filter(Boolean).sort(()=>Math.random()-.5).forEach(ph=>{
       const t=mkTile(ph,"lt bank");
       t.onclick=async()=>{
-        if(cur._lock||t.classList.contains("used"))return;
+        if(cur._lock||t.classList.contains("used")||t.classList.contains("bad"))return;
         const kids=[...slots.children],i=kids.findIndex(x=>!x.dataset.ph);if(i<0)return;
         try{cur._g.heard();}catch(e){}
         if(!sameTile(ph,w.p[i])){
@@ -6247,7 +6247,9 @@ const sameTile=(a,b)=>a===b||(soundOf(a)===soundOf(b)&&tileText(a)===tileText(b)
 async function stretchTo(w,i){
   const ph=w.p.slice(0,i+1);let S=null;
   try{S=Sound.stream(ph);await S.ready;}catch(e){S=null;}
-  for(let k=0;k<ph.length;k++){const joined=!!(S&&!S.broken);
+  for(let k=0;k<ph.length;k++){
+    if(cur!==w||w._lock){try{if(S)S.stop();}catch(e){}return;}
+    const joined=!!(S&&!S.broken);
     await Sound.say("sound:"+ph[k],ph[k],undefined,joined?{stream:S}:undefined);if(!joined)await pause(90);}
   if(S&&!S.broken)await S.done();
 }
@@ -6257,7 +6259,7 @@ function checkBuild(){
   const built=slots.map(x=>x.dataset.ph);
   if(built.every((b,i)=>sameTile(b,cur.p[i]))){
     cur._lock=true;slots.forEach(x=>x.classList.add("good"));Sound.sfx.chime();
-    setTimeout(()=>{Sound.say("word:"+cur.w,cur.w,.82);setTimeout(succeed,500);},250);
+    setTimeout(()=>{cur._said=Sound.say("word:"+cur.w,cur.w,.82);setTimeout(succeed,500);},250);
   }else{
     misses++;Sound.sfx.nope();
     {const wi=[],pl=[];built.forEach((b,i)=>{if(b!==cur.p[i]){wi.push(i);pl.push(b);}});
@@ -6324,11 +6326,11 @@ async function blend(){
 document.getElementById("blendBtn").onclick=blend;
 // the end of the help after a miss: in Hear it the word is the question, so it is said again; otherwise the
 // word's sounds one by one, each tile lighting, and no word (he blends it)
-const afterMiss=w=>w._listen?Sound.say("word:"+w.w,w.w,.85):sayOut(w);
-async function sayOut(w){
+const afterMiss=(w,tok)=>w._listen?Sound.say("word:"+w.w,w.w,.85):sayOut(w,tok);
+async function sayOut(w,tok){
   const tiles=[...document.querySelectorAll("#letters .lt")];
   for(let i=0;i<w.p.length;i++){
-    if(cur!==w||w._paid)return;const t=tiles[i];if(t)t.classList.add("lit");
+    if(cur!==w||w._paid||(tok!=null&&w._fb!==tok))return;const t=tiles[i];if(t)t.classList.add("lit");
     await Sound.say("sound:"+w.p[i],w.p[i]);if(t)t.classList.remove("lit");await pause(120);}
 }
 
@@ -6402,13 +6404,14 @@ function choices(w,P){
 }
 // the word among two printed look-alikes (Read it's proof for a heart word); the word is not said first
 function printedChoices(w,P){
+  document.getElementById("letters").classList.add("nospell");
   [w,...lookalikes(w)].sort(()=>Math.random()-.5).forEach(o=>{
     const b=document.createElement("button");b.className="pick text";b.textContent=o.w;b.dataset.w=o.w;
     b.onclick=()=>o.w===w.w?rightPick(w):miss(b);P.appendChild(b);});
   try{cur._g.shown();}catch(e){}
 }
 // a right pick: now the word is said (he has read it), then it counts
-function rightPick(w){if(!cur||cur._paid)return;Sound.say("word:"+w.w,w.w,.82);succeed();}
+function rightPick(w){if(!cur||cur._paid)return;cur._said=Sound.say("word:"+w.w,w.w,.82);succeed();}
 /* ---- after a miss: say what to try next ----
    Kind, and it never costs anything. Only on the FIRST miss (the second lights the right
    answer, as before):
@@ -6475,7 +6478,7 @@ async function namedSound(w,d,tok){
   await Sound.say("sound:"+d.mine,soundOf(d.mine));
   if(tile)tile.classList.remove("lit");
   if(!helpLive(w,tok))return;
-  await pause(350);if(helpLive(w,tok))afterMiss(w);
+  await pause(350);if(helpLive(w,tok))afterMiss(w,tok);
 }
 async function tryOtherSound(w,o,tok){
   const text=`That didn't sound like a word. Try the other sound for '${tileText(w.p[o.i])}'.`;
@@ -6487,7 +6490,7 @@ async function tryOtherSound(w,o,tok){
   await Sound.say("sound:"+w.p[o.i],o.snd);
   if(tile)setTimeout(()=>tile.classList.remove("flip"),300);
   if(!helpLive(w,tok))return;
-  await pause(450);if(helpLive(w,tok))afterMiss(w);
+  await pause(450);if(helpLive(w,tok))afterMiss(w,tok);
 }
 // the first-miss help for this word and pick, or null for the plain feedback
 function missHelp(w,picked){
@@ -6511,9 +6514,10 @@ function miss(btn){
   let help=null;
   if(misses===1){try{help=missHelp(w,btn.dataset.w);}catch(e){help=null;}}
   setTimeout(()=>{
-    if(!help)return afterMiss(w);
+    if(w._fb!==tok)return;      // a newer miss has its own help
+    if(!help)return afterMiss(w,tok);
     w._helping=true;
-    help(tok).catch(()=>{if(helpLive(w,tok))afterMiss(w);}).then(()=>{if(w._fb===tok)w._helping=false;});
+    help(tok).catch(()=>{if(helpLive(w,tok))afterMiss(w,tok);}).then(()=>{if(w._fb===tok)w._helping=false;});
   },560);
 }
 function succeed(){
@@ -6558,7 +6562,7 @@ function succeed(){
   const bonus=clean&&streak>=3?Math.min(5,streak-2):0;
   // a clean first try earns the gems (and the prize, below); after misses or 👂 the word still counts, 1 gem
   let won=clean?3+(cur.lost?2:0)+bonus+(cur.shownRung===1?1:0):1;
-  if(seasonWords().includes(cur.w))won*=2;
+  if(clean&&seasonWords().includes(cur.w))won*=2;
   state.gems+=won;
   floater("+"+won+" 💎",clean?"#FFE9A8":"#FFF");
   if(streak===3){toast("3 in a row! 🔥");Sound.sfx.chime();Quests.hit("streak3");}
@@ -6587,9 +6591,13 @@ function waitPrize(){
   const artEl=document.getElementById("rewardArt");artEl.style.animation="";artEl.innerHTML=ART.crate();
   document.getElementById("rewardName").textContent="Good reading!";
   document.getElementById("rewardWord").textContent="Read it first try to open the prize!";
-  document.querySelector("#ovReward [data-close]").textContent="Next word";
+  // the button says OK (closing goes where a prize card goes) and has its usual words again once closed
+  const btn=document.querySelector("#ovReward [data-close]");btn.textContent="👍 OK";
+  btn.addEventListener("click",()=>{btn.textContent="Put it in my valley";},{once:true});
   show("ovReward");
-  buddySay("Good reading! Read it first try to open the prize!");Sound.speak("Good reading! Read it first try to open the prize!",.95);
+  buddySay("Good reading! Read it first try to open the prize!");
+  // after the word he picked has been said (a newer line would cut it off, or it would cut this one)
+  Promise.resolve(cur&&cur._said).catch(()=>{}).then(()=>Sound.speak("Good reading! Read it first try to open the prize!",.95));
   Coach.reach("read");
 }
 function giveReward(){
@@ -9047,7 +9055,7 @@ function soundShield(host,word,onOpen,g){
       b.classList.add("lit");await Sound.say("sound:"+ph,ph);b.classList.remove("lit");b.classList.add("done");
       if(at===w.p.length&&!box.classList.contains("broken")){box.classList.add("broken");setTimeout(()=>{box.remove();onOpen&&onOpen();},450);}};
     row.appendChild(b);return b;});
-  host.prepend(box);Sound.sfx.nope();
+  host.prepend(box);Sound.sfx.soft();
   return box;
 }
 
@@ -10249,7 +10257,7 @@ const Adv=(()=>{
     save();renderHUD();drawLand();refreshHud();noteEl&&(noteEl.className="",noteEl.innerHTML="");
     document.getElementById("rewardArt").innerHTML=typeof art==="string"&&art.length<4?`<div style="font-size:110px;line-height:1">${art}</div>`:art;
     document.getElementById("rewardName").textContent=name;document.getElementById("rewardWord").textContent=sub;
-    show("ovReward");confetti();Sound.sfx.fanfare();setTimeout(()=>Sound.say("sent:You found the treasure!","You found the treasure!",.95),400);
+    document.querySelector("#ovReward [data-close]").textContent="Put it in my valley";show("ovReward");confetti();Sound.sfx.fanfare();setTimeout(()=>Sound.say("sent:You found the treasure!","You found the treasure!",.95),400);
   }
   return{enter,exit,mount,refreshHud,newHunt,provide:f=>providers.push(f),hookCrit:f=>hooks.crit.push(f),hookVeh:f=>hooks.veh.push(f),
     redraw:()=>{if(on){drawSpots();near=null;hud&&hud.querySelector("#advAct").classList.remove("on");}},freePos,get on(){return on;},_P:P,_in:input,_near:()=>near,_act:act,_patches:patches,_A:A,
@@ -10587,6 +10595,7 @@ const Notes=(()=>{
       confetti();Sound.sfx.fanfare();Modes.shut(ov);try{Quests.hit("read",2);}catch(e){}
       document.getElementById("rewardArt").innerHTML=`<div style="font-size:110px;line-height:1">🎁</div>`;
       document.getElementById("rewardName").textContent="You found it!";
+      document.querySelector("#ovReward [data-close]").textContent="Put it in my valley";
       document.getElementById("rewardWord").textContent=`You read ${n.from}'s note all by yourself. +5 💎`;show("ovReward");};
   }
   return{renderPane,badge,open,pending};
@@ -10678,7 +10687,7 @@ const Read=(()=>{
     const g=Guess.track(),sm={},tiles=()=>[...host.querySelectorAll(".wbank .lt")];
     const next=()=>{sl.forEach(x=>x.classList.remove("next"));const k=slots.indexOf(null);if(k>=0)sl[k].classList.add("next");};next();
     tiles().forEach(t=>t.onclick=()=>{
-      if(lock||t.classList.contains("used"))return;const i=slots.indexOf(null);if(i<0)return;
+      if(lock||t.classList.contains("used")||t.classList.contains("bad"))return;const i=slots.indexOf(null);if(i<0)return;
       const ph=bank[+t.dataset.i];g.heard();
       if(!sameTile(ph,w.p[i])){miss++;g.wrongTile();rec(w,false,{wrongIdx:[i],placed:[ph]});Sound.sfx.nope();
         t.classList.remove("bad");void t.offsetWidth;t.classList.add("bad");setTimeout(()=>t.classList.remove("bad"),500);
@@ -18031,7 +18040,7 @@ function openSwap(pair){
   document.getElementById("rung").innerHTML="🔁 Swap it";
   document.getElementById("readTitle").textContent="Change one sound";
   document.getElementById("readSub").textContent=`Make "${pair.from.w}" into the word in the picture.`;
-  const L=document.getElementById("letters");L.innerHTML="";L.style.display="flex";
+  const L=document.getElementById("letters");L.innerHTML="";L.style.display="flex";L.classList.remove("nospell");
   document.getElementById("slotsRow").style.display="none";
   document.getElementById("micBtn").style.display="none";
   document.getElementById("pickPrompt").style.display="none";
@@ -19450,7 +19459,7 @@ function renderListen(w){
   });
   // the word's spelling is above the choices: hidden while he picks (visibility, so Blend it still finds the tiles)
   document.getElementById("letters").classList.add("nospell");
-  try{cur._g.shown();}catch(e){}
+  try{cur._g.shown();cur._g.heard();}catch(e){}
   usedEar=false; // the prompt is audio by design; hearing it is not a hint
   setTimeout(()=>Sound.say("word:"+w.w,w.w,.85),350);
   cur._listen=true;
