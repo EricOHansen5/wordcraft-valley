@@ -818,6 +818,8 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - **What it heard is written down.** Each Say it try logs the word, what the NAS heard and how sure each listener was; `tools/progress.js` prints the last 20 ("cat → heard 'cap' (A .62 not sure; B cat .71 sure) ✓").
 - **Talk to me** in the home-screen app no longer waits on Safari's recogniser (which hears nothing there): when the NAS can't listen it goes straight to the tap choices.
 
+- **Fix: the opening voice no longer overlaps.** The iPad keeps the sound locked until his first touch. A line asked for at launch (Home's "Want to read 15 more words today?", three clips) had all its clips started while locked, so they waited at the same frozen moment and all played at once on the first touch. Each clip now waits for the sound to run, plays after the one before it, and a newer line (his first tap's) replaces a waiting one.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

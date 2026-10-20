@@ -2346,7 +2346,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-20f"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-20g"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -4307,6 +4307,14 @@ const VoicePack=(()=>{
     return out.length<=Math.max(2,Math.ceil(toks.length/3))?out:null;
   }
   function stop(){token++;if(src){try{src.stop();}catch(e){}src=null;}}
+  // true once the sound runs; false if line my was replaced, or the sound stayed locked for 20 s
+  function running(my){
+    const ac=Sound.ctx();if(ac.state==="running")return Promise.resolve(true);
+    try{const r=ac.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}
+    return new Promise(res=>{const t0=Date.now();(function chk(){
+      if(my!==token)return res(false);if(ac.state==="running")return res(true);
+      if(Date.now()-t0>20000)return res(false);setTimeout(chk,100);})();});
+  }
   async function play(text){
     if(state.settings.voicePack===false)return false;
     await load();let p=plan(text);if(!p){const t2=heroLegacy(text);if(t2)p=plan(t2);}if(!p)return false;
@@ -4315,6 +4323,10 @@ const VoicePack=(()=>{
     try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
     for(const b of list){
       if(my!==token)return true;
+      // the iPad keeps the sound locked until his first touch: a clip started then waits at the same frozen moment
+      // as the pieces after it, and they all play at once on the touch. So each piece waits for the sound to run
+      // (a newer line, or 20 s, gives up on this one)
+      if(!await running(my))return true;
       await new Promise(res=>{const ac=Sound.ctx(),s=ac.createBufferSource();s.buffer=b;s.connect(ac.destination);src=s;
         s.onended=res;s.start();setTimeout(res,b.duration*1000+250);});
       if(list.length>1)await new Promise(r=>setTimeout(r,60));
