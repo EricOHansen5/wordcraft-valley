@@ -157,7 +157,7 @@ const {launch,check,seed,reload}=require("./lib");
   // an upgrade (gems already paid for it) still finishes after a miss
   const up5=await E(async()=>{state.gems=500;const veh=!state.critters.length,c=veh?state.vehicles[0]:state.critters[0];c.lv=1;startUpgrade({kind:veh?"vehicle":"critter",id:c.id});await new Promise(r=>setTimeout(r,500));
     const W=cur,bank=()=>[...document.querySelectorAll("#letterBank .lt")];
-    bank().find(b=>b.dataset.ph!==W.p[0]).click();await new Promise(r=>setTimeout(r,200));
+    bank().find(b=>b.dataset.ph!==W.p[0]).click();await new Promise(r=>setTimeout(r,650));      // (a tile still bouncing ignores a tap)
     for(let i=0;i<W.p.length;i++){bank().find(b=>b.dataset.ph===W.p[i]&&!b.classList.contains("used")).click();await new Promise(r=>setTimeout(r,150));}
     await new Promise(r=>setTimeout(r,1500));return{lv:c.lv,misses};});
   ok(up5.lv===2,"an upgrade word with a miss still finishes the upgrade "+J(up5));

@@ -807,6 +807,11 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - **Grown-up report:** "Guessing a day" replaces "Quick guesses a day", with whether sound it out first is on; `tools/progress.js` prints it too.
 - **Fix: hunt marks never sit on a building.** With Trick-or-Read's extra doors (15-31 Oct) in a valley with few buildings, the treasure hunt's search for room could run out and drop a mark at a fixed spot beside the campfire, drawn over it. The search now walks the valley again in finer steps, letting go of the grass first and then the extra room around doors and the stall, but never the buildings.
 
+### v10.15 — The microphone on the iPad, Say it, and "How he plays"
+- **The microphone works in the home-screen app.** The game sets the iPad's audio session to "playback" (so its voice plays with the silent switch on), and iPadOS refuses a "playback" page the microphone (InvalidStateError). It now switches to "play-and-record" while recording (`micOpen` / `micClose`) and back after. The Grown-up "Test" button had shared an id with Say it and did nothing; it works now, and the Voice Studio says the real reason when recording can't start.
+- **🎤 Say it listens through the NAS.** Safari's speech recognition is not available to home-screen web apps (WebKit bug 225298), so Say it now listens the way Talk to me does: the NAS (Whisper), then his banked voice on the iPad, then Safari's recogniser only in a Safari tab. The button shows only when something can listen. A sure right answer pays +2 and counts as sounded out; not sure, or a different word, gets a kind "try once more" and never counts as a miss.
+- **Grown-up report: How he plays.** When he plays (sessions with start time, minutes and where he stopped), words read and right-first-time a day, the help he leaned on (Blend it vs Say the word, sound tiles, answers shown after two misses), prizes opened vs waiting, and a recent-activity list for today and yesterday. `tools/progress.js` prints the same. New save fields: `sessions`, `events` (last 80), `helps`, `prizes` (60 days).
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
