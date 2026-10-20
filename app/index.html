@@ -1759,6 +1759,13 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .tkq.ask.kind-open .tkyq{visibility:hidden}
 .tkq.kind-open .tkbook.done~.tkyq{visibility:visible}
 .inboxsheet{max-width:720px}
+/* TEACH THE GAME HIS VOICE: one word at a time, big */
+.teachsheet{max-width:640px;text-align:center}
+.tvprog{font-weight:900;font-size:18px;opacity:.75}
+.tvword{font-size:96px;font-weight:900;line-height:1.1;margin:14px 0 4px;letter-spacing:2px;word-break:break-word}
+.tvbtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:10px}.tvbtns .btn{min-height:56px}
+.tvend{font-size:22px;font-weight:900;margin:18px 0}
+@media (max-width:700px){.teachsheet{padding:14px}.tvword{font-size:68px}}
 .ibrow{align-items:center;gap:8px}.ibrow .btn{min-height:48px}
 .ibtext{margin-top:6px;font-style:italic;color:var(--ink)}
 /* ================================================================
@@ -2289,6 +2296,10 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
       <div class="meta" id="micMeta"></div>
       <div class="micbar" id="micBar" style="display:none"><i id="micLvl"></i></div></div>
       <button class="btn soft" id="micTestBtn" style="min-height:44px;padding:8px 14px">Test</button></div>
+    <div class="row" id="teachRow"><div class="grow"><div class="lbl">Teach the game his voice</div>
+      <div class="meta" id="teachMeta"></div>
+      <div class="meta">Sit with him for a few minutes: he reads his words out loud one at a time and you tap ✓ when he said it right. Say it and Talk to me then know how he sounds, even when the home server isn't sure.</div></div>
+      <button class="btn soft" id="teachBtn" style="min-height:44px;padding:8px 14px">Start</button></div>
     <div class="row"><div class="grow"><div class="lbl">Spelling crates</div>
       <div class="meta">How often a crate asks him to build the word from its sounds.</div></div>
       <select id="optSpell"><option value="0.35">Some</option><option value="0.6">Lots</option><option value="0.9">Almost all</option></select></div>
@@ -4460,9 +4471,11 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // FACTORY: levels finished (0-12), best stars per level {"F3":2}, his own factory as a short string (null until
   // he builds), and today's paid side orders {day, paid}
   factory:{lvl:0,stars:{},sandbox:null,orders:{day:"",paid:0}},
-  // TALK: each sure answer and tap, {d, tier: "A" "B" "C" or "tap", ok} (the last 200), his voice templates banked in all,
-  // and Dad's inbox: his answers to open questions, [{id, d, at, q, book, ms, text}] (the clips are blobs "inbox:<id>")
-  talk:{log:[],tpl:0,inbox:[]},
+  // TALK: each sure answer and tap, {d, tier: "A" "B" "C" or "tap", ok} (the last 200; a Say it try also says what was
+  // heard, see SayIt), his voice templates banked in all, Dad's inbox: his answers to open questions,
+  // [{id, d, at, q, book, ms, text}] (the clips are blobs "inbox:<id>"), and the words that know his voice,
+  // {word: templates stored} (the templates aren't in the backup, so the report reads this)
+  talk:{log:[],tpl:0,inbox:[],voice:{}},
   // BATTERY CHECK: the grown-up's checks (the last 30), the check under way (null when none), and the
   // game's own clues per day (60 days): minutes on screen and resting, running animations, frame times
   power:{checks:[],days:{},cur:null},
@@ -6373,12 +6386,13 @@ const Speech=(()=>{
    the button shows only when the NAS or the matcher can listen; anywhere, it shows only when something can.
    The answers are the word and its printed look-alikes, so a sure match tells right from wrong. Sure and right
    pays +2 💎 and counts as sounded out (the guess check). Not sure, nothing heard or a different word gets a
-   kind line and another go, never a miss: a misheard child is not a wrong answer. Each try goes in Talk to
-   me's log ({d, tier, ok, from:"sayit"}) for the report. */
+   kind line and another go, never a miss: a misheard child is not a wrong answer. When the NAS isn't sure, the
+   matcher on the iPad has a say on the same clip (Talk.once). Each try goes in Talk to me's log for the report and
+   tools/progress.js: {d, tier, ok, from:"sayit", w, at, text, best, score, sure, A, B} (Talk.heardOf). */
+// a web app on the Home Screen, where the browser's recogniser never hears anything (Say it and Talk to me both ask)
+function homeApp(){try{return navigator.standalone===true||!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches);}catch(e){return false;}}
 const SayIt=(()=>{
   const btn=()=>document.getElementById("micBtn");
-  // a web app on the Home Screen, where the browser's recogniser never hears anything
-  const homeApp=()=>{try{return navigator.standalone===true||!!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches);}catch(e){return false;}};
   // the word and two printed look-alikes, chosen once a word
   function expect(w){
     if(w._say)return w._say;let alts=[];try{alts=lookalikes(w).map(x=>x&&x.w);}catch(e){}
@@ -6407,7 +6421,7 @@ const SayIt=(()=>{
     busy=false;b.classList.remove("listening");b.textContent="🎤 Say it";
     if(cur!==w||w._paid||!ov("ovRead").classList.contains("on"))return;
     const sure=!!(r&&r.sure&&r.best!=null&&ex.indexOf(r.best)>=0),right=sure&&r.best===w.w;
-    try{Talk.log((r&&r.tier)||t||"none",right,"sayit");}catch(e){}
+    try{Talk.log((r&&r.tier)||t||"none",right,"sayit",Talk.heardOf(w.w,r));}catch(e){}
     if(right){
       // his own voice for the matcher, when the NAS was sure
       if(r.tier==="A"&&r.clip){try{Talk.keepClip(w.w,r.clip,r.feat,"A");}catch(e){}}
@@ -16845,7 +16859,8 @@ const Factory=(()=>{
    for after "not sure", and each Read-to-your-pet page that splits into as many spoken
    stretches as it has words are banked as MFCC frames (not audio) in the blobs store under
    "tpl:<word>:<n>", at most 5 a word: when full, the oldest of the same kind or a weaker kind
-   makes room (a page's stretch < a tapped answer < the NAS's). state.talk.tpl counts them.
+   makes room (a page's stretch < a tapped answer < the NAS's < one a grown-up confirmed in Teach). state.talk.tpl
+   counts them; state.talk.voice says how many each word has (Talk.known() reads the store again).
    ================================================================ */
 /* ---- tier B: the matcher (no DOM, no Web Audio: plain numbers in, plain numbers out) ----
    The question always has a few possible answers, so tier B does not transcribe: it compares
@@ -17015,11 +17030,14 @@ const TalkMatch=(()=>{
 })();
 
 const Talk=(()=>{
-  const TEN=10*60e3,A_MS=3500,TPL_MAX=5,RANK={page:0,tap:1,A:2},LOG_MAX=200,HMM=3000,INBOX_MAX=30;
+  const TEN=10*60e3,A_MS=3500,TPL_MAX=5,RANK={page:0,tap:1,A:2,teach:3},LOG_MAX=200,HMM=3000,INBOX_MAX=30;
   // how close the NAS's (and the browser's) best answer must be, and how far ahead of the next, to count as sure
   const SURE_A=[.75,.2],SURE_C=[.8,.2];
+  // when the NAS isn't sure: the NAS's best and the matcher's best, the same answer with at least these scores, is sure
+  const AGREE=[.5,.45];
   const api={};
-  function T(){let t=state.talk;if(!t||typeof t!=="object"||Array.isArray(t))t=state.talk={log:[],tpl:0,inbox:[]};if(!Array.isArray(t.log))t.log=[];return t;}
+  function T(){let t=state.talk;if(!t||typeof t!=="object"||Array.isArray(t))t=state.talk={log:[],tpl:0,inbox:[],voice:{}};if(!Array.isArray(t.log))t.log=[];
+    if(!t.voice||typeof t.voice!=="object"||Array.isArray(t.voice))t.voice={};return t;}
   const on=()=>!!(state.settings&&state.settings.talk);
   const eyes=()=>on()&&!!state.settings.eyesFree;
   const key=w=>VoicePack.norm(w);
@@ -17123,8 +17141,15 @@ const Talk=(()=>{
     try{await DB.set("blobs","tpl:"+k+":"+n,TalkMatch.pack(frames,{w:k,src:src||"",at}));}catch(e){return false;}
     const idx=await tplIndex(),list=idx[k]||(idx[k]=[]);if(list.indexOf(n)<0)list.push(n);
     tplMem.set(k,have.filter(x=>x.n!==n).concat([{n,at,src:src||"",frames}]));
-    const t=T();t.tpl=(+t.tpl||0)+1;save();
+    const t=T();t.tpl=(+t.tpl||0)+1;t.voice[k]=list.length;save();
     return true;
+  }
+  // the words that know his voice, {word: templates}, from the store's keys (and written to state.talk.voice)
+  async function known(){
+    const out={};
+    try{(await DB.keys("blobs")).forEach(k=>{const m=/^tpl:(.+):(\d+)$/.exec(String(k));if(m)out[m[1]]=(out[m[1]]||0)+1;});}catch(e){return Object.assign({},T().voice);}
+    const t=T();if(JSON.stringify(t.voice)!==JSON.stringify(out)){t.voice=out;save();}
+    return Object.assign({},out);
   }
   // every answer's references ({answer:[frames...]}), or null when one of them has none
   async function refs(expect){
@@ -17156,10 +17181,10 @@ const Talk=(()=>{
   /* ---------- which tier listens ---------- */
   const micOk=()=>{try{return Rec.ok();}catch(e){return false;}};
   // A if the NAS answered in the last 10 minutes (asked now if it is time), B if every answer has a reference,
-  // C if the browser has a recogniser, else the screen
+  // C if the browser has a recogniser (never in a home-screen app, where it hears nothing), else the screen
   async function tier(expect){
     if(micOk()){if(await probe())return"A";if(await refs(expect))return"B";}
-    try{if(Speech.available())return"C";}catch(e){}
+    try{if(!homeApp()&&Speech.available())return"C";}catch(e){}
     return"screen";
   }
 
@@ -17232,7 +17257,8 @@ const Talk=(()=>{
   }
   /* One answer for another screen ("Say it" on a Read-it word): the tier (opt.tier when it was asked already),
      the recording, the tier that decides. opt.browser false: never the browser's recogniser (a home-screen app),
-     so a recording that can't start is "nothing heard". null: nothing could listen. r.clip is the recording. */
+     so a recording that can't start is "nothing heard". null: nothing could listen. r.clip is the recording.
+     The NAS not sure: the same clip goes to the matcher too (his own voice and the game voice's), see both(). */
   async function once(expect,opt){
     opt=opt||{};let tr=opt.tier;
     if(!tr){tr="screen";try{tr=await api.tier(expect);}catch(e){}}
@@ -17244,7 +17270,28 @@ const Talk=(()=>{
     let r=null;
     try{r=await api._hear(cap&&cap.blob&&cap.heard!==false?cap.blob:null,expect,{tier:tr,heard:cap?cap.heard:undefined});}catch(e){r=null;}
     if(r)r.clip=cap&&cap.blob||null;
+    if(r&&r.tier==="A"&&!r.sure&&r.clip){let b=null;try{b=await api.match(r.clip,expect);}catch(e){b=null;}
+      const clip=r.clip;r=both(r,b);r.clip=clip;}
     return r;
+  }
+  // the NAS (a) not sure, and the matcher (b) on the same clip: b sure is b's answer; both leaning to the same
+  // answer with fair scores is sure (tier "AB"); otherwise the NAS's "not sure". Each one's view goes along (A, B).
+  function both(a,b){
+    if(!b)return a;
+    const view=x=>({best:x.best==null?null:x.best,score:+x.score||0,sure:!!x.sure});let o;
+    if(b.sure)o=Object.assign({},b,{text:a.text});
+    else if(a.best!=null&&a.best===b.best&&a.score>=AGREE[0]&&b.score>=AGREE[1])o=Object.assign({},a,{tier:"AB",sure:true,score:(a.score+b.score)/2,feat:b.feat});
+    else o=Object.assign({},a,{feat:b.feat});
+    o.A=view(a);o.B=view(b);return o;
+  }
+  // a Say it try's log fields: the word asked, when, what the NAS heard (40 characters), the answer, and each one's view
+  function heardOf(w,r){
+    const n=v=>Math.round((+v||0)*100)/100,v=x=>({best:x.best==null?null:x.best,score:n(x.score),sure:!!x.sure}),o={w,at:Date.now()};
+    if(!r)return o;
+    if(r.text)o.text=String(r.text).slice(0,40);
+    o.best=r.best==null?null:r.best;o.score=n(r.score);o.sure=!!r.sure;
+    if(r.A)o.A=v(r.A);if(r.B)o.B=v(r.B);
+    return o;
   }
   // stop listening now (a second tap on the button)
   function stop(){try{if(capStop)capStop();}catch(e){}try{Speech.stop();}catch(e){}}
@@ -17326,11 +17373,12 @@ const Talk=(()=>{
 
   /* ---------- the log and the report ---------- */
   // from: another screen's tries share the log, marked ("sayit": every Say it try, sure or not)
-  function logIt(tier,ok,from){const t=T(),e={d:today(),tier,ok:!!ok};if(from)e.from=from;t.log.push(e);if(t.log.length>LOG_MAX)t.log=t.log.slice(-LOG_MAX);save();}
+  function logIt(tier,ok,from,more){const t=T(),e={d:today(),tier,ok:!!ok};if(from)e.from=from;if(more)Object.keys(more).forEach(k=>{if(!(k in e))e[k]=more[k];});t.log.push(e);if(t.log.length>LOG_MAX)t.log=t.log.slice(-LOG_MAX);save();}
   function report(days){
     const all=state.talk&&Array.isArray(state.talk.log)?state.talk.log:[],from=(days&&days[0])||today(),wk=all.filter(x=>x&&x.d>=from&&!x.from);
     const sy=all.filter(x=>x&&x.d>=from&&x.from==="sayit"),m=k=>sy.filter(x=>x.tier===k).length,good=sy.filter(x=>x.ok).length;
-    const says=sy.length?`<p class="rnote" id="rSayIt">🎤 Say it: <b>${sy.length}</b> ${sy.length===1?"try":"tries"} this week, ${good} read right (${m("A")} heard by the NAS, ${m("B")} matched on the iPad, ${m("C")} by the browser).</p>`:"";
+    const vo=T().voice,heard=Object.keys(vo).filter(k=>vo[k]>0).length;
+    const says=sy.length?`<p class="rnote" id="rSayIt">🎤 Say it: <b>${sy.length}</b> ${sy.length===1?"try":"tries"} this week, ${good} read right (${m("A")} heard by the NAS, ${m("B")} matched on the iPad, ${m("AB")?m("AB")+" by the two together, ":""}${m("C")} by the browser); words that know his voice: ${heard}.</p>`:"";
     if(!wk.length&&!on())return says;
     const n=k=>wk.filter(x=>x.tier===k).length;
     return`<p class="rnote" id="rTalk">🎤 Talk to me: <b>${wk.length}</b> answer${wk.length===1?"":"s"} this week, ${n("A")} heard by the NAS, ${n("B")} matched on the iPad, ${n("C")} by the browser${n("tap")?`, ${n("tap")} tapped`:""}.</p>`+says;
@@ -17589,7 +17637,7 @@ const Talk=(()=>{
 
   Object.assign(api,{hear,probe,match,tier,bank,bankPage,featuresOf,open,close,report,renderSettings,sync,voiceLines,on,transcribe,inboxOpen,
     // for Say it: one answer, stop, its log entry, his voice from a sure answer
-    once,stop,log:logIt,keepClip,
+    once,stop,log:logIt,keepClip,heardOf,known,
     // the step after the microphone, and the microphone (the tests stand in for both)
     _hear:hearAny,_record:record,
     // for the tests
@@ -17598,6 +17646,99 @@ const Talk=(()=>{
       busy:!!(Q&&Q.busy),miss:Q?Q.miss:0,unsure:Q?Q.unsure:0};},
     _A:A,_refs:refs,_own:own,_reset:()=>{A.ok=0;A.down=0;A.probe=null;voiceRef.clear();tplIdx=null;tplMem.clear();}});
   return api;
+})();
+
+/* ---- Teach the game his voice (Grown-up menu → Settings) ----
+   The matcher on the iPad (Talk's tier B) knows a word best from his own voice, and on his own he only banks one when
+   the NAS is sure. Here a grown-up sits with him: one of his words at a time, shown big and never said (he reads it),
+   🎤 Listen records it the way Talk to me does (Talk._record: up to 4 s of talk; 0.15-2.5 s of speech is kept), and
+   ✓ He said it banks it as his template for that word, kind "teach", which outranks every other kind (a grown-up heard
+   it); the 5-a-word cap and Talk.bank's rule for making room stay. ↺ Again listens again; Skip moves on. The words:
+   the ones Say it asks (not heart words, at his level or under, ones he has seen, mastered first) and each one's
+   look-alikes he has seen, 18 at most, none that already has 3 of his templates. The row's count and the end's
+   come from the templates stored (Talk.known). */
+const Teach=(()=>{
+  const MAX=18,ENOUGH=3;
+  let ov=null,S=null;
+  const el=id=>document.getElementById(id),$=s=>ov&&ov.querySelector(s);
+  const count=v=>Object.keys(v||{}).filter(k=>v[k]>0).length;
+  const line=n=>n+" word"+(n===1?" knows":"s know")+" his voice";
+  // this session's words
+  async function words(){
+    let have={};try{have=await Talk.known();}catch(e){}
+    const lvl=currentTier(),st=w=>state.stats[w]||{},seen=w=>(+st(w).seen||0)>0,key=w=>VoicePack.norm(w);
+    const ok=x=>!!x&&!x.tricky&&/^[a-z]+$/.test(x.w)&&seen(x.w);
+    const base=allWords().filter(x=>ok(x)&&x.t<=lvl)
+      .sort((a,b)=>(st(b.w).mastered?1:0)-(st(a.w).mastered?1:0)||(+st(b.w).seen||0)-(+st(a.w).seen||0));
+    const out=[],add=x=>{if(out.length<MAX&&ok(x)&&out.indexOf(x.w)<0&&(have[key(x.w)]||0)<ENOUGH)out.push(x.w);};
+    for(const x of base){if(out.length>=MAX)break;add(x);let alts=[];try{alts=lookalikes(x);}catch(e){}alts.forEach(add);}
+    return out;
+  }
+  function root(){if(!ov){ov=document.createElement("div");ov.className="overlay";ov.id="ovTeach";document.body.appendChild(ov);}return ov;}
+  function msg(t){const m=$("#tvMsg");if(m)m.textContent=t||"";}
+  // ready: Listen and Skip; listen: Listen (tap to stop) and Skip; got: ✓, Again and Skip
+  function show(mode){
+    const vis=(id,on)=>{const b=$("#"+id);if(b)b.style.display=on?"":"none";};
+    vis("tvListen",mode!=="got");vis("tvYes",mode==="got");vis("tvAgain",mode==="got");vis("tvSkip",true);
+    const b=$("#tvListen");if(b){b.textContent=mode==="listen"?"👂 Listening… tap when he's done":"🎤 Listen";b.classList.toggle("on",mode==="listen");}
+  }
+  function word(){
+    const w=S.list[S.i],b=$("#tvBody");if(!b)return;
+    b.innerHTML=`<div class="tvprog" id="tvProg">${S.i+1} of ${S.list.length}</div>
+      <div class="tvword" id="tvWord" data-w="${esc(w)}">${esc(w)}</div>
+      <p class="tkmsg" id="tvMsg"></p>
+      <div class="tvbtns"><button class="btn big rec" id="tvListen">🎤 Listen</button><button class="btn big primary" id="tvYes">✓ He said it</button>
+        <button class="btn big soft" id="tvAgain">↺ Again</button><button class="btn ghost" id="tvSkip">Skip</button></div>`;
+    $("#tvListen").onclick=listen;$("#tvYes").onclick=yes;$("#tvAgain").onclick=again;$("#tvSkip").onclick=skip;
+    show("ready");
+  }
+  async function end(empty){
+    const n=count(await Talk.known().catch(()=>({}))),b=$("#tvBody");if(!b)return;
+    b.innerHTML=`<p class="tvend" id="tvEnd">${empty?"Nothing to teach right now. Words he has read in Read it show up here, until each one has 3 clips of his voice. ":"All done! "}${line(n)} now.</p>
+      <div class="tvbtns"><button class="btn big primary" id="tvDone">Done</button></div>`;
+    $("#tvDone").onclick=shut;
+  }
+  async function open(){
+    const o=root(),my=S={list:[],i:0,gen:0,busy:false,clip:null};
+    o.innerHTML=`<div class="sheet teachsheet"><div class="bhead"><h2>🎤 Teach the game his voice</h2><button class="bx" id="tvX" aria-label="Close">✕</button></div>
+      <p class="sub">Show him the word and let him read it out loud: tap 🎤 Listen just before he says it. Tap ✓ if he said it right, ↺ to hear him again, or Skip. The game keeps how his voice sounds (not the recording), so Say it can tell his words apart.</p>
+      <div id="tvBody"></div></div>`;
+    $("#tvX").onclick=shut;
+    if(!o.classList.contains("on")){o.classList.add("on");Modes.open("other",o);}
+    my.list=await words();
+    if(S!==my)return;
+    if(my.list.length)word();else end(true);
+  }
+  // one clip: Talk's recorder, then the speech in it (nothing heard, too short or too long says so and listens again)
+  async function listen(){
+    if(!S)return;
+    if(S.busy){try{Talk.stop();}catch(e){}return;}
+    const my=S,g=++S.gen;my.busy=true;my.clip=null;msg("");show("listen");
+    let cap=null,f=null;try{cap=await Talk._record({max:4000});}catch(e){cap=null;}
+    if(cap&&cap.blob&&cap.heard!==false){try{f=await Talk.featuresOf(cap.blob);}catch(e){f=null;}}
+    if(S!==my||my.gen!==g)return;
+    my.busy=false;
+    if(!cap)msg("The microphone didn't start. Settings → Microphone check says why.");
+    else if(!f||!f.heard)msg("I didn't hear anything. Tap Listen and let him say it again.");
+    else if(f.ms<150)msg("That was very short. Tap Listen and let him say the whole word.");
+    else if(f.ms>2500)msg("That was long for one word. Tap Listen and let him say just the word.");
+    else{my.clip=f;msg("Did he say it right?");show("got");return;}
+    show("ready");
+  }
+  async function yes(){
+    if(!S||!S.clip)return;const my=S,f=my.clip,w=my.list[my.i];my.clip=null;
+    let ok=false;try{ok=await Talk.bank(w,f.frames,"teach");}catch(e){}
+    if(ok)try{Sound.sfx.pop();}catch(e){}
+    if(S===my)next();
+  }
+  function again(){if(!S)return;S.clip=null;msg("");show("ready");}
+  function skip(){if(!S)return;if(S.busy){S.busy=false;try{Talk.stop();}catch(e){}}next();}
+  function next(){S.gen++;S.clip=null;S.i++;if(S.i>=S.list.length)end(false);else word();}
+  function shut(){if(S&&S.busy){try{Talk.stop();}catch(e){}}S=null;if(ov)Modes.shut(ov);renderRow();}
+  // the Settings row: how many words know his voice, from the store
+  function renderRow(){const m=el("teachMeta");if(!m)return;Talk.known().then(v=>{m.textContent=line(count(v));},()=>{});}
+  {const b=el("teachBtn");if(b)b.onclick=()=>{try{Sound.sfx.soft();}catch(e){}open();};}
+  return{open,close:shut,renderRow,words,_list:()=>S?S.list.slice():[]};
 })();
 
 /* ================================================================
@@ -20284,6 +20425,7 @@ function renderSettings(){
   document.getElementById("optGoal").value=String(Goal.target());
   document.getElementById("optHero").value=heroName();
   try{Talk.renderSettings();}catch(e){}      // TALK
+  try{Teach.renderRow();}catch(e){}      // TEACH THE GAME HIS VOICE
   try{MicCheck.render();}catch(e){}      // MICROPHONE CHECK
   try{Fluency.renderSettings();}catch(e){}      // ONE-MINUTE READING CHECK
   try{Party.renderSettings();}catch(e){}      // PARTY

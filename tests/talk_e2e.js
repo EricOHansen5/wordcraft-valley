@@ -27,7 +27,7 @@ const {launch,check,waitFor,answer,seed,tile}=require("./lib");
 
   // ---- 1. an old save, and off by default ----
   const st=await E(()=>({talk:state.talk,t:state.settings.talk,e:state.settings.eyesFree}));
-  ok(J(st.talk)===J({log:[],tpl:0,inbox:[]})&&st.t===false&&st.e===false,"an old save gets talk {log:[],tpl:0,inbox:[]}, and Talk to me and Eyes-free are off "+J(st));
+  ok(J(st.talk)===J({log:[],tpl:0,inbox:[],voice:{}})&&st.t===false&&st.e===false,"an old save gets talk {log:[],tpl:0,inbox:[],voice:{}}, and Talk to me and Eyes-free are off "+J(st));
   await tile(p,"#crateBtn");await p.waitForTimeout(250);
   ok(!(await p.isVisible("#talkBtn"))&&(await E(()=>Talk.open()))===false,"off: no Talk to me in the crates, and it doesn't open");
   await E(()=>Modes.shut(document.getElementById("ovCrates")));
@@ -227,9 +227,9 @@ const {launch,check,waitFor,answer,seed,tile}=require("./lib");
   // ---- 12. saves ----
   const kept=await seed(p,Object.assign({},S0,{talk:{log:[{d:"2026-09-01",tier:"B",ok:true}]},settings:{talk:true,tts:false}}));
   const s2=await E(()=>({talk:state.talk,t:state.settings.talk,e:state.settings.eyesFree}));
-  ok(J(s2.talk)===J({log:[{d:"2026-09-01",tier:"B",ok:true}],tpl:0,inbox:[]})&&s2.t===true&&s2.e===false,"a saved log is kept, tpl and inbox filled in; the setting is kept "+J(s2));
+  ok(J(s2.talk)===J({log:[{d:"2026-09-01",tier:"B",ok:true}],tpl:0,inbox:[],voice:{}})&&s2.t===true&&s2.e===false,"a saved log is kept, tpl, inbox and voice filled in; the setting is kept "+J(s2));
   await seed(p,Object.assign({},S0,{talk:null}));
-  ok(await E(()=>JSON.stringify(state.talk)===JSON.stringify({log:[],tpl:0,inbox:[]})),"a saved null talk gets its default");
+  ok(await E(()=>JSON.stringify(state.talk)===JSON.stringify({log:[],tpl:0,inbox:[],voice:{}})),"a saved null talk gets its default");
   await seed(p,Object.assign({},S0,{talk:{log:"junk",tpl:3}}));await tidy();
   await E(()=>{state.settings.talk=true;Talk._record=async()=>null;Talk._hear=async()=>({tier:"B",best:document.getElementById("tkQ").dataset.ans,score:.9,sure:true,heard:true});Talk.open();Talk._listen();});
   ok(await waitFor(p,()=>Talk._S()&&Talk._S().done)&&await E(()=>Array.isArray(state.talk.log)&&state.talk.log.length===1&&state.talk.tpl===3),"a broken log is replaced when he next answers; the count is kept");

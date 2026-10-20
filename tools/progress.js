@@ -46,6 +46,18 @@ function said(e){const x=e.x==null?"":String(e.x);
     :e.k==="read"?"read '"+x+"' first try":e.k==="help"?"read '"+x+"' with help":e.k==="wait"?"read '"+x+"' with help, prize waits"
     :e.k==="book"?"finished the book "+x:e.k==="guess"?"sound it out first "+(x==="on"?"came on":"went off")
     :e.k==="guessset"?"a grown-up turned sound it out first "+(x==="on"?"on":"off"):e.k+" "+x;}
+// ---- Say it: a try's log entry (state.talk.log, from "sayit"; see SayIt and Talk.heardOf in app/index.html) as one line:
+// when, the word, what the NAS heard, each listener's best and score, who decided ("both agree": A and B leaned the same way)
+const sc=v=>(+v||0).toFixed(2).replace(/^0/,"");
+function sayIt(e){
+  const when=e.at?day(new Date(e.at)).slice(5)+" "+pad(clock(e.at),8,1):String(e.d||"").slice(5)+" "+pad("",8);
+  const view=(k,x)=>k+(x.best?" "+x.best:"")+" "+sc(x.score)+(x.sure?" sure":" not sure"),parts=[];
+  if(e.A)parts.push(view("A",e.A));if(e.B)parts.push(view("B",e.B));
+  if(!e.A&&!e.B&&e.score!=null)parts.push(view(e.tier,e));
+  if(e.tier==="AB")parts.push("both agree");
+  const what=e.text?'heard "'+e.text+'" ':e.A||e.tier==="A"?"heard nothing ":e.tier==="none"?"nothing could listen ":"";
+  return when+"  "+(e.w||"(word not noted)")+" → "+what+(parts.length?"("+parts.join("; ")+") ":"")+(e.ok?"✓":"·");
+}
 function play(s,p){
   const days=lastDays(7).reverse(),ss=Array.isArray(s.sessions)?s.sessions:[],H=s.helps||{},P=s.prizes||{},A=s.answers||{},D=s.daily||{};
   p("How he plays (last 7 days)");
@@ -141,6 +153,14 @@ function report(snap){
   const mc=s.micCheck,me=s.micErr;
   p("Microphone: ",mc?("tested "+new Date(mc.at).toLocaleString()+": "+(mc.ok?"works (level "+mc.peak+")":"failed, "+mc.err)+" at "+mc.origin+(mc.perm?", permission "+mc.perm:"")):"never tested",
     me?("; last failure "+new Date(me.at).toLocaleString()+" in "+me.where+": "+me.err+" at "+me.origin):"; no failures noted");
+  // ---- Say it: the last 20 tries, and the words that know his voice (Grown-up menu → Settings → Teach the game his voice) ----
+  const tk=s.talk||{},vo=tk.voice||{},vw=Object.keys(vo).filter(k=>vo[k]>0).sort((a,b)=>vo[b]-vo[a]||(a<b?-1:1));
+  const sy=(Array.isArray(tk.log)?tk.log:[]).filter(x=>x&&x.from==="sayit").slice(-20);
+  p("");
+  p("Say it (the last ",sy.length," tries, newest last; ✓ read right, · not this time):",sy.length?"":" none yet");
+  sy.forEach(e=>p("  ",sayIt(e)));
+  p("  ",vw.length," word",vw.length===1?" knows":"s know"," his voice",vw.length?": "+vw.map(k=>k+" "+vo[k]).join(", "):"",
+    "; ",tk.tpl||0," clips of his voice banked in all");
   // ---- battery: the grown-up's checks (Grown-up menu → Settings → Battery check) and the game's own clues ----
   const pw=s.power||{},ck=(pw.checks||[]).slice(-5).reverse();
   p("");
