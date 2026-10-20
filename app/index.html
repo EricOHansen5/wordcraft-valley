@@ -731,6 +731,7 @@ button.mpill{cursor:pointer;min-height:48px}
 .shieldtiles{display:flex;gap:10px;justify-content:center}.shield .lt{min-width:62px;height:74px;font-size:36px}
 .shield .lt.done{background:#BFE6B0}.shield.broken{animation:fadeout .45s forwards}
 .locked-by-shield{opacity:.35;pointer-events:none;filter:grayscale(.6)}
+.shield .lt.next{box-shadow:0 0 0 4px rgba(255,211,77,.7);border-color:#E8A93A}
 /* read then prove */
 #picks .prove{flex-basis:100%;text-align:center;font-weight:800;color:var(--ink-soft);font-size:18px}
 /* picture it */
@@ -6237,7 +6238,7 @@ function openWord(w,opt){
   // Sound Shield after rushed guesses: tap the sounds before the answers unlock
   if(Skills.slow&&rung!==1&&document.querySelector("#picks .pick:not(.text),#picks .btn")){
     const P=document.getElementById("picks");P.classList.add("locked-by-shield");
-    soundShield(document.getElementById("shieldHost"),w,()=>{P.classList.remove("locked-by-shield");cur._t0=performance.now();});}
+    soundShield(document.getElementById("shieldHost"),w,()=>{P.classList.remove("locked-by-shield");cur._t0=performance.now();try{cur._g.shown();}catch(e){}},cur._g);}
   show("ovRead");
 }
 // the same sound tile (a word may spell it with a different tile name)
@@ -9009,8 +9010,9 @@ const Guess=(()=>{
   const G=()=>{const g=state.guess&&typeof state.guess==="object"?state.guess:(state.guess={});
     if(typeof g.on!=="boolean")g.on=false;if(!Array.isArray(g.last))g.last=[];if(typeof g.clean!=="number")g.clean=0;
     if(!g.days||typeof g.days!=="object")g.days={};return g;};
-  function track(){
-    let t0=performance.now(),heard=false,guess=false,tiles=0,done=null;
+  // opt.noTiles: there are no sound tiles to tap (the Read kit's picks), so only the quick wrong pick counts
+  function track(opt){
+    let t0=performance.now(),heard=!!(opt&&opt.noTiles),guess=false,tiles=0,done=null;
     return{
       shown(){t0=performance.now();},
       heard(){heard=true;},
@@ -9029,17 +9031,22 @@ const Guess=(()=>{
   return{track,on:()=>G().on,set:v=>{G().on=!!v;if(!v)G().last=[];save();}};
 })();
 
-/* Sound Shield: answers stay locked until each sound in the word is tapped.
-   Shown only after rushed guesses; it teaches "sound it out first". */
-function soundShield(host,word,onOpen){
+/* Sound Shield: answers stay locked until each sound in the word is tapped, left to right.
+   Shown while guess mode is on (Guess); it teaches "sound it out first". It never says the word (he blends it),
+   and breaking it does not end guess mode: five clean reads in a row do. g: the word's guess tracker (optional). */
+function soundShield(host,word,onOpen,g){
   const w=typeof word==="string"?(allWords().find(x=>x.w===word)||{w:word,p:splitPhonemes(word)}):word;
   const box=document.createElement("div");box.className="shield";
-  box.innerHTML=`<div class="shieldmsg">🛡️ Sound Shield! Slow down — tap each sound to break it.</div><div class="shieldtiles"></div>`;
-  const row=box.querySelector(".shieldtiles"),done=new Set();
-  w.p.forEach((ph,i)=>{const b=document.createElement("button");b.className="lt";b.textContent=tileText(ph);
-    b.onclick=async()=>{b.classList.add("lit");await Sound.say("sound:"+ph,ph);b.classList.remove("lit");b.classList.add("done");done.add(i);
-      if(done.size===w.p.length){await Sound.say("word:"+w.w,w.w,.85);box.classList.add("broken");Skills.slow=false;setTimeout(()=>{box.remove();onOpen&&onOpen();},450);}};
-    row.appendChild(b);});
+  box.innerHTML=`<div class="shieldmsg">🛡️ Sound it out first! Tap each sound in order.</div><div class="shieldtiles"></div>`;
+  const row=box.querySelector(".shieldtiles");let at=0;
+  const tiles=w.p.map((ph,i)=>{const b=document.createElement("button");b.className="lt"+(i===0?" next":"");b.textContent=tileText(ph);
+    b.onclick=async()=>{
+      if(i!==at){if(i>at)Sound.sfx.soft();return;}
+      at++;b.classList.remove("next");if(tiles[at])tiles[at].classList.add("next");
+      try{if(g)g.heard();}catch(e){}
+      b.classList.add("lit");await Sound.say("sound:"+ph,ph);b.classList.remove("lit");b.classList.add("done");
+      if(at===w.p.length&&!box.classList.contains("broken")){box.classList.add("broken");setTimeout(()=>{box.remove();onOpen&&onOpen();},450);}};
+    row.appendChild(b);return b;});
   host.prepend(box);Sound.sfx.nope();
   return box;
 }
@@ -10613,29 +10620,29 @@ const Read=(()=>{
   function once(done){let used=false;return function(){if(used)return;used=true;if(typeof done==="function")return done.apply(this,arguments);};}
   // read the word, tap its picture
   function pic(host,done,w){
-    w=w||word();const t0=performance.now();let miss=0,fin=false;
+    w=w||word();const t0=performance.now(),g=Guess.track({noTiles:true});let miss=0,fin=false;
     host.innerHTML=`<p class="wp">Read the word. Tap its picture!</p><div class="wword">${w.w}</div>
       <div class="wopts">${shuffle([w,...others(w)]).map(o=>`<button class="wpic" data-w="${o.w}">${drawWord(o.w,"q")}</button>`).join("")}</div>`;
     const box=host.querySelector(".wopts");host.dataset.ans=w.w;
-    if(Skills.slow){box.classList.add("locked-by-shield");soundShield(host,w,()=>box.classList.remove("locked-by-shield"));}
+    if(Guess.on()){box.classList.add("locked-by-shield");soundShield(host,w,()=>{box.classList.remove("locked-by-shield");g.shown();},g);}
     box.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
       if(fin)return;const ok=b.dataset.w===w.w;if(ok)fin=true;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
-      if(ok){b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
-      else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
+      if(ok){g.finish(!miss);b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
+      else{g.wrongPick();miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);
         if(miss>=2)box.querySelector(`[data-w="${w.w}"]`).classList.add("hint");}});
     return w;
   }
   // look at the picture, find its word among look-alikes
   function wordPick(host,done,w){
-    w=w||word();const t0=performance.now();let miss=0,fin=false;
+    w=w||word();const t0=performance.now(),g=Guess.track({noTiles:true});let miss=0,fin=false;
     const opts=shuffle([w.w,...lookalikes(w).map(x=>x.w)]);
     host.innerHTML=`<p class="wp">Which word is this? Look closely!</p><div class="wbig">${drawWord(w.w,"q")}</div>
       <div class="wopts">${opts.map(o=>`<button class="wwopt" data-w="${o}">${o}</button>`).join("")}</div>`;
     host.dataset.ans=w.w;
     host.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
       if(fin)return;const ok=b.dataset.w===w.w;if(ok)fin=true;rec(w,ok&&!miss,{help:miss>0,confused:ok?null:b.dataset.w,ms:performance.now()-t0});
-      if(ok){b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
-      else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);Sound.say("word:"+b.dataset.w,b.dataset.w,.9);}});
+      if(ok){g.finish(!miss);b.classList.add("right");Sound.sfx.win();Sound.say("word:"+w.w,w.w,.9);setTimeout(()=>done(!miss),900);}
+      else{g.wrongPick();miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),500);Sound.say("word:"+b.dataset.w,b.dataset.w,.9);}});
     return w;
   }
   // read a sentence, pick the matching scene
@@ -10644,8 +10651,11 @@ const Read=(()=>{
     host.innerHTML=`<p class="wp">Read it all, then find the picture!</p><div class="btext">${ps.text.split(" ").map(w=>`<span class="bw">${w}</span>`).join(" ")}</div>
       <div class="psopts">${ps.opts.map((o,i)=>`<button class="psopt" data-i="${i}">${PicSentence.draw(o,bg||"meadow")}</button>`).join("")}</div>`;
     Books.wireWords(host.querySelector(".btext"));host.dataset.ans="#"+ps.opts.findIndex(x=>x.ok);
+    const g=Guess.track({noTiles:true}),pso=host.querySelector(".psopts");
+    if(Guess.on()){pso.classList.add("locked-by-shield");soundShield(host,ps.words[0],()=>{pso.classList.remove("locked-by-shield");g.shown();},g);}
     host.querySelectorAll(".psopt").forEach(b=>b.onclick=()=>{
       if(fin)return;const o=ps.opts[+b.dataset.i];if(o.ok)fin=true;state.comp[o.ok?"right":"wrong"]++;
+      if(o.ok)g.finish(!miss);else g.wrongPick();
       if(o.ok){b.classList.add("right");Sound.sfx.win();Sound.say("sent:"+ps.text,ps.text,.9);setTimeout(()=>done(!miss),1100);}
       else{miss++;b.classList.add("wrong");Sound.sfx.nope();setTimeout(()=>b.classList.remove("wrong"),600);
         if(miss>=2)host.querySelector(`.psopt[data-i="${ps.opts.findIndex(x=>x.ok)}"]`).classList.add("hint");}});

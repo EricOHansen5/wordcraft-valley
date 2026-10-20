@@ -160,6 +160,38 @@ const {launch,check,seed,reload}=require("./lib");
   ok(up5.lv===2,"an upgrade word with a miss still finishes the upgrade "+J(up5));
   await ix();await wait(400);
 
+  // ---- 6. sound it out first while he is guessing ----
+  const fresh6=()=>E(()=>allWords().filter(x=>!x.tricky&&WORD_ART[x.w]&&!state.stats[x.w]&&x.p.length>=3)[0].w);
+  const w6=await fresh6();
+  const s6=await E(async w=>{window.__said=[];Guess.set(true);const W=allWords().find(x=>x.w===w);openWord(W,{rung:0});await new Promise(r=>setTimeout(r,300));
+    const box=document.querySelector("#shieldHost .shield"),P=document.getElementById("picks"),r={shield:!!box,locked:P.classList.contains("locked-by-shield")};
+    if(!box)return r;const t=[...box.querySelectorAll(".shieldtiles .lt")];
+    t[1].click();await new Promise(r=>setTimeout(r,150));r.outOfOrder=t[1].classList.contains("done");
+    for(const b of t){b.click();await new Promise(r=>setTimeout(r,700));}
+    await new Promise(r=>setTimeout(r,700));
+    r.gone=!document.querySelector("#shieldHost .shield");r.unlocked=!P.classList.contains("locked-by-shield");
+    r.word=window.__said.indexOf("word:"+w)>=0;r.on=Guess.on();return r;},w6);
+  ok(s6.shield&&s6.locked,"while he is guessing, a word starts with the Sound Shield "+J(s6));
+  ok(!s6.outOfOrder,"its sounds go in order: the second one first does nothing "+J(s6));
+  ok(s6.gone&&s6.unlocked&&!s6.word,"tapped in order it opens the choices, without saying the word "+J(s6));
+  ok(s6.on,"...and guess mode stays on "+J(s6));
+  await ix();await wait(400);
+  await E(()=>{for(let i=0;i<5;i++){const T=Guess.track();T.heard();T.finish(true);}});
+  const w6b=await fresh6();
+  ok(await E(async w=>{const W=allWords().find(x=>x.w===w);openWord(W,{rung:0});await new Promise(r=>setTimeout(r,300));return !Guess.on()&&!document.querySelector("#shieldHost .shield");},w6b),
+    "five clean reads later it is off, and the next word has no Shield");
+  await ix();await wait(400);
+  const rp=await E(async()=>{Guess.set(true);const host=document.createElement("div");document.body.appendChild(host);const w=Read.pic(host,()=>{});
+    const r={shield:!!host.querySelector(".shield"),locked:!!host.querySelector(".wopts.locked-by-shield")};host.remove();Guess.set(false);return r;});
+  ok(rp.shield&&rp.locked,"Read.pic starts with the Shield too "+J(rp));
+  const rs=await E(async()=>{Guess.set(true);const host=document.createElement("div");document.body.appendChild(host);Read.sentence(host,()=>{});
+    const r={shield:!!host.querySelector(".shield"),locked:!!host.querySelector(".psopts.locked-by-shield")||!!host.querySelector(".wopts.locked-by-shield")};host.remove();Guess.set(false);return r;});
+  ok(rs.shield&&rs.locked,"...and Read.sentence "+J(rs));
+  const rg=await E(async()=>{const d0=state.guess.days[today()]||0;const host=document.createElement("div");document.body.appendChild(host);const w=Read.pic(host,()=>{});
+    [...host.querySelectorAll("[data-w]")].find(b=>b.dataset.w!==w.w).click();host.querySelector(`[data-w="${w.w}"]`).click();
+    await new Promise(r=>setTimeout(r,200));host.remove();return{d0,d1:state.guess.days[today()]||0};});
+  ok(rg.d1===rg.d0+1,"a quick wrong pick in Read.pic counts as a guess "+J(rg));
+
   ok(!errs.length,"no page errors: "+errs.join(" | "));
   await close();t.done();
 })().catch(e=>{console.log("FAIL crashed: "+(e&&e.stack||e));process.exit(1);});

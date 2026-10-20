@@ -42,7 +42,8 @@ const srv=require("./page").serveApp({port:8791},async()=>{
   await p.screenshot({path:"r_shield.png"});
   for(const t of await p.$$("#shieldHost .lt")){await t.click();await p.waitForTimeout(700);}
   await p.waitForTimeout(1500);
-  ok(await p.evaluate(()=>!document.querySelector("#shieldHost .shield")&&!document.getElementById("picks").classList.contains("locked-by-shield")&&!Skills.slow),"tapping every sound breaks the shield");
+  ok(await p.evaluate(()=>!document.querySelector("#shieldHost .shield")&&!document.getElementById("picks").classList.contains("locked-by-shield")&&Skills.slow),"tapping every sound in order breaks the shield (sound it out first stays on until five clean reads)");
+  await p.evaluate(()=>Guess.set(false));
   // 3 read then prove
   await p.evaluate(()=>{document.querySelectorAll(".overlay.on").forEach(o=>o.classList.remove("on"));const w=allWords().find(x=>x.w==="dog");openWord({...w},{rung:2});});
   const rb=await p.evaluate(()=>document.querySelector("#picks .btn").disabled);
