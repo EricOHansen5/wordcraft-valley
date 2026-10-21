@@ -825,6 +825,14 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - **Quiet clips are turned up before the NAS hears them.** The clip is decoded, made mono 16 kHz and raised to a normal level (at most ×30; near-silence stays silent), then sent as a WAV. A recording the iPad judged "nothing" is still sent to the NAS when it isn't silent. If decoding fails, the original clip goes as before.
 - **Each try logs how loud he was** (`lvl`, `gain`); `tools/progress.js` prints it with each Say it line, and the microphone test now reads real levels (its "heard almost nothing" line is .004).
 
+### v10.18 — My Ocean
+- **🐠 in Home's bar opens My Ocean** (NEW until he first opens it). **Shop** shows 33 sea animals (29 to buy) by shelf (fish, on the sand, big sea, sharks, whales) with their prices; **In my ocean** shows his, each with a 🌊 Swimming / 💤 Resting switch.
+- **Buying is two taps.** A tap shows the animal big and says its name; "Buy for 1,500 💎" buys it, "Not now" doesn't. Without enough gems there is no Buy button: it says how many more ("Almost! 2,100 more gems") and to read for more. Prices never change, nothing is sold back.
+- **Prices:** fish 300–600 💎, big sea 900–1,800, sharks 1,500–5,000 (the Megalodon and the Golden shark are 5,000), whales 3,000–4,000; 47,850 💎 for all 29 to buy. The four Home always had (tropical fish, blowfish, sea turtle, little fish) are his from the start.
+- **On Home** his animals swim across at their own depth and speed: whales and the Megalodon slowly at the back, sharks in the middle, small fish in front, the crab and lobster low down; the jellyfish and octopuses bob, the Golden shark glows. A tap on one says its name. **At most 12 swim at once**; one bought while 12 swim goes in and the one swimming longest rests (still his). They hold still under a game and at rest, as before.
+- The animals are OpenMoji drawings (17 new, set `OMO` in `app/art/openmoji.js`); the colour versions (red fish, blue tang, tiger shark, Golden shark, Blue whale…) are the same drawings with their colours changed in code. Save: `state.ocean = {owned, shown, seen}`.
+- **Fix:** Home's fish and turtle swam backwards (the drawings face left); every animal now faces the way it swims.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

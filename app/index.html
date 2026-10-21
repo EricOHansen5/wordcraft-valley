@@ -1844,13 +1844,20 @@ body.look-winter #particles .lookp.lfall{animation-name:lksparkle;text-shadow:0 
 .hsand{position:absolute;left:-5%;right:-5%;bottom:-6%;height:22%;border-radius:50% 50% 0 0/40% 40% 0 0;background:#e9cf8c}
 .hdeco{position:absolute}.hdeco svg{width:100%;height:auto;display:block}
 .hbub{position:absolute;border:2px solid rgba(255,255,255,.75);border-radius:50%}
-.hfish{position:absolute;left:0;width:84px;height:84px;will-change:transform;animation:hswim 30s linear infinite}
-.hfish svg{width:100%;height:100%}.hfish.hleft{animation-name:hswimL}.hfish.hleft svg{transform:scaleX(-1)}
-.hf1{top:31%;animation-duration:28s}.hf2{top:42%;animation-duration:36s;animation-delay:-12s}.hf3{top:25%;width:110px;height:110px;animation-duration:40s;animation-delay:-25s}
-.hf4{top:53%;width:60px;height:60px;animation-duration:24s;animation-delay:-6s}
-@keyframes hswim{from{transform:translateX(-140px)}to{transform:translateX(110vw)}}
-@keyframes hswimL{from{transform:translateX(110vw)}to{transform:translateX(-140px)}}
-body.rest #ovHome .hfish,#ovHome.under .hfish{animation-play-state:paused}
+.hswim{position:absolute;inset:0}
+.hfish{position:absolute;left:0;will-change:transform;animation-timing-function:linear;animation-iteration-count:infinite;pointer-events:auto;cursor:pointer}
+.hfish .ofin,.hfish .oface{width:100%;height:100%}.hfish svg{width:100%;height:100%;display:block}
+.hfish.obob .ofin{animation:obob 3.6s ease-in-out infinite alternate}
+@keyframes obob{from{transform:translateY(-12px)}to{transform:translateY(12px)}}
+.hfish svg.otap{animation:otap .5s ease-out}
+@keyframes otap{40%{transform:scale(1.22)}}
+.hfish.oshine .oface{filter:drop-shadow(0 0 7px #ffd84a)}
+.hfish .ospark{position:absolute;top:-6px;left:40%;font-size:22px;animation:ospark 1.4s ease-in-out infinite alternate}
+@keyframes ospark{from{opacity:.1}to{opacity:1}}
+.hfish.oback{opacity:.88}
+body.rest #ovHome .hfish,body.rest #ovHome .hfish *,#ovHome.under .hfish,#ovHome.under .hfish *{animation-play-state:paused}
+.hocean{min-width:48px;min-height:44px;font-size:20px;position:relative}
+.hocean .hnew{position:absolute;top:-9px;right:-12px;background:#2a9cd0;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;border:2px solid #fff}
 .hbar{position:relative;display:flex;align-items:center;gap:8px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));font-weight:800}
 .hpill{background:rgba(255,250,240,.94);border:2.5px solid #2e2620;border-radius:14px;padding:4px 12px;font-size:17px;font-weight:800}
 .hgear{margin-left:auto;min-width:48px;min-height:44px;font-size:20px}
@@ -1874,6 +1881,20 @@ body.rest #ovHome .hfish,#ovHome.under .hfish{animation-play-state:paused}
 .htile .hbadge,.htile .hnew{position:absolute;top:-8px;right:-8px;background:#e94b3c;color:#fff;border-radius:10px;font-size:12px;padding:2px 7px;border:2px solid #fff}
 .htile .hnew{right:auto;left:-8px;background:#2a9cd0}
 @media (max-width:820px){.htile{width:104px;height:104px}.hbud{width:96px;height:96px}.hsay{font-size:18px}}
+
+/* ---------------- MY OCEAN ---------------- */
+.ocsheet{max-width:860px}
+.ocsheet h3{margin:14px 0 8px;font-size:20px}
+.occard{position:relative;cursor:pointer}.occard.owned{background:#e4f4fb}
+.occard .swim{width:100%;min-width:0;white-space:nowrap;padding:8px 6px}
+.ocbig{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(20,60,90,.45)}
+.ocbig[hidden]{display:none}
+.ocbox{background:#fffaf0;border:3px solid var(--ink);border-radius:24px;padding:18px 22px;text-align:center;max-width:420px;width:calc(100% - 32px);box-shadow:0 8px 0 rgba(0,0,0,.18)}
+.ocbox .art{width:200px;height:200px;margin:0 auto}.ocbox .art svg{width:100%;height:100%}
+.ocbox .nm{font-size:28px;font-weight:900;margin:4px 0}
+.ocbox .why{font-weight:800;font-size:19px;margin:8px 0 12px}
+.ocbox .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ocbox .btn{min-height:56px;font-size:19px}
 
 /* ---------------- WORD DUNGEONS ---------------- */
 .dmaps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:10px 0}
@@ -2346,7 +2367,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-20h"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-21a"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -3338,6 +3359,9 @@ Object.keys(OMB).forEach(k=>{ART[k]=()=>`<svg viewBox="0 0 100 100" xmlns="http:
 /* Home: the sea, OpenMoji (CC BY-SA 4.0) */
 const OMH=WCV.openmoji.OMH;   // art/openmoji.js
 Object.keys(OMH).forEach(k=>{ART[k]=()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${OMH[k]}</svg>`;});
+/* My Ocean: the sea creatures he can buy for Home, OpenMoji (CC BY-SA 4.0) */
+const OMO=WCV.openmoji.OMO;   // art/openmoji.js
+Object.keys(OMO).forEach(k=>{ART[k]=()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${OMO[k]}</svg>`;});
 
 /* Word Dungeons: monsters, tiles and items, OpenMoji (CC BY-SA 4.0) */
 const OMD=WCV.openmoji.OMD;   // art/openmoji.js
@@ -4405,6 +4429,9 @@ const def=()=>({v:SAVE_V,wordsRead:0,gems:0,crateCount:0,rows:ROWS_START,biome:0
   // HOME: the games he has opened from Home ({id:"YYYY-MM-DD"}; NEW shows until then), whether an old save's
   // played games were marked seen yet (homeSeenFill, once), and the tour's length the save is on (7: with the Valley step)
   home:{seen:{},filled:false,steps:7},
+  // MY OCEAN: the sea creatures he bought ({id:1}), the ones swimming on Home in the order they went in (null: the
+  // four free ones, as Home always had), and whether he has opened the shop (🐠 shows NEW until then)
+  ocean:{owned:{},shown:null,seen:false},
   // WORD DUNGEONS: his battle team (critter ids), hearts, the items found, the dungeons cleared, the monsters befriended,
   // each fighter's experience, the run in progress (resumed at its room's door), counts, the map seen, the cave doors' places
   dungeon:{team:[],maxHearts:3,items:{boomerang:false,hookshot:false,bombs:false},cleared:{},friends:{},xp:{},run:null,
@@ -5513,6 +5540,7 @@ const Modes=(()=>{
     store:{name:"Trading Post",reading:false},         // TRADING POST: the two shelves
     closet:{name:"Closet",reading:false},              // LOOKS: the 🎨 Closet
     home:{name:"Home",reading:false},                  // HOME: the start screen, where he picks a game
+    ocean:{name:"My Ocean",reading:false},             // MY OCEAN: the sea creatures shop
     dungeon:{name:"Dungeons",reading:false},           // WORD DUNGEONS: the map and the rooms
     battle:{name:"Dungeon battles",reading:true},      // WORD DUNGEONS: a battle, a word door, making a friend
     other:{name:"Other",reading:false}};
@@ -5521,7 +5549,7 @@ const Modes=(()=>{
     ovRecap:"recap",ovScene:"scene",ovBook:"book",ovAlbum:"album",ovGate:"gate",ovParent:"parent",advHud:"adventure",
     ovStory:"book",ovPic:"pic",ovReport:"report",ovDex:"dex",ovWild:"wild",ovNote:"note",ovQuest:"story",ovMaker:"maker",
     ovWrite:"write",ovCare:"care",ovRace:"race",ovEvo:"evo",ovSync:"other",mineMode:"mine",
-    ovDungeons:"dungeon",ovDungeon:"dungeon",ovBattle:"battle",ovHome:"home"};
+    ovDungeons:"dungeon",ovDungeon:"dungeon",ovBattle:"battle",ovHome:"home",ovOcean:"ocean"};
   const stack=[];            // {id, el}, innermost last
   const SAME_VISIT=2000,lastClose={};
   let guardFn=null,mo=null;
@@ -5650,8 +5678,8 @@ function homeTourFix(s){const t=+s.tour||0;if(t>=2&&t<=5)s.tour=t+1;}
    shows NEW once (an old button's own NEW badge hides behind Home's). What lives in the valley (a keeper
    waking, the first car) waits until he goes there (Home.whenValley), and the way back from a game says
    where it goes: "🏠 Home", or in the valley its own words (data-back, Home.backText).
-   The fish and the turtle drift (the only motion); they hold still at rest and under a game
-   (#ovHome.under, set by Rest.cover).
+   The sea creatures he keeps in My Ocean swim across (the only motion; MY OCEAN draws them, and 🐠 in
+   the bar opens its shop); they hold still at rest and under a game (#ovHome.under, set by Rest.cover).
    ================================================================ */
 const Home=(()=>{
   let ov=null,spoke=false,lastOpen=0,visits=0;const els={};      // els: one tile element per game, kept between redraws
@@ -5660,8 +5688,7 @@ const Home=(()=>{
     ov=document.createElement("div");ov.className="overlay";ov.id="ovHome";
     ov.innerHTML=`<div class="hsea" aria-hidden="true">
         <i class="hray" style="left:10%"></i><i class="hray" style="left:44%"></i><i class="hray" style="left:76%"></i>
-        <div class="hfish hf1">${drawThing("h_fish")}</div><div class="hfish hf2 hleft">${drawThing("h_blowfish")}</div>
-        <div class="hfish hf3">${drawThing("h_turtle")}</div><div class="hfish hf4 hleft">${drawThing("h_fish")}</div>
+        <div class="hswim" id="hSwim"></div>
         <i class="hbub" style="left:86%;top:30%;width:16px;height:16px"></i><i class="hbub" style="left:89%;top:22%;width:10px;height:10px"></i>
         <i class="hbub" style="left:7%;top:46%;width:13px;height:13px"></i><i class="hbub" style="left:52%;top:20%;width:9px;height:9px"></i>
         <div class="hsand"></div>
@@ -5669,11 +5696,14 @@ const Home=(()=>{
         <div class="hdeco" style="left:44%;bottom:0;width:6%">${drawThing("h_shell")}</div><div class="hdeco" style="left:30%;bottom:1%;width:5%">${drawThing("h_star")}</div>
       </div>
       <div class="hbar"><span class="hpill" id="hGoal"></span><span class="hpill" id="hGems"></span><span class="hpill" id="hCoins"></span>
+        <button class="hpill hocean" id="hOcean" aria-label="My Ocean">🐠</button>
         <button class="hpill hgear" id="hGear" aria-label="Grown-up menu">⚙️</button></div>
       <div class="hhero"><div class="hbud" id="hBuddy"></div><div class="hsay"><span id="hSay"></span><div id="hGoWrap"></div></div></div>
       <div class="htiles"></div>`;
     document.body.appendChild(ov);
     ov.querySelector("#hGear").onclick=()=>{const b=document.getElementById("parentBtn");if(b)b.click();};
+    ov.querySelector("#hOcean").onclick=()=>{Sound.sfx.pop();Ocean.open();};      // MY OCEAN
+    try{Ocean.paint(ov.querySelector("#hSwim"));}catch(e){}
   }
   // the buddy's line: the first that applies
   function suggestion(){
@@ -5696,6 +5726,7 @@ const Home=(()=>{
     ov.querySelector("#hGoal").textContent=goal.t>0?`📖 ${Math.min(goal.w,goal.t)}/${goal.t}`:"📖 "+(+state.wordsRead||0);
     ov.querySelector("#hGems").textContent="💎 "+(+state.gems||0);
     ov.querySelector("#hCoins").textContent="🪙 "+(+((state.mine||{}).coins)||0);
+    try{const n=ov.querySelector("#hOcean");n.innerHTML="🐠"+(Ocean.seen()?"":`<span class="hnew">NEW</span>`);}catch(e){}      // MY OCEAN
     try{ov.querySelector("#hBuddy").innerHTML=ART.buddy(stageIdx(),mulberry(42),buddyHat());}catch(e){}
     const sg=suggestion();
     ov.querySelector("#hSay").textContent=sg.say;
@@ -5773,6 +5804,7 @@ const Home=(()=>{
       let x=null;try{x=g.suggest&&g.suggest();}catch(e){}if(x&&x.say)out.push(x.say);});
     // the holidays say "It's <name> time!" only in season: list them all the same
     ["Trick-or-Read","Light the tree","Fireworks","Birthday party","Feast table","Word mail","Egg hunt"].forEach(n=>out.push("It's "+n+" time!"));
+    try{Ocean.voiceLines().forEach(x=>out.push(x));}catch(e){}      // MY OCEAN: the creatures' names and its lines
     return out.filter((x,i)=>out.indexOf(x)===i);
   }
   // a game closed and Home is on top again: redraw it (NEW marks, the buddy's line, badges)
@@ -5782,6 +5814,267 @@ const Home=(()=>{
   // the game opens on Home; a test page may ask to start in the valley instead (window.WCV_START="valley", which the
   // test server sets), with Home built all the same so the page is laid out as it is for him
   start(){ready=true;if(window.WCV_START==="valley"&&!inValley){inValley=true;if(!ov)build();render();syncBack();return;}if(!inValley)show();syncBack();},get _valley(){return inValley;},_ov:()=>ov};
+})();
+
+/* ================================================================
+   MY OCEAN — sea creatures he buys with gems, swimming on Home
+   🐠 in Home's bar opens the sheet (#ovOcean): Shop has every creature with its price, In my ocean
+   the ones he has, each swimming or resting. Tapping a creature shows it big with its name; buying
+   takes one more tap ("Buy for 1,200 💎"), and without enough gems it only says how many more. The
+   price is taken once, nothing is sold back and nothing is taken away.
+   OCEAN is the data: {id, name, art (an OMH/OMO drawing), face ("l"/"r": the way the drawing looks;
+   "f": front on, never turned), rot (a top or front view turned to swim head first), tint (a colour
+   variant of the drawing: {h,s} gives every colour that hue and saturation, {r} turns the hues, {l}
+   scales the lightness; the black outline stays), kind (its shelf and its depth), size (px),
+   speed (s across), bob (drifts up and down), shine (glows and sparkles), free (his from the start:
+   the four Home always had)}.
+   On Home (Ocean.paint, into #hSwim): up to CAP (12) swim at once, behind to front by kind, each at
+   its own depth and speed, half of them right to left; a tap says its name. The swims are CSS
+   keyframes made for this screen's width (remade when it changes), so they pause with the rest of
+   Home (at rest and under a game, the HOME CSS).
+   Save: state.ocean = {owned:{id:1}, shown:[ids, in the order they went in] or null (the free four),
+   seen}. A creature bought while 12 swim goes in, and the one swimming longest rests.
+   ================================================================ */
+const OCEAN=[
+  // the four Home always had
+  {id:"tropical",name:"Tropical fish",art:"h_fish",face:"l",kind:"fish",size:84,speed:28,free:true},
+  {id:"blowfish",name:"Blowfish",art:"h_blowfish",face:"l",kind:"fish",size:76,speed:36,free:true},
+  {id:"turtle",name:"Sea turtle",art:"h_turtle",face:"l",kind:"big",size:110,speed:40,free:true},
+  {id:"fish",name:"Little fish",art:"o_fish",face:"r",kind:"fish",size:60,speed:24,free:true},
+  // fish
+  {id:"goldfish",name:"Goldfish",art:"o_goldfish",face:"r",kind:"fish",size:66,speed:22,price:300},
+  {id:"shrimp",name:"Shrimp",art:"o_shrimp",face:"l",kind:"fish",size:58,speed:30,price:300},
+  {id:"redfish",name:"Red fish",art:"o_fish",face:"r",tint:{h:2,s:.8,l:.72},kind:"fish",size:68,speed:25,price:350},
+  {id:"pinkfish",name:"Pink fish",art:"h_fish",face:"l",tint:{r:120},kind:"fish",size:80,speed:30,price:350},
+  {id:"bluetang",name:"Blue tang",art:"o_goldfish",face:"r",tint:{h:212,s:.85},kind:"fish",size:70,speed:23,price:400},
+  {id:"greenpuffer",name:"Green pufferfish",art:"h_blowfish",face:"l",tint:{h:105,s:.5},kind:"fish",size:74,speed:38,price:400},
+  {id:"crab",name:"Crab",art:"o_crab",face:"f",kind:"floor",size:64,speed:50,price:400},
+  {id:"purplefish",name:"Purple fish",art:"h_fish",face:"l",tint:{r:240},kind:"fish",size:80,speed:27,price:450},
+  {id:"orangefish",name:"Orange fish",art:"o_fish",face:"r",tint:{h:28,s:.92,l:.8},kind:"fish",size:64,speed:21,price:500},
+  {id:"lobster",name:"Lobster",art:"o_lobster",rot:90,kind:"floor",size:76,speed:56,price:600},
+  // big sea
+  {id:"jellyfish",name:"Jellyfish",art:"o_jelly",face:"f",bob:true,kind:"big",size:84,speed:62,price:900},
+  {id:"penguin",name:"Penguin",art:"o_penguin",rot:90,kind:"big",size:84,speed:20,price:900},
+  {id:"otter",name:"Otter",art:"o_otter",face:"l",kind:"big",size:92,speed:34,price:900},
+  {id:"squid",name:"Squid",art:"o_squid",rot:90,kind:"big",size:88,speed:26,price:1000},
+  {id:"seal",name:"Seal",art:"o_seal",face:"l",kind:"big",size:100,speed:30,price:1000},
+  {id:"octopus",name:"Octopus",art:"o_octopus",face:"f",bob:true,kind:"big",size:96,speed:46,price:1200},
+  {id:"dolphin",name:"Dolphin",art:"o_dolphin",face:"l",kind:"big",size:124,speed:18,price:1500},
+  {id:"blueoctopus",name:"Blue octopus",art:"o_octopus",face:"f",tint:{h:212,s:.72},bob:true,kind:"big",size:96,speed:50,price:1800},
+  // sharks
+  {id:"shark",name:"Shark",art:"o_shark",face:"r",kind:"shark",size:136,speed:30,price:1500},
+  {id:"tigershark",name:"Tiger shark",art:"o_shark",face:"r",tint:{h:28,s:.78,l:.88},kind:"shark",size:146,speed:32,price:1800},
+  {id:"blueshark",name:"Blue shark",art:"o_shark",face:"r",tint:{h:210,s:.58},kind:"shark",size:146,speed:28,price:1800},
+  {id:"greatwhite",name:"Great white shark",art:"o_shark",face:"r",tint:{l:1.32},kind:"shark",size:190,speed:38,price:2500},
+  {id:"megalodon",name:"Megalodon",art:"o_shark",face:"r",tint:{h:222,s:.22,l:.55},kind:"whale",size:290,speed:58,price:5000},
+  {id:"goldshark",name:"Golden shark",art:"o_shark",face:"r",tint:{h:46,s:.92,l:1.05},shine:true,kind:"shark",size:156,speed:34,price:5000},
+  // whales
+  {id:"whale",name:"Whale",art:"o_whale",face:"l",kind:"whale",size:210,speed:52,price:3000},
+  {id:"beluga",name:"Beluga",art:"o_beluga",face:"l",kind:"whale",size:180,speed:46,price:3000},
+  {id:"orca",name:"Orca",art:"o_orca",face:"r",kind:"whale",size:200,speed:40,price:3500},
+  {id:"narwhal",name:"Narwhal",art:"o_narwhal",face:"l",kind:"whale",size:190,speed:48,price:3500},
+  {id:"bluewhale",name:"Blue whale",art:"o_whale",face:"l",tint:{h:214,s:.45,l:.72},kind:"whale",size:360,speed:84,price:4000}];
+const Ocean=(()=>{
+  const CAP=12,FREE=OCEAN.filter(c=>c.free).map(c=>c.id);
+  // the shelves, in the shop's order; the layers on Home, back to front, and how deep each swims (% of Home's height)
+  const SHELF=[{kind:"fish",title:"🐟 Fish"},{kind:"floor",title:"🦀 On the sand"},{kind:"big",title:"🐙 Big sea"},{kind:"shark",title:"🦈 Sharks"},{kind:"whale",title:"🐋 Whales"}];
+  const LAYER={whale:0,shark:1,big:2,fish:3,floor:4},DEPTH={whale:[13,28],shark:[24,44],big:[24,50],fish:[28,58],floor:[55,59]};
+  const get=id=>OCEAN.find(c=>c.id===id)||null;
+  const O=()=>{if(!state.ocean||typeof state.ocean!=="object")state.ocean={owned:{},shown:null,seen:false};
+    if(!state.ocean.owned||typeof state.ocean.owned!=="object")state.ocean.owned={};return state.ocean;};
+  const owns=id=>{const c=get(id);return !!c&&(!!c.free||!!O().owned[id]);};
+  // the ones swimming: the saved list (only creatures he has, once each, at most CAP), or the free four
+  function shown(){const s=O().shown;if(!Array.isArray(s))return FREE.slice();
+    const out=[];s.forEach(id=>{if(owns(id)&&out.indexOf(id)<0&&out.length<CAP)out.push(id);});return out;}
+  const isShown=id=>shown().indexOf(id)>=0;
+  const gems=()=>+state.gems||0;
+  const fmt=n=>String(n).replace(/(\d)(?=(\d{3})+$)/g,"$1,");
+  // {ok:true, rested}, or {ok:false, why:"none"|"owned"|"short", need}
+  function buy(id){
+    const c=get(id);if(!c||c.free)return{ok:false,why:c?"owned":"none"};
+    if(owns(id))return{ok:false,why:"owned"};
+    if(gems()<c.price)return{ok:false,why:"short",need:c.price-gems()};
+    state.gems=gems()-c.price;O().owned[id]=1;
+    const s=shown();let rested=null;if(s.length>=CAP)rested=s.shift();s.push(id);O().shown=s;
+    save();try{renderHUD();}catch(e){}changed();
+    return{ok:true,rested};
+  }
+  // swimming (on) or resting; {ok:true}, or {ok:false, why:"none"|"full"}
+  function swim(id,on){
+    if(!owns(id))return{ok:false,why:"none"};
+    const s=shown(),i=s.indexOf(id);
+    if(on&&i<0){if(s.length>=CAP)return{ok:false,why:"full"};s.push(id);}
+    else if(!on&&i>=0)s.splice(i,1);
+    O().shown=s;save();changed();return{ok:true};
+  }
+  const seen=()=>!!O().seen;
+
+  // ---------- the pictures: a variant is its drawing with the colours changed (kept once made) ----------
+  function hsl(hex){const r=parseInt(hex.slice(0,2),16)/255,g=parseInt(hex.slice(2,4),16)/255,b=parseInt(hex.slice(4,6),16)/255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;
+    if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=(mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4)*60;}
+    return[h,s,l];}
+  function hex(h,s,l){const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));
+    return [f(0),f(8),f(4)].map(x=>("0"+Math.round(Math.max(0,Math.min(1,x))*255).toString(16)).slice(-2)).join("");}
+  function tint(svg,t){
+    return svg.replace(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-fA-F])/g,(m,x)=>{
+      if(x.length===3)x=x[0]+x[0]+x[1]+x[1]+x[2]+x[2];
+      let [h,s,l]=hsl(x);
+      if(l<.14)return m;      // the black outline
+      if(t.r!=null)h=(h+t.r)%360;
+      if(t.h!=null){h=t.h;if(t.s!=null)s=t.s;}
+      if(t.l!=null&&!(t.l>1&&l>.95))l=Math.min(.97,l*t.l);
+      return "#"+hex(h,s,l);});
+  }
+  const pics={};
+  function pic(c){
+    if(pics[c.id])return pics[c.id];
+    const src=(typeof OMO!=="undefined"&&OMO[c.art])||(typeof OMH!=="undefined"&&OMH[c.art])||"";
+    return(pics[c.id]=`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${c.tint?tint(src,c.tint):src}</svg>`);
+  }
+
+  // ---------- on Home ----------
+  let host=null,kfW=0;
+  // a number from the id, the same every time (its depth, where in its swim it starts)
+  const hash=s=>{let h=7;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;};
+  // one pair of keyframes per size, for this width: in from just off one side, out just off the other
+  function keyframes(w,sizes){
+    let st=document.getElementById("oceanKF");
+    if(!st){st=document.createElement("style");st.id="oceanKF";document.head.appendChild(st);}
+    st.textContent=sizes.map(z=>`@keyframes osw${z}{from{transform:translateX(${-z-10}px)}to{transform:translateX(${w+10}px)}}`+
+      `@keyframes osl${z}{from{transform:translateX(${w+10}px)}to{transform:translateX(${-z-10}px)}}`).join("");
+    kfW=w;
+  }
+  function paint(el){
+    if(el)host=el;if(!host)return;
+    const w=Math.round((host.parentNode&&host.parentNode.clientWidth)||window.innerWidth||1024);
+    const list=shown().map(get).filter(Boolean).sort((a,b)=>LAYER[a.kind]-LAYER[b.kind]);
+    keyframes(w,list.map(c=>c.size).filter((z,i,a)=>a.indexOf(z)===i));
+    host.innerHTML=list.map((c,i)=>{
+      const n=hash(c.id),left=(n>>3)%2===1,d=DEPTH[c.kind]||DEPTH.fish,top=d[0]+(n%97)/96*(d[1]-d[0]);
+      // which way the drawing turns: a side view looks the way it swims; a top or front view swims head first
+      const face=c.rot?`rotate(${left?-c.rot:c.rot}deg)`:c.face==="f"?"":(c.face==="l")!==left?"scaleX(-1)":"";
+      const delay=-((n>>5)%c.speed)-(i*7)%c.speed;
+      return `<div class="hfish${c.bob?" obob":""}${c.shine?" oshine":""}${c.kind==="whale"?" oback":""}" data-id="${c.id}"
+        style="top:${top.toFixed(1)}%;width:${c.size}px;height:${c.size}px;animation-name:${left?"osl":"osw"}${c.size};animation-duration:${c.speed}s;animation-delay:${delay}s">
+        <div class="ofin"><div class="oface" style="transform:${face||"none"}">${pic(c)}</div></div>${c.shine?`<i class="ospark">✨</i>`:""}</div>`;}).join("");
+    host.querySelectorAll(".hfish").forEach(f=>f.addEventListener("pointerdown",()=>tapped(f)));
+  }
+  // a tap on one says its name, and it gives a little jump
+  let tapAt=0;
+  function tapped(f){
+    if(Date.now()-tapAt<500)return;tapAt=Date.now();
+    const c=get(f.dataset.id);if(!c)return;
+    const s=f.querySelector("svg");if(s){s.classList.remove("otap");void s.getBoundingClientRect();s.classList.add("otap");}
+    try{Sound.speak(c.name,.95);}catch(e){}
+  }
+  // the screen changed width (turned): the swims are made again
+  let rz=null;
+  window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{
+    if(!host||!host.parentNode)return;const w=Math.round(host.parentNode.clientWidth||window.innerWidth);if(Math.abs(w-kfW)>40)paint();},250);});
+  function changed(){try{paint();}catch(e){}try{if(Home.isOn())Home.render();}catch(e){}render();}
+
+  // ---------- the sheet ----------
+  let el=null,tab="shop",big=null,greeted=false;const lockUntil={};
+  // one tap at a time for each thing a tap does (a double tap buys or switches once)
+  const tap=(k,fn)=>{if(Date.now()<(lockUntil[k]||0))return;lockUntil[k]=Date.now()+500;fn();};
+  const msg=t=>{if(el)el.querySelector("#ocMsg").textContent=t||"";};
+  // a line of fixed pieces and a number plays in the game voice when every piece has a clip, else whole on the device voice
+  function sayParts(parts){
+    let all=false;
+    try{all=state.settings.voicePack!==false&&VoicePack.ready&&parts.every(p=>VoicePack.has(p));}catch(e){}
+    if(!all)return Sound.speak(parts.join(" "),.95);
+    return parts.reduce((p,x)=>p.then(()=>Sound.speak(x,.95)),Promise.resolve());
+  }
+  function build(){
+    el=document.createElement("div");el.className="overlay";el.id="ovOcean";
+    el.innerHTML=`<div class="sheet ocsheet"><h2>🐠 My Ocean</h2>
+      <div class="stpurse"><span id="ocGems"></span><span id="ocCount"></span></div>
+      <div class="tabs"><button class="tab" data-tab="shop">🛒 Shop</button><button class="tab" data-tab="mine">🐠 In my ocean</button></div>
+      <p class="sub" id="ocSub"></p><p class="stmsg" id="ocMsg" aria-live="polite"></p>
+      <div id="ocBody"></div>
+      <div class="sheetfoot"><button class="btn soft" id="ocDone">Done</button></div></div>
+      <div class="ocbig" id="ocBig" hidden></div>`;
+    document.body.appendChild(el);
+    el.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;msg("");Sound.sfx.soft();render();el.querySelector(".sheet").scrollTop=0;});
+    el.querySelector("#ocDone").onclick=close;
+    el.querySelector("#ocBig").addEventListener("click",e=>{if(e.target.id==="ocBig")unbig();});
+  }
+  function open(t){
+    if(!el)build();
+    if(t)tab=t;
+    if(!O().seen){O().seen=true;save();try{if(Home.isOn())Home.render();}catch(e){}}
+    big=null;el.querySelector("#ocBig").hidden=true;msg("");render();el.querySelector(".sheet").scrollTop=0;
+    el.classList.add("on");Modes.open("ocean",el);
+    if(!greeted){greeted=true;Sound.speak("Welcome to your ocean!",.95);}
+  }
+  function close(){if(!el)return;big=null;Modes.shut(el);Sound.sfx.soft();}
+  function render(){
+    if(!el)return;
+    const $=s=>el.querySelector(s),sw=shown();
+    $("#ocGems").textContent="💎 "+fmt(gems());$("#ocCount").textContent=`🐠 ${sw.length} of ${CAP} swimming`;
+    el.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+    const body=$("#ocBody");body.innerHTML="";
+    if(tab==="shop"){
+      $("#ocSub").textContent="Tap a sea animal to see it. Pay with 💎 from reading.";
+      SHELF.forEach(sh=>{const cs=OCEAN.filter(c=>c.kind===sh.kind);if(!cs.length)return;
+        const h=document.createElement("h3");h.textContent=sh.title;body.appendChild(h);
+        const g=document.createElement("div");g.className="gridcards";cs.forEach(c=>g.appendChild(card(c,false)));body.appendChild(g);});
+    }else{
+      $("#ocSub").textContent=`Up to ${CAP} can swim at once. Tap 🌊 or 💤 to choose.`;
+      const g=document.createElement("div");g.className="gridcards";
+      OCEAN.filter(c=>owns(c.id)).forEach(c=>g.appendChild(card(c,true)));body.appendChild(g);
+    }
+    if(big)bigView(big);
+  }
+  function card(c,mine){
+    const own=owns(c.id),on=isShown(c.id),d=document.createElement("div");
+    d.className="card2 occard"+(own?" owned":"");d.dataset.id=c.id;
+    d.innerHTML=`<div class="art">${pic(c)}</div><div class="nm">${esc(c.name)}</div>
+      ${mine?"":`<div class="cost">${own?(on?"🌊 Swimming":"✓ Yours"):`<b>${fmt(c.price)} 💎</b>`}</div>`}`;
+    if(mine){const b=document.createElement("button");b.className="btn mini swim "+(on?"primary":"soft");
+      b.dataset.act=on?"rest":"swim";b.textContent=on?"🌊 Swimming":"💤 Resting";
+      b.onclick=e=>{e.stopPropagation();tap("swim",()=>toggle(c.id));};d.appendChild(b);
+      d.querySelector(".art").onclick=()=>{Sound.sfx.pop();Sound.speak(c.name,.95);};}
+    else d.onclick=()=>tap("big",()=>showBig(c.id));
+    return d;
+  }
+  // one creature, big: its name, and what he can do
+  function showBig(id){big=id;Sound.sfx.pop();const c=get(id),need=owns(id)?0:c.price-gems();
+    // its name in the game voice, then (short) how many more
+    Promise.resolve(Sound.speak(c.name,.95)).then(()=>{if(need>0&&big===id)return sayParts(["Almost!",need+" more "+(need===1?"gem":"gems")]);},()=>{});bigView(id);}
+  function unbig(){big=null;el.querySelector("#ocBig").hidden=true;}
+  function bigView(id){
+    const c=get(id),box=el.querySelector("#ocBig");if(!c)return;
+    const own=owns(id),need=own?0:c.price-gems();
+    box.innerHTML=`<div class="ocbox" data-id="${c.id}"><div class="art">${pic(c)}</div><div class="nm">${esc(c.name)}</div>
+      ${own?`<p class="why">✓ It's in your ocean${isShown(id)?" and swimming!":"."}</p><div class="row"><button class="btn big primary" data-act="ok">OK</button></div>`:
+        need>0?`<p class="why">${fmt(c.price)} 💎. You need ${fmt(need)} more 💎. Read to get more!</p><div class="row"><button class="btn big primary" data-act="ok">OK</button></div>`:
+        `<div class="row"><button class="btn big primary" data-act="buy">Buy for ${fmt(c.price)} 💎</button><button class="btn big soft" data-act="no">Not now</button></div>`}</div>`;
+    box.hidden=false;
+    box.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>tap(b.dataset.act,()=>{const a=b.dataset.act;
+      if(a==="buy")buyNow(id);else{Sound.sfx.soft();unbig();}}));
+  }
+  // with the sheet on screen: what he sees and hears
+  function buyNow(id){
+    const c=get(id),r=buy(id);
+    if(r.ok){unbig();try{confetti();}catch(e){}Sound.sfx.win();
+      const was=r.rested&&get(r.rested);
+      msg(`🎉 The ${c.name.toLowerCase()} is yours! It's swimming in your ocean.`+(was?` The ${was.name.toLowerCase()} is resting now.`:""));
+      Sound.speak("It's yours!",.95);}
+    else if(r.why==="short"){bigView(id);}
+    render();return r;
+  }
+  function toggle(id){
+    const on=isShown(id),r=swim(id,!on);
+    if(r.ok){Sound.sfx.pop();msg("");}
+    else if(r.why==="full"){Sound.sfx.soft();msg(`${CAP} can swim at once. Let one rest first.`);Sound.speak("Let one rest first.",.95);}
+    render();return r;
+  }
+  // every fixed line it can say (tools/voice/extract.js, through Home.voiceLines)
+  const voiceLines=()=>OCEAN.map(c=>c.name).concat(["Welcome to your ocean!","Let one rest first.","It's yours!","Almost!"]);
+  return{CAP,list:()=>OCEAN.slice(),get,owns,shown,isShown,buy,swim,seen,paint,open,close,render,voiceLines,pic,
+    buyNow,toggle,showBig,get isOpen(){return!!(el&&el.classList.contains("on"));}};
 })();
 
 /* ================================================================
@@ -20638,6 +20931,7 @@ NULL_IS_MISSING.push("factory","factory.stars","factory.orders");      // FACTOR
 NULL_IS_MISSING.push("talk");      // TALK
 NULL_IS_MISSING.push("power","power.checks","power.days");      // BATTERY CHECK (power.cur null is "no check under way")
 NULL_IS_MISSING.push("sessions","events","helps","prizes");      // HOW HE PLAYS
+NULL_IS_MISSING.push("ocean","ocean.owned");      // MY OCEAN
 function withDefaults(saved){
   if(!isPlain(saved))saved={};
   NULL_IS_MISSING.forEach(p=>{const k=p.split("."),o=k.length>1?saved[k[0]]:saved,f=k[k.length-1];

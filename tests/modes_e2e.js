@@ -28,6 +28,7 @@ const {launch,reload,waitFor,check,tile}=require("./lib");
   IDS.push("feast");      // FEAST TABLE
   IDS.push("mail");       // WORD MAIL
   IDS.push("eggs");       // EGG HUNT
+  IDS.push("ocean");      // MY OCEAN
   IDS.push("factory");    // FACTORY
   IDS.push("talk");       // TALK
   const L=await E(()=>Modes.list());
