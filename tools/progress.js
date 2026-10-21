@@ -25,8 +25,10 @@ function fetchLatest(){
 }
 function strip(snap){
   const s=snap.state||snap;const out={};
+  // (of the blobs, only how many of his voice's templates the backup keeps: their names, never their data)
+  const tpl=Object.keys(snap.blobs||{}).filter(k=>/^tpl:/.test(k)).length;
   for(const k of Object.keys(s)){if(k==="sync"||k==="deviceId")continue;out[k]=s[k];}
-  return{savedAt:snap.savedAt||null,state:out};
+  return{savedAt:snap.savedAt||null,tplKept:tpl,state:out};
 }
 // the game keys its days by the iPad's local date ("YYYY-MM-DD"), so these are local dates too
 const day=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -162,7 +164,13 @@ function report(snap){
   p("Say it (the last ",sy.length," tries, newest last; ✓ read right, · not this time):",sy.length?"":" none yet");
   sy.forEach(e=>p("  ",sayIt(e)));
   p("  ",vw.length," word",vw.length===1?" knows":"s know"," his voice",vw.length?": "+vw.map(k=>k+" "+vo[k]).join(", "):"",
-    "; ",tk.tpl||0," clips of his voice banked in all");
+    "; ",tk.tpl||0," clips of his voice banked in all, ",snap.tplKept||0," of them kept in this backup");
+  // ---- the NAS listener: the times it didn't answer (state.talk.aErr, the last 20) ----
+  const ae=(Array.isArray(tk.aErr)?tk.aErr:[]).filter(x=>x&&x.why);
+  if(ae.length){const by={};ae.forEach(x=>{by[x.why]=(by[x.why]||0)+1;});const last=ae[ae.length-1];
+    p("NAS listener: didn't answer ",ae.length," time",ae.length===1?"":"s",", the last ",new Date(last.at).toLocaleString()," (",last.why,", ",(last.ms/1000).toFixed(1)," s): ",
+      Object.keys(by).map(k=>k+" "+by[k]).join(", "));}
+  else p("NAS listener: no misses noted");
   // ---- battery: the grown-up's checks (Grown-up menu → Settings → Battery check) and the game's own clues ----
   const pw=s.power||{},ck=(pw.checks||[]).slice(-5).reverse();
   p("");

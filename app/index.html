@@ -2367,7 +2367,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-21a"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-21b"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -17367,7 +17367,8 @@ const TalkMatch=(()=>{
 })();
 
 const Talk=(()=>{
-  const TEN=10*60e3,A_MS=3500,TPL_MAX=5,RANK={page:0,tap:1,A:2,teach:3},LOG_MAX=200,HMM=3000,INBOX_MAX=30;
+  // A_MS: the probe's time limit; A_HEAR: a clip's (the home NAS takes 2.3-2.7 s to hear one, and it goes over Tailscale)
+  const TEN=10*60e3,A_MS=3500,A_HEAR=8000,TPL_MAX=5,RANK={page:0,tap:1,A:2,teach:3},LOG_MAX=200,HMM=3000,INBOX_MAX=30,ERR_MAX=20;
   // how close the NAS's (and the browser's) best answer must be, and how far ahead of the next, to count as sure
   const SURE_A=[.75,.2],SURE_C=[.8,.2];
   // when the NAS isn't sure: the NAS's best and the matcher's best, the same answer with at least these scores, is sure
@@ -17384,23 +17385,30 @@ const Talk=(()=>{
   const base=()=>((state.sync&&state.sync.url)||location.origin).replace(/\/+$/,"");
   const tok=()=>(state.sync&&state.sync.token)||"";
   // fetch with a time limit (and without AbortController on a Safari that has none)
+  // (a time limit that runs out rejects with "timeout", whichever way it ends)
   function timed(url,opt,ms){
-    let ctl=null;try{ctl=new AbortController();}catch(e){}
-    const t=setTimeout(()=>{try{if(ctl)ctl.abort();}catch(e){}},ms);
+    let ctl=null,late=false;try{ctl=new AbortController();}catch(e){}
+    const t=setTimeout(()=>{late=true;try{if(ctl)ctl.abort();}catch(e){}},ms);
     const go=fetch(url,Object.assign({},opt||{},ctl?{signal:ctl.signal}:{}));
     return Promise.race([go,new Promise((_,no)=>setTimeout(()=>no(new Error("timeout")),ms+50))])
-      .then(r=>{clearTimeout(t);return r;},e=>{clearTimeout(t);throw e;});
+      .then(r=>{clearTimeout(t);return r;},e=>{clearTimeout(t);throw late?new Error("timeout"):e;});
   }
   const aLive=()=>Date.now()-A.ok<TEN,aDown=()=>Date.now()-A.down<TEN;
   function down(){A.ok=0;A.down=Date.now();}
+  // each time the NAS doesn't answer, for the report: state.talk.aErr {at, why, ms}, the last 20 (why: slow, offline,
+  // http <status>, bad reply; "probe ..." when it was the question whether it is listening)
+  function note(why,ms){const t=T();if(!Array.isArray(t.aErr))t.aErr=[];t.aErr.push({at:Date.now(),why:String(why),ms:Math.round(+ms||0)});
+    if(t.aErr.length>ERR_MAX)t.aErr=t.aErr.slice(-ERR_MAX);save();}
+  const whyOf=e=>e&&e.message==="timeout"?"slow":"offline";
   // is the NAS listening? asked at most once every 10 minutes after a no
   function probe(){
     if(aLive())return Promise.resolve(true);
     if(aDown())return Promise.resolve(false);
     if(A.probe)return A.probe;
     if(typeof fetch!=="function"){down();return Promise.resolve(false);}
+    const t0=Date.now(),no=why=>{down();note("probe "+why,Date.now()-t0);return false;};
     A.probe=timed(base()+"/api/hear",{headers:{"X-Token":tok()},cache:"no-store"},A_MS)
-      .then(r=>r.ok?r.json():null).then(j=>{if(j&&j.ok===true){A.ok=Date.now();A.down=0;return true;}down();return false;},()=>{down();return false;})
+      .then(r=>r.ok?r.json().then(j=>{if(j&&j.ok===true){A.ok=Date.now();A.down=0;return true;}return no("no");},()=>no("bad reply")):no("http "+r.status),e=>no(whyOf(e)))
       .then(v=>{A.probe=null;return v;});
     return A.probe;
   }
@@ -17413,22 +17421,25 @@ const Talk=(()=>{
       const L=TalkMatch.loud(x);return{body:new Blob([TalkMatch.wav(L.pcm,TalkMatch.SR)],{type:"audio/wav"}),type:"audio/wav",lvl:L.lvl,gain:L.gain,rms:L.rms};}
     catch(e){return{body:blob,type:blob.type||"application/octet-stream"};}
   }
-  // tier A: the clip to the NAS with its possible answers; null means no tier A (and not again for 10 minutes).
+  // tier A: the clip to the NAS with its possible answers; null means no tier A for this clip. A NAS too slow for it (the
+  // time running out, or the server's 504) stays on for the next one; one that is down isn't asked again for 10 minutes.
   // hush: the recorder heard nothing in it, so a clip that is truly silent (or can't be decoded) isn't sent: nothing heard
+  let hearMs=0;
   async function hear(blob,expect,hush){
     if(!blob||aDown()||typeof fetch!=="function")return null;
     const ex=[].concat(expect||[]).map(String).slice(0,6);if(!ex.length)return null;
     const c=await loudClip(blob),lv=c.lvl==null?{}:{lvl:c.lvl,gain:c.gain};
     if(hush&&!(c.rms>=TalkMatch.HUSH))return Object.assign({tier:"A",best:null,score:0,text:"",scores:{},sure:false,heard:false},lv);
-    let r;
+    let r;const t0=Date.now(),off=why=>{down();note(why,Date.now()-t0);return null;};
     try{r=await timed(base()+"/api/hear",{method:"POST",body:c.body,cache:"no-store",
-      headers:{"Content-Type":c.type,"X-Token":tok(),"X-Expect":encodeURIComponent(JSON.stringify(ex))}},A_MS);}
-    catch(e){down();return null;}
+      headers:{"Content-Type":c.type,"X-Token":tok(),"X-Expect":encodeURIComponent(JSON.stringify(ex))}},hearMs||A_HEAR);}
+    catch(e){const why=whyOf(e);if(why==="slow"){note(why,Date.now()-t0);return null;}return off(why);}
     // a clip it couldn't use is this clip's problem, not the NAS's
     if(r.status===400||r.status===413||r.status===422){A.ok=Date.now();return Object.assign({tier:"A",best:null,score:0,text:"",scores:{},sure:false,heard:true},lv);}
-    if(!r.ok){down();return null;}
+    if(r.status===504){note("slow",Date.now()-t0);return null;}
+    if(!r.ok)return off("http "+r.status);
     let j=null;try{j=await r.json();}catch(e){}
-    if(!j||!j.scores||typeof j.scores!=="object"){down();return null;}
+    if(!j||!j.scores||typeof j.scores!=="object")return off("bad reply");
     A.ok=Date.now();A.down=0;
     const scores={};ex.forEach(k=>{scores[k]=+j.scores[k]||0;});
     const order=ex.slice().sort((a,b)=>scores[b]-scores[a]),s1=scores[order[0]]||0,s2=order[1]?scores[order[1]]:0;
@@ -17887,8 +17898,8 @@ const Talk=(()=>{
     list.push(it);
     while(list.length>INBOX_MAX){const old=list.shift();try{DB.del("blobs","inbox:"+old.id);}catch(e){}}
     save();
-    // what the NAS heard, when it is listening; nothing waits for it
-    if(aLive())transcribe(cap.blob,Q.q).then(t=>{if(t){it.text=t;save();}}).catch(()=>{});
+    // what the NAS heard, when it is listening (asked now, if nothing has asked lately); nothing waits for it
+    probe().then(on=>on?transcribe(cap.blob,Q.q):"").then(t=>{if(t){it.text=t;save();}}).catch(()=>{});
     return it;
   }
   // Grown-up menu → Progress → 🎤 Dad's inbox: each answer with its question, book and day, to play or remove
@@ -18005,7 +18016,10 @@ const Talk=(()=>{
     _next:k=>next(k),_listen:()=>S&&S.Q?listen(S.Q):null,
     _S:()=>{const Q=S&&S.Q;return S&&{n:S.n,gems:S.gems,kind:Q&&Q.kind,ans:Q&&Q.ans,expect:Q?Q.expect.slice():[],done:!!(Q&&Q.done),paid:!!(Q&&Q.paid),
       busy:!!(Q&&Q.busy),miss:Q?Q.miss:0,unsure:Q?Q.unsure:0};},
-    _A:A,_refs:refs,_own:own,_reset:()=>{A.ok=0;A.down=0;A.probe=null;voiceRef.clear();tplIdx=null;tplMem.clear();}});
+    _A:A,_refs:refs,_own:own,_reset:()=>{A.ok=0;A.down=0;A.probe=null;voiceRef.clear();tplIdx=null;tplMem.clear();},
+    _note:note,_hearMs:v=>{hearMs=+v||0;},_inboxAdd:inboxAdd,
+    // a restore brought templates back: read the store again
+    forget:()=>{tplIdx=null;tplMem.clear();}});
   return api;
 })();
 
@@ -20834,11 +20848,15 @@ document.getElementById("optTimer").onchange=e=>{state.settings.timer=+e.target.
    same payload the home-server backup sends). */
 const blobToB64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=rej;r.readAsDataURL(b);});
 const b64ToBlob=(b64,type)=>{const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:type||"application/octet-stream"});};
+// his voice's templates (Talk, "tpl:<word>:<n>") are plain data in the blobs store, not recordings: a backup carries each
+// as a blob of this type, its JSON in base64, so the home server keeps it like any other
+const DATA_BLOB="application/vnd.wcv-voice+json";
 async function fullBackup(){
   const blobs={};
   for(const k of await DB.keys("blobs")){
     const b=await DB.get("blobs",k);
     if(b instanceof Blob)blobs[k]={type:b.type,data:await blobToB64(b)};
+    else if(/^tpl:/.test(k)&&b&&typeof b==="object")blobs[k]={type:DATA_BLOB,data:btoa(unescape(encodeURIComponent(JSON.stringify(b))))};
   }
   return{kind:"wordcraft-backup",v:1,savedAt:new Date().toISOString(),words:state.wordsRead,
     state:JSON.parse(JSON.stringify(state,(k,v)=>(k&&k[0]==="_")?undefined:v)),blobs};
@@ -20847,9 +20865,11 @@ async function restoreBackup(obj){
   const st=obj&&obj.kind==="wordcraft-backup"?obj.state:obj;         // older exports were just the save
   if(!st||typeof st!=="object")throw new Error("not a save");
   if(obj&&obj.blobs)for(const[k,v]of Object.entries(obj.blobs)){
+    if(v&&v.type===DATA_BLOB){try{await DB.set("blobs",k,JSON.parse(decodeURIComponent(escape(atob(v.data)))));}catch(e){}continue;}
     await DB.set("blobs",k,b64ToBlob(v.data,v.type));
     if(String(k).startsWith("aud:"))Sound.invalidate(String(k).slice(4));
   }
+  try{Talk.forget();}catch(e){}
   loadSave(st);settleMovers();
   try{await loadPack();}catch(e){}
   save();paintBackdrop();renderWorld();renderDock();renderHUD();applyNight();

@@ -833,6 +833,12 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - The animals are OpenMoji drawings (17 new, set `OMO` in `app/art/openmoji.js`); the colour versions (red fish, blue tang, tiger shark, Golden shark, Blue whale…) are the same drawings with their colours changed in code. Save: `state.ocean = {owned, shown, seen}`.
 - **Fix:** Home's fish and turtle swam backwards (the drawings face left); every animal now faces the way it swims.
 
+### v10.19 — His voice is kept, and the NAS gets time to listen
+- **Teach's work is backed up.** What Teach (and Say it) learn about his voice is stored as numbers, not recordings, and the backup only copied recordings, so the 28 clips from his first Teach session existed only on the iPad. A backup now carries them (type `application/vnd.wcv-voice+json`, through the home server unchanged) and a restore puts them back; an older backup restores as before and leaves the iPad's own. `tools/progress.js` says how many the backup keeps.
+- **The NAS gets 8 s to hear a clip.** It takes 2.3–2.7 s on the home NAS, and the iPad gave up at 3.5 s and then left the NAS out for 10 minutes, so his answers went to the iPad's matcher instead. A clip the NAS is too slow for now goes to the matcher alone and the NAS stays on; a NAS that is down (503, unreachable) is still left alone for 10 minutes.
+- **Dad's inbox asks the NAS itself.** An open answer in Talk to me was only written down if something had used the NAS in the last 10 minutes, so his first two came back blank; it now checks whether the NAS is there first.
+- **Each time the NAS doesn't answer is noted** (`state.talk.aErr`: when, why, how long it waited; the last 20), and `tools/progress.js` prints a "NAS listener" line.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).
