@@ -28,7 +28,7 @@ function strip(snap){
   // (of the blobs, only how many of his voice's templates the backup keeps: their names, never their data)
   const tpl=Object.keys(snap.blobs||{}).filter(k=>/^tpl:/.test(k)).length;
   for(const k of Object.keys(s)){if(k==="sync"||k==="deviceId")continue;out[k]=s[k];}
-  return{savedAt:snap.savedAt||null,tplKept:tpl,state:out};
+  return{savedAt:snap.savedAt||null,ver:snap.ver||null,tplKept:tpl,state:out};
 }
 // the game keys its days by the iPad's local date ("YYYY-MM-DD"), so these are local dates too
 const day=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -86,7 +86,8 @@ function play(s,p){
 function report(snap){
   const s=snap.state,L=[];const p=(...x)=>L.push(x.join(""));
   const mastered=Object.values(s.stats||{}).filter(x=>x&&x.mastered).length,seen=Object.keys(s.stats||{}).length;
-  p("Wordcraft Valley — progress (backup ",snap.savedAt||"?",")");
+  // (backups name the version that made them from 2026-10-22a on)
+  p("Wordcraft Valley — progress (backup ",snap.savedAt||"?",", made by ",snap.ver?String(snap.ver).replace(/^wcv-/,""):"a version older than 2026-10-22a",")");
   p("hero ",s.hero||"Asher","  words read ",s.wordsRead||0,"  words tracked ",seen,"  mastered ",mastered,"  gems ",s.gems||0,"  coins ",(s.mine&&s.mine.coins)||0,"  best streak ",s.best||0);
   p("");
   play(s,p);

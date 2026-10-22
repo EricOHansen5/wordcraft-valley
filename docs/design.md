@@ -839,6 +839,9 @@ The spec is `docs/superpowers/specs/2026-10-19-guessing-design.md`. Eric saw Ash
 - **Dad's inbox asks the NAS itself.** An open answer in Talk to me was only written down if something had used the NAS in the last 10 minutes, so his first two came back blank; it now checks whether the NAS is there first.
 - **Each time the NAS doesn't answer is noted** (`state.talk.aErr`: when, why, how long it waited; the last 20), and `tools/progress.js` prints a "NAS listener" line.
 
+### v10.20 — A backup says which version made it
+- Every backup names the version of the game that made it (`ver`), and `tools/progress.js` prints it on its first line ("made by 2026-10-22a"; an older backup says "made by a version older than 2026-10-22a"). The first backup after v10.19 had none of his voice's templates, most likely because the iPad was still on the version before; this answers that question next time without guessing.
+
 ### Still on the list (v4 roadmap, in build order)
 1. ~~Write it~~ (done in v8).
 2. ~~Understanding checks~~ (done in v6: Picture it, book questions).

@@ -1,6 +1,6 @@
 // Wordcraft Valley service worker: offline app shell, cache-only and replaced whole on each VERSION.
 // Bump VERSION (npm run release) whenever anything in app/ changes (index.html, art/, content/) so the iPad picks up the new build.
-const VERSION = "wcv-2026-10-21b";
+const VERSION = "wcv-2026-10-22a";
 // the game voice lives in its own cache so a new build doesn't re-download it. A clip made another way has another
 // name (REV in tools/voice/clips.py); the cache name moves on with it, so the old takes are dropped.
 const VOICE = "wcv-voice-2";

@@ -2367,7 +2367,7 @@ body.saver .advland.note .env{filter:none;text-shadow:0 0 10px rgba(255,120,160,
 <script src="content/dungeons.js"></script>
 <script>
 "use strict";
-const APP_VERSION="wcv-2026-10-21b"; /* stamped by tools/release.js, matches sw.js VERSION */
+const APP_VERSION="wcv-2026-10-22a"; /* stamped by tools/release.js, matches sw.js VERSION */
 // escapes text a grown-up typed before it goes into innerHTML; never used on what Decode/voice read
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* The data is in its own files (art/*.js, content/*.js), loaded by the <script src> tags just above this script;
@@ -20858,7 +20858,8 @@ async function fullBackup(){
     if(b instanceof Blob)blobs[k]={type:b.type,data:await blobToB64(b)};
     else if(/^tpl:/.test(k)&&b&&typeof b==="object")blobs[k]={type:DATA_BLOB,data:btoa(unescape(encodeURIComponent(JSON.stringify(b))))};
   }
-  return{kind:"wordcraft-backup",v:1,savedAt:new Date().toISOString(),words:state.wordsRead,
+  // ver: which version of the game made it (tools/progress.js prints it)
+  return{kind:"wordcraft-backup",v:1,ver:APP_VERSION,savedAt:new Date().toISOString(),words:state.wordsRead,
     state:JSON.parse(JSON.stringify(state,(k,v)=>(k&&k[0]==="_")?undefined:v)),blobs};
 }
 async function restoreBackup(obj){

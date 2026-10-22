@@ -50,7 +50,9 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
     const d=b["tpl:pig:0"],back=d&&JSON.parse(Buffer.from(d.data,"base64").toString("utf8"));
     ok(d&&d.type===TYPE,"each one is typed "+TYPE+" "+J(d&&d.type));
     ok(back&&J(back)===J(banked.pig0),"and its data is the template itself (v 1, its frames, word, kind and time) "+J(back&&{v:back.v,w:back.w,src:back.src,n:back.n}));
-    ok(b["aud:pig"]&&b["aud:pig"].type==="audio/mp4"&&Buffer.from(b["aud:pig"].data,"base64").length===2000,"a recording goes as before");}
+    ok(b["aud:pig"]&&b["aud:pig"].type==="audio/mp4"&&Buffer.from(b["aud:pig"].data,"base64").length===2000,"a recording goes as before");
+    const v=await E(()=>APP_VERSION);
+    ok(/^wcv-\d{4}-\d\d-\d\d[a-z]?$/.test(v)&&bk.ver===v,"the backup says which version of the game made it "+J({ver:bk.ver,APP_VERSION:v}));}
 
   // restored into an iPad that has lost them: the same data back, and the matcher reads it at once
   {const r=await E(async b=>{for(const k of await DB.keys("blobs"))if(/^tpl:/.test(k))await DB.del("blobs",k);
@@ -112,7 +114,14 @@ const fs=require("fs"),os=require("os"),path=require("path"),{spawnSync}=require
     const t=out.stdout||"";
     ok(out.status===0&&/3 of them kept in this backup/.test(t),"progress.js says how many templates the backup keeps: "+(t.split("\n").find(l=>/know his voice/.test(l))||t.slice(-300)));
     const l=t.split("\n").find(x=>/^NAS listener/.test(x))||"";
-    ok(/didn't answer 5 times/.test(l)&&/slow 2/.test(l)&&/http 503 1/.test(l)&&/probe http 404 1/.test(l)&&/probe http 503 1/.test(l),"and the times the NAS didn't answer: "+l);}
+    ok(/didn't answer 5 times/.test(l)&&/slow 2/.test(l)&&/http 503 1/.test(l)&&/probe http 404 1/.test(l)&&/probe http 503 1/.test(l),"and the times the NAS didn't answer: "+l);
+    const head=t.split("\n")[0];
+    ok(head.indexOf("made by "+snap.ver.replace(/^wcv-/,""))>0,"its first line says which version made the backup: "+head);
+    // a backup from before the version was kept says so
+    const old=JSON.parse(J(snap));delete old.ver;fs.writeFileSync(f,J(old));
+    const o=spawnSync("node",[path.join(__dirname,"..","tools","progress.js"),"--file",f],{encoding:"utf8"});try{fs.unlinkSync(f);}catch(e){}
+    const h2=(o.stdout||"").split("\n")[0];
+    ok(o.status===0&&/made by a version older than 2026-10-22a/.test(h2),"and an older backup says it came from an older version: "+h2);}
   // the last 20 only
   {const n=await E(()=>{const t=state.talk;for(let i=0;i<30;i++)Talk._note("slow",100);return t.aErr.length;});
     ok(n===20,"state.talk.aErr keeps the last 20 ("+n+")");}
